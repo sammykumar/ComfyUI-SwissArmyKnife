@@ -1,0 +1,14 @@
+.git
+.github
+.vscode
+.env
+*.md
+ui-react_backup
+web/node_modules
+docs
+*.pyc
+__pycache__
+.pytest_cache
+.coverage
+.mypy_cache
+.ruff_cache

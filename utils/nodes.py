@@ -29,8 +29,8 @@ class GeminiUtilOptions:
             "required": {
                 "gemini_api_key": ("STRING", {
                     "multiline": False,
-                    "default": "YOUR_GEMINI_API_KEY_HERE",
-                    "tooltip": "Your Gemini API key"
+                    "default": os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE"),
+                    "tooltip": "Your Gemini API key (automatically uses GEMINI_API_KEY environment variable if available)"
                 }),
                 "gemini_model": (["models/gemini-2.5-flash", "models/gemini-2.5-flash-lite", "models/gemini-2.5-pro"], {
                     "default": "models/gemini-2.5-flash",
