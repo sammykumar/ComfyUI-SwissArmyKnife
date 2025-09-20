@@ -1,11 +1,11 @@
 import { app } from "../../../scripts/app.js";
 import { api } from "../../../scripts/api.js";
 
-console.log("Loading gemini_widgets.js extension");
+console.log("Loading swiss-army-knife.js extension");
 
-// Register custom widget for the Gemini Video Describe node
+// Register custom widgets for Swiss Army Knife nodes
 app.registerExtension({
-    name: "comfyui_swissarmyknife.gemini_widgets",
+    name: "comfyui_swissarmyknife.swiss_army_knife",
 
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         // Handle GeminiUtilOptions node
@@ -844,7 +844,7 @@ app.registerExtension({
                         // Upload the image file
                         const formData = new FormData();
                         formData.append("image", file);
-                        formData.append("subfolder", "gemini_images");
+                        formData.append("subfolder", "swiss_army_knife_images");
                         formData.append("type", "input");
 
                         const uploadResponse = await fetch("/upload/image", {
@@ -867,7 +867,8 @@ app.registerExtension({
 
                         // Store image info for processing
                         this.uploadedImageFile = uploadResult.name;
-                        this.uploadedImageSubfolder = uploadResult.subfolder || "gemini_images";
+                        this.uploadedImageSubfolder =
+                            uploadResult.subfolder || "swiss_army_knife_images";
 
                         // Use the original uploaded_image_file widget to store the file path
                         const originalUploadedImageWidget = this.widgets.find(
@@ -960,7 +961,7 @@ app.registerExtension({
                         // Upload the video file
                         const formData = new FormData();
                         formData.append("image", file);
-                        formData.append("subfolder", "gemini_videos");
+                        formData.append("subfolder", "swiss_army_knife_videos");
                         formData.append("type", "input");
 
                         const uploadResponse = await fetch("/upload/image", {
@@ -985,7 +986,8 @@ app.registerExtension({
 
                         // Store video info for processing
                         this.uploadedVideoFile = uploadResult.name;
-                        this.uploadedVideoSubfolder = uploadResult.subfolder || "gemini_videos";
+                        this.uploadedVideoSubfolder =
+                            uploadResult.subfolder || "swiss_army_knife_videos";
 
                         console.log("[DEBUG] Set uploadedVideoFile to:", this.uploadedVideoFile);
                         console.log(
