@@ -36,12 +36,12 @@ class GeminiUtilOptions:
                     "default": "models/gemini-2.5-flash",
                     "tooltip": "Select the Gemini model to use"
                 }),
-                "model_type": (["Text2Image", "ImageEdit"], {
+                "prompt_style": (["Text2Image", "ImageEdit"], {
                     "default": "Text2Image",
-                    "tooltip": "Select the type of model workflow to use (only applies to images)"
+                    "tooltip": "Text2Image: Generates descriptive prompts for models like FLUX Dev, SDXL, etc. ImageEdit: Generates instruction prompts with words like 'change to...', 'modify this...' for image editing models like FLUX Redux/Kontext, Nano Banana, Qwen Image Edit"
                 }),
                 "describe_clothing": (["Yes", "No"], {
-                    "default": "No",
+                    "default": "Yes",
                     "tooltip": "Whether to include detailed clothing and accessory descriptions"
                 }),
                 "describe_hair_style": (["Yes", "No"], {
@@ -67,16 +67,16 @@ class GeminiUtilOptions:
     RETURN_TYPES = ("GEMINI_OPTIONS",)
     RETURN_NAMES = ("gemini_options",)
     FUNCTION = "create_options"
-    CATEGORY = "Gemini"
+    CATEGORY = "Swiss Army Knife 🔪"
 
-    def create_options(self, gemini_api_key, gemini_model, model_type, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, prefix_text):
+    def create_options(self, gemini_api_key, gemini_model, prompt_style, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, prefix_text):
         """
         Create an options object with all the configuration settings
         """
         options = {
             "gemini_api_key": gemini_api_key,
             "gemini_model": gemini_model,
-            "model_type": model_type,
+            "model_type": prompt_style,  # Keep internal key as model_type for backward compatibility
             "describe_clothing": describe_clothing == "Yes",
             "describe_hair_style": describe_hair_style == "Yes", 
             "describe_bokeh": describe_bokeh == "Yes",
@@ -727,9 +727,6 @@ Generate descriptions that adhere to the following structured layers and constra
                 "gemini_options": ("GEMINI_OPTIONS", {
                     "tooltip": "Configuration options from Gemini Util - Options node"
                 }),
-                "image": ("IMAGE", {
-                    "tooltip": "Input image to analyze (used when media_source is Upload Media and media_type is image)"
-                }),
                 "media_path": ("STRING", {
                     "multiline": False,
                     "default": "",
@@ -763,9 +760,9 @@ Generate descriptions that adhere to the following structured layers and constra
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("description", "media_info", "gemini_status", "processed_media_path", "final_string")
     FUNCTION = "describe_media"
-    CATEGORY = "Gemini"
+    CATEGORY = "Swiss Army Knife 🔪"
 
-    def describe_media(self, media_source, media_type, seed, gemini_options=None, image=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0):
+    def describe_media(self, media_source, media_type, seed, gemini_options=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0):
         """
         Process media (image or video) and analyze with Gemini
 
@@ -774,7 +771,6 @@ Generate descriptions that adhere to the following structured layers and constra
             media_type: Type of media ("image" or "video")
             seed: Seed for randomization when using 'Randomize Media from Path'. Use different seeds to force re-execution.
             gemini_options: Configuration options from Gemini Util - Options node (optional)
-            image: ComfyUI IMAGE tensor (optional, used for uploaded images)
             media_path: Directory path to randomly select media from, including subdirectories (optional)
             uploaded_image_file: Path to uploaded image file (optional)
             uploaded_video_file: Path to uploaded video file (optional)
@@ -889,20 +885,16 @@ Directory scan results:
             else:
                 # Upload Media mode
                 if media_type == "image":
-                    if image is None and not uploaded_image_file:
-                        raise ValueError("Image input is required when media_source is 'Upload Media' and media_type is 'image'")
-                    if uploaded_image_file:
-                        # Use uploaded image file
-                        try:
-                            import folder_paths
-                            input_dir = folder_paths.get_input_directory()
-                        except ImportError:
-                            input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
-                        selected_media_path = os.path.join(input_dir, uploaded_image_file)
-                        media_info_text = f"📷 Image Processing Info (Uploaded File):\n• File: {uploaded_image_file}"
-                    else:
-                        # Use image tensor input
-                        media_info_text = "📷 Image Processing Info (Tensor Input):\n• Source: ComfyUI IMAGE tensor"
+                    if not uploaded_image_file:
+                        raise ValueError("Image file upload is required when media_source is 'Upload Media' and media_type is 'image'")
+                    # Use uploaded image file
+                    try:
+                        import folder_paths
+                        input_dir = folder_paths.get_input_directory()
+                    except ImportError:
+                        input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
+                    selected_media_path = os.path.join(input_dir, uploaded_image_file)
+                    media_info_text = f"📷 Image Processing Info (Uploaded File):\n• File: {uploaded_image_file}"
                 else:  # video
                     if not uploaded_video_file:
                         raise ValueError("Video upload is required when media_source is 'Upload Media' and media_type is 'video'")
@@ -919,7 +911,7 @@ Directory scan results:
                 # Process as image - delegate to image logic
                 return self._process_image(
                     gemini_api_key, gemini_model, model_type, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, prefix_text,
-                    image, selected_media_path, media_info_text
+                    None, selected_media_path, media_info_text
                 )
             else:
                 # Process as video - delegate to video logic  
@@ -1004,7 +996,7 @@ class FilenameGenerator:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("filename",)
     FUNCTION = "generate_filename"
-    CATEGORY = "Utils"
+    CATEGORY = "Swiss Army Knife 🔪"
 
     def generate_filename(self, scheduler, shift, total_steps, shift_step, high_cfg, low_cfg, base_filename, subdirectory_prefix, add_date_subdirectory):
         """
