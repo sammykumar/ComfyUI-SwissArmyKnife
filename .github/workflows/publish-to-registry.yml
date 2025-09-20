@@ -1,0 +1,53 @@
+name: Publish to ComfyUI Registry
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - "pyproject.toml"
+
+jobs:
+  publish-node:
+    name: Publish Custom Node to ComfyUI Registry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for tagging
+
+      - name: Extract version from pyproject.toml
+        id: get_version
+        run: |
+          VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git tag | grep -q "^v${{ steps.get_version.outputs.VERSION }}$"; then
+            echo "Tag v${{ steps.get_version.outputs.VERSION }} already exists"
+            echo "TAG_EXISTS=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag v${{ steps.get_version.outputs.VERSION }} does not exist"
+            echo "TAG_EXISTS=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish Custom Node to Registry
+        uses: Comfy-Org/publish-node-action@main
+        with:
+          personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "v${{ steps.get_version.outputs.VERSION }}" -m "Release version ${{ steps.get_version.outputs.VERSION }}"
+          git push origin "v${{ steps.get_version.outputs.VERSION }}"
+          echo "Created and pushed tag: v${{ steps.get_version.outputs.VERSION }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
