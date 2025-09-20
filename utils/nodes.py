@@ -603,7 +603,8 @@ Generate descriptions that adhere to the following structured layers and constra
                 "describe_clothing": describe_clothing,
                 "describe_hair_style": describe_hair_style,
                 "describe_bokeh": describe_bokeh,
-                "describe_subject": describe_subject
+                "describe_subject": describe_subject,
+                "max_duration": max_duration  # Include duration in cache key
             }
 
             cached_result = cache.get(
