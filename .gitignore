@@ -150,3 +150,6 @@ api_keys.txt
 # Cache directories
 cache/
 .cache/
+
+# ComfyUI Local
+.comfyui-user/
