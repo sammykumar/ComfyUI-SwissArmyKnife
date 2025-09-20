@@ -10,7 +10,7 @@ authors = [
   {name = "Sam Kumar", email = "sam@skproductions.llc"}
 ]
 readme = "README.md"
-license = { file = "LICENSE" }  
+license = "MIT"
 requires-python = ">=3.10"
 classifiers = []
 dependencies = [
@@ -47,8 +47,11 @@ Tags = []
 Repository = "https://github.com/sammykumar/ComfyUI-SwissArmyKnife"
 includes = ["dist/"]
 
+[tool.setuptools]
+packages = ["utils"]
+
 [tool.setuptools.package-data]
-"*" = ["*.*"]
+"" = ["web/js/*.js"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

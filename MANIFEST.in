@@ -1,0 +1,25 @@
+# Include the main package files
+include __init__.py
+recursive-include utils *.py
+
+# Include web extension files
+include web/js/*.js
+
+# Include documentation and metadata
+include README.md
+include LICENSE
+include pyproject.toml
+
+# Exclude development and build artifacts
+exclude *.pyc
+recursive-exclude __pycache__ *
+recursive-exclude example_nodes *
+recursive-exclude ui-react_backup *
+recursive-exclude web/tests *
+recursive-exclude web/node_modules *
+recursive-exclude .git *
+exclude .gitignore
+exclude docker-compose.yml
+exclude Dockerfile
+exclude node.zip
+exclude package.json
