@@ -32,8 +32,11 @@ ComfyUI-SwissArmyKnife is a ComfyUI extension that consists of two essential com
 -   ~~React/TypeScript UI extension with internationalization~~ **DISABLED FOR NOW**
 -   GitHub Actions for automated building and publishing
 -   Playwright tests in `./web/tests/` for testing against hosted ComfyUI server
+-   Documentation in `docs/` directory for all project documentation
 
 **IMPORTANT**: Both backend and web extension components are required for the custom node to function properly. Changes to backend Python files require restarting the ComfyUI server, while changes to web JavaScript files require refreshing the browser cache.
+
+**DOCUMENTATION REQUIREMENT**: All documentation, guides, troubleshooting notes, implementation details, and technical specifications must be added to the `docs/` directory. Never document directly in code comments when a separate documentation file would be more appropriate.
 
 **Note: The React UI component (`ui-react_backup/`) is currently disabled and not in active development.**
 
@@ -86,6 +89,33 @@ python3 -c "from utils.nodes import NODE_CLASS_MAPPINGS; print('Available nodes:
 ```
 
 ## Development Workflows
+
+### Documentation Workflow
+
+```bash
+# Always add new documentation to the docs/ directory
+ls docs/  # Check existing documentation files
+
+# Create new documentation files in docs/
+touch docs/NEW_FEATURE_GUIDE.md
+touch docs/TROUBLESHOOTING_ISSUE_NAME.md
+touch docs/IMPLEMENTATION_DETAILS.md
+
+# Update existing documentation when making changes
+vim docs/EXISTING_GUIDE.md
+
+# Documentation file naming convention:
+# - Use ALL_CAPS with underscores
+# - Be descriptive: SEED_WIDGET_IMPLEMENTATION.md
+# - Include purpose: TROUBLESHOOTING_, GUIDE_, IMPLEMENTATION_
+```
+
+**CRITICAL**: Whenever you implement a new feature, fix a bug, or solve a technical problem:
+
+1. Document the solution in `docs/FEATURE_NAME.md` or `docs/ISSUE_NAME_FIX.md`
+2. Include implementation details, gotchas, and future considerations
+3. Reference the documentation file in commit messages
+4. Update related documentation files when making changes
 
 ### React UI Development _(DISABLED)_
 
@@ -237,6 +267,20 @@ The repository includes automated publishing via `.github/workflows/react-build.
 
 ### Always validate changes by running these verification steps:
 
+#### Documentation Validation
+
+```bash
+# 1. Verify all changes are documented
+ls -la docs/  # Check for relevant documentation files
+
+# 2. Ensure documentation is up-to-date
+grep -r "TODO\|FIXME\|OUTDATED" docs/  # Should return no results
+
+# 3. Validate markdown formatting
+# (Optional: install markdownlint if available)
+# markdownlint docs/*.md
+```
+
 #### Python Node Validation
 
 ```bash
@@ -313,6 +357,33 @@ ls -la ../../__init__.py  # Python entry point (ACTIVE)
 
 ## Common Tasks
 
+### Documentation Tasks
+
+```bash
+# Create new feature documentation
+touch docs/NEW_FEATURE_NAME.md
+
+# Document a bug fix or implementation detail
+touch docs/BUG_NAME_FIX.md
+touch docs/TECHNICAL_IMPLEMENTATION_DETAILS.md
+
+# Update existing documentation after changes
+vim docs/EXISTING_FEATURE.md
+
+# Search for documentation gaps
+grep -r "TODO\|FIXME\|INCOMPLETE" docs/
+
+# List all documentation files
+ls -la docs/
+
+# Common documentation file types:
+# - FEATURE_NAME.md - Feature implementation guides
+# - ISSUE_NAME_FIX.md - Bug fixes and solutions
+# - IMPLEMENTATION_STATUS.md - Project status tracking
+# - TROUBLESHOOTING_*.md - Problem resolution guides
+# - *_GUIDE.md - User or developer guides
+```
+
 ### File Structure Overview
 
 ```
@@ -320,6 +391,11 @@ comfyui_swissarmyknife/
 ├── .github/workflows/react-build.yml  # CI/CD automation
 ├── __init__.py                         # Python entry point
 ├── pyproject.toml                      # Project metadata & publishing config
+├── docs/                              # ALL PROJECT DOCUMENTATION (REQUIRED)
+│   ├── IMPLEMENTATION_STATUS.md       # Feature implementation tracking
+│   ├── WIDGET_INVESTIGATION_AND_FIXES.md  # Technical troubleshooting
+│   ├── SEED_WIDGET_IMPLEMENTATION.md  # Specific feature documentation
+│   └── *.md                          # All other documentation files
 ├── utils/nodes.py                      # Main Python custom nodes
 ├── web/js/gemini_widgets.js           # JavaScript widgets
 └── ui-react_backup/                   # React UI extension
