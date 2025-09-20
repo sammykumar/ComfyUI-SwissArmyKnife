@@ -51,7 +51,7 @@ includes = ["dist/"]
 packages = ["utils"]
 
 [tool.setuptools.package-data]
-"" = ["web/js/*.js"]
+"*" = ["web/js/*.js"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
