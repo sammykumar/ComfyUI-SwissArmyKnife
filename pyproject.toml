@@ -3,7 +3,7 @@ requires = ["setuptools>=70.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "comfyui-swissarmyknife"
+name = "ComfyUI-SwissArmyKnife"
 version = "0.0.1"
 description = "A collection of custom nodes for ComfyUI"
 authors = [
@@ -40,7 +40,7 @@ Documentation = "https://github.com/sammykumar/ComfyUI-SwissArmyKnife/wiki"
 
 
 [tool.comfy]
-PublisherId = "sammykumar"
+PublisherId = "lambo-sam"
 DisplayName = "ComfyUI-SwissArmyKnife"
 Icon = ""
 Tags = []
