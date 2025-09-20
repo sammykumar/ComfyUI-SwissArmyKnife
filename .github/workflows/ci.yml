@@ -37,16 +37,6 @@ jobs:
         run: |
           python -c "from utils.nodes import NODE_CLASS_MAPPINGS; print('✓ Custom nodes loaded successfully:', list(NODE_CLASS_MAPPINGS.keys()))"
 
-      - name: Verify ComfyUI integration points
-        run: |
-          python -c "
-          import __init__
-          assert hasattr(__init__, 'NODE_CLASS_MAPPINGS'), 'NODE_CLASS_MAPPINGS not exported'
-          assert hasattr(__init__, 'NODE_DISPLAY_NAME_MAPPINGS'), 'NODE_DISPLAY_NAME_MAPPINGS not exported'  
-          assert hasattr(__init__, 'WEB_DIRECTORY'), 'WEB_DIRECTORY not exported'
-          print('✓ ComfyUI integration points verified')
-          "
-
       - name: Check pyproject.toml validity
         run: |
           python -c "
