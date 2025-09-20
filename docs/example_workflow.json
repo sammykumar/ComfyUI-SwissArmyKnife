@@ -1,0 +1,89 @@
+{
+    "last_node_id": 4,
+    "last_link_id": 3,
+    "nodes": [
+        {
+            "id": 1,
+            "type": "LoadImage",
+            "pos": [100, 100],
+            "size": { "0": 315, "1": 314 },
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "outputs": [
+                {
+                    "name": "IMAGE",
+                    "type": "IMAGE",
+                    "links": [1],
+                    "shape": 3,
+                    "slot_index": 0
+                },
+                { "name": "MASK", "type": "MASK", "links": null, "shape": 3 }
+            ],
+            "properties": { "Node name for S&R": "LoadImage" },
+            "widgets_values": ["example.jpg", "image"]
+        },
+        {
+            "id": 2,
+            "type": "GeminiUtilImageDescribe",
+            "pos": [500, 100],
+            "size": { "0": 400, "1": 500 },
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [{ "name": "image", "type": "IMAGE", "link": 1 }],
+            "outputs": [
+                {
+                    "name": "description",
+                    "type": "STRING",
+                    "links": null,
+                    "shape": 3
+                },
+                {
+                    "name": "gemini_status",
+                    "type": "STRING",
+                    "links": null,
+                    "shape": 3
+                },
+                {
+                    "name": "final_string",
+                    "type": "STRING",
+                    "links": [2],
+                    "shape": 3,
+                    "slot_index": 2
+                }
+            ],
+            "properties": { "Node name for S&R": "GeminiUtilImageDescribe" },
+            "widgets_values": [
+                "YOUR_GEMINI_API_KEY_HERE",
+                "models/gemini-2.5-flash",
+                "Generate a detailed image description...",
+                "Please analyze this image...",
+                ""
+            ]
+        },
+        {
+            "id": 3,
+            "type": "ShowText",
+            "pos": [1000, 100],
+            "size": { "0": 300, "1": 200 },
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [{ "name": "text", "type": "STRING", "link": 2 }],
+            "outputs": [
+                { "name": "text", "type": "STRING", "links": null, "shape": 3 }
+            ],
+            "properties": { "Node name for S&R": "ShowText" },
+            "widgets_values": [""]
+        }
+    ],
+    "links": [
+        [1, 1, 0, 2, 0, "IMAGE"],
+        [2, 2, 2, 3, 0, "STRING"]
+    ],
+    "groups": [],
+    "config": {},
+    "extra": {},
+    "version": 0.4
+}

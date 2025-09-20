@@ -1,23 +1,23 @@
 {
-  "name": "ComfyUI-SwissKnifeUtils",
-  "version": "1.0.0",
-  "description": "Random utility nodes for ComfyUI",
-  "main": "__init__.py",
-  "scripts": {
-    "build": "cd ui-react_backup/ui && npm run build",
-    "watch": "cd ui-react_backup/ui && npm run watch",
-    "test": "cd web/tests && npm test",
-    "test:install": "cd web/tests && npm install && npm run install-browser"
-  },
-  "keywords": [
-    "comfyui",
-    "gemini",
-    "ai",
-    "custom-nodes"
-  ],
-  "author": "Sam Kumar",
-  "license": "MIT",
-  "devDependencies": {
-    "prettier": "^3.6.2"
-  }
+    "name": "comfyui-swissarmyknife",
+    "version": "1.0.0",
+    "description": "Swiss Army Knife utility nodes for ComfyUI",
+    "main": "__init__.py",
+    "scripts": {
+        "build": "cd ui-react_backup/ui && npm run build",
+        "watch": "cd ui-react_backup/ui && npm run watch",
+        "test": "cd web/tests && npm test",
+        "test:install": "cd web/tests && npm install && npm run install-browser"
+    },
+    "keywords": [
+        "comfyui",
+        "gemini",
+        "ai",
+        "custom-nodes"
+    ],
+    "author": "Sam Kumar",
+    "license": "MIT",
+    "devDependencies": {
+        "prettier": "^3.6.2"
+    }
 }

@@ -1,0 +1,160 @@
+name: CI - Lint, Build, and Test
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  python-quality:
+    name: Python Linting and Testing
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install ruff black mypy pytest coverage opencv-python pillow
+
+    - name: Lint with ruff
+      run: |
+        ruff check .
+        
+    - name: Check formatting with black
+      run: |
+        black --check .
+
+    - name: Type check with mypy
+      run: |
+        mypy .
+
+    - name: Test Python imports
+      run: |
+        python -c "from utils.nodes import NODE_CLASS_MAPPINGS; print('✓ Python nodes loaded:', list(NODE_CLASS_MAPPINGS.keys()))"
+
+    - name: Run tests with pytest
+      run: |
+        pytest --cov=utils --cov-report=xml
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      if: matrix.python-version == '3.12'
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  javascript-quality:
+    name: JavaScript Linting
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: web/package.json
+
+    - name: Install JavaScript dependencies
+      run: |
+        cd web
+        npm ci
+
+    - name: Lint JavaScript
+      run: |
+        cd web
+        npm run lint
+
+    - name: Check JavaScript formatting
+      run: |
+        cd web
+        npm run format -- --check
+
+  integration-test:
+    name: Integration Test (No GPU)
+    runs-on: ubuntu-latest
+    needs: [python-quality, javascript-quality]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install opencv-python pillow
+
+    - name: Verify project structure
+      run: |
+        echo "✓ Checking project structure..."
+        test -f "__init__.py" || exit 1
+        test -f "utils/nodes.py" || exit 1
+        test -f "web/js/gemini_widgets.js" || exit 1
+        test -d ".devcontainer" || exit 1
+        echo "✓ All required files present"
+
+    - name: Test ComfyUI integration points
+      run: |
+        python -c "
+        import __init__
+        assert hasattr(__init__, 'NODE_CLASS_MAPPINGS'), 'NODE_CLASS_MAPPINGS not exported'
+        assert hasattr(__init__, 'NODE_DISPLAY_NAME_MAPPINGS'), 'NODE_DISPLAY_NAME_MAPPINGS not exported'  
+        assert hasattr(__init__, 'WEB_DIRECTORY'), 'WEB_DIRECTORY not exported'
+        assert __init__.WEB_DIRECTORY == './web', f'WEB_DIRECTORY should be ./web, got {__init__.WEB_DIRECTORY}'
+        print('✓ ComfyUI integration points verified')
+        "
+
+    - name: Verify FFmpeg availability
+      run: |
+        ffmpeg -version | head -1
+        echo "✓ FFmpeg is available"
+
+  pre-commit:
+    name: Pre-commit Hooks
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install pre-commit
+      run: |
+        python -m pip install --upgrade pip
+        pip install pre-commit
+
+    - name: Run pre-commit hooks
+      run: |
+        pre-commit run --all-files

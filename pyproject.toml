@@ -1,0 +1,90 @@
+[build-system]
+requires = ["setuptools>=70.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comfyui-swissarmyknife"
+version = "0.0.1"
+description = "A collection of custom nodes for ComfyUI"
+authors = [
+  {name = "Sam Kumar", email = "sam@skproductions.llc"}
+]
+readme = "README.md"
+license = {text = "GNU General Public License v3"}
+requires-python = ">=3.10"
+classifiers = []
+dependencies = [
+    "google-genai",
+    "opencv-python",
+    "pillow",
+]
+
+
+
+[project.optional-dependencies]
+dev = [
+    "black",     # code formatting
+    "bump-my-version",
+    "coverage",  # testing
+    "mypy",      # type checking
+    "pre-commit", # runs linting on commit
+    "pytest",    # testing
+    "pytest-cov", # coverage reporting
+    "ruff",      # linting
+]
+
+[project.urls]
+Repository = "https://github.com/sammykumar/ComfyUI-SwissArmyKnife"
+BugTracker = "https://github.com/sammykumar/ComfyUI-SwissArmyKnife/issues"
+Documentation = "https://github.com/sammykumar/ComfyUI-SwissArmyKnife/wiki"
+
+
+[tool.comfy]
+PublisherId = "sammykumar"
+DisplayName = "ComfyUI-SwissArmyKnife"
+Icon = ""
+Tags = []
+Repository = "https://github.com/sammykumar/ComfyUI-SwissArmyKnife"
+includes = ["dist/"]
+
+[tool.setuptools.package-data]
+"*" = ["*.*"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = [
+    "tests",
+]
+
+[tool.mypy]
+files = "."
+
+# Use strict defaults
+strict = true
+warn_unreachable = true
+warn_no_return = true
+
+[[tool.mypy.overrides]]
+# Don't require test functions to include types
+module = "tests.*"
+allow_untyped_defs = true
+disable_error_code = "attr-defined"
+
+[tool.ruff]
+# extend-exclude = ["static", "ci/templates"]
+line-length = 140
+src = ["src", "tests"]
+target-version = "py39"
+
+# Add rules to ban exec/eval
+[tool.ruff.lint]
+select = [
+    "S102",  # exec-builtin
+    "S307",  # eval-used
+    "W293",
+    "F",  # The "F" series in Ruff stands for "Pyflakes" rules, which catch various Python syntax errors and undefined names.
+    # See all rules here: https://docs.astral.sh/ruff/rules/#pyflakes-f
+]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "double"

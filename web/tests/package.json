@@ -1,0 +1,34 @@
+{
+    "name": "comfyui-swissarmyknife-tests",
+    "version": "1.0.0",
+    "description": "Playwright test suite for ComfyUI-SwissArmyKnife ComfyUI extension",
+    "main": "test_state_management.js",
+    "scripts": {
+        "test": "npm run test:all",
+        "test:all": "npm run test:state && npm run test:media-path && npm run test:quick",
+        "test:state": "node test_state_management.js",
+        "test:media-path": "node test_media_path_fix.js",
+        "test:quick": "node quick_test.js",
+        "test:headless": "HEADLESS=true npm run test:all",
+        "install-browser": "npx playwright install chromium"
+    },
+    "dependencies": {
+        "playwright": "^1.40.0"
+    },
+    "devDependencies": {},
+    "keywords": [
+        "comfyui",
+        "playwright",
+        "testing",
+        "gemini",
+        "widgets",
+        "state-management"
+    ],
+    "author": "ComfyUI-SwissArmyKnife",
+    "license": "GPL-3.0",
+    "homepage": "https://github.com/sammykumar/ComfyUI-SwissArmyKnife#readme",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sammykumar/ComfyUI-SwissArmyKnife.git"
+    }
+}

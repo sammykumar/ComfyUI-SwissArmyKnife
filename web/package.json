@@ -1,0 +1,25 @@
+{
+    "name": "comfyui-swissarmyknife-web",
+    "version": "1.0.0",
+    "description": "Web extension for ComfyUI-SwissArmyKnife - JavaScript widgets for ComfyUI",
+    "scripts": {
+        "dev": "echo 'JavaScript widgets - no build step required. Files are in js/ and css/ directories.'",
+        "build": "echo 'JavaScript widgets - no build step required. Files are loaded directly by ComfyUI.'",
+        "lint": "eslint js/**/*.js",
+        "lint:fix": "eslint js/**/*.js --fix",
+        "format": "prettier --write js/**/*.js css/**/*.css",
+        "test": "cd tests && npm test"
+    },
+    "devDependencies": {
+        "eslint": "^9.0.0",
+        "prettier": "^3.0.0"
+    },
+    "keywords": [
+        "comfyui",
+        "widgets",
+        "javascript",
+        "extension"
+    ],
+    "author": "Sam Kumar <sam@skproductions.llc>",
+    "license": "GPL-3.0"
+}

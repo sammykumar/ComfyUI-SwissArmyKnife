@@ -1,29 +1,31 @@
-# ComfyUI-SwissKnifeUtils
+# ComfyUI-SwissArmyKnife
 
 A collection of custom nodes for ComfyUI featuring Gemini AI integration for video and image analysis, with a complete development environment using GPU-accelerated containers.
 
 ## Features
 
-- **🤖 Gemini AI Integration**: Video, image, and media analysis using Google's Gemini AI
-- **🎮 JavaScript Widgets**: Enhanced ComfyUI interfaces with custom video controls
-- **🐳 Dev Container Support**: GPU-enabled development environment with mmartial/ComfyUI-Nvidia-Docker
-- **🧪 Full Testing Suite**: Python and JavaScript testing with CI/CD integration
-- **⚡ Hot Reload Development**: Instant feedback for both backend and frontend changes
+-   **🤖 Gemini AI Integration**: Video, image, and media analysis using Google's Gemini AI
+-   **🎮 JavaScript Widgets**: Enhanced ComfyUI interfaces with custom video controls
+-   **🐳 Dev Container Support**: GPU-enabled development environment with mmartial/ComfyUI-Nvidia-Docker
+-   **🧪 Full Testing Suite**: Python and JavaScript testing with CI/CD integration
+-   **⚡ Hot Reload Development**: Instant feedback for both backend and frontend changes
 
 ## Quick Start with Dev Container (Recommended)
 
 The fastest way to get started is using the provided dev container with GPU support:
 
 ### Prerequisites
-- Docker with NVIDIA Container Toolkit
-- VS Code with Dev Containers extension
-- NVIDIA GPU with drivers installed
+
+-   Docker with NVIDIA Container Toolkit
+-   VS Code with Dev Containers extension
+-   NVIDIA GPU with drivers installed
 
 ### Setup
+
 ```bash
 # Clone the repository
-git clone https://github.com/sammykumar/ComfyUI-SwissKnifeUtils.git
-cd ComfyUI-SwissKnifeUtils
+git clone https://github.com/sammykumar/ComfyUI-SwissArmyKnife.git
+cd ComfyUI-SwissArmyKnife
 
 # Open in VS Code
 code .
@@ -50,10 +52,10 @@ If you want to use the nodes in an existing ComfyUI installation:
 cd ComfyUI/custom_nodes
 
 # Clone the repository
-git clone https://github.com/sammykumar/ComfyUI-SwissKnifeUtils.git
+git clone https://github.com/sammykumar/ComfyUI-SwissArmyKnife.git
 
 # Install dependencies
-cd ComfyUI-SwissKnifeUtils
+cd ComfyUI-SwissArmyKnife
 pip install -e .
 
 # Restart ComfyUI
@@ -65,8 +67,8 @@ If you're contributing to the project or want to modify the nodes:
 
 ```bash
 # Clone the repository
-git clone https://github.com/sammykumar/ComfyUI-SwissKnifeUtils.git
-cd ComfyUI-SwissKnifeUtils
+git clone https://github.com/sammykumar/ComfyUI-SwissArmyKnife.git
+cd ComfyUI-SwissArmyKnife
 
 # Install Python dependencies
 pip install -e .
@@ -81,25 +83,51 @@ pre-commit install
 ```
 
 **System Requirements:**
-- Python 3.10+
-- Node.js 20+ (for development)
-- FFmpeg (for video processing)
-- NVIDIA GPU (optional, for accelerated inference)
+
+-   Python 3.10+
+-   Node.js 20+ (for development)
+-   FFmpeg (for video processing)
+-   NVIDIA GPU (optional, for accelerated inference)
 
 ## Available Nodes
 
 ### Backend Nodes (Python)
-- **GeminiUtilVideoDescribe**: Analyze videos using Gemini AI
-- **GeminiUtilImageDescribe**: Analyze images using Gemini AI  
-- **GeminiUtilMediaDescribe**: Multi-media analysis functionality
+
+-   **GeminiUtilVideoDescribe**: Analyze videos using Gemini AI
+-   **GeminiUtilImageDescribe**: Analyze images using Gemini AI
+-   **GeminiUtilMediaDescribe**: Multi-media analysis functionality
 
 ### Web Extension (JavaScript)
-- **Video Controls Widget**: Enhanced video timeline controls with trimming
-- **Custom Styling**: Themed UI components that integrate with ComfyUI
+
+-   **Video Controls Widget**: Enhanced video timeline controls with trimming
+-   **Custom Styling**: Themed UI components that integrate with ComfyUI
+
+## 🔐 API Key Configuration
+
+### Required: Google Gemini API Key
+
+To use the Gemini AI features, you'll need a Google Gemini API key:
+
+1. **Get your API key**: Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. **Create API key**: Click "Create API Key" and copy the generated key
+3. **Configure securely**:
+
+    ```bash
+    # Copy the environment template
+    cp .env.example .env
+
+    # Edit .env and add your actual API key
+    GEMINI_API_KEY=your_actual_api_key_here
+    ```
+
+⚠️ **Security Note**: Never commit your actual API keys to version control. The `.env` file is already included in `.gitignore`.
+
+**Alternative**: You can also enter your API key directly in the ComfyUI node interface, but using environment variables is more secure.
 
 ## Development Workflow
 
 ### Dev Container (Recommended)
+
 ```bash
 # Start the development environment
 ./.devcontainer/run-comfy.sh
@@ -109,13 +137,14 @@ pre-commit install
 ```
 
 ### Local Development
+
 ```bash
 # Python backend development
 ruff check .                    # Lint Python code
 pytest                         # Run Python tests
 python -c "from utils.nodes import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_MAPPINGS.keys()))"
 
-# JavaScript web extension development  
+# JavaScript web extension development
 cd web
 npm run lint                   # Lint JavaScript
 npm run format                 # Format code
@@ -123,19 +152,23 @@ cd tests && npm test           # Run Playwright tests (requires running ComfyUI)
 ```
 
 **Important Notes:**
-- Python changes require ComfyUI server restart
-- JavaScript changes require browser cache refresh only
-- JavaScript widgets are plain JS files (no build step required)
+
+-   Python changes require ComfyUI server restart
+-   JavaScript changes require browser cache refresh only
+-   JavaScript widgets are plain JS files (no build step required)
 
 ## Testing
 
 ### Automated Testing
+
 The project includes comprehensive CI/CD testing:
-- **Python**: Linting (ruff), formatting (black), type checking (mypy), unit tests (pytest)
-- **JavaScript**: Linting (eslint), formatting (prettier), integration tests (playwright)
-- **Integration**: ComfyUI node loading, FFmpeg availability, system compatibility
+
+-   **Python**: Linting (ruff), formatting (black), type checking (mypy), unit tests (pytest)
+-   **JavaScript**: Linting (eslint), formatting (prettier), integration tests (playwright)
+-   **Integration**: ComfyUI node loading, FFmpeg availability, system compatibility
 
 ### Manual Testing
+
 ```bash
 # Test Python nodes
 python -c "from utils.nodes import NODE_CLASS_MAPPINGS; print('Nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
@@ -154,6 +187,7 @@ This template includes a simple example extension that displays workflow node st
 2. Click to open the example UI
 
 When developing your own extension, you can:
+
 1. Replace the example UI in App.tsx with your own components
 2. Update the tab title and icon in main.tsx
 3. Customize the extension's appearance and behavior
@@ -177,24 +211,24 @@ npm run watch
 
 This template provides access to ComfyUI's powerful JavaScript APIs through the official type definitions. You can use these APIs to build rich extensions:
 
-- **Sidebar Tabs**: Create custom sidebar panels like this template demonstrates
-- **Bottom Bar Panels**: Add panels to the bottom of the UI
-- **Top Menu Items**: Add custom entries to the top menu
-- **Context Menus**: Create custom context menus for the graph
-- **Settings**: Add settings to the ComfyUI settings panel
-- **Toasts**: Display notification messages
-- **Commands**: Create and register custom commands
-- **Hotkeys/Keybindings**: Register custom keyboard shortcuts
-- **About Panel Badges**: Add badges to the about panel
-- **App Events**: Listen to and respond to app events
-- **Graph Manipulation**: Programmatically manipulate the workflow graph
+-   **Sidebar Tabs**: Create custom sidebar panels like this template demonstrates
+-   **Bottom Bar Panels**: Add panels to the bottom of the UI
+-   **Top Menu Items**: Add custom entries to the top menu
+-   **Context Menus**: Create custom context menus for the graph
+-   **Settings**: Add settings to the ComfyUI settings panel
+-   **Toasts**: Display notification messages
+-   **Commands**: Create and register custom commands
+-   **Hotkeys/Keybindings**: Register custom keyboard shortcuts
+-   **About Panel Badges**: Add badges to the about panel
+-   **App Events**: Listen to and respond to app events
+-   **Graph Manipulation**: Programmatically manipulate the workflow graph
 
 For comprehensive documentation on all available APIs, see the [ComfyUI JavaScript Developer Documentation](https://docs.comfy.org/custom-nodes/js/javascript_overview).
 
 ### File Structure
 
 ```
-ComfyUI-SwissKnifeUtils/
+ComfyUI-SwissArmyKnife/
 ├── .github/                    # GitHub configurations
 │   └── workflows/
 │       └── react-build.yml     # Automatic build and publishing workflow
@@ -247,27 +281,30 @@ npm install -D @comfyorg/comfyui-frontend-types
 ### Steps to Publish
 
 1. Install the comfy-cli tool:
-   ```bash
-   pip install comfy-cli
-   ```
+
+    ```bash
+    pip install comfy-cli
+    ```
 
 2. Verify your pyproject.toml has the correct metadata:
-   ```toml
-   [project]
-   name = "your_extension_name"  # Use a unique name for your extension
-   description = "Your extension description here."
-   version = "0.1.0"  # Increment this with each update
 
-   [tool.comfy]
-   PublisherId = "your_publisher_id"  # Your Registry publisher ID
-   DisplayName = "Your Extension Display Name"
-   includes = ["dist/"]  # Include built React code (normally ignored by .gitignore)
-   ```
+    ```toml
+    [project]
+    name = "your_extension_name"  # Use a unique name for your extension
+    description = "Your extension description here."
+    version = "0.1.0"  # Increment this with each update
+
+    [tool.comfy]
+    PublisherId = "your_publisher_id"  # Your Registry publisher ID
+    DisplayName = "Your Extension Display Name"
+    includes = ["dist/"]  # Include built React code (normally ignored by .gitignore)
+    ```
 
 3. Publish your extension:
-   ```bash
-   comfy-cli publish
-   ```
+
+    ```bash
+    comfy-cli publish
+    ```
 
 4. When prompted, enter your API key
 
@@ -281,9 +318,11 @@ This template includes a GitHub Actions workflow that automatically publishes to
 4. The GitHub Action will automatically run and publish your extension
 
 The workflow configuration is set up in `.github/workflows/react-build.yml` and will trigger when:
-- The `pyproject.toml` file is modified and pushed to the `main` branch
+
+-   The `pyproject.toml` file is modified and pushed to the `main` branch
 
 The workflow automatically:
+
 1. Sets up Node.js environment
 2. Installs dependencies (`npm install`)
 3. Builds the React extension (`npm run build`)
@@ -303,21 +342,21 @@ npm run test:watch
 
 Example tests can be found in the `src/__tests__` directory. The setup includes:
 
-- Jest for running tests
-- React Testing Library for testing components
-- Mock implementation of the ComfyUI window.app object
+-   Jest for running tests
+-   React Testing Library for testing components
+-   Mock implementation of the ComfyUI window.app object
 
 ## Resources
 
-- [ComfyUI JS Extension Documentation](https://docs.comfy.org/custom-nodes/js/javascript_overview) - Official documentation for ComfyUI JavaScript Extensions
-- [ComfyUI Registry Documentation](https://docs.comfy.org/registry/publishing) - Learn how to publish your extension
-- [ComfyUI Frontend Repository](https://github.com/sammykumar/ComfyUI-Frontend) - The main ComfyUI frontend codebase
-- [Official ComfyUI Frontend Types](https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types) - TypeScript definitions for ComfyUI
-- [React Extension Guide](REACT_EXTENSION_GUIDE.md) - Detailed guide for creating React extensions
-- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
-- [React Documentation](https://react.dev/reference/react)
-- [Jest Documentation](https://jestjs.io/docs/getting-started)
-- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+-   [ComfyUI JS Extension Documentation](https://docs.comfy.org/custom-nodes/js/javascript_overview) - Official documentation for ComfyUI JavaScript Extensions
+-   [ComfyUI Registry Documentation](https://docs.comfy.org/registry/publishing) - Learn how to publish your extension
+-   [ComfyUI Frontend Repository](https://github.com/sammykumar/ComfyUI-Frontend) - The main ComfyUI frontend codebase
+-   [Official ComfyUI Frontend Types](https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types) - TypeScript definitions for ComfyUI
+-   [React Extension Guide](REACT_EXTENSION_GUIDE.md) - Detailed guide for creating React extensions
+-   [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+-   [React Documentation](https://react.dev/reference/react)
+-   [Jest Documentation](https://jestjs.io/docs/getting-started)
+-   [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 
 ## Contributing
 
