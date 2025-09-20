@@ -10,7 +10,7 @@ authors = [
   {name = "Sam Kumar", email = "sam@skproductions.llc"}
 ]
 readme = "README.md"
-license = {text = "GNU General Public License v3"}
+license = { file = "LICENSE" }  
 requires-python = ">=3.10"
 classifiers = []
 dependencies = [
