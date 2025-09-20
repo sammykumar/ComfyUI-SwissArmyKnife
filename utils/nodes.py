@@ -1000,8 +1000,7 @@ class FilenameGenerator:
 
     def generate_filename(self, scheduler, shift, total_steps, shift_step, high_cfg, low_cfg, base_filename, subdirectory_prefix, add_date_subdirectory):
         """
-        Generate a structured filename based on the provided parameters.
-        
+        Generate a structured filename based on the provided parameters.        
         Args:
             scheduler: Scheduler string from scheduler node
             shift: Shift value
@@ -1012,7 +1011,6 @@ class FilenameGenerator:
             base_filename: Base filename
             subdirectory_prefix: Optional subdirectory prefix
             add_date_subdirectory: Whether to add date subdirectory
-        
         Returns:
             Generated filename string
         """
