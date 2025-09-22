@@ -56,6 +56,10 @@ class GeminiUtilOptions:
                     "default": "Yes",
                     "tooltip": "Whether to include subject/person descriptions in the first paragraph"
                 }),
+                "replace_action_with_twerking": (["Yes", "No"], {
+                    "default": "No",
+                    "tooltip": "Replace video movement/action description with twerking description"
+                }),
                 "prefix_text": ("STRING", {
                     "multiline": True,
                     "default": "",
@@ -69,7 +73,7 @@ class GeminiUtilOptions:
     FUNCTION = "create_options"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def create_options(self, gemini_api_key, gemini_model, prompt_style, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, prefix_text):
+    def create_options(self, gemini_api_key, gemini_model, prompt_style, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text):
         """
         Create an options object with all the configuration settings
         """
@@ -81,6 +85,7 @@ class GeminiUtilOptions:
             "describe_hair_style": describe_hair_style == "Yes", 
             "describe_bokeh": describe_bokeh == "Yes",
             "describe_subject": describe_subject == "Yes",
+            "replace_action_with_twerking": replace_action_with_twerking == "Yes",
             "prefix_text": prefix_text
         }
         return (options,)
@@ -437,7 +442,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Image analysis failed: {str(e)}")
 
-    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text):
+    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text):
         """
         Process video using logic from GeminiVideoDescribe
         """
@@ -481,7 +486,12 @@ Describe the visible environment clearly and vividly."""
             paragraph_num += 1
 
             # Movement paragraph
-            movement_prompt = f"""
+            if replace_action_with_twerking:
+                movement_prompt = f"""
+{paragraph_num}. MOVEMENT ({self._ordinal(paragraph_num)} Paragraph)
+Describe the initial pose and body position in the first frame of the video. Then append: "A woman is twerking and shaking her ass. She has a curvy body and a huge ass. """
+            else:
+                movement_prompt = f"""
 {paragraph_num}. MOVEMENT ({self._ordinal(paragraph_num)} Paragraph)
 In this paragraph, describe body-part–specific movement and how it aligns with musical rhythm and beat structure. Begin with an overall summary: e.g., 'The subject initiates with a hip sway on the downbeat…'. Then narrate movement chronologically, using precise action verbs and transitions like 'then', 'as', and 'after', referencing the timeline (e.g., early/mid/late beat or second). Specify which body parts move, how they articulate (e.g., 'the right arm lifts upward, then sweeps outward; the torso tilts as the knees bend'), describe footwork, weight shifts, and alignment with music beats. Also include any camera movement (e.g., 'camera pans to follow the torso shift'). Avoid general labels—focus on locomotor and non‑locomotor gestures, repetition, rhythm, and choreography phrasing. Always include any buttock or breast movements that you see"""
             prompts.append(movement_prompt)
@@ -792,6 +802,7 @@ Generate descriptions that adhere to the following structured layers and constra
                 "describe_hair_style": True,
                 "describe_bokeh": True,
                 "describe_subject": True,
+                "replace_action_with_twerking": False,
                 "prefix_text": ""
             }
 
@@ -803,6 +814,7 @@ Generate descriptions that adhere to the following structured layers and constra
         describe_hair_style = gemini_options["describe_hair_style"]
         describe_bokeh = gemini_options["describe_bokeh"]
         describe_subject = gemini_options["describe_subject"]
+        replace_action_with_twerking = gemini_options.get("replace_action_with_twerking", False)
         prefix_text = gemini_options["prefix_text"]
 
         try:
@@ -917,7 +929,7 @@ Directory scan results:
             else:
                 # Process as video - delegate to video logic  
                 return self._process_video(
-                    gemini_api_key, gemini_model, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, prefix_text,
+                    gemini_api_key, gemini_model, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text,
                     selected_media_path, frame_rate, max_duration, media_info_text
                 )
 
