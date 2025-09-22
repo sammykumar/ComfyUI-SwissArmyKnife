@@ -343,6 +343,7 @@ The following options control which modules are included and how they behave:
 -   **describe_clothing** (default: No): Whether to include the Clothing module
 -   **describe_hair_style** (default: Yes): Whether to include hair descriptions in the Subject module
 -   **describe_bokeh** (default: Yes): Whether to allow bokeh/depth-of-field descriptions in the Cinematic module
+-   **replace_action_with_twerking** (default: No): Whether to replace video movement description with twerking content (video only)
 -   **model_type**:
     -   "Text2Image": Uses structured paragraph approach
     -   "ImageEdit": Uses single-sentence Qwen-Image-Edit format
