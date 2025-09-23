@@ -44,6 +44,10 @@ class GeminiUtilOptions:
                     "default": "Yes",
                     "tooltip": "Whether to include detailed clothing and accessory descriptions"
                 }),
+                "change_clothing_color": (["Yes", "No"], {
+                    "default": "No",
+                    "tooltip": "If enabled, adjust clothing color descriptions to new colors that harmonize with the scene and differ from the original colors"
+                }),
                 "describe_hair_style": (["Yes", "No"], {
                     "default": "Yes",
                     "tooltip": "Whether to include hair style descriptions (texture and motion, but not color or length)"
@@ -73,7 +77,7 @@ class GeminiUtilOptions:
     FUNCTION = "create_options"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def create_options(self, gemini_api_key, gemini_model, prompt_style, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text):
+    def create_options(self, gemini_api_key, gemini_model, prompt_style, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text):
         """
         Create an options object with all the configuration settings
         """
@@ -82,6 +86,7 @@ class GeminiUtilOptions:
             "gemini_model": gemini_model,
             "model_type": prompt_style,  # Keep internal key as model_type for backward compatibility
             "describe_clothing": describe_clothing == "Yes",
+            "change_clothing_color": change_clothing_color == "Yes",
             "describe_hair_style": describe_hair_style == "Yes", 
             "describe_bokeh": describe_bokeh == "Yes",
             "describe_subject": describe_subject == "Yes",
@@ -154,7 +159,7 @@ class GeminiMediaDescribe:
             print("FFmpeg not found. Please install ffmpeg to use duration trimming.")
             return False
 
-    def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text):
+    def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text):
         """
         Process image using logic from GeminiImageDescribe
         """
@@ -206,6 +211,8 @@ Mood/genre descriptors (e.g., "noir-inspired silhouette," "cinematic realism," e
                     clothing_prompt = f"""
 CLOTHING ({self._ordinal(paragraph_num)} Paragraph)
 Describe all visible clothing and accessories with absolute certainty and definitiveness. Be specific: identify garment type with confidence, state definitive color(s), material/texture, fit/silhouette, length, notable construction (seams, straps, waistbands), and condition. Include footwear if visible and describe exactly how fabrics respond to motion (stretching, swaying, tightening, wrinkling). Make decisive choices when multiple interpretations are possible - choose one specific description and state it as fact. Do not describe any text, typography, words, letters, logos, brand names, or written content visible on clothing or accessories. Exclude tattoos, glasses, and other prohibited attributes."""
+                    if change_clothing_color:
+                        clothing_prompt += "\nAdditionally, do not repeat the original clothing colors you infer from the media. Instead, change the clothing color descriptions to NEW hues that harmonize with the scene's lighting and palette while being different from the original colors. Prefer complementary, analogous, or neutral tones that fit the environment; state the NEW colors decisively (e.g., 'a deep forest-green jacket' even if the original is different). Never mention or compare to the original color."
                     paragraph_num += 1
 
                 paragraph_count = paragraph_num - 1
@@ -221,6 +228,9 @@ Describe all visible clothing and accessories with absolute certainty and defini
                 # Add bokeh restriction if needed
                 if not describe_bokeh:
                     critical_note += " Never mention depth of field, bokeh, blur, optics, DOF, rack focus, or any depth-related visual effects."
+
+                if describe_clothing and change_clothing_color:
+                    critical_note += " When stating clothing colors, only state the NEW, scene-harmonized colors (different from original); never mention the original colors."
 
                 critical_note += " Never mention prohibited attributes, even if visible. Be completely decisive and definitive in all descriptions - eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."
 
@@ -263,9 +273,13 @@ Generate descriptions that adhere to the following structured layers and constra
                     else:
                         clothing_note = f"describe {traits_instruction} only (avoid clothing, age, ethnicity, tattoos, hair color, etc.)"
 
+                    change_colors_clause = ""
+                    if describe_clothing and change_clothing_color:
+                        change_colors_clause = ", and change all clothing colors to NEW hues that harmonize with the scene while being different from the original colors (do not reuse or mention original colors; choose complementary/analogous/neutral tones and state them explicitly)"
+
                     system_prompt = f"""You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Instead of "holding a black folder or book", write "holding a black folder".
 
-Always begin with "Make this person…", include vivid, focused scene details (e.g. bedroom props, lights, furniture or gym bench, textured wall, window views) early to anchor the setting{"," if focus_instruction else ""} {focus_instruction}, {clothing_note}, include clear torso and head orientation (e.g., "back facing the camera with torso turned 45° and head looking over her shoulder toward viewer"), reference cinematic aesthetic cues (lighting, framing, lens, shot type), anchor realism by stating skin shows subtle pores, light wrinkles, and realistic surface detail, end with "keep everything else unchanged," and include negative safeguards like "no distortion, no blur artifacts{focus_safeguards}.\""""
+Always begin with "Make this person…", include vivid, focused scene details (e.g. bedroom props, lights, furniture or gym bench, textured wall, window views) early to anchor the setting{"," if focus_instruction else ""} {focus_instruction}, {clothing_note}{change_colors_clause}, include clear torso and head orientation (e.g., "back facing the camera with torso turned 45° and head looking over her shoulder toward viewer"), reference cinematic aesthetic cues (lighting, framing, lens, shot type), anchor realism by stating skin shows subtle pores, light wrinkles, and realistic surface detail, end with "keep everything else unchanged," and include negative safeguards like "no distortion, no blur artifacts{focus_safeguards}.\""""
                 else:
                     # No subject description - focus on environment/scene only
                     traits_instruction = ", ".join(traits_list) if traits_list else "environment details only"
@@ -340,6 +354,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             # Build options dict for caching
             cache_options = {
                 "describe_clothing": describe_clothing,
+                "change_clothing_color": change_clothing_color,
                 "describe_hair_style": describe_hair_style,
                 "describe_bokeh": describe_bokeh,
                 "describe_subject": describe_subject
@@ -442,7 +457,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Image analysis failed: {str(e)}")
 
-    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text):
+    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text):
         """
         Process video using logic from GeminiVideoDescribe
         """
@@ -474,6 +489,8 @@ Strictly exclude any reference to ethnicity, age, body type, tattoos, glasses, h
                 clothing_prompt = f"""
 {paragraph_num}. CLOTHING ({self._ordinal(paragraph_num)} Paragraph)
 Describe all visible clothing and accessories with absolute certainty and definitiveness. Be specific: identify garment type with confidence, state definitive color(s), material/texture, fit/silhouette, length, notable construction (seams, straps, waistbands), and condition. Include footwear if visible and describe exactly how fabrics respond to motion (stretching, swaying, tightening, wrinkling). Make decisive choices when multiple interpretations are possible - choose one specific description and state it as fact. Do not describe any text, typography, words, letters, logos, brand names, or written content visible on clothing or accessories. Exclude tattoos, glasses, and other prohibited attributes."""
+                if change_clothing_color:
+                    clothing_prompt += "\nAdditionally, do not repeat the original clothing colors you infer from the video. Instead, change the clothing color descriptions to NEW hues that harmonize with the scene's lighting and palette while being different from the original colors. Prefer complementary, analogous, or neutral tones that fit the environment; state the NEW colors decisively, and never reference the original color."
                 paragraph_num += 1
             else:
                 clothing_prompt = ""
@@ -526,6 +543,8 @@ Mood/genre descriptors (e.g., "noir-inspired silhouette," "cinematic realism," e
                 critical_note += " DO NOT describe people, subjects, or human figures in any paragraph."
             if not describe_bokeh:
                 critical_note += " Never mention depth of field, bokeh, blur, optics, DOF, rack focus, or any depth-related visual effects."
+            if describe_clothing and change_clothing_color:
+                critical_note += " When stating clothing colors, only state the NEW, scene-harmonized colors (different from original); never mention the original colors."
             critical_note += " Never mention prohibited attributes, even if visible. Be completely decisive and definitive in all descriptions - eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."
 
             # Combine all parts
@@ -611,6 +630,7 @@ Generate descriptions that adhere to the following structured layers and constra
             # Build options dict for caching
             cache_options = {
                 "describe_clothing": describe_clothing,
+                "change_clothing_color": change_clothing_color,
                 "describe_hair_style": describe_hair_style,
                 "describe_bokeh": describe_bokeh,
                 "describe_subject": describe_subject,
@@ -799,6 +819,7 @@ Generate descriptions that adhere to the following structured layers and constra
                 "gemini_model": "models/gemini-2.5-flash",
                 "model_type": "Text2Image",
                 "describe_clothing": False,
+                "change_clothing_color": False,
                 "describe_hair_style": True,
                 "describe_bokeh": True,
                 "describe_subject": True,
@@ -811,6 +832,7 @@ Generate descriptions that adhere to the following structured layers and constra
         gemini_model = gemini_options["gemini_model"]
         model_type = gemini_options["model_type"]
         describe_clothing = gemini_options["describe_clothing"]
+        change_clothing_color = gemini_options.get("change_clothing_color", False)
         describe_hair_style = gemini_options["describe_hair_style"]
         describe_bokeh = gemini_options["describe_bokeh"]
         describe_subject = gemini_options["describe_subject"]
@@ -923,13 +945,13 @@ Directory scan results:
             if media_type == "image":
                 # Process as image - delegate to image logic
                 return self._process_image(
-                    gemini_api_key, gemini_model, model_type, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, prefix_text,
+                    gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text,
                     None, selected_media_path, media_info_text
                 )
             else:
                 # Process as video - delegate to video logic  
                 return self._process_video(
-                    gemini_api_key, gemini_model, describe_clothing, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text,
+                    gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text,
                     selected_media_path, frame_rate, max_duration, media_info_text
                 )
 
