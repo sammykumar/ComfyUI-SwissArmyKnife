@@ -1,10 +1,11 @@
 # ComfyUI-SwissArmyKnife
 
-A collection of custom nodes for ComfyUI featuring Gemini AI integration for video and image analysis, with a complete development environment using GPU-accelerated containers.
+A collection of custom nodes for ComfyUI featuring Gemini AI integration for video and image analysis, plus VideoHelperSuite functionality, with a complete development environment using GPU-accelerated containers.
 
 ## Features
 
 -   **🤖 Gemini AI Integration**: Video, image, and media analysis using Google's Gemini AI
+-   **🎥 Video Processing Suite**: Complete VideoHelperSuite functionality (VHS-SK) 
 -   **🎮 JavaScript Widgets**: Enhanced ComfyUI interfaces with custom video controls
 -   **🐳 Dev Container Support**: GPU-enabled development environment with mmartial/ComfyUI-Nvidia-Docker
 -   **🧪 Full Testing Suite**: Python and JavaScript testing with CI/CD integration
@@ -91,15 +92,39 @@ pre-commit install
 
 ## Available Nodes
 
-### Backend Nodes (Python)
+### Gemini AI Nodes (Python)
 
 -   **GeminiUtilVideoDescribe**: Analyze videos using Gemini AI
 -   **GeminiUtilImageDescribe**: Analyze images using Gemini AI
 -   **GeminiUtilMediaDescribe**: Multi-media analysis functionality
 
-### Web Extension (JavaScript)
+### VHS-SK Nodes (VideoHelperSuite)
 
--   **Video Controls Widget**: Enhanced video timeline controls with trimming
+The complete VideoHelperSuite has been forked into this repository as VHS-SK:
+
+**I/O Nodes:**
+-   **VHS_LoadVideo**: Load video files with frame rate/size control
+-   **VHS_LoadVideoPath**: Load videos from external paths  
+-   **VHS_LoadImages**: Load image sequences from directories
+-   **VHS_LoadImagesPath**: Load image sequences from external paths
+-   **VHS_VideoCombine**: Combine images into video with audio support
+-   **VHS_LoadAudio**: Load standalone audio files
+
+**Batch Processing Nodes:**
+-   **VHS_SplitLatents/Images/Masks**: Split batches into two groups
+-   **VHS_MergeLatents/Images/Masks**: Merge two batches
+-   **VHS_SelectEveryNthLatent/Image/Mask**: Select every Nth item from batch
+-   **VHS_GetLatentCount/ImageCount/MaskCount**: Get count of items in batch  
+-   **VHS_DuplicateLatents/Images/Masks**: Duplicate batches
+
+**Advanced Nodes:**
+-   **VHS_VAEEncodeBatched**: Batch VAE encoding
+-   **VHS_VAEDecodeBatched**: Batch VAE decoding
+
+### Web Extensions (JavaScript)
+
+-   **Gemini Video Controls**: Enhanced video timeline controls with trimming
+-   **VHS Video Previews**: Advanced video preview functionality
 -   **Custom Styling**: Themed UI components that integrate with ComfyUI
 
 ## 🔐 API Key Configuration
