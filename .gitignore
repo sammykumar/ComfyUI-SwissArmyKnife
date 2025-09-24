@@ -152,4 +152,5 @@ cache/
 .cache/
 
 # ComfyUI Local
+.comfyui/
 .comfyui-user/

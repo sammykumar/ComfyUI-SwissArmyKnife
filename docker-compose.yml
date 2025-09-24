@@ -9,7 +9,8 @@ services:
             # Mount your custom node directory
             - .:/workspace/ComfyUI/custom_nodes/ComfyUI-SwissArmyKnife
             # Mount user settings and workflows for persistence
-            - ./.comfyui-user:/workspace/ComfyUI/user
+            - ./.comfyui/user:/workspace/ComfyUI/user
+            - ./.comfyui/models/loras:/workspace/ComfyUI/models/loras
         environment:
             # Pass through your Gemini API key
             - GEMINI_API_KEY=${GEMINI_API_KEY}

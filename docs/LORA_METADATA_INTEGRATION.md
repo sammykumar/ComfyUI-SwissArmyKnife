@@ -6,13 +6,24 @@ The LoRA Metadata Integration feature enables automatic extraction of LoRA names
 
 ## Architecture
 
-The solution consists of two main components:
+The solution consists of three main components:
 
-### 1. LoRAInfoExtractor Node
+### 1. CivitAI Service Module
 
-A new custom node that extracts LoRA information from various input formats:
+A dedicated service (`utils/civitai_service.py`) that handles CivitAI API integration:
+
+- **File Hash Calculation**: SHA256 hash generation for LoRA files
+- **API Integration**: Queries CivitAI's API using file hashes
+- **Caching**: Intelligent caching to avoid repeated API calls
+- **Error Handling**: Robust error handling for network issues and missing models
+
+### 2. LoRAInfoExtractor Node
+
+A new custom node that extracts LoRA information with CivitAI integration:
 
 - **Input**: Accepts `WANVIDLORA` type from WanVideoWrapper LoRA loading nodes
+- **CivitAI Lookup**: Automatically queries CivitAI API for official model names
+- **Fallback Support**: Falls back to local metadata extraction if CivitAI lookup fails
 - **Output**: Returns `lora_name` (string), `lora_info` (formatted info), and `lora_passthrough` (original input)
 - **Compatibility**: Specifically designed for WanVideoWrapper LoRA objects with WANVIDLORA type
 
@@ -46,36 +57,43 @@ The existing VideoMetadataNode has been extended with:
                             [Final Video with LoRA Metadata]
 ```
 
-## Supported LoRA Input Formats
+## LoRA Information Extraction
 
-The LoRAInfoExtractor node can handle various LoRA input formats:
+The LoRAInfoExtractor uses a multi-stage approach to extract LoRA names:
 
-### 1. WanVideoWrapper LoRA Objects
+### 1. CivitAI API Lookup (Primary Method)
 
-- Dictionary-like objects with metadata
-- Attributes like `civitai_name`, `name`, `model_name`
+When `use_civitai_api` is enabled (default), the node:
 
-### 2. Dictionary Format
+1. **Extracts File Path**: Searches WANVIDLORA objects for file paths
+2. **Calculates Hash**: Generates SHA256 hash of the LoRA file
+3. **Queries CivitAI**: Uses hash to lookup official model information
+4. **Returns Official Data**: Model name, creator, version, and metadata
 
-```python
+### 2. Local Metadata Extraction (Fallback)
+
+If CivitAI lookup fails or is disabled, falls back to:
+
+- **WanVideoWrapper Objects**: Dictionary-like objects with metadata
+- **Embedded Metadata**: Attributes like `civitai_name`, `name`, `model_name`
+- **Dictionary Format**: Standard key-value metadata structures
+- **Tuple/List Format**: Structured LoRA data formats
+- **Filename Strings**: Direct file path processing
+
+### 3. CivitAI API Response Structure
+
+```json
 {
-    "civitai_name": "Cinematic Style LoRA",
-    "filename": "cinematic_style.safetensors",
-    "model_name": "Cinematic"
+    "civitai_name": "Realistic Vision V6.0 B1",
+    "version_name": "v6.0 (B1)",
+    "creator": "SG_161222",
+    "description": "Photorealistic model...",
+    "civitai_url": "https://civitai.com/models/4201",
+    "model_id": "4201",
+    "tags": ["photarealism", "portraits"],
+    "type": "Checkpoint",
+    "nsfw": false
 }
-```
-
-### 3. Tuple/List Format
-
-```python
-(model_object, "LoRA Name")
-(model_object, {"name": "LoRA Name"})
-```
-
-### 4. Filename Strings
-
-```python
-"/path/to/cinematic_style.safetensors"
 ```
 
 ## Metadata Embedding
@@ -109,12 +127,20 @@ The LoRAInfoExtractor automatically cleans and normalizes LoRA names:
 
 - `lora` (required, WANVIDLORA type): LoRA object from WanVideoWrapper LoRA loading nodes
 - `fallback_name` (optional, string): Fallback name if extraction fails
+- `use_civitai_api` (optional, boolean, default: True): Whether to query CivitAI API for metadata
 
 **Outputs:**
 
-- `lora_name` (string): Cleaned and normalized LoRA name
-- `lora_info` (string): Formatted info string: "LoRA: [name]"
+- `lora_name` (string): Official CivitAI name or cleaned local name
+- `lora_info` (string): Formatted info string with source indicator
 - `lora_passthrough` (WANVIDLORA): Original LoRA input for chaining
+
+**Output Format Examples:**
+
+- CivitAI Success: `"CivitAI: Realistic Vision V6.0 by SG_161222"`
+- CivitAI with Version: `"CivitAI: Realistic Vision V6.0 (B1) by SG_161222"`
+- Local Fallback: `"Local: Cinematic Style"`
+- Fallback Name: `"Fallback: Custom LoRA"`
 
 **Category:** Swiss Army Knife 🔪
 
@@ -163,20 +189,72 @@ FFmpeg metadata commands generated:
 -metadata 'lora=[name]'
 ```
 
+## CivitAI API Setup
+
+### Environment Variable Configuration
+
+1. **Get CivitAI API Key**: Visit [CivitAI API Settings](https://civitai.com/user/account) to generate an API key
+2. **Set Environment Variable**: Add your API key to your environment:
+
+```bash
+# In your .env file
+CIVITAI_API_KEY=your_api_key_here
+
+# Or set directly in environment
+export CIVITAI_API_KEY=your_api_key_here
+```
+
+3. **Docker Configuration**: If using Docker, add to docker-compose.yml:
+
+```yaml
+environment:
+    - CIVITAI_API_KEY=${CIVITAI_API_KEY}
+```
+
+### API Key Benefits
+
+- **Higher Rate Limits**: Authenticated requests have higher rate limits
+- **Access to Private Models**: Can access your private models on CivitAI
+- **Better Error Handling**: More detailed error messages for authenticated requests
+
+### Without API Key
+
+The integration works without an API key but with limitations:
+
+- Lower rate limits (may hit rate limiting faster)
+- Only public models are accessible
+- Basic error messages
+
 ## Usage Examples
 
-### Example 1: Basic Usage
+### Example 1: Basic Usage with CivitAI
 
 1. Add **LoRAInfoExtractor** node to workflow
 2. Connect WanVideoWrapper LoRA output to `lora`
-3. Connect `lora_name` output to **VideoMetadataNode** `lora_name` input
-4. Process video as normal
+3. Ensure `use_civitai_api` is enabled (default)
+4. Connect `lora_name` output to **VideoMetadataNode** `lora_name` input
+5. Process video - CivitAI lookup happens automatically
 
-### Example 2: With Fallback Name
+**Expected Result**: `"CivitAI: Realistic Vision V6.0 by SG_161222"`
 
-1. Set `fallback_name` to "Custom LoRA" in LoRAInfoExtractor
-2. If automatic extraction fails, "Custom LoRA" will be used
-3. Useful for unknown LoRA formats or file-based LoRAs
+### Example 2: Local-Only Mode
+
+1. Set `use_civitai_api` to `False` in LoRAInfoExtractor
+2. Set `fallback_name` to "Custom LoRA" if desired
+3. Only local metadata extraction will be used
+
+**Expected Result**: `"Local: Cinematic Style"` or `"Fallback: Custom LoRA"`
+
+### Example 3: Hybrid Approach with Fallback
+
+1. Enable CivitAI API (default)
+2. Set meaningful `fallback_name` for unknown models
+3. CivitAI lookup attempted first, fallback used if needed
+
+**Results**:
+
+- Found on CivitAI: `"CivitAI: Epic Realism by epiCRealism"`
+- Not found: `"Fallback: Custom Fantasy LoRA"`
 
 ### Example 3: Chaining Multiple LoRAs
 
@@ -234,19 +312,39 @@ FFmpeg metadata commands generated:
 - **Solution**: Restart ComfyUI server after installation
 - **Debug**: Check Python import errors in ComfyUI logs
 
+**Issue**: CivitAI API lookup fails
+
+- **Solution**: Verify `CIVITAI_API_KEY` is set in environment variables
+- **Debug**: Check console for "No CivitAI API key found" messages
+- **Fallback**: Disable `use_civitai_api` to use local extraction only
+
+**Issue**: "Model not found on CivitAI" message
+
+- **Solution**: Model may not be uploaded to CivitAI, use fallback_name
+- **Debug**: Verify file hash calculation is working correctly
+- **Alternative**: Use local-only mode for custom/private models
+
 ### Debug Information
 
 Enable debug logging by checking ComfyUI console output when using the nodes. The LoRAInfoExtractor will show extraction attempts and results.
+
+### CivitAI API Debug Steps
+
+1. **Verify API Key**: Check environment variable is set correctly
+2. **Test Hash Calculation**: Confirm SHA256 hash is generated for LoRA files
+3. **Check API Response**: Look for HTTP errors or "not found" responses
+4. **Fallback Testing**: Ensure local extraction works when CivitAI fails
 
 ## Future Enhancements
 
 Potential improvements for future versions:
 
-1. **CivitAI API Integration**: Direct lookup of LoRA names by hash
+1. **✅ CivitAI API Integration**: ~~Direct lookup of LoRA names by hash~~ - **IMPLEMENTED**
 2. **Safetensors Metadata Reading**: Parse embedded metadata from .safetensors files
 3. **Multiple LoRA Support**: Handle arrays of LoRA inputs
 4. **Advanced Name Mapping**: User-configurable name transformations
-5. **Caching**: Cache extracted names to improve performance
+5. **Enhanced Caching**: Persistent cache for CivitAI lookups across sessions
+6. **Batch Processing**: Support for multiple LoRA nodes in single operations
 
 ## Related Documentation
 

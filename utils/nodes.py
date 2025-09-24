@@ -7,11 +7,9 @@ import subprocess
 import numpy as np
 from PIL import Image
 import io
-import json
-import hashlib
-import glob
 from datetime import datetime
 from .cache import get_cache, get_file_media_identifier, get_tensor_media_identifier
+from .civitai_service import CivitAIService
 
 
 class GeminiUtilOptions:
@@ -1110,7 +1108,7 @@ class LoRAInfoExtractor:
     """
 
     def __init__(self):
-        pass
+        self.civitai_service = CivitAIService()
 
     @classmethod
     def INPUT_TYPES(s):
@@ -1125,6 +1123,10 @@ class LoRAInfoExtractor:
                     "default": "",
                     "tooltip": "Fallback name if CivitAI name cannot be extracted"
                 }),
+                "use_civitai_api": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Whether to query CivitAI API for metadata (requires CIVITAI_API_KEY environment variable)"
+                }),
             }
         }
 
@@ -1133,22 +1135,47 @@ class LoRAInfoExtractor:
     FUNCTION = "extract_lora_info"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def extract_lora_info(self, lora, fallback_name=""):
+    def extract_lora_info(self, lora, fallback_name="", use_civitai_api=True):
         """
-        Extract LoRA name and info from the input.
-        
+        Extract LoRA name and info from the input, optionally using CivitAI API.
+
         Args:
             lora: LoRA object from WanVideoWrapper or similar
             fallback_name: Fallback name if extraction fails
-            
+            use_civitai_api: Whether to query CivitAI API for metadata
+
         Returns:
             tuple: (lora_name, lora_info, lora_passthrough)
         """
         try:
             lora_name = "Unknown LoRA"
             lora_info = "No information available"
-            
-            # Try to extract from different possible input formats
+
+            # First, try to get file path from LoRA object for CivitAI lookup
+            file_path = self._extract_file_path(lora)
+
+            # If we have a file path and CivitAI lookup is enabled
+            if file_path and use_civitai_api:
+                print(f"Attempting CivitAI lookup for: {os.path.basename(file_path)}")
+                civitai_data = self.civitai_service.get_model_info_by_hash(file_path)
+                if civitai_data:
+                    lora_name = civitai_data["civitai_name"]
+                    creator = civitai_data["creator"]
+                    version = civitai_data["version_name"]
+
+                    # Create detailed info string
+                    if version and version != lora_name:
+                        lora_info = f"CivitAI: {lora_name} ({version}) by {creator}"
+                    else:
+                        lora_info = f"CivitAI: {lora_name} by {creator}"
+
+                    print(f"Successfully extracted CivitAI name: {lora_name}")
+                    return (lora_name, lora_info, lora)
+                else:
+                    print("No CivitAI data found, falling back to local extraction")
+
+            # Fallback to local metadata extraction
+            print("Using local metadata extraction")
             if hasattr(lora, 'get') and callable(lora.get):
                 # Dictionary-like object
                 lora_name = self._extract_from_dict(lora)
@@ -1161,19 +1188,81 @@ class LoRAInfoExtractor:
             elif isinstance(lora, str):
                 # String filename
                 lora_name = self._extract_from_filename(lora)
-            
+
             # Use fallback if extraction failed
             if lora_name == "Unknown LoRA" and fallback_name.strip():
                 lora_name = fallback_name.strip()
-            
-            # Generate info string
-            lora_info = f"LoRA: {lora_name}"
-            
+                lora_info = f"Fallback: {lora_name}"
+            else:
+                lora_info = f"Local: {lora_name}"
+
             return (lora_name, lora_info, lora)
-            
+
         except Exception as e:
+            print(f"Error in extract_lora_info: {str(e)}")
             error_name = fallback_name if fallback_name.strip() else "Error Extracting LoRA"
             return (error_name, f"Error: {str(e)}", lora)
+
+    def _extract_file_path(self, lora):
+        """
+        Try to extract file path from LoRA object for CivitAI lookup
+
+        Args:
+            lora: WANVIDLORA object from WanVideoWrapper
+
+        Returns:
+            File path string or None if not found
+        """
+        try:
+            # Try common attribute names for file paths
+            path_attributes = ['path', 'file_path', 'filename', 'model_path', 'lora_path']
+
+            for attr in path_attributes:
+                if hasattr(lora, attr):
+                    path_value = getattr(lora, attr)
+                    if path_value and isinstance(path_value, str) and os.path.exists(path_value):
+                        print(f"Found file path via attribute '{attr}': {path_value}")
+                        return path_value
+
+            # Try dictionary-like access
+            if hasattr(lora, 'get') and callable(lora.get):
+                for attr in path_attributes:
+                    path_value = lora.get(attr)
+                    if path_value and isinstance(path_value, str) and os.path.exists(path_value):
+                        print(f"Found file path via dict key '{attr}': {path_value}")
+                        return path_value
+
+            # Try __dict__ access
+            if hasattr(lora, '__dict__'):
+                lora_dict = lora.__dict__
+                for attr in path_attributes:
+                    if attr in lora_dict:
+                        path_value = lora_dict[attr]
+                        if path_value and isinstance(path_value, str) and os.path.exists(path_value):
+                            print(f"Found file path via __dict__['{attr}']: {path_value}")
+                            return path_value
+
+            # Try tuple/list format - sometimes path is in first or second element
+            if isinstance(lora, (tuple, list)) and len(lora) > 0:
+                for i, item in enumerate(lora):
+                    if isinstance(item, str) and os.path.exists(item):
+                        print(f"Found file path at index {i}: {item}")
+                        return item
+
+            # If it's a string path directly
+            if isinstance(lora, str) and os.path.exists(lora):
+                print(f"LoRA is direct file path: {lora}")
+                return lora
+
+            print("No valid file path found in LoRA object")
+            print(f"LoRA type: {type(lora)}")
+            if hasattr(lora, '__dict__'):
+                print(f"LoRA attributes: {list(lora.__dict__.keys())}")
+
+        except Exception as e:
+            print(f"Error extracting file path: {e}")
+
+        return None
 
     def _extract_from_dict(self, lora_dict):
         """Extract name from dictionary-like LoRA object"""
@@ -1214,19 +1303,19 @@ class LoRAInfoExtractor:
         """Clean and normalize the LoRA name"""
         if not name:
             return "Unknown LoRA"
-        
+
         # Convert to string if not already
         name = str(name)
-        
+
         # Remove common prefixes/suffixes
         name = name.replace('.safetensors', '').replace('.ckpt', '').replace('.pt', '')
-        
+
         # Replace underscores with spaces and title case
         name = name.replace('_', ' ').strip()
-        
+
         # Capitalize first letter of each word
         name = ' '.join(word.capitalize() for word in name.split())
-        
+
         return name if name else "Unknown LoRA"
 
 
@@ -1338,13 +1427,13 @@ class VideoMetadataNode:
             # Add metadata options if provided
             if title.strip():
                 cmd.extend(['-metadata', f'title={title.strip()}'])
-            
+
             if description.strip():
                 cmd.extend(['-metadata', f'description={description.strip()}'])
-            
+
             if artist.strip():
                 cmd.extend(['-metadata', f'artist={artist.strip()}'])
-            
+
             # Handle keywords and LoRA name integration
             if lora_name.strip():
                 # Add to keywords if not empty, otherwise create new keywords
@@ -1355,11 +1444,11 @@ class VideoMetadataNode:
                 cmd.extend(['-metadata', f'keywords={combined_keywords}'])
             elif keywords.strip():
                 cmd.extend(['-metadata', f'keywords={keywords.strip()}'])
-            
+
             # Also add LoRA as a custom metadata field
             if lora_name.strip():
                 cmd.extend(['-metadata', f'lora={lora_name.strip()}'])
-            
+
             if comment.strip():
                 cmd.extend(['-metadata', f'comment={comment.strip()}'])
 
@@ -1367,7 +1456,7 @@ class VideoMetadataNode:
             cmd.append(temp_filename)
 
             # Execute FFmpeg command
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
 
             # If we're overwriting the original, move temp file to original location
             if overwrite_original == "Yes":

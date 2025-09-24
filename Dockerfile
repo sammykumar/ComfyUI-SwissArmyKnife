@@ -34,7 +34,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install additional dependencies needed for ComfyUI-SwissArmyKnife
 RUN pip install --no-cache-dir \
     google-genai \
-    opencv-python
+    opencv-python \
+    requests
 
 # Create directories for models and custom nodes if they don't exist
 RUN mkdir -p models custom_nodes input output
@@ -42,6 +43,9 @@ RUN mkdir -p models custom_nodes input output
 # Install ComfyUI-Manager
 RUN cd custom_nodes && \
     git clone https://github.com/ltdrdata/ComfyUI-Manager.git comfyui-manager
+
+# Install ComfyUI-Manager dependencies (includes GitPython and other required packages)
+RUN pip install --no-cache-dir -r custom_nodes/comfyui-manager/requirements.txt
 
 # Expose ComfyUI port
 EXPOSE 8188
