@@ -7,6 +7,7 @@ import subprocess
 import numpy as np
 from PIL import Image
 import io
+import json
 from datetime import datetime
 from .cache import get_cache, get_file_media_identifier, get_tensor_media_identifier
 from .civitai_service import CivitAIService
@@ -1136,13 +1137,13 @@ class LoRAInfoExtractor:
         }
 
     RETURN_TYPES = ("STRING", "STRING", "WANVIDLORA")
-    RETURN_NAMES = ("lora_name", "lora_info", "lora_passthrough")
+    RETURN_NAMES = ("lora_json", "lora_info", "lora_passthrough")
     FUNCTION = "extract_lora_info"
     CATEGORY = "Swiss Army Knife 🔪"
 
     def extract_lora_info(self, lora, civitai_api_key="", fallback_name="", use_civitai_api=True):
         """
-        Extract LoRA names and info from the input, supporting multiple LoRAs from WanVideo Lora Select Multi.
+        Extract LoRA metadata and format as JSON, supporting multiple LoRAs from WanVideo Lora Select Multi.
 
         Args:
             lora: WANVIDLORA list from WanVideoWrapper containing multiple LoRA dictionaries
@@ -1151,7 +1152,10 @@ class LoRAInfoExtractor:
             use_civitai_api: Whether to query CivitAI API for metadata
 
         Returns:
-            tuple: (combined_lora_names, combined_lora_info, lora_passthrough)
+            tuple: (lora_json, lora_info, lora_passthrough)
+                - lora_json: JSON string with structured LoRA data including array of loras, count, and combined_display
+                - lora_info: Human-readable info string for display
+                - lora_passthrough: Original WANVIDLORA object for chaining
         """
         try:
             print(f"[DEBUG] LoRAInfoExtractor.extract_lora_info called:")
@@ -1181,7 +1185,13 @@ class LoRAInfoExtractor:
         except Exception as e:
             print(f"[DEBUG] Error in extract_lora_info: {str(e)}")
             error_name = fallback_name if fallback_name.strip() else "Error Extracting LoRA"
-            return (error_name, f"Error: {str(e)}", lora)
+            error_json = json.dumps({
+                "loras": [],
+                "count": 0,
+                "combined_display": error_name,
+                "error": str(e)
+            }, indent=2)
+            return (error_json, f"Error: {str(e)}", lora)
 
     def _process_multiple_loras(self, lora_list, civitai_service, use_civitai_api, fallback_name):
         """Process multiple LoRAs from WANVIDLORA list"""
@@ -1249,17 +1259,41 @@ class LoRAInfoExtractor:
             lora_infos.append(final_info)
             print(f"[DEBUG] LoRA {i + 1} final result: '{final_name}' -> '{final_info}'")
         
-        # Combine results
+        # Build JSON result
         if lora_names:
-            combined_names = " + ".join(lora_names)
+            lora_json_data = {
+                "loras": [],
+                "count": len(lora_names),
+                "combined_display": " + ".join(lora_names)
+            }
+            
+            # Add each LoRA's data to the JSON
+            for i, (name, info, lora_dict) in enumerate(zip(lora_names, lora_infos, valid_loras)):
+                lora_entry = {
+                    "index": i,
+                    "name": name,
+                    "info": info,
+                    "path": lora_dict.get('path'),
+                    "strength": lora_dict.get('strength', 1.0),
+                    "has_civitai_data": "CivitAI:" in info
+                }
+                lora_json_data["loras"].append(lora_entry)
+            
+            json_output = json.dumps(lora_json_data, indent=2)
             combined_info = "\n".join([f"• {info}" for info in lora_infos])
             print(f"[DEBUG] ✅ Successfully processed {len(lora_names)} LoRAs")
-            return (combined_names, combined_info, lora_list)
+            return (json_output, combined_info, lora_list)
         else:
             # No valid LoRAs found
             fallback_result = fallback_name if fallback_name.strip() else "No Valid LoRAs"
+            fallback_json = json.dumps({
+                "loras": [],
+                "count": 0,
+                "combined_display": fallback_result,
+                "error": "No valid LoRAs found"
+            }, indent=2)
             print(f"[DEBUG] ❌ No valid LoRAs found, using fallback: {fallback_result}")
-            return (fallback_result, f"Fallback: {fallback_result}", lora_list)
+            return (fallback_json, f"Fallback: {fallback_result}", lora_list)
 
     def _process_single_lora(self, lora, civitai_service, use_civitai_api, fallback_name):
         """Process single LoRA object (compatibility mode)"""
@@ -1285,7 +1319,21 @@ class LoRAInfoExtractor:
                 else:
                     lora_info = f"CivitAI: {lora_name} by {creator}"
                 
-                return (lora_name, lora_info, lora)
+                # Return JSON format for consistency
+                civitai_lora_json = json.dumps({
+                    "loras": [{
+                        "index": 0,
+                        "name": lora_name,
+                        "info": lora_info,
+                        "path": file_path,
+                        "strength": 1.0,
+                        "has_civitai_data": True
+                    }],
+                    "count": 1,
+                    "combined_display": lora_name
+                }, indent=2)
+                
+                return (civitai_lora_json, lora_info, lora)
         
         # Fallback to local extraction
         print(f"[DEBUG] Using local extraction for single LoRA")
@@ -1305,7 +1353,21 @@ class LoRAInfoExtractor:
         else:
             lora_info = f"Local: {lora_name}"
         
-        return (lora_name, lora_info, lora)
+        # Return JSON format for consistency
+        single_lora_json = json.dumps({
+            "loras": [{
+                "index": 0,
+                "name": lora_name,
+                "info": lora_info,
+                "path": file_path,
+                "strength": 1.0,
+                "has_civitai_data": "CivitAI:" in lora_info
+            }],
+            "count": 1,
+            "combined_display": lora_name
+        }, indent=2)
+        
+        return (single_lora_json, lora_info, lora)
 
     def _extract_file_path(self, lora):
         """
