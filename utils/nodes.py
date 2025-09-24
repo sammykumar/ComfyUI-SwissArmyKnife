@@ -1116,7 +1116,7 @@ class LoRAInfoExtractor:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "lora": ("*", {
+                "lora": ("WANVIDLORA", {
                     "tooltip": "LoRA input from WanVideoWrapper or other LoRA loading nodes"
                 }),
             },
@@ -1128,7 +1128,7 @@ class LoRAInfoExtractor:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "*")
+    RETURN_TYPES = ("STRING", "STRING", "WANVIDLORA")
     RETURN_NAMES = ("lora_name", "lora_info", "lora_passthrough")
     FUNCTION = "extract_lora_info"
     CATEGORY = "Swiss Army Knife 🔪"

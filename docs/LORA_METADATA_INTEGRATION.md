@@ -12,9 +12,9 @@ The solution consists of two main components:
 
 A new custom node that extracts LoRA information from various input formats:
 
-- **Input**: Accepts `*` (any) type to handle different LoRA formats
+- **Input**: Accepts `WANVIDLORA` type from WanVideoWrapper LoRA loading nodes
 - **Output**: Returns `lora_name` (string), `lora_info` (formatted info), and `lora_passthrough` (original input)
-- **Compatibility**: Works with WanVideoWrapper LoRA objects, dictionary formats, tuple/list formats, and filename strings
+- **Compatibility**: Specifically designed for WanVideoWrapper LoRA objects with WANVIDLORA type
 
 ### 2. Enhanced VideoMetadataNode
 
@@ -107,14 +107,14 @@ The LoRAInfoExtractor automatically cleans and normalizes LoRA names:
 
 **Inputs:**
 
-- `lora` (required, any type): LoRA object from any LoRA loading node
+- `lora` (required, WANVIDLORA type): LoRA object from WanVideoWrapper LoRA loading nodes
 - `fallback_name` (optional, string): Fallback name if extraction fails
 
 **Outputs:**
 
 - `lora_name` (string): Cleaned and normalized LoRA name
 - `lora_info` (string): Formatted info string: "LoRA: [name]"
-- `lora_passthrough` (any): Original LoRA input for chaining
+- `lora_passthrough` (WANVIDLORA): Original LoRA input for chaining
 
 **Category:** Swiss Army Knife 🔪
 
