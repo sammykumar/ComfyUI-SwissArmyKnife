@@ -1116,7 +1116,7 @@ class LoRAInfoExtractor:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "lora_input": ("*", {
+                "lora": ("*", {
                     "tooltip": "LoRA input from WanVideoWrapper or other LoRA loading nodes"
                 }),
             },
@@ -1133,12 +1133,12 @@ class LoRAInfoExtractor:
     FUNCTION = "extract_lora_info"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def extract_lora_info(self, lora_input, fallback_name=""):
+    def extract_lora_info(self, lora, fallback_name=""):
         """
         Extract LoRA name and info from the input.
         
         Args:
-            lora_input: LoRA object from WanVideoWrapper or similar
+            lora: LoRA object from WanVideoWrapper or similar
             fallback_name: Fallback name if extraction fails
             
         Returns:
@@ -1149,18 +1149,18 @@ class LoRAInfoExtractor:
             lora_info = "No information available"
             
             # Try to extract from different possible input formats
-            if hasattr(lora_input, 'get') and callable(lora_input.get):
+            if hasattr(lora, 'get') and callable(lora.get):
                 # Dictionary-like object
-                lora_name = self._extract_from_dict(lora_input)
-            elif hasattr(lora_input, '__dict__'):
+                lora_name = self._extract_from_dict(lora)
+            elif hasattr(lora, '__dict__'):
                 # Object with attributes
-                lora_name = self._extract_from_object(lora_input)
-            elif isinstance(lora_input, (tuple, list)) and len(lora_input) > 0:
+                lora_name = self._extract_from_object(lora)
+            elif isinstance(lora, (tuple, list)) and len(lora) > 0:
                 # Tuple/list format
-                lora_name = self._extract_from_tuple(lora_input)
-            elif isinstance(lora_input, str):
+                lora_name = self._extract_from_tuple(lora)
+            elif isinstance(lora, str):
                 # String filename
-                lora_name = self._extract_from_filename(lora_input)
+                lora_name = self._extract_from_filename(lora)
             
             # Use fallback if extraction failed
             if lora_name == "Unknown LoRA" and fallback_name.strip():
@@ -1169,11 +1169,11 @@ class LoRAInfoExtractor:
             # Generate info string
             lora_info = f"LoRA: {lora_name}"
             
-            return (lora_name, lora_info, lora_input)
+            return (lora_name, lora_info, lora)
             
         except Exception as e:
             error_name = fallback_name if fallback_name.strip() else "Error Extracting LoRA"
-            return (error_name, f"Error: {str(e)}", lora_input)
+            return (error_name, f"Error: {str(e)}", lora)
 
     def _extract_from_dict(self, lora_dict):
         """Extract name from dictionary-like LoRA object"""

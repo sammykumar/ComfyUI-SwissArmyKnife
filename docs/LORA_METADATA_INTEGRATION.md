@@ -107,7 +107,7 @@ The LoRAInfoExtractor automatically cleans and normalizes LoRA names:
 
 **Inputs:**
 
-- `lora_input` (required, any type): LoRA object from any LoRA loading node
+- `lora` (required, any type): LoRA object from any LoRA loading node
 - `fallback_name` (optional, string): Fallback name if extraction fails
 
 **Outputs:**
@@ -168,7 +168,7 @@ FFmpeg metadata commands generated:
 ### Example 1: Basic Usage
 
 1. Add **LoRAInfoExtractor** node to workflow
-2. Connect WanVideoWrapper LoRA output to `lora_input`
+2. Connect WanVideoWrapper LoRA output to `lora`
 3. Connect `lora_name` output to **VideoMetadataNode** `lora_name` input
 4. Process video as normal
 
@@ -286,7 +286,7 @@ This feature required changes to:
         }
     ],
     "connections": [
-        { "from": "1.lora_output", "to": "2.lora_input" },
+        { "from": "1.lora_output", "to": "2.lora" },
         { "from": "2.lora_name", "to": "3.lora_name" },
         { "from": "video_pipeline.filename", "to": "3.filename" }
     ]
