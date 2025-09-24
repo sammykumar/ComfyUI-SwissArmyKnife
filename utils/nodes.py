@@ -1566,41 +1566,21 @@ class VideoMetadataNode:
         """
         return {
             "required": {
-                "filename": ("STRING", {
+                "filenames": ("VHS_FILENAMES", {
                     "forceInput": True,
-                    "tooltip": "Video filename from VHS_VideoCombine or other video output nodes"
+                    "tooltip": "Video filenames from VHS_VideoCombine (VHS_FILENAMES type)"
                 }),
             },
             "optional": {
-                "title": ("STRING", {
-                    "multiline": False,
-                    "default": "",
-                    "tooltip": "Video title metadata"
-                }),
-                "description": ("STRING", {
-                    "multiline": True,
-                    "default": "",
-                    "tooltip": "Video description metadata"
-                }),
-                "artist": ("STRING", {
-                    "multiline": False,
-                    "default": "",
-                    "tooltip": "Artist/Creator metadata"
-                }),
-                "keywords": ("STRING", {
-                    "multiline": False,
-                    "default": "",
-                    "tooltip": "Keywords/Tags metadata (comma-separated)"
-                }),
                 "comment": ("STRING", {
                     "multiline": True,
                     "default": "",
                     "tooltip": "Additional comments metadata"
                 }),
-                "lora_name": ("STRING", {
+                "lora_json": ("STRING", {
                     "multiline": False,
                     "default": "",
-                    "tooltip": "LoRA name to include in metadata (connect from LoRAInfoExtractor)"
+                    "tooltip": "LoRA JSON data from LoRAInfoExtractor (contains structured LoRA metadata)"
                 }),
                 "overwrite_original": (["Yes", "No"], {
                     "default": "No",
@@ -1609,32 +1589,41 @@ class VideoMetadataNode:
             }
         }
 
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("filename",)
+    RETURN_TYPES = ("VHS_FILENAMES",)
+    RETURN_NAMES = ("Filenames",)
     FUNCTION = "add_metadata"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def add_metadata(self, filename, title="", description="", artist="", keywords="", comment="", lora_name="", overwrite_original="No"):
+    def add_metadata(self, filenames, artist="", comment="", lora_json="", overwrite_original="No"):
         """
-        Add metadata to a video file using FFmpeg.
+        Update metadata in a video file using FFmpeg, appending to existing metadata.
         
         Args:
-            filename: Input video filename
-            title: Video title
-            description: Video description
-            artist: Artist/Creator name
-            keywords: Keywords/tags (comma-separated)
-            comment: Additional comments
-            lora_name: LoRA name to include
+            filenames: Input video filenames from VHS_VideoCombine (will process first file)
+            artist: Artist/Creator name (appends to existing artist info)
+            comment: Additional comments (appends to existing comments)
+            lora_json: JSON string containing LoRA metadata from LoRAInfoExtractor
             overwrite_original: Whether to overwrite original file
             
         Returns:
-            Output filename (original or new file with metadata)
+            Output filenames (original or new file with updated metadata)
         """
         try:
+            # Extract filename from filenames input (VHS_VideoCombine may output multiple files or special format)
+            # Handle both single filename string and potential list/array formats
+            if isinstance(filenames, list) and len(filenames) > 0:
+                filename = filenames[0]  # Use first file if multiple
+            elif isinstance(filenames, str):
+                filename = filenames  # Direct string filename
+            else:
+                raise Exception(f"Invalid filenames input: {filenames}")
+                
             # Validate input file exists
             if not os.path.exists(filename):
                 raise Exception(f"Input video file not found: {filename}")
+
+            # Read existing metadata first
+            existing_metadata = self._get_existing_metadata(filename)
 
             # Determine output filename
             if overwrite_original == "Yes":
@@ -1654,33 +1643,66 @@ class VideoMetadataNode:
                 '-y'  # Overwrite output file if it exists
             ]
 
-            # Add metadata options if provided
-            if title.strip():
-                cmd.extend(['-metadata', f'title={title.strip()}'])
-
-            if description.strip():
-                cmd.extend(['-metadata', f'description={description.strip()}'])
-
+            # Add basic metadata options if provided (append to existing)
             if artist.strip():
-                cmd.extend(['-metadata', f'artist={artist.strip()}'])
-
-            # Handle keywords and LoRA name integration
-            if lora_name.strip():
-                # Add to keywords if not empty, otherwise create new keywords
-                if keywords.strip():
-                    combined_keywords = f"{keywords.strip()}, LoRA: {lora_name.strip()}"
-                else:
-                    combined_keywords = f"LoRA: {lora_name.strip()}"
-                cmd.extend(['-metadata', f'keywords={combined_keywords}'])
-            elif keywords.strip():
-                cmd.extend(['-metadata', f'keywords={keywords.strip()}'])
-
-            # Also add LoRA as a custom metadata field
-            if lora_name.strip():
-                cmd.extend(['-metadata', f'lora={lora_name.strip()}'])
+                existing_artist = existing_metadata.get('artist', '')
+                combined_artist = self._combine_metadata_field(existing_artist, artist.strip())
+                cmd.extend(['-metadata', f'artist={combined_artist}'])
 
             if comment.strip():
-                cmd.extend(['-metadata', f'comment={comment.strip()}'])
+                existing_comment = existing_metadata.get('comment', '')
+                combined_comment = self._combine_metadata_field(existing_comment, comment.strip())
+                cmd.extend(['-metadata', f'comment={combined_comment}'])
+
+            # Process LoRA JSON metadata (append to existing)
+            if lora_json.strip():
+                try:
+                    import json
+                    lora_data = json.loads(lora_json)
+                    
+                    # Extract title from combined_display for video title (append to existing)
+                    if 'combined_display' in lora_data and lora_data['combined_display']:
+                        existing_title = existing_metadata.get('title', '')
+                        combined_title = self._combine_metadata_field(existing_title, lora_data['combined_display'])
+                        cmd.extend(['-metadata', f'title={combined_title}'])
+                    
+                    # Create description from LoRA info (append to existing)
+                    if 'loras' in lora_data and lora_data['loras']:
+                        descriptions = []
+                        keywords = []
+                        
+                        for lora in lora_data['loras']:
+                            if 'info' in lora and lora['info']:
+                                descriptions.append(lora['info'])
+                            if 'name' in lora and lora['name']:
+                                keywords.append(lora['name'])
+                        
+                        if descriptions:
+                            description_text = '\n'.join([f'• {desc}' for desc in descriptions])
+                            lora_description = f'LoRA Information:\n{description_text}'
+                            existing_description = existing_metadata.get('description', '')
+                            combined_description = self._combine_metadata_field(existing_description, lora_description)
+                            cmd.extend(['-metadata', f'description={combined_description}'])
+                        
+                        if keywords:
+                            lora_keywords = ', '.join(keywords)
+                            existing_keywords = existing_metadata.get('keywords', '')
+                            # For keywords, use comma separation
+                            if existing_keywords.strip():
+                                combined_keywords = f'{existing_keywords.strip()}, LoRA: {lora_keywords}'
+                            else:
+                                combined_keywords = f'LoRA: {lora_keywords}'
+                            cmd.extend(['-metadata', f'keywords={combined_keywords}'])
+                    
+                    # Add raw LoRA JSON as custom metadata for advanced use
+                    cmd.extend(['-metadata', f'lora_json={lora_json.strip()}'])
+                    
+                except json.JSONDecodeError:
+                    # If JSON parsing fails, treat as simple string
+                    cmd.extend(['-metadata', f'lora={lora_json.strip()}'])
+                except Exception as e:
+                    print(f"Warning: Could not process LoRA JSON: {e}")
+                    cmd.extend(['-metadata', f'lora={lora_json.strip()}'])
 
             # Add output filename
             cmd.append(temp_filename)
@@ -1692,13 +1714,67 @@ class VideoMetadataNode:
             if overwrite_original == "Yes":
                 os.replace(temp_filename, output_filename)
 
-            print(f"Successfully added metadata to video: {output_filename}")
+            print(f"Successfully updated metadata in video: {output_filename}")
             return (output_filename,)
 
         except subprocess.CalledProcessError as e:
             raise Exception(f"FFmpeg metadata operation failed: {e.stderr}")
         except Exception as e:
             raise Exception(f"Video metadata operation failed: {str(e)}")
+    
+    def _get_existing_metadata(self, filename):
+        """
+        Read existing metadata from video file using ffprobe.
+        
+        Args:
+            filename: Path to video file
+            
+        Returns:
+            Dictionary of existing metadata fields
+        """
+        try:
+            cmd = [
+                'ffprobe',
+                '-v', 'quiet',
+                '-print_format', 'json',
+                '-show_format',
+                filename
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            metadata_info = json.loads(result.stdout)
+            
+            # Extract metadata tags from format section
+            if 'format' in metadata_info and 'tags' in metadata_info['format']:
+                return metadata_info['format']['tags']
+            else:
+                return {}
+                
+        except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError):
+            # If we can't read metadata, return empty dict (metadata will be created fresh)
+            return {}
+    
+    def _combine_metadata_field(self, existing, new):
+        """
+        Combine existing metadata field with new content.
+        
+        Args:
+            existing: Existing metadata content (string)
+            new: New metadata content to append (string)
+            
+        Returns:
+            Combined metadata string
+        """
+        existing = existing.strip() if existing else ''
+        new = new.strip() if new else ''
+        
+        if not existing:
+            return new
+        elif not new:
+            return existing
+        else:
+            # Separate with double newline for readability
+            return f'{existing}\n\n{new}'
 
 
 # A dictionary that contains all nodes you want to export with their names
@@ -1716,6 +1792,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "GeminiUtilMediaDescribe": "Gemini Util - Media Describe",
     "GeminiUtilOptions": "Gemini Util - Options",
     "FilenameGenerator": "Filename Generator",
-    "VideoMetadataNode": "Video Metadata",
+    "VideoMetadataNode": "Update Video Metadata",
     "LoRAInfoExtractor": "LoRA Info Extractor"
 }

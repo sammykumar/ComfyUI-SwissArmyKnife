@@ -16,20 +16,18 @@ The VideoMetadataNode is a ComfyUI custom node that enables adding metadata to v
 
 ### Required
 
-- **filename**: (STRING, forceInput) - Video filename from VHS_VideoCombine or other video output nodes
+- **filenames**: (STRING, forceInput) - Video filenames from VHS_VideoCombine or other video output nodes (handles both single files and lists)
 
 ### Optional
 
-- **title**: (STRING) - Video title metadata
-- **description**: (STRING, multiline) - Video description metadata
 - **artist**: (STRING) - Artist/Creator metadata
-- **keywords**: (STRING) - Keywords/Tags metadata (comma-separated)
 - **comment**: (STRING, multiline) - Additional comments metadata
+- **lora_json**: (STRING) - LoRA JSON data from LoRAInfoExtractor (contains structured LoRA metadata)
 - **overwrite_original**: (Yes/No) - Whether to overwrite the original file or create a new one with '\_metadata' suffix
 
 ## Output
 
-- **filename**: (STRING) - Output filename (original or new file with metadata)
+- **filenames**: (STRING) - Output filenames (original or new file with metadata)
 
 ## Usage Examples
 
@@ -39,10 +37,23 @@ The VideoMetadataNode is a ComfyUI custom node that enables adding metadata to v
 [Video Processing] → [VHS_VideoCombine] → [VideoMetadataNode] → [Output]
 ```
 
-1. Connect the `filename` output from VHS_VideoCombine to the `filename` input of VideoMetadataNode
-2. Fill in desired metadata fields (title, description, artist, etc.)
+1. Connect the `Filenames` output from VHS_VideoCombine to the `filenames` input of VideoMetadataNode
+2. Optionally add artist and comment metadata
 3. Choose whether to overwrite original or create new file
-4. The output `filename` can be connected to other nodes or used as final output
+4. The output `filenames` can be connected to other nodes or used as final output
+
+### LoRA-Enhanced Workflow (Recommended)
+
+```
+[LoRA Selection] → [LoRAInfoExtractor] → [Video Processing] → [VHS_VideoCombine] → [VideoMetadataNode] → [Output]
+                              ↓
+                        [lora_json]
+```
+
+1. Connect LoRA selector (e.g., WanVideo Lora Select Multi) to LoRAInfoExtractor
+2. Connect `lora_json` output from LoRAInfoExtractor to `lora_json` input of VideoMetadataNode
+3. Connect `Filenames` output from VHS_VideoCombine to `filenames` input of VideoMetadataNode
+4. The node automatically generates title, description, and keywords from LoRA data
 
 ### Workflow Integration
 
@@ -50,15 +61,28 @@ The VideoMetadataNode is designed to fit naturally into ComfyUI video processing
 
 ```
 [Image Generation] → [Video Creation] → [VHS_VideoCombine] → [VideoMetadataNode] → [File Output]
+                                                                    ↑
+[LoRA Data] → [LoRAInfoExtractor] → [lora_json] ────────────────────┘
 ```
+
+### LoRA JSON Integration
+
+The VideoMetadataNode now processes structured LoRA JSON data from the LoRAInfoExtractor node:
+
+- **lora_json**: JSON string containing detailed LoRA metadata
+    - **Automatic Title**: Uses `combined_display` field as video title
+    - **Automatic Description**: Generates description from individual LoRA info
+    - **Automatic Keywords**: Creates keywords from LoRA names
+    - **Raw JSON Storage**: Stores complete JSON as custom metadata
 
 ### Metadata Fields Usage
 
-- **Title**: Short descriptive title for the video
-- **Description**: Longer description of the video content
 - **Artist**: Creator or artist name
-- **Keywords**: Comma-separated tags for searchability
 - **Comment**: Additional notes or production information
+- **LoRA Data**: Automatically extracted from JSON:
+    - Title: "LoRA1 + LoRA2" format
+    - Description: Bullet-pointed LoRA information
+    - Keywords: "LoRA: Name1, Name2" format
 
 ## Technical Implementation
 
@@ -67,7 +91,16 @@ The VideoMetadataNode is designed to fit naturally into ComfyUI video processing
 The node constructs FFmpeg commands like:
 
 ```bash
-ffmpeg -i input.mp4 -c copy -metadata title="My Video" -metadata artist="Creator" output.mp4
+# Basic metadata
+ffmpeg -i input.mp4 -c copy -metadata artist="Creator" -metadata comment="Notes" output.mp4
+
+# With LoRA JSON data (automatically generated)
+ffmpeg -i input.mp4 -c copy \
+  -metadata title="LoRA1 + LoRA2" \
+  -metadata description="LoRA Information:\n• CivitAI: LoRA1 by Creator1\n• Local: LoRA2 (strength: 0.8)" \
+  -metadata keywords="LoRA: LoRA1, LoRA2" \
+  -metadata lora_json='{"loras":[...],"count":2,"combined_display":"LoRA1 + LoRA2"}' \
+  output.mp4
 ```
 
 ### Key Design Decisions
