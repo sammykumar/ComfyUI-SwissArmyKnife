@@ -13,9 +13,16 @@ class CivitAIService:
 
     BASE_URL = "https://civitai.com/api/v1"
 
-    def __init__(self):
+    def __init__(self, api_key=None):
         self.cache = {}
-        self.api_key = os.environ.get("CIVITAI_API_KEY", "")
+        # Use provided API key, otherwise fallback to environment variables (try both variants)
+        self.api_key = api_key or os.environ.get("CIVITAI_API_KEY") or os.environ.get("CIVIT_API_KEY", "")
+        print(f"[DEBUG] CivitAI Service initialized")
+        if self.api_key:
+            print(f"[DEBUG] ✅ CivitAI API key found: {self.api_key[:8]}...{self.api_key[-4:]}")
+        else:
+            print(f"[DEBUG] ❌ No CivitAI API key found (neither provided nor in environment)")
+            print(f"[DEBUG] Available env vars: {[k for k in os.environ.keys() if 'CIVIT' in k.upper()]}")
 
     def get_model_info_by_hash(self, file_path: str) -> Optional[Dict[str, Any]]:
         """
@@ -50,8 +57,16 @@ class CivitAIService:
             if self.api_key:
                 headers["Authorization"] = f"Bearer {self.api_key}"
 
-            print(f"Querying CivitAI API for hash: {file_hash[:16]}...")
+            print(f"[DEBUG] Querying CivitAI API")
+            print(f"[DEBUG] URL: {url}")
+            print(f"[DEBUG] Headers: {headers}")
+            print(f"[DEBUG] Full hash: {file_hash}")
+            
             response = requests.get(url, headers=headers, timeout=10)
+            print(f"[DEBUG] Response status: {response.status_code}")
+            print(f"[DEBUG] Response headers: {dict(response.headers)}")
+            if response.text:
+                print(f"[DEBUG] Response text (first 500 chars): {response.text[:500]}")
 
             if response.status_code == 200:
                 model_data = response.json()
