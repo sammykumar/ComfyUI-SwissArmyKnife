@@ -39,6 +39,10 @@ RUN pip install --no-cache-dir \
 # Create directories for models and custom nodes if they don't exist
 RUN mkdir -p models custom_nodes input output
 
+# Install ComfyUI-Manager
+RUN cd custom_nodes && \
+    git clone https://github.com/ltdrdata/ComfyUI-Manager.git comfyui-manager
+
 # Expose ComfyUI port
 EXPOSE 8188
 
