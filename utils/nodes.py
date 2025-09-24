@@ -7,6 +7,9 @@ import subprocess
 import numpy as np
 from PIL import Image
 import io
+import json
+import hashlib
+import glob
 from datetime import datetime
 from .cache import get_cache, get_file_media_identifier, get_tensor_media_identifier
 
@@ -1100,17 +1103,300 @@ class FilenameGenerator:
             raise Exception(f"Filename generation failed: {str(e)}")
 
 
+class LoRAInfoExtractor:
+    """
+    Extracts LoRA information including CivitAI names for use in metadata.
+    Compatible with WanVideoWrapper's LoRA input type and other LoRA loading nodes.
+    """
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "lora_input": ("*", {
+                    "tooltip": "LoRA input from WanVideoWrapper or other LoRA loading nodes"
+                }),
+            },
+            "optional": {
+                "fallback_name": ("STRING", {
+                    "default": "",
+                    "tooltip": "Fallback name if CivitAI name cannot be extracted"
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("STRING", "STRING", "*")
+    RETURN_NAMES = ("lora_name", "lora_info", "lora_passthrough")
+    FUNCTION = "extract_lora_info"
+    CATEGORY = "Swiss Army Knife 🔪"
+
+    def extract_lora_info(self, lora_input, fallback_name=""):
+        """
+        Extract LoRA name and info from the input.
+        
+        Args:
+            lora_input: LoRA object from WanVideoWrapper or similar
+            fallback_name: Fallback name if extraction fails
+            
+        Returns:
+            tuple: (lora_name, lora_info, lora_passthrough)
+        """
+        try:
+            lora_name = "Unknown LoRA"
+            lora_info = "No information available"
+            
+            # Try to extract from different possible input formats
+            if hasattr(lora_input, 'get') and callable(lora_input.get):
+                # Dictionary-like object
+                lora_name = self._extract_from_dict(lora_input)
+            elif hasattr(lora_input, '__dict__'):
+                # Object with attributes
+                lora_name = self._extract_from_object(lora_input)
+            elif isinstance(lora_input, (tuple, list)) and len(lora_input) > 0:
+                # Tuple/list format
+                lora_name = self._extract_from_tuple(lora_input)
+            elif isinstance(lora_input, str):
+                # String filename
+                lora_name = self._extract_from_filename(lora_input)
+            
+            # Use fallback if extraction failed
+            if lora_name == "Unknown LoRA" and fallback_name.strip():
+                lora_name = fallback_name.strip()
+            
+            # Generate info string
+            lora_info = f"LoRA: {lora_name}"
+            
+            return (lora_name, lora_info, lora_input)
+            
+        except Exception as e:
+            error_name = fallback_name if fallback_name.strip() else "Error Extracting LoRA"
+            return (error_name, f"Error: {str(e)}", lora_input)
+
+    def _extract_from_dict(self, lora_dict):
+        """Extract name from dictionary-like LoRA object"""
+        # Try common metadata keys
+        for key in ['civitai_name', 'name', 'model_name', 'title', 'filename']:
+            if key in lora_dict:
+                return self._clean_name(lora_dict[key])
+        return "Unknown LoRA"
+
+    def _extract_from_object(self, lora_obj):
+        """Extract name from object with attributes"""
+        # Try common attribute names
+        for attr in ['civitai_name', 'name', 'model_name', 'title', 'filename']:
+            if hasattr(lora_obj, attr):
+                value = getattr(lora_obj, attr)
+                if value:
+                    return self._clean_name(str(value))
+        return "Unknown LoRA"
+
+    def _extract_from_tuple(self, lora_tuple):
+        """Extract name from tuple/list format"""
+        # Common formats: (model, name) or (model, metadata_dict)
+        if len(lora_tuple) >= 2:
+            second_item = lora_tuple[1]
+            if isinstance(second_item, dict):
+                return self._extract_from_dict(second_item)
+            elif isinstance(second_item, str):
+                return self._clean_name(second_item)
+        return "Unknown LoRA"
+
+    def _extract_from_filename(self, filename):
+        """Extract name from filename"""
+        # Remove path and extension
+        base_name = os.path.splitext(os.path.basename(filename))[0]
+        return self._clean_name(base_name)
+
+    def _clean_name(self, name):
+        """Clean and normalize the LoRA name"""
+        if not name:
+            return "Unknown LoRA"
+        
+        # Convert to string if not already
+        name = str(name)
+        
+        # Remove common prefixes/suffixes
+        name = name.replace('.safetensors', '').replace('.ckpt', '').replace('.pt', '')
+        
+        # Replace underscores with spaces and title case
+        name = name.replace('_', ' ').strip()
+        
+        # Capitalize first letter of each word
+        name = ' '.join(word.capitalize() for word in name.split())
+        
+        return name if name else "Unknown LoRA"
+
+
+class VideoMetadataNode:
+    """
+    A ComfyUI custom node for adding metadata to video files.
+    Takes a filename input (typically from VHS_VideoCombine) and adds custom metadata
+    using FFmpeg. Supports common metadata fields like title, description, artist, and keywords.
+    """
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        """
+        Return a dictionary which contains config for all input fields.
+        """
+        return {
+            "required": {
+                "filename": ("STRING", {
+                    "forceInput": True,
+                    "tooltip": "Video filename from VHS_VideoCombine or other video output nodes"
+                }),
+            },
+            "optional": {
+                "title": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Video title metadata"
+                }),
+                "description": ("STRING", {
+                    "multiline": True,
+                    "default": "",
+                    "tooltip": "Video description metadata"
+                }),
+                "artist": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Artist/Creator metadata"
+                }),
+                "keywords": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Keywords/Tags metadata (comma-separated)"
+                }),
+                "comment": ("STRING", {
+                    "multiline": True,
+                    "default": "",
+                    "tooltip": "Additional comments metadata"
+                }),
+                "lora_name": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "LoRA name to include in metadata (connect from LoRAInfoExtractor)"
+                }),
+                "overwrite_original": (["Yes", "No"], {
+                    "default": "No",
+                    "tooltip": "Whether to overwrite the original file or create a new one with '_metadata' suffix"
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("filename",)
+    FUNCTION = "add_metadata"
+    CATEGORY = "Swiss Army Knife 🔪"
+
+    def add_metadata(self, filename, title="", description="", artist="", keywords="", comment="", lora_name="", overwrite_original="No"):
+        """
+        Add metadata to a video file using FFmpeg.
+        
+        Args:
+            filename: Input video filename
+            title: Video title
+            description: Video description
+            artist: Artist/Creator name
+            keywords: Keywords/tags (comma-separated)
+            comment: Additional comments
+            lora_name: LoRA name to include
+            overwrite_original: Whether to overwrite original file
+            
+        Returns:
+            Output filename (original or new file with metadata)
+        """
+        try:
+            # Validate input file exists
+            if not os.path.exists(filename):
+                raise Exception(f"Input video file not found: {filename}")
+
+            # Determine output filename
+            if overwrite_original == "Yes":
+                output_filename = filename
+                temp_filename = filename + ".tmp"
+            else:
+                # Create new filename with _metadata suffix
+                name, ext = os.path.splitext(filename)
+                output_filename = f"{name}_metadata{ext}"
+                temp_filename = output_filename
+
+            # Build FFmpeg command with metadata
+            cmd = [
+                'ffmpeg',
+                '-i', filename,
+                '-c', 'copy',  # Copy streams without re-encoding
+                '-y'  # Overwrite output file if it exists
+            ]
+
+            # Add metadata options if provided
+            if title.strip():
+                cmd.extend(['-metadata', f'title={title.strip()}'])
+            
+            if description.strip():
+                cmd.extend(['-metadata', f'description={description.strip()}'])
+            
+            if artist.strip():
+                cmd.extend(['-metadata', f'artist={artist.strip()}'])
+            
+            # Handle keywords and LoRA name integration
+            if lora_name.strip():
+                # Add to keywords if not empty, otherwise create new keywords
+                if keywords.strip():
+                    combined_keywords = f"{keywords.strip()}, LoRA: {lora_name.strip()}"
+                else:
+                    combined_keywords = f"LoRA: {lora_name.strip()}"
+                cmd.extend(['-metadata', f'keywords={combined_keywords}'])
+            elif keywords.strip():
+                cmd.extend(['-metadata', f'keywords={keywords.strip()}'])
+            
+            # Also add LoRA as a custom metadata field
+            if lora_name.strip():
+                cmd.extend(['-metadata', f'lora={lora_name.strip()}'])
+            
+            if comment.strip():
+                cmd.extend(['-metadata', f'comment={comment.strip()}'])
+
+            # Add output filename
+            cmd.append(temp_filename)
+
+            # Execute FFmpeg command
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+            # If we're overwriting the original, move temp file to original location
+            if overwrite_original == "Yes":
+                os.replace(temp_filename, output_filename)
+
+            print(f"Successfully added metadata to video: {output_filename}")
+            return (output_filename,)
+
+        except subprocess.CalledProcessError as e:
+            raise Exception(f"FFmpeg metadata operation failed: {e.stderr}")
+        except Exception as e:
+            raise Exception(f"Video metadata operation failed: {str(e)}")
+
+
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "GeminiUtilMediaDescribe": GeminiMediaDescribe,
     "GeminiUtilOptions": GeminiUtilOptions,
-    "FilenameGenerator": FilenameGenerator
+    "FilenameGenerator": FilenameGenerator,
+    "VideoMetadataNode": VideoMetadataNode,
+    "LoRAInfoExtractor": LoRAInfoExtractor
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "GeminiUtilMediaDescribe": "Gemini Util - Media Describe",
     "GeminiUtilOptions": "Gemini Util - Options",
-    "FilenameGenerator": "Filename Generator"
+    "FilenameGenerator": "Filename Generator",
+    "VideoMetadataNode": "Video Metadata",
+    "LoRAInfoExtractor": "LoRA Info Extractor"
 }
