@@ -403,10 +403,6 @@ class GeminiMediaDescribe:
             except ImportError:
                 input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
                 
-            # Determine appropriate subfolder based on media type
-            subfolder = "swiss_army_knife_videos" if media_type == "video" else "swiss_army_knife_images"
-            media_subfolder_path = os.path.join(input_dir, subfolder)
-                
             # Create a unique filename based on Reddit post info
             # Use post ID or create hash from URL for unique naming
             url_hash = hashlib.md5(reddit_url.encode()).hexdigest()[:8]
@@ -414,10 +410,10 @@ class GeminiMediaDescribe:
             safe_title = safe_title.replace(' ', '_') if safe_title else 'reddit_media'
             
             filename = f"reddit_{safe_title}_{url_hash}{file_ext}"
-            file_path = os.path.join(media_subfolder_path, filename)
+            file_path = os.path.join(input_dir, filename)
             
-            # Ensure subfolder directory exists
-            os.makedirs(media_subfolder_path, exist_ok=True)
+            # Ensure input directory exists
+            os.makedirs(input_dir, exist_ok=True)
             
             # Write media content to subfolder directory
             with open(file_path, 'wb') as f:
@@ -748,16 +744,29 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 
     def _convert_absolute_to_relative_path(self, absolute_path):
         """
-        Convert absolute path to just the filename for ComfyUI compatibility.
-        Most ComfyUI nodes expect just the filename, not subfolder paths.
+        Convert absolute path to the format expected by ComfyUI nodes.
+        Returns path relative to ComfyUI input directory, matching upload media format.
         """
         if not absolute_path:
             return ""
             
-        # Extract just the filename from the absolute path
-        # This removes both the directory path and any subfolder structure
-        filename = os.path.basename(absolute_path)
-        return filename
+        try:
+            import folder_paths
+            input_dir = folder_paths.get_input_directory()
+        except ImportError:
+            input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
+        
+        # If path is already relative or doesn't contain input_dir, return as-is
+        if not os.path.isabs(absolute_path) or input_dir not in absolute_path:
+            return absolute_path
+            
+        # Convert absolute path to relative by removing input_dir prefix
+        try:
+            relative_path = os.path.relpath(absolute_path, input_dir)
+            return relative_path
+        except ValueError:
+            # If can't make relative, return original
+            return absolute_path
     
     def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text):
         """
@@ -909,17 +918,13 @@ Generate descriptions that adhere to the following structured layers and constra
                 except ImportError:
                     input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
                 
-                # Use swiss_army_knife_videos subfolder for consistency
-                video_subfolder = "swiss_army_knife_videos"
-                video_subfolder_path = os.path.join(input_dir, video_subfolder)
-                
-                # Ensure video subfolder directory exists
-                os.makedirs(video_subfolder_path, exist_ok=True)
+                # Ensure input directory exists
+                os.makedirs(input_dir, exist_ok=True)
                 
                 # Create trimmed video filename based on original file
                 base_name = os.path.splitext(os.path.basename(selected_media_path))[0]
                 trimmed_filename = f"{base_name}_trimmed_{actual_duration:.1f}s.mp4"
-                trimmed_video_path = os.path.join(video_subfolder_path, trimmed_filename)
+                trimmed_video_path = os.path.join(input_dir, trimmed_filename)
 
                 # Attempt to trim the video
                 print(f"Attempting to trim video from {original_duration:.2f}s to {actual_duration:.2f}s")
@@ -927,12 +932,12 @@ Generate descriptions that adhere to the following structured layers and constra
                 if self._trim_video(selected_media_path, trimmed_video_path, actual_duration):
                     final_video_path = trimmed_video_path
                     trimmed = True
-                    # Store relative path for output (subfolder/filename)
-                    trimmed_video_output_path = os.path.join(video_subfolder, trimmed_filename)
+                    # Store absolute path for processing (will be converted to filename at output)
+                    trimmed_video_output_path = trimmed_video_path
                     
                     # Verify trimmed file exists and has content
                     if os.path.exists(trimmed_video_path) and os.path.getsize(trimmed_video_path) > 0:
-                        print(f"Successfully trimmed video and saved to input folder: {video_subfolder}/{trimmed_filename}")
+                        print(f"Successfully trimmed video and saved to input folder: {trimmed_filename}")
                     else:
                         print(f"Warning: Trimmed video file is empty or missing, using original")
                         final_video_path = selected_media_path
