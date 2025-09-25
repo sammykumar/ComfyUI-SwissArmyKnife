@@ -396,10 +396,30 @@ class GeminiMediaDescribe:
             if not file_ext:
                 file_ext = '.mp4' if media_type == 'video' else '.jpg'
                 
-            # Create temporary file
-            with tempfile.NamedTemporaryFile(suffix=file_ext, delete=False) as temp_file:
-                temp_file.write(media_response.content)
-                temp_path = temp_file.name
+            # Get ComfyUI input directory (same logic as Upload Media mode)
+            try:
+                import folder_paths
+                input_dir = folder_paths.get_input_directory()
+            except ImportError:
+                input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
+                
+            # Create a unique filename based on Reddit post info
+            # Use post ID or create hash from URL for unique naming
+            url_hash = hashlib.md5(reddit_url.encode()).hexdigest()[:8]
+            safe_title = "".join(c for c in post_title[:30] if c.isalnum() or c in (' ', '-', '_')).strip()
+            safe_title = safe_title.replace(' ', '_') if safe_title else 'reddit_media'
+            
+            filename = f"reddit_{safe_title}_{url_hash}{file_ext}"
+            file_path = os.path.join(input_dir, filename)
+            
+            # Ensure input directory exists
+            os.makedirs(input_dir, exist_ok=True)
+            
+            # Write media content to input directory
+            with open(file_path, 'wb') as f:
+                f.write(media_response.content)
+                
+            print(f"Downloaded Reddit media to: {file_path}")
                 
             # Create media info
             file_size = len(media_response.content)
@@ -408,10 +428,11 @@ class GeminiMediaDescribe:
                 'url': reddit_url,
                 'media_url': media_url,
                 'file_size': file_size,
-                'content_type': content_type
+                'content_type': content_type,
+                'saved_filename': filename  # Add filename for reference
             }
             
-            return temp_path, media_type, media_info
+            return file_path, media_type, media_info
             
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to download Reddit media: Network error - {str(e)}")
@@ -1248,7 +1269,8 @@ Directory scan results:
                 # Create media info text
                 file_size_mb = reddit_media_info.get('file_size', 0) / 1024 / 1024
                 emoji = "📷" if media_type == "image" else "📹"
-                media_info_text = f"{emoji} {media_type.title()} Processing Info (Reddit Post):\n• Title: {reddit_media_info.get('title', 'Unknown')}\n• Source: {reddit_url}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {reddit_media_info.get('content_type', 'Unknown')}"
+                saved_filename = reddit_media_info.get('saved_filename', os.path.basename(selected_media_path))
+                media_info_text = f"{emoji} {media_type.title()} Processing Info (Reddit Post):\n• Title: {reddit_media_info.get('title', 'Unknown')}\n• Source: {reddit_url}\n• Saved as: {saved_filename}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {reddit_media_info.get('content_type', 'Unknown')}"
                 
                 # For Reddit videos, automatically limit duration if file is large and no duration limit is set
                 if media_type == "video" and file_size_mb > 30 and max_duration <= 0:
