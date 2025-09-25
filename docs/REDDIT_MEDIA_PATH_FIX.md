@@ -39,6 +39,16 @@ relative_path = os.path.join(subfolder, filename)
 return relative_path, media_type, media_info
 ```
 
+**Main Processing Path Handling:**
+
+```python
+# Download returns relative path, but we need absolute for file operations
+downloaded_relative_path, detected_media_type, reddit_media_info = self._download_reddit_media(reddit_url)
+
+# Convert relative path back to absolute path for internal processing
+selected_media_path = os.path.join(input_dir, downloaded_relative_path)
+```
+
 ### 2. Video Trimming Path Fix
 
 **Before:**

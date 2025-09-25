@@ -436,10 +436,8 @@ class GeminiMediaDescribe:
                 'saved_filename': filename  # Add filename for reference
             }
             
-            # Return relative path (subfolder/filename) instead of absolute path
-            relative_path = os.path.join(subfolder, filename)
-            
-            return relative_path, media_type, media_info
+            # Return absolute path (like Upload Media and Randomize modes)
+            return file_path, media_type, media_info
             
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to download Reddit media: Network error - {str(e)}")
