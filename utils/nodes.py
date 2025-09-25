@@ -131,8 +131,19 @@ class GeminiMediaDescribe:
             output_path: Path to output trimmed video file
             duration: Duration in seconds from the beginning
         """
+        
+        # Validate inputs
+        if duration <= 0:
+            print(f"Error: Invalid duration {duration} seconds for video trimming")
+            return False
+            
+        if not os.path.exists(input_path):
+            print(f"Error: Input video file does not exist: {input_path}")
+            return False
 
         try:
+            print(f"Trimming video: {input_path} -> {output_path} (duration: {duration}s)")
+            
             # Use ffmpeg to trim the video from the beginning
             cmd = [
                 'ffmpeg',
@@ -144,30 +155,136 @@ class GeminiMediaDescribe:
                 output_path
             ]
 
-            subprocess.run(cmd, capture_output=True, text=True, check=True)
-            return True
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            
+            # Check if output file was created and has content
+            if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                print(f"Successfully trimmed video with copy codec: {os.path.getsize(output_path)} bytes")
+                return True
+            else:
+                print("Warning: Trimmed file is empty, trying re-encoding")
+                raise subprocess.CalledProcessError(1, cmd, "Empty output file")
 
         except subprocess.CalledProcessError as e:
-            print(f"FFmpeg error: {e.stderr}")
+            print(f"FFmpeg copy error: {e.stderr}")
             # Fallback: try with re-encoding if copy fails
             try:
+                print("Attempting video trimming with re-encoding...")
                 cmd = [
                     'ffmpeg',
                     '-i', input_path,
                     '-t', str(duration),
                     '-c:v', 'libx264',
                     '-c:a', 'aac',
+                    '-preset', 'fast',  # Faster encoding
                     '-y',
                     output_path
                 ]
-                subprocess.run(cmd, capture_output=True, text=True, check=True)
-                return True
+                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                
+                # Check if output file was created and has content
+                if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                    print(f"Successfully trimmed video with re-encoding: {os.path.getsize(output_path)} bytes")
+                    return True
+                else:
+                    print("Error: Re-encoded file is also empty")
+                    return False
+                    
             except subprocess.CalledProcessError as e2:
                 print(f"FFmpeg re-encoding also failed: {e2.stderr}")
                 return False
         except FileNotFoundError:
             print("FFmpeg not found. Please install ffmpeg to use duration trimming.")
             return False
+
+    def _extract_redgifs_video_url(self, redgifs_url):
+        """
+        Extract the actual video URL from a RedGifs page
+        
+        Args:
+            redgifs_url: RedGifs watch URL (e.g., https://www.redgifs.com/watch/scientifictriviallizard)
+            
+        Returns:
+            tuple: (video_url, media_type) or raises exception on failure
+        """
+        try:
+            # Extract the gif ID from the URL
+            # URL format: https://www.redgifs.com/watch/GIFID  
+            gif_id = redgifs_url.split('/')[-1].lower()
+            
+            print(f"Extracting RedGifs video for ID: {gif_id}")
+            
+            # Try common RedGifs video URL patterns
+            # RedGifs typically serves videos in these formats
+            possible_urls = [
+                f"https://thumbs2.redgifs.com/{gif_id}.mp4",
+                f"https://thumbs.redgifs.com/{gif_id}.mp4", 
+                f"https://files.redgifs.com/{gif_id}.mp4",
+                f"https://thumbs2.redgifs.com/{gif_id}-mobile.mp4",
+                f"https://thumbs.redgifs.com/{gif_id}-mobile.mp4"
+            ]
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'video/mp4,video/webm,video/*,*/*;q=0.9',
+                'Referer': 'https://www.redgifs.com/'
+            }
+            
+            # Try each possible URL to find a working video
+            for video_url in possible_urls:
+                try:
+                    print(f"Trying video URL: {video_url}")
+                    response = requests.head(video_url, headers=headers, timeout=10)
+                    if response.status_code == 200:
+                        content_type = response.headers.get('content-type', '')
+                        if content_type.startswith('video/'):
+                            print(f"Found working RedGifs video URL: {video_url}")
+                            return video_url, 'video'
+                except requests.RequestException:
+                    continue
+            
+            # If direct URLs don't work, try to parse the page
+            print("Direct URLs failed, attempting to parse RedGifs page...")
+            page_response = requests.get(redgifs_url, headers=headers, timeout=30)
+            page_response.raise_for_status()
+            
+            # Look for video URLs in the page content
+            page_content = page_response.text
+            
+            # Try to find video URLs in common patterns
+            import re
+            video_patterns = [
+                r'"contentUrl":"([^"]*\.mp4[^"]*)"',
+                r'"url":"([^"]*thumbs[^"]*\.mp4[^"]*)"',
+                r'src="([^"]*\.mp4[^"]*)"',
+                r'data-src="([^"]*\.mp4[^"]*)"'
+            ]
+            
+            for pattern in video_patterns:
+                matches = re.findall(pattern, page_content, re.IGNORECASE)
+                for match in matches:
+                    # Clean up the URL (remove escape characters)
+                    video_url = match.replace('\\/', '/')
+                    if video_url.startswith('//'):
+                        video_url = 'https:' + video_url
+                    elif not video_url.startswith('http'):
+                        video_url = 'https://' + video_url
+                    
+                    try:
+                        # Verify this URL works
+                        test_response = requests.head(video_url, headers=headers, timeout=10)
+                        if test_response.status_code == 200:
+                            content_type = test_response.headers.get('content-type', '')
+                            if content_type.startswith('video/'):
+                                print(f"Found RedGifs video URL from page: {video_url}")
+                                return video_url, 'video'
+                    except requests.RequestException:
+                        continue
+            
+            raise ValueError(f"Could not extract video URL from RedGifs page: {redgifs_url}")
+            
+        except Exception as e:
+            raise ValueError(f"Failed to extract RedGifs video: {str(e)}")
 
     def _download_reddit_media(self, reddit_url):
         """
@@ -235,8 +352,11 @@ class GeminiMediaDescribe:
                     if post_data.get('media') and post_data['media'].get('reddit_video'):
                         media_url = post_data['media']['reddit_video'].get('fallback_url')
                         media_type = 'video'
-                elif 'redgifs.com' in url or 'gfycat.com' in url:
-                    # External video hosting - use the direct URL
+                elif 'redgifs.com' in url:
+                    # RedGifs requires special handling to extract video URL
+                    media_url, media_type = self._extract_redgifs_video_url(url)
+                elif 'gfycat.com' in url:
+                    # Gfycat - use the direct URL (legacy support)
                     media_url = url
                     media_type = 'video'
                     
@@ -715,6 +835,14 @@ Generate descriptions that adhere to the following structured layers and constra
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             original_duration = frame_count / fps if fps > 0 else 0
             cap.release()
+            
+            print(f"Original video properties: {frame_count} frames, {fps:.2f} fps, {width}x{height}, {original_duration:.2f}s duration")
+            
+            # Validate video has content
+            if original_duration <= 0:
+                raise ValueError(f"Invalid video: duration is {original_duration:.2f} seconds. The video file may be corrupted or empty.")
+            if frame_count <= 0:
+                raise ValueError(f"Invalid video: {frame_count} frames. The video file may be corrupted or empty.")
 
             # Determine the video file to use for analysis
             final_video_path = selected_media_path
@@ -724,7 +852,12 @@ Generate descriptions that adhere to the following structured layers and constra
 
             # Calculate duration based on max_duration
             if max_duration > 0:
-                actual_duration = min(max_duration, original_duration)
+                # Ensure we don't go below 1 second minimum for meaningful analysis
+                min_duration = min(1.0, original_duration)
+                actual_duration = max(min_duration, min(max_duration, original_duration))
+                print(f"Duration calculation: max_duration={max_duration}, original={original_duration:.2f}s, actual={actual_duration:.2f}s")
+            else:
+                actual_duration = original_duration
 
             # Check if we need to trim the video (only duration limit)
             if max_duration > 0 and actual_duration < original_duration:
@@ -733,12 +866,21 @@ Generate descriptions that adhere to the following structured layers and constra
                     trimmed_video_path = temp_file.name
 
                 # Attempt to trim the video
+                print(f"Attempting to trim video from {original_duration:.2f}s to {actual_duration:.2f}s")
                 if self._trim_video(selected_media_path, trimmed_video_path, actual_duration):
                     final_video_path = trimmed_video_path
                     trimmed = True
                     trimmed_video_output_path = trimmed_video_path
+                    
+                    # Verify trimmed file exists and has content
+                    if os.path.exists(trimmed_video_path) and os.path.getsize(trimmed_video_path) > 0:
+                        print(f"Successfully trimmed video to {trimmed_video_path}")
+                    else:
+                        print(f"Warning: Trimmed video file is empty or missing, using original")
+                        final_video_path = selected_media_path
+                        trimmed = False
                 else:
-                    print(f"Warning: Could not trim video. Using original video for {actual_duration:.2f}s")
+                    print(f"Warning: Could not trim video. Using original video for {original_duration:.2f}s")
                     actual_duration = original_duration
                     trimmed_video_output_path = selected_media_path
 
@@ -747,6 +889,22 @@ Generate descriptions that adhere to the following structured layers and constra
                 video_data = video_file.read()
 
             file_size = len(video_data) / 1024 / 1024  # Size in MB
+            
+            # Validate video size and format for Gemini API
+            max_file_size_mb = 50  # Gemini's file size limit
+            if file_size > max_file_size_mb:
+                raise ValueError(f"Video file too large for Gemini API: {file_size:.2f} MB (max: {max_file_size_mb} MB). Try reducing max_duration.")
+            
+            # Determine correct MIME type based on file extension
+            video_mime_type = "video/mp4"  # Default
+            if final_video_path.lower().endswith(('.webm',)):
+                video_mime_type = "video/webm"
+            elif final_video_path.lower().endswith(('.mov',)):
+                video_mime_type = "video/quicktime"
+            elif final_video_path.lower().endswith(('.avi',)):
+                video_mime_type = "video/x-msvideo"
+            
+            print(f"Processing video: {file_size:.2f} MB, {actual_duration:.2f}s, MIME: {video_mime_type}")
 
             # Update video info to include trimming details
             end_time = actual_duration  # Since we start from 0
@@ -810,7 +968,7 @@ Generate descriptions that adhere to the following structured layers and constra
                     role="user",
                     parts=[
                         types.Part.from_bytes(
-                            mime_type="video/mp4",
+                            mime_type=video_mime_type,
                             data=video_data,
                         ),
                     ],
@@ -869,8 +1027,17 @@ Generate descriptions that adhere to the following structured layers and constra
             return (description, updated_media_info, gemini_status, trimmed_video_output_path, final_string)
 
         except Exception as e:
+            # Provide more specific error messages for common issues
+            error_msg = str(e)
+            if "500 INTERNAL" in error_msg:
+                error_msg += "\n\nThis is a Gemini API server error. Try:\n- Using a shorter video (reduce max_duration)\n- Waiting a few minutes and trying again\n- Using a different video source"
+            elif "413" in error_msg or "too large" in error_msg.lower():
+                error_msg += "\n\nVideo file is too large. Try reducing max_duration to create a smaller video."
+            elif "unsupported" in error_msg.lower():
+                error_msg += "\n\nVideo format may not be supported. Try with a different video."
+            
             # Re-raise the exception to stop workflow execution
-            raise Exception(f"Video analysis failed: {str(e)}")
+            raise Exception(f"Video analysis failed: {error_msg}")
 
     @classmethod
     def INPUT_TYPES(s):
@@ -1082,6 +1249,11 @@ Directory scan results:
                 file_size_mb = reddit_media_info.get('file_size', 0) / 1024 / 1024
                 emoji = "📷" if media_type == "image" else "📹"
                 media_info_text = f"{emoji} {media_type.title()} Processing Info (Reddit Post):\n• Title: {reddit_media_info.get('title', 'Unknown')}\n• Source: {reddit_url}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {reddit_media_info.get('content_type', 'Unknown')}"
+                
+                # For Reddit videos, automatically limit duration if file is large and no duration limit is set
+                if media_type == "video" and file_size_mb > 30 and max_duration <= 0:
+                    max_duration = 10.0  # Limit to 10 seconds for large Reddit videos
+                    print(f"Large Reddit video detected ({file_size_mb:.1f} MB). Auto-limiting to {max_duration}s to prevent API errors.")
             else:
                 # Upload Media mode
                 if media_type == "image":
