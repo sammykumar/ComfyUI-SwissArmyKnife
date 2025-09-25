@@ -218,6 +218,7 @@ app.registerExtension({
                         "uploaded_image_file",
                         "uploaded_video_file",
                         "seed",
+                        "reddit_url",
                     ];
 
                     for (const widgetName of widgetsToHide) {
@@ -391,6 +392,11 @@ app.registerExtension({
                     this.videoInfoWidget = null;
                     // this.mediaPathWidget = null;
 
+                    // Find the reddit_url widget
+                    const originalRedditUrlWidget = this.widgets.find(
+                        (w) => w.name === "reddit_url"
+                    );
+
                     // Manage visibility of original input widgets
                     if (mediaSource === "Randomize Media from Path") {
                         console.log("[STATE] Showing media path widget");
@@ -411,9 +417,42 @@ app.registerExtension({
                             console.log("[STATE] Showing seed widget for randomization");
                         }
 
-                        // Note: Seed randomization is handled by ComfyUI's built-in controls
+                        // Hide Reddit URL widget
+                        if (originalRedditUrlWidget) {
+                            originalRedditUrlWidget.type = "hidden";
+                            originalRedditUrlWidget.computeSize = () => [0, -4];
+                        }
 
                         // Hide upload file widgets
+                        if (originalUploadedImageWidget) {
+                            originalUploadedImageWidget.type = "hidden";
+                            originalUploadedImageWidget.computeSize = () => [0, -4];
+                        }
+                        if (originalUploadedVideoWidget) {
+                            originalUploadedVideoWidget.type = "hidden";
+                            originalUploadedVideoWidget.computeSize = () => [0, -4];
+                        }
+                    } else if (mediaSource === "Reddit post") {
+                        console.log("[STATE] Reddit post mode - showing Reddit URL widget");
+
+                        // Show the Reddit URL widget
+                        if (originalRedditUrlWidget) {
+                            originalRedditUrlWidget.type = "text";
+                            originalRedditUrlWidget.computeSize =
+                                originalRedditUrlWidget.constructor.prototype.computeSize;
+                            this.redditUrlWidget = originalRedditUrlWidget; // Reference the original
+                        }
+
+                        // Hide other widgets
+                        if (originalMediaPathWidget) {
+                            originalMediaPathWidget.type = "hidden";
+                            originalMediaPathWidget.computeSize = () => [0, -4];
+                        }
+                        if (originalSeedWidget) {
+                            originalSeedWidget.type = "hidden";
+                            originalSeedWidget.computeSize = () => [0, -4];
+                            console.log("[STATE] Hiding seed widget for Reddit mode");
+                        }
                         if (originalUploadedImageWidget) {
                             originalUploadedImageWidget.type = "hidden";
                             originalUploadedImageWidget.computeSize = () => [0, -4];
@@ -437,6 +476,12 @@ app.registerExtension({
                             originalSeedWidget.type = "hidden";
                             originalSeedWidget.computeSize = () => [0, -4];
                             console.log("[STATE] Hiding seed widget for upload mode");
+                        }
+
+                        // Hide Reddit URL widget
+                        if (originalRedditUrlWidget) {
+                            originalRedditUrlWidget.type = "hidden";
+                            originalRedditUrlWidget.computeSize = () => [0, -4];
                         }
 
                         if (mediaType === "image") {

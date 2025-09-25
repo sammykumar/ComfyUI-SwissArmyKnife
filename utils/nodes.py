@@ -1,15 +1,20 @@
 from google import genai
 from google.genai import types
 import cv2
+import hashlib
 import tempfile
 import os
 import subprocess
 import numpy as np
 from PIL import Image
+from html import unescape
 import io
 import json
+import mimetypes
+import requests
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse, urlunparse
 
 from .cache import get_cache, get_file_media_identifier, get_tensor_media_identifier
 from .civitai_service import CivitAIService
@@ -163,6 +168,137 @@ class GeminiMediaDescribe:
         except FileNotFoundError:
             print("FFmpeg not found. Please install ffmpeg to use duration trimming.")
             return False
+
+    def _download_reddit_media(self, reddit_url):
+        """
+        Download media from a Reddit post URL
+        
+        Args:
+            reddit_url: Reddit post URL
+            
+        Returns:
+            tuple: (media_path, media_type, media_info) or raises exception on failure
+        """
+        try:
+            # Validate URL format
+            if not reddit_url or not isinstance(reddit_url, str):
+                raise ValueError("Invalid Reddit URL provided")
+                
+            # Clean up URL - ensure it's a proper Reddit URL
+            reddit_url = reddit_url.strip()
+            if not reddit_url.startswith(('http://', 'https://')):
+                reddit_url = 'https://' + reddit_url
+                
+            parsed_url = urlparse(reddit_url)
+            if 'reddit.com' not in parsed_url.netloc:
+                raise ValueError("URL must be a Reddit post URL")
+            
+            # Convert to JSON API URL
+            json_url = reddit_url.rstrip('/') + '.json'
+            
+            # Set headers to mimic a browser request
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            # Get Reddit post data
+            response = requests.get(json_url, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            data = response.json()
+            if not data or len(data) < 1:
+                raise ValueError("Unable to parse Reddit post data")
+                
+            post_data = data[0]['data']['children'][0]['data']
+            
+            # Extract media information
+            media_url = None
+            media_type = None
+            post_title = post_data.get('title', 'Reddit Post')
+            
+            # Check for direct image/video URL
+            if post_data.get('url'):
+                url = post_data['url']
+                
+                # Handle different Reddit media formats
+                if url.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                    media_url = url
+                    media_type = 'image'
+                elif url.endswith(('.mp4', '.webm', '.mov')):
+                    media_url = url
+                    media_type = 'video'
+                elif 'i.redd.it' in url:
+                    media_url = url
+                    media_type = 'image'
+                elif 'v.redd.it' in url:
+                    # Reddit video - need to get the video URL
+                    if post_data.get('media') and post_data['media'].get('reddit_video'):
+                        media_url = post_data['media']['reddit_video'].get('fallback_url')
+                        media_type = 'video'
+                elif 'redgifs.com' in url or 'gfycat.com' in url:
+                    # External video hosting - use the direct URL
+                    media_url = url
+                    media_type = 'video'
+                    
+            # Check for gallery or media_metadata
+            if not media_url and post_data.get('media_metadata'):
+                # Handle Reddit gallery posts - take the first media item
+                for media_id, media_info in post_data['media_metadata'].items():
+                    if media_info.get('s') and media_info['s'].get('u'):
+                        media_url = unescape(media_info['s']['u'])
+                        if media_info.get('m', '').startswith('image/'):
+                            media_type = 'image'
+                        elif media_info.get('m', '').startswith('video/'):
+                            media_type = 'video'
+                        break
+                        
+            if not media_url:
+                raise ValueError(f"No downloadable media found in Reddit post: {post_title}")
+                
+            # Download the media file
+            print(f"Downloading media from: {media_url}")
+            media_response = requests.get(media_url, headers=headers, timeout=60)
+            media_response.raise_for_status()
+            
+            # Determine file extension from content type or URL
+            content_type = media_response.headers.get('content-type', '')
+            file_ext = None
+            
+            if content_type:
+                file_ext = mimetypes.guess_extension(content_type)
+            
+            if not file_ext:
+                # Fallback to URL extension
+                parsed_media_url = urlparse(media_url)
+                if '.' in parsed_media_url.path:
+                    file_ext = '.' + parsed_media_url.path.split('.')[-1].lower()
+                    
+            if not file_ext:
+                file_ext = '.mp4' if media_type == 'video' else '.jpg'
+                
+            # Create temporary file
+            with tempfile.NamedTemporaryFile(suffix=file_ext, delete=False) as temp_file:
+                temp_file.write(media_response.content)
+                temp_path = temp_file.name
+                
+            # Create media info
+            file_size = len(media_response.content)
+            media_info = {
+                'title': post_title,
+                'url': reddit_url,
+                'media_url': media_url,
+                'file_size': file_size,
+                'content_type': content_type
+            }
+            
+            return temp_path, media_type, media_info
+            
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Failed to download Reddit media: Network error - {str(e)}")
+        except (KeyError, IndexError, TypeError) as e:
+            raise Exception(f"Failed to parse Reddit post: Invalid post format - {str(e)}")
+        except Exception as e:
+            raise Exception(f"Reddit media download failed: {str(e)}")
 
     def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text):
         """
@@ -744,9 +880,9 @@ Generate descriptions that adhere to the following structured layers and constra
         """
         return {
             "required": {
-                "media_source": (["Upload Media", "Randomize Media from Path"], {
+                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit post"], {
                     "default": "Upload Media",
-                    "tooltip": "Choose whether to upload media or randomize from a directory path"
+                    "tooltip": "Choose whether to upload media, randomize from a directory path, or download from a Reddit post"
                 }),
                 "media_type": (["image", "video"], {
                     "default": "image",
@@ -790,6 +926,11 @@ Generate descriptions that adhere to the following structured layers and constra
                     "step": 0.1,
                     "tooltip": "Maximum duration in seconds (0 = use full video, only applies to videos)"
                 }),
+                "reddit_url": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Reddit post URL (used when media_source is Reddit post)"
+                }),
             }
         }
 
@@ -798,12 +939,12 @@ Generate descriptions that adhere to the following structured layers and constra
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def describe_media(self, media_source, media_type, seed, gemini_options=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0):
+    def describe_media(self, media_source, media_type, seed, gemini_options=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0, reddit_url=""):
         """
         Process media (image or video) and analyze with Gemini
 
         Args:
-            media_source: Source of media ("Upload Media" or "Randomize Media from Path")
+            media_source: Source of media ("Upload Media", "Randomize Media from Path", or "Reddit post")
             media_type: Type of media ("image" or "video")
             seed: Seed for randomization when using 'Randomize Media from Path'. Use different seeds to force re-execution.
             gemini_options: Configuration options from Gemini Util - Options node (optional)
@@ -812,6 +953,7 @@ Generate descriptions that adhere to the following structured layers and constra
             uploaded_video_file: Path to uploaded video file (optional)
             frame_rate: Frame rate for temporary video (legacy parameter, not used)
             max_duration: Maximum duration in seconds (0 = use full video, only applies to videos)
+            reddit_url: Reddit post URL (used when media_source is Reddit post)
         """
         # Initialize variables that might be needed in exception handler
         selected_media_path = None
@@ -922,6 +1064,24 @@ Directory scan results:
                 else:
                     # For random video, set up for video processing
                     media_info_text = f"📹 Video Processing Info (Random Selection):\n• File: {os.path.basename(selected_media_path)}\n• Source: Random from {media_path} (including subdirectories)\n• Full path: {selected_media_path}"
+            elif media_source == "Reddit post":
+                # Reddit post mode
+                if not reddit_url or not reddit_url.strip():
+                    raise ValueError("Reddit URL is required when media_source is 'Reddit post'")
+                
+                # Download media from Reddit post
+                downloaded_path, detected_media_type, reddit_media_info = self._download_reddit_media(reddit_url)
+                selected_media_path = downloaded_path
+                
+                # Override media_type if detected type is different (but warn user)
+                if detected_media_type != media_type:
+                    print(f"Warning: Media type mismatch. Expected '{media_type}' but detected '{detected_media_type}' from Reddit post. Using detected type.")
+                    media_type = detected_media_type
+                
+                # Create media info text
+                file_size_mb = reddit_media_info.get('file_size', 0) / 1024 / 1024
+                emoji = "📷" if media_type == "image" else "📹"
+                media_info_text = f"{emoji} {media_type.title()} Processing Info (Reddit Post):\n• Title: {reddit_media_info.get('title', 'Unknown')}\n• Source: {reddit_url}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {reddit_media_info.get('content_type', 'Unknown')}"
             else:
                 # Upload Media mode
                 if media_type == "image":
