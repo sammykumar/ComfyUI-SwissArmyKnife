@@ -403,6 +403,10 @@ class GeminiMediaDescribe:
             except ImportError:
                 input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
                 
+            # Determine appropriate subfolder based on media type
+            subfolder = "swiss_army_knife_videos" if media_type == "video" else "swiss_army_knife_images"
+            media_subfolder_path = os.path.join(input_dir, subfolder)
+                
             # Create a unique filename based on Reddit post info
             # Use post ID or create hash from URL for unique naming
             url_hash = hashlib.md5(reddit_url.encode()).hexdigest()[:8]
@@ -410,12 +414,12 @@ class GeminiMediaDescribe:
             safe_title = safe_title.replace(' ', '_') if safe_title else 'reddit_media'
             
             filename = f"reddit_{safe_title}_{url_hash}{file_ext}"
-            file_path = os.path.join(input_dir, filename)
+            file_path = os.path.join(media_subfolder_path, filename)
             
-            # Ensure input directory exists
-            os.makedirs(input_dir, exist_ok=True)
+            # Ensure subfolder directory exists
+            os.makedirs(media_subfolder_path, exist_ok=True)
             
-            # Write media content to input directory
+            # Write media content to subfolder directory
             with open(file_path, 'wb') as f:
                 f.write(media_response.content)
                 
@@ -432,7 +436,10 @@ class GeminiMediaDescribe:
                 'saved_filename': filename  # Add filename for reference
             }
             
-            return file_path, media_type, media_info
+            # Return relative path (subfolder/filename) instead of absolute path
+            relative_path = os.path.join(subfolder, filename)
+            
+            return relative_path, media_type, media_info
             
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to download Reddit media: Network error - {str(e)}")
@@ -661,7 +668,8 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • Input: Image
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
 
-                processed_media_path = selected_media_path if selected_media_path else ""
+                # Convert absolute path to relative for ComfyUI compatibility
+                processed_media_path = self._convert_absolute_to_relative_path(selected_media_path)
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
                 return (description, media_info_text, gemini_status, processed_media_path, final_string)
@@ -730,7 +738,8 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • API Key: {'*' * (len(gemini_api_key) - 4) + gemini_api_key[-4:] if len(gemini_api_key) >= 4 else '****'}
 • Input: Image"""
 
-            processed_media_path = selected_media_path if selected_media_path else ""
+            # Convert absolute path to relative for ComfyUI compatibility
+            processed_media_path = self._convert_absolute_to_relative_path(selected_media_path)
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
             return (description, media_info_text, gemini_status, processed_media_path, final_string)
@@ -739,6 +748,32 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Image analysis failed: {str(e)}")
 
+    def _convert_absolute_to_relative_path(self, absolute_path):
+        """
+        Convert absolute path to relative path for ComfyUI compatibility.
+        Returns the path relative to ComfyUI input directory.
+        """
+        if not absolute_path:
+            return ""
+            
+        try:
+            import folder_paths
+            input_dir = folder_paths.get_input_directory()
+        except ImportError:
+            input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
+        
+        # If path is already relative or doesn't contain input_dir, return as-is
+        if not os.path.isabs(absolute_path) or input_dir not in absolute_path:
+            return absolute_path
+            
+        # Convert absolute path to relative by removing input_dir prefix
+        try:
+            relative_path = os.path.relpath(absolute_path, input_dir)
+            return relative_path
+        except ValueError:
+            # If can't make relative, return original
+            return absolute_path
+    
     def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text):
         """
         Process video using logic from GeminiVideoDescribe
@@ -882,20 +917,24 @@ Generate descriptions that adhere to the following structured layers and constra
 
             # Check if we need to trim the video (only duration limit)
             if max_duration > 0 and actual_duration < original_duration:
-                # Create trimmed video file in ComfyUI input folder
+                # Create trimmed video file in ComfyUI input folder with swiss_army_knife_videos subfolder
                 try:
                     import folder_paths
                     input_dir = folder_paths.get_input_directory()
                 except ImportError:
                     input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
                 
-                # Ensure input directory exists
-                os.makedirs(input_dir, exist_ok=True)
+                # Use swiss_army_knife_videos subfolder for consistency
+                video_subfolder = "swiss_army_knife_videos"
+                video_subfolder_path = os.path.join(input_dir, video_subfolder)
+                
+                # Ensure video subfolder directory exists
+                os.makedirs(video_subfolder_path, exist_ok=True)
                 
                 # Create trimmed video filename based on original file
                 base_name = os.path.splitext(os.path.basename(selected_media_path))[0]
                 trimmed_filename = f"{base_name}_trimmed_{actual_duration:.1f}s.mp4"
-                trimmed_video_path = os.path.join(input_dir, trimmed_filename)
+                trimmed_video_path = os.path.join(video_subfolder_path, trimmed_filename)
 
                 # Attempt to trim the video
                 print(f"Attempting to trim video from {original_duration:.2f}s to {actual_duration:.2f}s")
@@ -903,11 +942,12 @@ Generate descriptions that adhere to the following structured layers and constra
                 if self._trim_video(selected_media_path, trimmed_video_path, actual_duration):
                     final_video_path = trimmed_video_path
                     trimmed = True
-                    trimmed_video_output_path = trimmed_video_path
+                    # Store relative path for output (subfolder/filename)
+                    trimmed_video_output_path = os.path.join(video_subfolder, trimmed_filename)
                     
                     # Verify trimmed file exists and has content
                     if os.path.exists(trimmed_video_path) and os.path.getsize(trimmed_video_path) > 0:
-                        print(f"Successfully trimmed video and saved to input folder: {trimmed_filename}")
+                        print(f"Successfully trimmed video and saved to input folder: {video_subfolder}/{trimmed_filename}")
                     else:
                         print(f"Warning: Trimmed video file is empty or missing, using original")
                         final_video_path = selected_media_path
@@ -988,7 +1028,8 @@ Generate descriptions that adhere to the following structured layers and constra
 • Input: Video
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
 
-                processed_media_path = selected_media_path if selected_media_path else ""
+                # Convert absolute path to relative for ComfyUI compatibility
+                processed_media_path = self._convert_absolute_to_relative_path(selected_media_path)
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
                 return (description, updated_media_info, gemini_status, processed_media_path, final_string)
@@ -1058,7 +1099,10 @@ Generate descriptions that adhere to the following structured layers and constra
 
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
-            return (description, updated_media_info, gemini_status, trimmed_video_output_path, final_string)
+            # Convert absolute path to relative for ComfyUI compatibility
+            processed_media_path = self._convert_absolute_to_relative_path(trimmed_video_output_path)
+
+            return (description, updated_media_info, gemini_status, processed_media_path, final_string)
 
         except Exception as e:
             # Provide more specific error messages for common issues
