@@ -662,8 +662,9 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • Input: Image
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
 
-                # Return just the filename for ComfyUI compatibility
-                processed_media_path = os.path.basename(selected_media_path) if selected_media_path else ""
+                # Return input/filename format for ComfyUI compatibility
+                filename = os.path.basename(selected_media_path) if selected_media_path else ""
+                processed_media_path = f"input/{filename}" if filename else ""
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
                 return (description, media_info_text, gemini_status, processed_media_path, final_string)
@@ -732,8 +733,9 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • API Key: {'*' * (len(gemini_api_key) - 4) + gemini_api_key[-4:] if len(gemini_api_key) >= 4 else '****'}
 • Input: Image"""
 
-            # Return just the filename for ComfyUI compatibility
-            processed_media_path = os.path.basename(selected_media_path) if selected_media_path else ""
+            # Return input/filename format for ComfyUI compatibility
+            filename = os.path.basename(selected_media_path) if selected_media_path else ""
+            processed_media_path = f"input/{filename}" if filename else ""
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
             return (description, media_info_text, gemini_status, processed_media_path, final_string)
@@ -1002,8 +1004,9 @@ Generate descriptions that adhere to the following structured layers and constra
 • Input: Video
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
 
-                # Return just the filename for ComfyUI compatibility
-                processed_media_path = os.path.basename(selected_media_path) if selected_media_path else ""
+                # Return input/filename format for ComfyUI compatibility
+                filename = os.path.basename(selected_media_path) if selected_media_path else ""
+                processed_media_path = f"input/{filename}" if filename else ""
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
                 return (description, updated_media_info, gemini_status, processed_media_path, final_string)
@@ -1073,8 +1076,9 @@ Generate descriptions that adhere to the following structured layers and constra
 
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
-            # Return just the filename of the processed video (original or trimmed)
-            processed_media_path = os.path.basename(trimmed_video_output_path) if trimmed_video_output_path else ""
+            # Return input/filename format for ComfyUI compatibility
+            filename = os.path.basename(trimmed_video_output_path) if trimmed_video_output_path else ""
+            processed_media_path = f"input/{filename}" if filename else ""
 
             return (description, updated_media_info, gemini_status, processed_media_path, final_string)
 
