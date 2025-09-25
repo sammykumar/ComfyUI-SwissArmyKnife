@@ -748,29 +748,16 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 
     def _convert_absolute_to_relative_path(self, absolute_path):
         """
-        Convert absolute path to relative path for ComfyUI compatibility.
-        Returns the path relative to ComfyUI input directory.
+        Convert absolute path to just the filename for ComfyUI compatibility.
+        Most ComfyUI nodes expect just the filename, not subfolder paths.
         """
         if not absolute_path:
             return ""
             
-        try:
-            import folder_paths
-            input_dir = folder_paths.get_input_directory()
-        except ImportError:
-            input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
-        
-        # If path is already relative or doesn't contain input_dir, return as-is
-        if not os.path.isabs(absolute_path) or input_dir not in absolute_path:
-            return absolute_path
-            
-        # Convert absolute path to relative by removing input_dir prefix
-        try:
-            relative_path = os.path.relpath(absolute_path, input_dir)
-            return relative_path
-        except ValueError:
-            # If can't make relative, return original
-            return absolute_path
+        # Extract just the filename from the absolute path
+        # This removes both the directory path and any subfolder structure
+        filename = os.path.basename(absolute_path)
+        return filename
     
     def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text):
         """
