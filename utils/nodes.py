@@ -9,8 +9,11 @@ from PIL import Image
 import io
 import json
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
 from .cache import get_cache, get_file_media_identifier, get_tensor_media_identifier
 from .civitai_service import CivitAIService
+from .lora_hash_cache import get_cache as get_lora_hash_cache
 
 
 class GeminiUtilOptions:
@@ -1103,35 +1106,37 @@ class FilenameGenerator:
 
 
 class LoRAInfoExtractor:
-    """
-    Extracts LoRA information including CivitAI names for use in metadata.
-    Compatible with WanVideoWrapper's LoRA input type and other LoRA loading nodes.
-    """
+    """Enriched LoRA metadata extraction with persistent hashing and CivitAI lookup."""
+
+    PATH_ATTRIBUTES = ("path", "file", "file_path", "filepath", "filename", "model_path", "lora_path")
+    NAME_ATTRIBUTES = ("civitai_name", "display_name", "name", "model_name", "title", "filename")
+    STACK_KEYS = ("stack", "loras", "children", "items", "chain")
 
     def __init__(self):
         self.civitai_service = CivitAIService()
+        self.hash_cache = get_lora_hash_cache()
 
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {
             "required": {
                 "lora": ("WANVIDLORA", {
-                    "tooltip": "LoRA input from WanVideoWrapper or other LoRA loading nodes"
+                    "tooltip": "LoRA stack from WanVideo Lora Select or compatible nodes"
                 }),
             },
             "optional": {
                 "civitai_api_key": ("STRING", {
                     "multiline": False,
                     "default": os.environ.get("CIVITAI_API_KEY") or os.environ.get("CIVIT_API_KEY", "YOUR_CIVITAI_API_KEY_HERE"),
-                    "tooltip": "Your CivitAI API key (automatically uses CIVITAI_API_KEY or CIVIT_API_KEY environment variable if available)"
+                    "tooltip": "Override CivitAI API key (falls back to CIVITAI_API_KEY/CIVIT_API_KEY env vars)"
                 }),
                 "fallback_name": ("STRING", {
                     "default": "",
-                    "tooltip": "Fallback name if CivitAI name cannot be extracted"
+                    "tooltip": "Used when no LoRA metadata can be determined"
                 }),
                 "use_civitai_api": ("BOOLEAN", {
                     "default": True,
-                    "tooltip": "Whether to query CivitAI API for metadata"
+                    "tooltip": "Disable to skip remote lookups and rely on local metadata only"
                 }),
             }
         }
@@ -1141,412 +1146,298 @@ class LoRAInfoExtractor:
     FUNCTION = "extract_lora_info"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def extract_lora_info(self, lora, civitai_api_key="", fallback_name="", use_civitai_api=True):
-        """
-        Extract LoRA metadata and format as JSON, supporting multiple LoRAs from WanVideo Lora Select Multi.
+    def extract_lora_info(self, lora: Any, civitai_api_key: str = "", fallback_name: str = "", use_civitai_api: bool = True):
+        """Extract LoRA stack metadata and return JSON plus human readable summary."""
 
-        Args:
-            lora: WANVIDLORA list from WanVideoWrapper containing multiple LoRA dictionaries
-            civitai_api_key: CivitAI API key for authentication
-            fallback_name: Fallback name if extraction fails
-            use_civitai_api: Whether to query CivitAI API for metadata
+        debug_repr = repr(lora)
+        print("[DEBUG] LoRAInfoExtractor.extract_lora_info called")
+        print(f"  - use_civitai_api: {use_civitai_api}")
+        print(f"  - civitai_api_key provided: {bool(civitai_api_key and civitai_api_key != 'YOUR_CIVITAI_API_KEY_HERE')}")
+        print(f"  - fallback_name: '{fallback_name}'")
+        print(f"  - lora type: {type(lora)}")
+        print(f"  - lora repr: {debug_repr[:300]}{'...' if len(debug_repr) > 300 else ''}")
 
-        Returns:
-            tuple: (lora_json, lora_info, lora_passthrough)
-                - lora_json: JSON string with structured LoRA data including array of loras, count, and combined_display
-                - lora_info: Human-readable info string for display
-                - lora_passthrough: Original WANVIDLORA object for chaining
-        """
         try:
-            print(f"[DEBUG] LoRAInfoExtractor.extract_lora_info called:")
-            print(f"  - civitai_api_key: {'PROVIDED' if civitai_api_key and civitai_api_key != 'YOUR_CIVITAI_API_KEY_HERE' else 'NOT PROVIDED'}")
-            print(f"  - fallback_name: '{fallback_name}'")
-            print(f"  - use_civitai_api: {use_civitai_api}")
-            print(f"  - lora type: {type(lora)}")
-            print(f"  - lora repr: {repr(lora)[:300]}..." if len(repr(lora)) > 300 else f"  - lora repr: {repr(lora)}")
-            
-            # Initialize service once if needed
             civitai_service = None
             if use_civitai_api:
                 effective_api_key = civitai_api_key if civitai_api_key and civitai_api_key != "YOUR_CIVITAI_API_KEY_HERE" else None
-                print(f"[DEBUG] Creating CivitAI service with API key: {'PROVIDED' if effective_api_key else 'FROM_ENV'}")
                 civitai_service = CivitAIService(api_key=effective_api_key)
-            
-            # Handle WANVIDLORA list structure (multiple LoRAs)
-            if isinstance(lora, list):
-                print(f"[DEBUG] Processing WANVIDLORA list with {len(lora)} LoRAs")
-                return self._process_multiple_loras(lora, civitai_service, use_civitai_api, fallback_name)
-            
-            # Handle single LoRA (fallback for compatibility)
-            else:
-                print(f"[DEBUG] Processing single LoRA object")
-                return self._process_single_lora(lora, civitai_service, use_civitai_api, fallback_name)
 
-        except Exception as e:
-            print(f"[DEBUG] Error in extract_lora_info: {str(e)}")
-            error_name = fallback_name if fallback_name.strip() else "Error Extracting LoRA"
-            error_json = json.dumps({
-                "loras": [],
-                "count": 0,
-                "combined_display": error_name,
-                "error": str(e)
-            }, indent=2)
-            return (error_json, f"Error: {str(e)}", lora)
+            entries = self._discover_lora_entries(lora)
+            if not entries:
+                synthetic = self._coerce_single_lora(lora)
+                if synthetic:
+                    print("[DEBUG] No stack entries found, using synthetic single LoRA entry")
+                    entries = [synthetic]
+            print(f"[DEBUG] Discovered {len(entries)} LoRA entries in stack")
 
-    def _process_multiple_loras(self, lora_list, civitai_service, use_civitai_api, fallback_name):
-        """Process multiple LoRAs from WANVIDLORA list"""
-        lora_names = []
-        lora_infos = []
-        valid_loras = []
-        
-        for i, lora_dict in enumerate(lora_list):
-            print(f"[DEBUG] Processing LoRA {i + 1}/{len(lora_list)}: {type(lora_dict)}")
-            
-            # Skip if not a dictionary or missing essential data
-            if not isinstance(lora_dict, dict):
-                print(f"[DEBUG] Skipping LoRA {i + 1}: not a dictionary")
-                continue
-                
-            # Get the file path
-            file_path = lora_dict.get('path')
-            lora_name = lora_dict.get('name', f'LoRA_{i}')
-            strength = lora_dict.get('strength', 1.0)
-            
-            print(f"[DEBUG] LoRA {i + 1} details: path='{file_path}', name='{lora_name}', strength={strength}")
-            
-            # Skip if no path or path is empty/none
-            if not file_path or file_path.lower() == 'none':
-                print(f"[DEBUG] Skipping LoRA {i + 1}: no valid path")
-                continue
-                
-            valid_loras.append(lora_dict)
-            
-            # Try CivitAI lookup if enabled
-            civitai_name = None
-            civitai_info = None
-            
-            if use_civitai_api and civitai_service and file_path:
-                print(f"[DEBUG] Attempting CivitAI lookup for: {os.path.basename(file_path)}")
-                civitai_data = civitai_service.get_model_info_by_hash(file_path)
-                
-                if civitai_data:
-                    civitai_name = civitai_data["civitai_name"]
-                    creator = civitai_data["creator"]
-                    version = civitai_data["version_name"]
-                    
-                    if version and version != civitai_name:
-                        civitai_info = f"CivitAI: {civitai_name} ({version}) by {creator}"
-                    else:
-                        civitai_info = f"CivitAI: {civitai_name} by {creator}"
-                    
-                    print(f"[DEBUG] ✅ CivitAI data found for LoRA {i + 1}: {civitai_name}")
+            processed_entries = []
+            info_lines: List[str] = []
+            total_size = 0
+            missing_files = 0
+            civitai_matches = 0
+            tags_accumulator = set()
+
+            for index, entry in enumerate(entries):
+                metadata = self._process_entry(
+                    entry,
+                    index,
+                    civitai_service,
+                    use_civitai_api,
+                )
+
+                processed_entries.append(metadata)
+
+                if metadata["file"]["exists"] and metadata["file"]["size_bytes"]:
+                    total_size += metadata["file"]["size_bytes"]
                 else:
-                    print(f"[DEBUG] ❌ No CivitAI data found for LoRA {i + 1}")
-            
-            # Use CivitAI name if found, otherwise use local name or filename
-            if civitai_name:
-                final_name = civitai_name
-                final_info = civitai_info
-            else:
-                # Extract name from filename if needed
-                if lora_name and lora_name != f'LoRA_{i}':
-                    final_name = self._clean_name(lora_name)
-                else:
-                    final_name = self._extract_from_filename(file_path) if file_path else f"LoRA_{i + 1}"
-                final_info = f"Local: {final_name} (strength: {strength})"
-            
-            lora_names.append(final_name)
-            lora_infos.append(final_info)
-            print(f"[DEBUG] LoRA {i + 1} final result: '{final_name}' -> '{final_info}'")
-        
-        # Build JSON result
-        if lora_names:
-            lora_json_data = {
-                "loras": [],
-                "count": len(lora_names),
-                "combined_display": " + ".join(lora_names)
-            }
-            
-            # Add each LoRA's data to the JSON
-            for i, (name, info, lora_dict) in enumerate(zip(lora_names, lora_infos, valid_loras)):
-                lora_entry = {
-                    "index": i,
-                    "name": name,
-                    "info": info,
-                    "path": lora_dict.get('path'),
-                    "strength": lora_dict.get('strength', 1.0),
-                    "has_civitai_data": "CivitAI:" in info
+                    missing_files += 1
+
+                if metadata["civitai"]:
+                    civitai_matches += 1
+                    tags_accumulator.update(metadata["civitai"].get("tags", []))
+
+                info_lines.append(self._format_info_line(metadata))
+
+            summary = self._build_summary(
+                count=len(processed_entries),
+                missing_files=missing_files,
+                civitai_matches=civitai_matches,
+                total_size=total_size,
+                tags=sorted(tag for tag in tags_accumulator if tag)
+            )
+
+            if processed_entries:
+                combined_display = " + ".join(entry["display_name"] for entry in processed_entries)
+                summary_line = self._format_summary_line(summary)
+                info_block = "\n".join([summary_line] + info_lines)
+                payload = {
+                    "loras": processed_entries,
+                    "summary": summary,
+                    "combined_display": combined_display,
                 }
-                lora_json_data["loras"].append(lora_entry)
-            
-            json_output = json.dumps(lora_json_data, indent=2)
-            combined_info = "\n".join([f"• {info}" for info in lora_infos])
-            print(f"[DEBUG] ✅ Successfully processed {len(lora_names)} LoRAs")
-            return (json_output, combined_info, lora_list)
-        else:
-            # No valid LoRAs found
-            fallback_result = fallback_name if fallback_name.strip() else "No Valid LoRAs"
-            fallback_json = json.dumps({
+                return (json.dumps(payload, indent=2), info_block, lora)
+
+            # No entries found, return fallback response
+            fallback_label = fallback_name.strip() or "No LoRAs Detected"
+            empty_payload = {
                 "loras": [],
-                "count": 0,
-                "combined_display": fallback_result,
-                "error": "No valid LoRAs found"
-            }, indent=2)
-            print(f"[DEBUG] ❌ No valid LoRAs found, using fallback: {fallback_result}")
-            return (fallback_json, f"Fallback: {fallback_result}", lora_list)
+                "summary": summary,
+                "combined_display": fallback_label,
+                "error": "LoRA stack did not contain any LoRA dictionaries",
+            }
+            return (json.dumps(empty_payload, indent=2), f"Fallback: {fallback_label}", lora)
 
-    def _process_single_lora(self, lora, civitai_service, use_civitai_api, fallback_name):
-        """Process single LoRA object (compatibility mode)"""
-        print(f"[DEBUG] Single LoRA compatibility mode")
-        
-        file_path = self._extract_file_path(lora)
-        lora_name = "Unknown LoRA"
-        lora_info = "No information available"
-        
-        # Try CivitAI lookup
-        if file_path and use_civitai_api and civitai_service:
-            print(f"[DEBUG] Attempting CivitAI lookup for single LoRA: {os.path.basename(file_path)}")
-            civitai_data = civitai_service.get_model_info_by_hash(file_path)
-            
-            if civitai_data:
-                print(f"[DEBUG] ✅ CivitAI data found for single LoRA")
-                lora_name = civitai_data["civitai_name"]
-                creator = civitai_data["creator"]
-                version = civitai_data["version_name"]
-                
-                if version and version != lora_name:
-                    lora_info = f"CivitAI: {lora_name} ({version}) by {creator}"
-                else:
-                    lora_info = f"CivitAI: {lora_name} by {creator}"
-                
-                # Return JSON format for consistency
-                civitai_lora_json = json.dumps({
-                    "loras": [{
-                        "index": 0,
-                        "name": lora_name,
-                        "info": lora_info,
-                        "path": file_path,
-                        "strength": 1.0,
-                        "has_civitai_data": True
-                    }],
-                    "count": 1,
-                    "combined_display": lora_name
-                }, indent=2)
-                
-                return (civitai_lora_json, lora_info, lora)
-        
-        # Fallback to local extraction
-        print(f"[DEBUG] Using local extraction for single LoRA")
-        if hasattr(lora, 'get') and callable(lora.get):
-            lora_name = self._extract_from_dict(lora)
-        elif hasattr(lora, '__dict__'):
-            lora_name = self._extract_from_object(lora)
-        elif isinstance(lora, (tuple, list)) and len(lora) > 0:
-            lora_name = self._extract_from_tuple(lora)
-        elif isinstance(lora, str):
-            lora_name = self._extract_from_filename(lora)
-        
-        # Use fallback if extraction failed
-        if lora_name == "Unknown LoRA" and fallback_name.strip():
-            lora_name = fallback_name.strip()
-            lora_info = f"Fallback: {lora_name}"
-        else:
-            lora_info = f"Local: {lora_name}"
-        
-        # Return JSON format for consistency
-        single_lora_json = json.dumps({
-            "loras": [{
-                "index": 0,
-                "name": lora_name,
-                "info": lora_info,
-                "path": file_path,
-                "strength": 1.0,
-                "has_civitai_data": "CivitAI:" in lora_info
-            }],
-            "count": 1,
-            "combined_display": lora_name
-        }, indent=2)
-        
-        return (single_lora_json, lora_info, lora)
+        except Exception as exc:  # pylint: disable=broad-except
+            print(f"[DEBUG] Error in extract_lora_info: {exc}")
+            fallback_label = fallback_name.strip() or "Error Extracting LoRA"
+            error_payload = {
+                "loras": [],
+                "summary": {"count": 0},
+                "combined_display": fallback_label,
+                "error": str(exc),
+            }
+            return (json.dumps(error_payload, indent=2), f"Error: {exc}", lora)
 
-    def _extract_file_path(self, lora):
-        """
-        Try to extract file path from LoRA object for CivitAI lookup
+    def _discover_lora_entries(self, data: Any) -> List[Dict[str, Any]]:
+        """Recursively walk WanVideo LoRA stack and collect unique LoRA dicts."""
 
-        Args:
-            lora: WANVIDLORA object from WanVideoWrapper (can be list or single object)
+        results: List[Dict[str, Any]] = []
+        visited_ids = set()
 
-        Returns:
-            File path string or None if not found
-        """
-        try:
-            print(f"[DEBUG] _extract_file_path: Analyzing LoRA object")
-            print(f"[DEBUG] LoRA type: {type(lora)}")
-            
-            # Handle WANVIDLORA list structure - based on debug output showing list of dicts
-            if isinstance(lora, list):
-                print(f"[DEBUG] LoRA is a list with {len(lora)} items")
-                if len(lora) > 0:
-                    # Take the first LoRA from the list
-                    first_lora = lora[0]
-                    print(f"[DEBUG] Processing first LoRA: {type(first_lora)}")
-                    if isinstance(first_lora, dict):
-                        print(f"[DEBUG] First LoRA keys: {list(first_lora.keys())}")
-                        # Check if it's a dictionary with 'path' key
-                        if 'path' in first_lora:
-                            file_path = first_lora['path']
-                            print(f"[DEBUG] Found path in first LoRA dict: {file_path}")
-                            if isinstance(file_path, str) and file_path:
-                                print(f"[DEBUG] Checking if path exists: {file_path}")
-                                if os.path.exists(file_path):
-                                    print(f"[DEBUG] ✅ Path exists: {file_path}")
-                                    return file_path
-                                else:
-                                    print(f"[DEBUG] ❌ Path does not exist but returning for hash calc: {file_path}")
-                                    # Return the path anyway for hash calculation
-                                    return file_path
-                    
-                    # Recursively check the first item if it's not a dict or doesn't have path
-                    return self._extract_file_path(first_lora)
-                else:
-                    print(f"[DEBUG] ❌ Empty LoRA list")
-                    return None
-            
-            print(f"[DEBUG] LoRA dir(): {dir(lora) if hasattr(lora, '__dict__') else 'No __dict__'}")
-            
-            # Try common attribute names for file paths
-            path_attributes = ['path', 'file_path', 'filename', 'model_path', 'lora_path']
-            print(f"[DEBUG] Checking attributes: {path_attributes}")
+        def visit(node: Any):
+            if isinstance(node, (list, tuple, set)):
+                for item in node:
+                    visit(item)
+                return
 
-            for attr in path_attributes:
-                print(f"[DEBUG] Checking attribute '{attr}': {hasattr(lora, attr)}")
-                if hasattr(lora, attr):
-                    path_value = getattr(lora, attr)
-                    print(f"[DEBUG] Attribute '{attr}' value: {path_value} (type: {type(path_value)})")
-                    if path_value and isinstance(path_value, str):
-                        print(f"[DEBUG] Checking if path exists: {path_value}")
-                        if os.path.exists(path_value):
-                            print(f"[DEBUG] ✅ Found valid file path via attribute '{attr}': {path_value}")
-                            return path_value
-                        else:
-                            print(f"[DEBUG] ❌ Path does not exist but returning: {path_value}")
-                            # Return the path anyway for hash calculation
-                            return path_value
+            if not isinstance(node, dict):
+                return
 
-            # Try dictionary-like access
-            print(f"[DEBUG] Checking dictionary-like access: {hasattr(lora, 'get') and callable(lora.get)}")
-            if hasattr(lora, 'get') and callable(lora.get):
-                print(f"[DEBUG] LoRA supports dictionary access")
-                for attr in path_attributes:
-                    path_value = lora.get(attr)
-                    print(f"[DEBUG] Dict key '{attr}' value: {path_value} (type: {type(path_value)})")
-                    if path_value and isinstance(path_value, str):
-                        print(f"[DEBUG] Checking if dict path exists: {path_value}")
-                        if os.path.exists(path_value):
-                            print(f"[DEBUG] ✅ Found valid file path via dict key '{attr}': {path_value}")
-                            return path_value
-                        else:
-                            print(f"[DEBUG] ❌ Dict path does not exist but returning: {path_value}")
-                            # Return the path anyway for hash calculation
-                            return path_value
+            node_id = id(node)
+            if node_id in visited_ids:
+                return
+            visited_ids.add(node_id)
 
-            # Try __dict__ access
-            if hasattr(lora, '__dict__'):
-                lora_dict = lora.__dict__
-                for attr in path_attributes:
-                    if attr in lora_dict:
-                        path_value = lora_dict[attr]
-                        if path_value and isinstance(path_value, str):
-                            if os.path.exists(path_value):
-                                print(f"[DEBUG] ✅ Found file path via __dict__['{attr}']: {path_value}")
-                                return path_value
-                            else:
-                                print(f"[DEBUG] ❌ __dict__ path does not exist but returning: {path_value}")
-                                return path_value
+            if self._looks_like_lora(node):
+                results.append(node)
 
-            # Try tuple/list format - sometimes path is in first or second element
-            if isinstance(lora, (tuple, list)) and len(lora) > 0:
-                for i, item in enumerate(lora):
-                    if isinstance(item, str):
-                        if os.path.exists(item):
-                            print(f"[DEBUG] ✅ Found file path at index {i}: {item}")
-                            return item
-                        else:
-                            print(f"[DEBUG] ❌ Path at index {i} does not exist but returning: {item}")
-                            return item
+            for key in self.STACK_KEYS:
+                if key in node and isinstance(node[key], (list, tuple)):
+                    for child in node[key]:
+                        visit(child)
 
-            # If it's a string path directly
-            if isinstance(lora, str):
-                if os.path.exists(lora):
-                    print(f"[DEBUG] ✅ LoRA is direct file path: {lora}")
-                    return lora
-                else:
-                    print(f"[DEBUG] ❌ Direct path does not exist but returning: {lora}")
-                    return lora
+            for value in node.values():
+                if isinstance(value, (list, tuple, dict)):
+                    visit(value)
 
-            print("No valid file path found in LoRA object")
-            print(f"LoRA type: {type(lora)}")
-            if hasattr(lora, '__dict__'):
-                print(f"LoRA attributes: {list(lora.__dict__.keys())}")
+        visit(data)
 
-        except Exception as e:
-            print(f"[DEBUG] Error extracting file path: {e}")
+        deduped: List[Dict[str, Any]] = []
+        seen_keys = set()
+        for entry in results:
+            path = self._extract_first(entry, self.PATH_ATTRIBUTES)
+            name = self._extract_first(entry, self.NAME_ATTRIBUTES)
+            key = (path or "", name or "")
+            if key not in seen_keys:
+                deduped.append(entry)
+                seen_keys.add(key)
 
+        return deduped
+
+    def _coerce_single_lora(self, lora_input: Any) -> Optional[Dict[str, Any]]:
+        if isinstance(lora_input, dict):
+            return lora_input
+        if isinstance(lora_input, str):
+            return {"path": lora_input, "name": os.path.basename(lora_input)}
+        if hasattr(lora_input, "__dict__"):
+            return dict(lora_input.__dict__)
+        if isinstance(lora_input, (list, tuple)) and lora_input:
+            # Attempt to treat first element as meaningful metadata
+            first = lora_input[0]
+            if isinstance(first, dict):
+                return first
+            if isinstance(first, str):
+                return {"path": first, "name": os.path.basename(first)}
         return None
 
-    def _extract_from_dict(self, lora_dict):
-        """Extract name from dictionary-like LoRA object"""
-        # Try common metadata keys
-        for key in ['civitai_name', 'name', 'model_name', 'title', 'filename']:
-            if key in lora_dict:
-                return self._clean_name(lora_dict[key])
+    def _looks_like_lora(self, candidate: Dict[str, Any]) -> bool:
+        if any(candidate.get(attr) for attr in self.PATH_ATTRIBUTES):
+            return True
+        if any(candidate.get(attr) for attr in self.NAME_ATTRIBUTES):
+            return True
+        if "strength" in candidate or "stack" in candidate:
+            return True
+        return False
+
+    def _process_entry(self, entry: Dict[str, Any], index: int, civitai_service: Optional[CivitAIService], use_civitai_api: bool) -> Dict[str, Any]:
+        file_path = self._extract_first(entry, self.PATH_ATTRIBUTES)
+        if isinstance(file_path, str):
+            file_path = file_path.strip()
+
+        normalized_path = os.path.abspath(file_path) if file_path else None
+        file_exists = bool(normalized_path and os.path.exists(normalized_path))
+
+        strength = entry.get("strength")
+        if isinstance(strength, str):
+            try:
+                strength = float(strength)
+            except ValueError:
+                strength = None
+
+        raw_name = self._extract_first(entry, self.NAME_ATTRIBUTES)
+        name_from_filename = self._clean_name(os.path.basename(file_path)) if file_path else None
+        display_name = self._select_display_name(raw_name, name_from_filename)
+
+        file_size = os.path.getsize(normalized_path) if file_exists else 0
+        file_mtime = os.path.getmtime(normalized_path) if file_exists else None
+        file_hash = self.hash_cache.get_hash(normalized_path) if file_exists else None
+
+        civitai_data = None
+        if file_exists and use_civitai_api and civitai_service:
+            civitai_data = civitai_service.get_model_info_by_hash(normalized_path)
+            if civitai_data and civitai_data.get("civitai_name"):
+                display_name = self._select_display_name(civitai_data.get("civitai_name"), display_name)
+
+        file_info = {
+            "exists": file_exists,
+            "path": normalized_path or file_path,
+            "size_bytes": file_size,
+            "size_human": self._human_readable_size(file_size) if file_exists else "0 B",
+            "modified_at": datetime.utcfromtimestamp(file_mtime).isoformat() + "Z" if file_mtime else None,
+        }
+
+        return {
+            "index": index,
+            "display_name": display_name,
+            "hash": file_hash,
+            "file": file_info,
+            "strength": strength,
+            "original": {
+                "raw": entry,
+                "name": raw_name,
+                "path": file_path,
+            },
+            "civitai": civitai_data,
+        }
+
+    def _build_summary(self, *, count: int, missing_files: int, civitai_matches: int, total_size: int, tags: List[str]) -> Dict[str, Any]:
+        return {
+            "count": count,
+            "missing_files": missing_files,
+            "civitai_matches": civitai_matches,
+            "local_only": max(count - civitai_matches, 0),
+            "total_size_bytes": total_size,
+            "total_size_human": self._human_readable_size(total_size),
+            "tags": tags[:25],
+        }
+
+    def _format_summary_line(self, summary: Dict[str, Any]) -> str:
+        parts = [
+            f"Summary: {summary['count']} LoRAs",
+            f"CivitAI matches: {summary['civitai_matches']}",
+        ]
+        if summary["missing_files"]:
+            parts.append(f"Missing: {summary['missing_files']}")
+        parts.append(f"Total size: {summary['total_size_human']}")
+        return " • ".join(parts)
+
+    def _format_info_line(self, metadata: Dict[str, Any]) -> str:
+        segments: List[str] = []
+        civitai = metadata.get("civitai") or {}
+
+        if civitai:
+            version = civitai.get("version_name")
+            creator = civitai.get("creator", "Unknown")
+            version_fragment = f" ({version})" if version and version != metadata["display_name"] else ""
+            segments.append(f"CivitAI{version_fragment} by {creator}")
+        else:
+            segments.append("Local metadata")
+
+        if metadata.get("hash"):
+            segments.append(f"hash {metadata['hash'][:10]}…")
+
+        file_info = metadata["file"]
+        if not file_info["exists"]:
+            segments.append("missing file")
+        else:
+            segments.append(f"{file_info['size_human']}")
+
+        joined_segments = " | ".join(segments)
+        return f"• {metadata['display_name']} — {joined_segments}" if joined_segments else f"• {metadata['display_name']}"
+
+    def _extract_first(self, source: Dict[str, Any], keys: Tuple[str, ...]) -> Optional[str]:
+        for key in keys:
+            value = source.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return None
+
+    def _select_display_name(self, *names: Optional[str]) -> str:
+        for name in names:
+            cleaned = self._clean_name(name)
+            if cleaned != "Unknown LoRA":
+                return cleaned
         return "Unknown LoRA"
 
-    def _extract_from_object(self, lora_obj):
-        """Extract name from object with attributes"""
-        # Try common attribute names
-        for attr in ['civitai_name', 'name', 'model_name', 'title', 'filename']:
-            if hasattr(lora_obj, attr):
-                value = getattr(lora_obj, attr)
-                if value:
-                    return self._clean_name(str(value))
-        return "Unknown LoRA"
+    def _human_readable_size(self, size_bytes: int) -> str:
+        if size_bytes <= 0:
+            return "0 B"
+        units = ["B", "KB", "MB", "GB", "TB"]
+        size = float(size_bytes)
+        for unit in units:
+            if size < 1024 or unit == units[-1]:
+                return f"{size:.2f} {unit}"
+            size /= 1024
+        return f"{size_bytes} B"
 
-    def _extract_from_tuple(self, lora_tuple):
-        """Extract name from tuple/list format"""
-        # Common formats: (model, name) or (model, metadata_dict)
-        if len(lora_tuple) >= 2:
-            second_item = lora_tuple[1]
-            if isinstance(second_item, dict):
-                return self._extract_from_dict(second_item)
-            elif isinstance(second_item, str):
-                return self._clean_name(second_item)
-        return "Unknown LoRA"
-
-    def _extract_from_filename(self, filename):
-        """Extract name from filename"""
-        # Remove path and extension
-        base_name = os.path.splitext(os.path.basename(filename))[0]
-        return self._clean_name(base_name)
-
-    def _clean_name(self, name):
-        """Clean and normalize the LoRA name"""
+    def _clean_name(self, name: Optional[str]) -> str:
         if not name:
             return "Unknown LoRA"
-
-        # Convert to string if not already
-        name = str(name)
-
-        # Remove common prefixes/suffixes
-        name = name.replace('.safetensors', '').replace('.ckpt', '').replace('.pt', '')
-
-        # Replace underscores with spaces and title case
-        name = name.replace('_', ' ').strip()
-
-        # Capitalize first letter of each word
-        name = ' '.join(word.capitalize() for word in name.split())
-
-        return name if name else "Unknown LoRA"
+        cleaned = str(name).replace('.safetensors', '').replace('.ckpt', '').replace('.pt', '')
+        cleaned = cleaned.replace('_', ' ').strip()
+        cleaned = ' '.join(word.capitalize() for word in cleaned.split())
+        return cleaned or "Unknown LoRA"
 
 
 class VideoMetadataNode:

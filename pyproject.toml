@@ -15,6 +15,7 @@ requires-python = ">=3.10"
 classifiers = []
 dependencies = [
     "google-genai",
+    "httpx",
     "opencv-python",
     "pillow",
     "requests",
