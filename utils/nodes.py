@@ -882,12 +882,24 @@ Generate descriptions that adhere to the following structured layers and constra
 
             # Check if we need to trim the video (only duration limit)
             if max_duration > 0 and actual_duration < original_duration:
-                # Create a temporary trimmed video file
-                with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
-                    trimmed_video_path = temp_file.name
+                # Create trimmed video file in ComfyUI input folder
+                try:
+                    import folder_paths
+                    input_dir = folder_paths.get_input_directory()
+                except ImportError:
+                    input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
+                
+                # Ensure input directory exists
+                os.makedirs(input_dir, exist_ok=True)
+                
+                # Create trimmed video filename based on original file
+                base_name = os.path.splitext(os.path.basename(selected_media_path))[0]
+                trimmed_filename = f"{base_name}_trimmed_{actual_duration:.1f}s.mp4"
+                trimmed_video_path = os.path.join(input_dir, trimmed_filename)
 
                 # Attempt to trim the video
                 print(f"Attempting to trim video from {original_duration:.2f}s to {actual_duration:.2f}s")
+                print(f"Trimmed video will be saved to: {trimmed_video_path}")
                 if self._trim_video(selected_media_path, trimmed_video_path, actual_duration):
                     final_video_path = trimmed_video_path
                     trimmed = True
@@ -895,10 +907,11 @@ Generate descriptions that adhere to the following structured layers and constra
                     
                     # Verify trimmed file exists and has content
                     if os.path.exists(trimmed_video_path) and os.path.getsize(trimmed_video_path) > 0:
-                        print(f"Successfully trimmed video to {trimmed_video_path}")
+                        print(f"Successfully trimmed video and saved to input folder: {trimmed_filename}")
                     else:
                         print(f"Warning: Trimmed video file is empty or missing, using original")
                         final_video_path = selected_media_path
+                        trimmed_video_output_path = selected_media_path
                         trimmed = False
                 else:
                     print(f"Warning: Could not trim video. Using original video for {original_duration:.2f}s")
