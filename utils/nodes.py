@@ -662,8 +662,8 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • Input: Image
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
 
-                # Convert absolute path to relative for ComfyUI compatibility
-                processed_media_path = self._convert_absolute_to_relative_path(selected_media_path)
+                # Return just the filename for ComfyUI compatibility
+                processed_media_path = os.path.basename(selected_media_path) if selected_media_path else ""
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
                 return (description, media_info_text, gemini_status, processed_media_path, final_string)
@@ -732,8 +732,8 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • API Key: {'*' * (len(gemini_api_key) - 4) + gemini_api_key[-4:] if len(gemini_api_key) >= 4 else '****'}
 • Input: Image"""
 
-            # Convert absolute path to relative for ComfyUI compatibility
-            processed_media_path = self._convert_absolute_to_relative_path(selected_media_path)
+            # Return just the filename for ComfyUI compatibility
+            processed_media_path = os.path.basename(selected_media_path) if selected_media_path else ""
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
             return (description, media_info_text, gemini_status, processed_media_path, final_string)
@@ -744,29 +744,13 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 
     def _convert_absolute_to_relative_path(self, absolute_path):
         """
-        Convert absolute path to the format expected by ComfyUI nodes.
-        Returns path relative to ComfyUI input directory, matching upload media format.
+        Extract just the filename from the absolute path for ComfyUI compatibility.
         """
         if not absolute_path:
             return ""
             
-        try:
-            import folder_paths
-            input_dir = folder_paths.get_input_directory()
-        except ImportError:
-            input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
-        
-        # If path is already relative or doesn't contain input_dir, return as-is
-        if not os.path.isabs(absolute_path) or input_dir not in absolute_path:
-            return absolute_path
-            
-        # Convert absolute path to relative by removing input_dir prefix
-        try:
-            relative_path = os.path.relpath(absolute_path, input_dir)
-            return relative_path
-        except ValueError:
-            # If can't make relative, return original
-            return absolute_path
+        # Return just the filename since files are in root input directory
+        return os.path.basename(absolute_path)
     
     def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text):
         """
@@ -1018,8 +1002,8 @@ Generate descriptions that adhere to the following structured layers and constra
 • Input: Video
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
 
-                # Convert absolute path to relative for ComfyUI compatibility
-                processed_media_path = self._convert_absolute_to_relative_path(selected_media_path)
+                # Return just the filename for ComfyUI compatibility
+                processed_media_path = os.path.basename(selected_media_path) if selected_media_path else ""
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
                 return (description, updated_media_info, gemini_status, processed_media_path, final_string)
@@ -1089,8 +1073,8 @@ Generate descriptions that adhere to the following structured layers and constra
 
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
-            # Convert absolute path to relative for ComfyUI compatibility
-            processed_media_path = self._convert_absolute_to_relative_path(trimmed_video_output_path)
+            # Return just the filename of the processed video (original or trimmed)
+            processed_media_path = os.path.basename(trimmed_video_output_path) if trimmed_video_output_path else ""
 
             return (description, updated_media_info, gemini_status, processed_media_path, final_string)
 
