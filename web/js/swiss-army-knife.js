@@ -1374,3 +1374,143 @@ app.registerExtension({
         localStorage.setItem("swissarmyknife_last_version", EXTENSION_VERSION);
     },
 });
+
+// LoRAInfoExtractor workflow serialization extension
+app.registerExtension({
+    name: "comfyui_swissarmyknife.lora_info_extractor",
+
+    async setup() {
+        // Listen for execution results at the app level
+        const original_onExecuted = app.onExecuted;
+        app.onExecuted = function (nodeId, data) {
+            console.log("[DEBUG] App execution completed for node:", nodeId, "data:", data);
+
+            // Find the node by ID and check if it's LoRAInfoExtractor
+            const node = app.graph.getNodeById(nodeId);
+            if (node && node.comfyClass === "LoRAInfoExtractor") {
+                console.log("[DEBUG] Found LoRAInfoExtractor execution result");
+
+                // Try to extract lora_json from the execution data
+                if (data && data[0]) {
+                    // First output should be lora_json
+                    node._cached_lora_json = data[0];
+                    console.log(
+                        "[DEBUG] Cached lora_json from app execution:",
+                        data[0].substring(0, 100) + "..."
+                    );
+                }
+            }
+
+            // Call original handler
+            return original_onExecuted?.call(this, nodeId, data);
+        };
+    },
+
+    async beforeRegisterNodeDef(nodeType, nodeData, app) {
+        if (nodeData.name === "LoRAInfoExtractor") {
+            console.log("[DEBUG] Registering LoRAInfoExtractor widget extensions");
+
+            // Add onSerialize method to save lora_json output to workflow
+            const onSerialize = nodeType.prototype.onSerialize;
+            nodeType.prototype.onSerialize = function (o) {
+                const result = onSerialize?.apply(this, arguments);
+
+                console.log("[DEBUG] LoRAInfoExtractor onSerialize called for node:", this.id);
+                console.log("[DEBUG] Current cached lora_json:", !!this._cached_lora_json);
+                console.log("[DEBUG] Serialization object before:", JSON.stringify(o, null, 2));
+
+                // Save the cached lora_json output if available
+                if (this._cached_lora_json) {
+                    o.lora_json_output = this._cached_lora_json;
+                    console.log(
+                        "[SERIALIZE] Saved lora_json to workflow:",
+                        typeof this._cached_lora_json === "string"
+                            ? this._cached_lora_json.substring(0, 100) + "..."
+                            : JSON.stringify(this._cached_lora_json).substring(0, 100) + "..."
+                    );
+                } else {
+                    console.log("[SERIALIZE] No cached lora_json to save");
+                }
+
+                console.log("[DEBUG] Serialization object after:", JSON.stringify(o, null, 2));
+                return result;
+            };
+
+            // Add onConfigure method to restore lora_json from workflow
+            const onConfigure = nodeType.prototype.onConfigure;
+            nodeType.prototype.onConfigure = function (o) {
+                const result = onConfigure?.apply(this, arguments);
+
+                console.log("[DEBUG] LoRAInfoExtractor onConfigure called");
+
+                // Restore the cached lora_json output if available
+                if (o.lora_json_output) {
+                    this._cached_lora_json = o.lora_json_output;
+                    console.log(
+                        "[CONFIGURE] Restored lora_json from workflow:",
+                        o.lora_json_output?.substring(0, 100) + "..."
+                    );
+                }
+
+                return result;
+            };
+        }
+    },
+
+    async nodeCreated(node) {
+        if (node.comfyClass === "LoRAInfoExtractor") {
+            console.log("[DEBUG] LoRAInfoExtractor node created, ID:", node.id);
+
+            // Listen for node execution results
+            const originalOnExecuted = node.onExecuted;
+            node.onExecuted = function (message) {
+                console.log("[DEBUG] LoRAInfoExtractor onExecuted called");
+                console.log("[DEBUG] Full message object:", JSON.stringify(message, null, 2));
+
+                // Try different possible message structures
+                let loraJsonValue = null;
+
+                // Try different paths where the lora_json might be
+                if (message && message.output) {
+                    console.log("[DEBUG] message.output exists:", message.output);
+
+                    // Check if it's directly in output
+                    if (message.output.lora_json) {
+                        console.log("[DEBUG] Found lora_json in message.output.lora_json");
+                        loraJsonValue = Array.isArray(message.output.lora_json)
+                            ? message.output.lora_json[0]
+                            : message.output.lora_json;
+                    }
+                    // Check if it's in a different structure
+                    else if (message.output[0]) {
+                        console.log("[DEBUG] Found output[0]:", message.output[0]);
+                        loraJsonValue = message.output[0];
+                    }
+                }
+
+                // Also check if message itself has the data
+                if (!loraJsonValue && message.lora_json) {
+                    console.log("[DEBUG] Found lora_json in message.lora_json");
+                    loraJsonValue = Array.isArray(message.lora_json)
+                        ? message.lora_json[0]
+                        : message.lora_json;
+                }
+
+                if (loraJsonValue) {
+                    this._cached_lora_json = loraJsonValue;
+                    console.log(
+                        "[DEBUG] Cached lora_json from execution:",
+                        typeof loraJsonValue === "string"
+                            ? loraJsonValue.substring(0, 100) + "..."
+                            : JSON.stringify(loraJsonValue).substring(0, 100) + "..."
+                    );
+                } else {
+                    console.log("[DEBUG] No lora_json found in execution message");
+                }
+
+                // Call original onExecuted if it exists
+                return originalOnExecuted?.call(this, message);
+            };
+        }
+    },
+});
