@@ -1,7 +1,11 @@
 import { app } from "../../../scripts/app.js";
 import { api } from "../../../scripts/api.js";
 
-console.log("Loading swiss-army-knife.js extension");
+// Version and cache busting info
+const EXTENSION_VERSION = "1.4.0"; // Should match pyproject.toml version
+const LOAD_TIMESTAMP = new Date().toISOString();
+
+console.log(`Loading swiss-army-knife.js extension v${EXTENSION_VERSION} at ${LOAD_TIMESTAMP}`);
 
 // Register custom widgets for Swiss Army Knife nodes
 app.registerExtension({
@@ -1289,5 +1293,84 @@ app.registerExtension({
                 );
             }
         }
+    },
+});
+
+// Cache busting and development utility extension
+app.registerExtension({
+    name: "comfyui_swissarmyknife.cache_control",
+
+    async setup() {
+        // Log cache busting info for debugging
+        console.log(
+            `Swiss Army Knife Cache Info: v${EXTENSION_VERSION}, loaded at ${LOAD_TIMESTAMP}`
+        );
+
+        // Add cache busting utilities for development
+        if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+            console.log("Development mode detected - cache busting utilities available");
+
+            // Add global cache clearing function
+            window.clearSwissArmyKnifeCache = function () {
+                console.log("Clearing Swiss Army Knife extension cache...");
+
+                // Clear localStorage items related to our extension
+                Object.keys(localStorage).forEach((key) => {
+                    if (key.includes("swissarmyknife") || key.includes("swiss_army_knife")) {
+                        localStorage.removeItem(key);
+                        console.log(`Cleared localStorage: ${key}`);
+                    }
+                });
+
+                // Clear sessionStorage items
+                Object.keys(sessionStorage).forEach((key) => {
+                    if (key.includes("swissarmyknife") || key.includes("swiss_army_knife")) {
+                        sessionStorage.removeItem(key);
+                        console.log(`Cleared sessionStorage: ${key}`);
+                    }
+                });
+
+                console.log("Swiss Army Knife cache cleared. Refreshing page...");
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 1000);
+            };
+
+            // Add reload function for development
+            window.reloadSwissArmyKnife = function () {
+                console.log("Reloading Swiss Army Knife extension...");
+                window.location.reload(true);
+            };
+
+            console.log("Development utilities added:");
+            console.log("- clearSwissArmyKnifeCache() - Clear extension cache and reload");
+            console.log("- reloadSwissArmyKnife() - Force page reload with cache bypass");
+        }
+
+        // Add version check mechanism
+        this.checkVersionUpdates();
+    },
+
+    checkVersionUpdates() {
+        const lastSeenVersion = localStorage.getItem("swissarmyknife_last_version");
+
+        if (lastSeenVersion && lastSeenVersion !== EXTENSION_VERSION) {
+            console.log(
+                `Swiss Army Knife updated from v${lastSeenVersion} to v${EXTENSION_VERSION}`
+            );
+
+            // Show update notification if available
+            if (app.extensionManager?.toast?.add) {
+                app.extensionManager.toast.add({
+                    severity: "info",
+                    summary: "Extension Updated",
+                    detail: `Swiss Army Knife updated to v${EXTENSION_VERSION}`,
+                    life: 5000,
+                });
+            }
+        }
+
+        // Store current version
+        localStorage.setItem("swissarmyknife_last_version", EXTENSION_VERSION);
     },
 });
