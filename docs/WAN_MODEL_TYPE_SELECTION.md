@@ -136,24 +136,24 @@ The field is validated through ComfyUI's input system:
 
 ```json
 {
-  "loras": [
-    {
-      "index": 0,
-      "display_name": "Generic LoRA",
-      "hash": "GHI789...",
-      "strength": 0.7,
-      "file": {
-        "exists": true,
-        "path": "/path/to/generic.safetensors"
-      }
-    }
-  ],
-  "summary": {
-    "count": 1,
-    "civitai_matches": 0
-  },
-  "combined_display": "Generic LoRA",
-  "wan_model_type": "none"
+    "loras": [
+        {
+            "index": 0,
+            "display_name": "Generic LoRA",
+            "hash": "GHI789...",
+            "strength": 0.7,
+            "file": {
+                "exists": true,
+                "path": "/path/to/generic.safetensors"
+            }
+        }
+    ],
+    "summary": {
+        "count": 1,
+        "civitai_matches": 0
+    },
+    "combined_display": "Generic LoRA",
+    "wan_model_type": "none"
 }
 ```
 
