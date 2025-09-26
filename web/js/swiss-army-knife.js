@@ -396,7 +396,19 @@ app.registerExtension({
                     const originalRedditUrlWidget = this.widgets.find(
                         (w) => w.name === "reddit_url"
                     );
-                    console.log(`[DEBUG] originalRedditUrlWidget found: ${!!originalRedditUrlWidget}`);
+                    console.log(
+                        `[DEBUG] originalRedditUrlWidget found: ${!!originalRedditUrlWidget}`
+                    );
+                    if (originalRedditUrlWidget) {
+                        console.log(
+                            `[DEBUG] Reddit URL widget current type: ${originalRedditUrlWidget.type}, value: "${originalRedditUrlWidget.value}"`
+                        );
+                    }
+
+                    // Debug: List all widget names
+                    console.log(
+                        `[DEBUG] All widget names: ${this.widgets.map((w) => w.name).join(", ")}`
+                    );
 
                     // Manage visibility of original input widgets
                     if (mediaSource === "Randomize Media from Path") {
@@ -418,13 +430,45 @@ app.registerExtension({
                             console.log("[STATE] Showing seed widget for randomization");
                         }
 
-                        // Hide Reddit URL widget
+                        // Completely remove Reddit URL widget from DOM for randomize mode
                         if (originalRedditUrlWidget) {
-                            originalRedditUrlWidget.type = "hidden";
-                            originalRedditUrlWidget.computeSize = () => [0, -4];
-                            console.log("[STATE] Hiding Reddit URL widget for randomize mode");
+                            // Store widget for potential restoration
+                            this._hiddenRedditWidget = originalRedditUrlWidget;
+
+                            // Completely remove the widget from the widgets array
+                            const widgetIndex = this.widgets.indexOf(originalRedditUrlWidget);
+                            if (widgetIndex > -1) {
+                                this.widgets.splice(widgetIndex, 1);
+                                console.log(
+                                    "[STATE] Completely removed Reddit URL widget from widgets array"
+                                );
+                            }
+
+                            // Remove DOM element if it exists
+                            if (
+                                originalRedditUrlWidget.element &&
+                                originalRedditUrlWidget.element.parentNode
+                            ) {
+                                originalRedditUrlWidget.element.parentNode.removeChild(
+                                    originalRedditUrlWidget.element
+                                );
+                                console.log("[STATE] Removed Reddit URL widget DOM element");
+                            }
+
+                            // Force node to recompute size and refresh
+                            if (this.setSize) {
+                                setTimeout(() => {
+                                    this.setSize(this.computeSize());
+                                }, 10);
+                            }
+
+                            console.log(
+                                "[STATE] Completely removed Reddit URL widget for randomize mode"
+                            );
                         } else {
-                            console.log("[DEBUG] Reddit URL widget not found for hiding in randomize mode");
+                            console.log(
+                                "[DEBUG] Reddit URL widget not found for hiding in randomize mode"
+                            );
                         }
 
                         // Hide upload file widgets
@@ -439,15 +483,47 @@ app.registerExtension({
                     } else if (mediaSource === "Reddit Post") {
                         console.log("[STATE] Reddit Post mode - showing Reddit URL widget");
 
-                        // Show the Reddit URL widget
+                        // Show the Reddit URL widget (restore if it was removed)
                         if (originalRedditUrlWidget) {
                             originalRedditUrlWidget.type = "text";
                             originalRedditUrlWidget.computeSize =
                                 originalRedditUrlWidget.constructor.prototype.computeSize;
                             this.redditUrlWidget = originalRedditUrlWidget; // Reference the original
-                            console.log("[STATE] Showing Reddit URL widget for Reddit Post mode");
+                            // Ensure the widget is fully visible (reverse ultra-aggressive hiding)
+                            if (originalRedditUrlWidget.element) {
+                                originalRedditUrlWidget.element.style.display = "";
+                                originalRedditUrlWidget.element.style.visibility = "";
+                                originalRedditUrlWidget.element.style.height = "";
+                                originalRedditUrlWidget.element.style.overflow = "";
+                                // Restore parent visibility if it was hidden
+                                if (originalRedditUrlWidget.element.parentNode) {
+                                    originalRedditUrlWidget.element.parentNode.style.display = "";
+                                }
+                            }
+                            originalRedditUrlWidget.options = originalRedditUrlWidget.options || {};
+                            originalRedditUrlWidget.options.serialize = true;
+                            console.log(
+                                "[STATE] Showing Reddit URL widget for Reddit Post mode (with display reset)"
+                            );
+                        } else if (this._hiddenRedditWidget) {
+                            // Restore widget that was completely removed
+                            this.widgets.push(this._hiddenRedditWidget);
+                            this._hiddenRedditWidget.type = "text";
+                            this._hiddenRedditWidget.computeSize =
+                                this._hiddenRedditWidget.constructor.prototype.computeSize;
+                            this.redditUrlWidget = this._hiddenRedditWidget;
+                            this._hiddenRedditWidget.options =
+                                this._hiddenRedditWidget.options || {};
+                            this._hiddenRedditWidget.options.serialize = true;
+                            console.log(
+                                "[STATE] Restored previously removed Reddit URL widget for Reddit Post mode"
+                            );
+                            // Clear the stored reference
+                            this._hiddenRedditWidget = null;
                         } else {
-                            console.log("[DEBUG] Reddit URL widget not found for showing in Reddit Post mode");
+                            console.log(
+                                "[DEBUG] Reddit URL widget not found for showing in Reddit Post mode"
+                            );
                         }
 
                         // Hide other widgets
@@ -485,10 +561,38 @@ app.registerExtension({
                             console.log("[STATE] Hiding seed widget for upload mode");
                         }
 
-                        // Hide Reddit URL widget
+                        // Completely remove Reddit URL widget from DOM for upload mode
                         if (originalRedditUrlWidget) {
-                            originalRedditUrlWidget.type = "hidden";
-                            originalRedditUrlWidget.computeSize = () => [0, -4];
+                            // Store widget for potential restoration
+                            this._hiddenRedditWidget = originalRedditUrlWidget;
+
+                            // Completely remove the widget from the widgets array
+                            const widgetIndex = this.widgets.indexOf(originalRedditUrlWidget);
+                            if (widgetIndex > -1) {
+                                this.widgets.splice(widgetIndex, 1);
+                                console.log(
+                                    "[STATE] Completely removed Reddit URL widget from widgets array"
+                                );
+                            }
+
+                            // Remove DOM element if it exists
+                            if (
+                                originalRedditUrlWidget.element &&
+                                originalRedditUrlWidget.element.parentNode
+                            ) {
+                                originalRedditUrlWidget.element.parentNode.removeChild(
+                                    originalRedditUrlWidget.element
+                                );
+                                console.log("[STATE] Removed Reddit URL widget DOM element");
+                            }
+
+                            console.log(
+                                "[STATE] Completely removed Reddit URL widget for upload mode"
+                            );
+                        } else {
+                            console.log(
+                                "[DEBUG] Reddit URL widget not found for hiding in upload mode"
+                            );
                         }
 
                         if (mediaType === "image") {
@@ -566,8 +670,29 @@ app.registerExtension({
                         }`
                     );
 
-                    // Force node to recalculate size
+                    // Final debug check for Reddit URL widget state
+                    const finalRedditUrlWidget = this.widgets.find((w) => w.name === "reddit_url");
+                    if (finalRedditUrlWidget) {
+                        console.log(
+                            `[DEBUG] Final Reddit URL widget state - type: ${finalRedditUrlWidget.type}, visible: ${finalRedditUrlWidget.type !== "hidden"}, value: "${finalRedditUrlWidget.value}"`
+                        );
+                    }
+
+                    // Force node to recalculate size and refresh UI (aggressive refresh)
                     this.setSize(this.computeSize());
+
+                    // Additional UI refresh signals
+                    if (this.graph && this.graph.setDirtyCanvas) {
+                        this.graph.setDirtyCanvas(true, true);
+                    }
+
+                    // Force a render update
+                    setTimeout(() => {
+                        if (this.setDirtyCanvas) {
+                            this.setDirtyCanvas(true);
+                        }
+                        this.setSize(this.computeSize());
+                    }, 10);
                 };
 
                 // Initial setup
