@@ -396,6 +396,7 @@ app.registerExtension({
                     const originalRedditUrlWidget = this.widgets.find(
                         (w) => w.name === "reddit_url"
                     );
+                    console.log(`[DEBUG] originalRedditUrlWidget found: ${!!originalRedditUrlWidget}`);
 
                     // Manage visibility of original input widgets
                     if (mediaSource === "Randomize Media from Path") {
@@ -421,6 +422,9 @@ app.registerExtension({
                         if (originalRedditUrlWidget) {
                             originalRedditUrlWidget.type = "hidden";
                             originalRedditUrlWidget.computeSize = () => [0, -4];
+                            console.log("[STATE] Hiding Reddit URL widget for randomize mode");
+                        } else {
+                            console.log("[DEBUG] Reddit URL widget not found for hiding in randomize mode");
                         }
 
                         // Hide upload file widgets
@@ -432,8 +436,8 @@ app.registerExtension({
                             originalUploadedVideoWidget.type = "hidden";
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
-                    } else if (mediaSource === "Reddit post") {
-                        console.log("[STATE] Reddit post mode - showing Reddit URL widget");
+                    } else if (mediaSource === "Reddit Post") {
+                        console.log("[STATE] Reddit Post mode - showing Reddit URL widget");
 
                         // Show the Reddit URL widget
                         if (originalRedditUrlWidget) {
@@ -441,6 +445,9 @@ app.registerExtension({
                             originalRedditUrlWidget.computeSize =
                                 originalRedditUrlWidget.constructor.prototype.computeSize;
                             this.redditUrlWidget = originalRedditUrlWidget; // Reference the original
+                            console.log("[STATE] Showing Reddit URL widget for Reddit Post mode");
+                        } else {
+                            console.log("[DEBUG] Reddit URL widget not found for showing in Reddit Post mode");
                         }
 
                         // Hide other widgets

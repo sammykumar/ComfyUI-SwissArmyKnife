@@ -236,9 +236,13 @@ class GeminiMediaDescribe:
                         media_url = post_data['media']['reddit_video'].get('fallback_url')
                         media_type = 'video'
                 elif 'redgifs.com' in url or 'gfycat.com' in url:
-                    # External video hosting - use the direct URL
-                    media_url = url
-                    media_type = 'video'
+                    # External video hosting - extract the actual video URL
+                    media_url, media_type = self._extract_redgifs_url(url)
+                    if not media_url:
+                        # Fallback: try to use the original URL directly
+                        print(f"Warning: Could not extract direct video URL from {url}, trying original URL as fallback")
+                        media_url = url
+                        media_type = 'video'
                     
             # Check for gallery or media_metadata
             if not media_url and post_data.get('media_metadata'):
@@ -257,11 +261,37 @@ class GeminiMediaDescribe:
                 
             # Download the media file
             print(f"Downloading media from: {media_url}")
+            
+            # Special handling for redgifs URLs that might not be direct video URLs
+            if 'redgifs.com' in media_url and not media_url.endswith(('.mp4', '.webm', '.mov')):
+                print(f"Warning: Redgifs URL doesn't appear to be a direct video link, trying to extract...")
+                extracted_url, extracted_type = self._extract_redgifs_url(media_url)
+                if extracted_url:
+                    print(f"Successfully extracted direct video URL: {extracted_url}")
+                    media_url = extracted_url
+                    media_type = extracted_type
+                else:
+                    print(f"Failed to extract direct URL, will try original URL anyway...")
+            
             media_response = requests.get(media_url, headers=headers, timeout=60)
             media_response.raise_for_status()
             
-            # Determine file extension from content type or URL
+            # Check if we got actual media content
             content_type = media_response.headers.get('content-type', '')
+            content_length = len(media_response.content)
+            
+            print(f"Downloaded content: {content_type}, size: {content_length} bytes")
+            
+            # If we got HTML instead of media (common with redgifs), try to extract again
+            if content_type.startswith('text/html') and 'redgifs.com' in media_url:
+                print("Got HTML content instead of video, this suggests URL extraction failed")
+                raise ValueError(f"Redgifs URL returned webpage instead of video: {media_url}")
+            
+            # Validate we have actual content
+            if content_length < 1024:  # Less than 1KB is suspicious for media
+                print(f"Warning: Very small content size ({content_length} bytes), might not be valid media")
+            
+            # Determine file extension from content type or URL
             file_ext = None
             
             if content_type:
@@ -299,6 +329,146 @@ class GeminiMediaDescribe:
             raise Exception(f"Failed to parse Reddit post: Invalid post format - {str(e)}")
         except Exception as e:
             raise Exception(f"Reddit media download failed: {str(e)}")
+
+    def _extract_redgifs_url(self, redgifs_url):
+        """
+        Extract the actual video URL from a redgifs or gfycat page
+        
+        Args:
+            redgifs_url: redgifs or gfycat URL
+            
+        Returns:
+            tuple: (video_url, media_type) or (None, None) on failure
+        """
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+            
+            print(f"[DEBUG] Attempting to extract video URL from: {redgifs_url}")
+            
+            # Handle different redgifs URL formats
+            if 'redgifs.com' in redgifs_url:
+                # Extract gif ID from URL
+                parsed_url = urlparse(redgifs_url)
+                path_parts = parsed_url.path.strip('/').split('/')
+                
+                # Try to find the gif ID (usually the last part or after 'watch')
+                gif_id = None
+                if 'watch' in path_parts:
+                    gif_idx = path_parts.index('watch')
+                    if gif_idx + 1 < len(path_parts):
+                        gif_id = path_parts[gif_idx + 1]
+                elif path_parts:
+                    gif_id = path_parts[-1]
+                
+                print(f"[DEBUG] Extracted gif_id: {gif_id}")
+                
+                if gif_id:
+                    # Strategy 1: Try to scrape the page for video URLs
+                    try:
+                        print(f"[DEBUG] Strategy 1: Scraping page for video URLs")
+                        response = requests.get(redgifs_url, headers=headers, timeout=30)
+                        if response.status_code == 200:
+                            content = response.text
+                            
+                            # Look for various video URL patterns in the HTML
+                            import re
+                            
+                            # Pattern 1: Look for HD/SD video URLs in script tags or data attributes
+                            patterns = [
+                                r'"(https://[^"]*\.redgifs\.com/[^"]*\.mp4[^"]*)"',
+                                r'"(https://files\.redgifs\.com/[^"]*\.mp4[^"]*)"',
+                                r'"(https://thumbs\d*\.redgifs\.com/[^"]*\.mp4[^"]*)"',
+                                r'"videoUrl":"([^"]*)"',
+                                r'"url":"(https://[^"]*\.mp4[^"]*)"',
+                            ]
+                            
+                            for pattern in patterns:
+                                matches = re.findall(pattern, content, re.IGNORECASE)
+                                for match in matches:
+                                    # Clean up the URL (remove escaping)
+                                    clean_url = match.replace('\\', '')
+                                    print(f"[DEBUG] Found potential video URL: {clean_url}")
+                                    
+                                    # Test if the URL is accessible
+                                    try:
+                                        test_response = requests.head(clean_url, headers=headers, timeout=10)
+                                        if test_response.status_code == 200:
+                                            content_type = test_response.headers.get('content-type', '')
+                                            if 'video' in content_type.lower() or clean_url.endswith('.mp4'):
+                                                print(f"[DEBUG] Successfully found working video URL: {clean_url}")
+                                                return clean_url, 'video'
+                                    except:
+                                        continue
+                    except Exception as e:
+                        print(f"[DEBUG] Strategy 1 failed: {str(e)}")
+                    
+                    # Strategy 2: Try common direct URL patterns
+                    try:
+                        print(f"[DEBUG] Strategy 2: Trying direct URL patterns")
+                        direct_patterns = [
+                            f"https://files.redgifs.com/{gif_id}.mp4",
+                            f"https://thumbs.redgifs.com/{gif_id}.mp4",
+                            f"https://thumbs2.redgifs.com/{gif_id}.mp4",
+                            f"https://files.redgifs.com/{gif_id}-mobile.mp4",
+                        ]
+                        
+                        for direct_url in direct_patterns:
+                            try:
+                                print(f"[DEBUG] Testing direct URL: {direct_url}")
+                                test_response = requests.head(direct_url, headers=headers, timeout=10)
+                                if test_response.status_code == 200:
+                                    print(f"[DEBUG] Direct URL successful: {direct_url}")
+                                    return direct_url, 'video'
+                            except:
+                                continue
+                    except Exception as e:
+                        print(f"[DEBUG] Strategy 2 failed: {str(e)}")
+                    
+                    # Strategy 3: Try the API (might be rate limited or require auth)
+                    try:
+                        print(f"[DEBUG] Strategy 3: Trying redgifs API")
+                        api_url = f"https://api.redgifs.com/v2/gifs/{gif_id}"
+                        response = requests.get(api_url, headers=headers, timeout=30)
+                        
+                        if response.status_code == 200:
+                            data = response.json()
+                            print(f"[DEBUG] API response structure: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+                            
+                            if 'gif' in data and 'urls' in data['gif']:
+                                video_urls = data['gif']['urls']
+                                print(f"[DEBUG] Available video qualities: {list(video_urls.keys())}")
+                                
+                                for quality in ['hd', 'sd', 'poster']:
+                                    if quality in video_urls and video_urls[quality]:
+                                        video_url = video_urls[quality]
+                                        print(f"[DEBUG] Found {quality} quality video: {video_url}")
+                                        return video_url, 'video'
+                        else:
+                            print(f"[DEBUG] API returned status {response.status_code}: {response.text[:200]}")
+                    except Exception as e:
+                        print(f"[DEBUG] Strategy 3 failed: {str(e)}")
+            
+            elif 'gfycat.com' in redgifs_url:
+                print(f"[DEBUG] Processing gfycat URL (legacy)")
+                # Gfycat was shut down, but some URLs might redirect to redgifs
+                parsed_url = urlparse(redgifs_url)
+                path_parts = parsed_url.path.strip('/').split('/')
+                
+                if path_parts:
+                    gfy_name = path_parts[-1]
+                    print(f"[DEBUG] Extracted gfy_name: {gfy_name}")
+                    
+                    # Try redgifs with the gfy name
+                    return self._extract_redgifs_url(f"https://www.redgifs.com/watch/{gfy_name}")
+            
+            print(f"[DEBUG] All strategies failed for {redgifs_url}")
+                    
+        except Exception as e:
+            print(f"[DEBUG] Exception in _extract_redgifs_url: {str(e)}")
+            
+        return None, None
 
     def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text):
         """
@@ -880,7 +1050,7 @@ Generate descriptions that adhere to the following structured layers and constra
         """
         return {
             "required": {
-                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit post"], {
+                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit Post"], {
                     "default": "Upload Media",
                     "tooltip": "Choose whether to upload media, randomize from a directory path, or download from a Reddit post"
                 }),
@@ -929,7 +1099,7 @@ Generate descriptions that adhere to the following structured layers and constra
                 "reddit_url": ("STRING", {
                     "multiline": False,
                     "default": "",
-                    "tooltip": "Reddit post URL (used when media_source is Reddit post)"
+                    "tooltip": "Reddit post URL (used when media_source is Reddit Post)"
                 }),
             }
         }
@@ -944,7 +1114,7 @@ Generate descriptions that adhere to the following structured layers and constra
         Process media (image or video) and analyze with Gemini
 
         Args:
-            media_source: Source of media ("Upload Media", "Randomize Media from Path", or "Reddit post")
+            media_source: Source of media ("Upload Media", "Randomize Media from Path", or "Reddit Post")
             media_type: Type of media ("image" or "video")
             seed: Seed for randomization when using 'Randomize Media from Path'. Use different seeds to force re-execution.
             gemini_options: Configuration options from Gemini Util - Options node (optional)
@@ -1064,10 +1234,10 @@ Directory scan results:
                 else:
                     # For random video, set up for video processing
                     media_info_text = f"📹 Video Processing Info (Random Selection):\n• File: {os.path.basename(selected_media_path)}\n• Source: Random from {media_path} (including subdirectories)\n• Full path: {selected_media_path}"
-            elif media_source == "Reddit post":
-                # Reddit post mode
+            elif media_source == "Reddit Post":
+                # Reddit Post mode
                 if not reddit_url or not reddit_url.strip():
-                    raise ValueError("Reddit URL is required when media_source is 'Reddit post'")
+                    raise ValueError("Reddit URL is required when media_source is 'Reddit Post'")
                 
                 # Download media from Reddit post
                 downloaded_path, detected_media_type, reddit_media_info = self._download_reddit_media(reddit_url)
