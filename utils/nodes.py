@@ -1468,6 +1468,10 @@ class LoRAInfoExtractor:
                     "default": True,
                     "tooltip": "Disable to skip remote lookups and rely on local metadata only"
                 }),
+                "wan_model_type": (["high", "low", "none"], {
+                    "default": "high",
+                    "tooltip": "Specify whether this LoRA is used with Wan 2.2 High Noise, Low Noise model, or none/other"
+                }),
             }
         }
 
@@ -1476,7 +1480,7 @@ class LoRAInfoExtractor:
     FUNCTION = "extract_lora_info"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def extract_lora_info(self, lora: Any, civitai_api_key: str = "", fallback_name: str = "", use_civitai_api: bool = True):
+    def extract_lora_info(self, lora: Any, civitai_api_key: str = "", fallback_name: str = "", use_civitai_api: bool = True, wan_model_type: str = "high"):
         """Extract LoRA stack metadata and return JSON plus human readable summary."""
 
         debug_repr = repr(lora)
@@ -1484,6 +1488,7 @@ class LoRAInfoExtractor:
         print(f"  - use_civitai_api: {use_civitai_api}")
         print(f"  - civitai_api_key provided: {bool(civitai_api_key and civitai_api_key != 'YOUR_CIVITAI_API_KEY_HERE')}")
         print(f"  - fallback_name: '{fallback_name}'")
+        print(f"  - wan_model_type: '{wan_model_type}'")
         print(f"  - lora type: {type(lora)}")
         print(f"  - lora repr: {debug_repr[:300]}{'...' if len(debug_repr) > 300 else ''}")
 
@@ -1503,9 +1508,9 @@ class LoRAInfoExtractor:
 
             processed_entries = []
             info_lines: List[str] = []
-            total_size = 0
             missing_files = 0
             civitai_matches = 0
+            cache_hits = 0
             tags_accumulator = set()
 
             for index, entry in enumerate(entries):
@@ -1518,14 +1523,17 @@ class LoRAInfoExtractor:
 
                 processed_entries.append(metadata)
 
-                if metadata["file"]["exists"] and metadata["file"]["size_bytes"]:
-                    total_size += metadata["file"]["size_bytes"]
-                else:
+                if not metadata["file"]["exists"]:
                     missing_files += 1
 
                 if metadata["civitai"]:
                     civitai_matches += 1
-                    tags_accumulator.update(metadata["civitai"].get("tags", []))
+                    if metadata["civitai"].get("cache_hit"):
+                        cache_hits += 1
+                    # Extract tags from the filtered civitai data or fall back to empty list
+                    civitai_tags = metadata["civitai"].get("tags", [])
+                    if civitai_tags:
+                        tags_accumulator.update(civitai_tags)
 
                 info_lines.append(self._format_info_line(metadata))
 
@@ -1533,7 +1541,7 @@ class LoRAInfoExtractor:
                 count=len(processed_entries),
                 missing_files=missing_files,
                 civitai_matches=civitai_matches,
-                total_size=total_size,
+                cache_hits=cache_hits,
                 tags=sorted(tag for tag in tags_accumulator if tag)
             )
 
@@ -1545,6 +1553,7 @@ class LoRAInfoExtractor:
                     "loras": processed_entries,
                     "summary": summary,
                     "combined_display": combined_display,
+                    "wan_model_type": wan_model_type,
                 }
                 return (json.dumps(payload, indent=2), info_block, lora)
 
@@ -1554,6 +1563,7 @@ class LoRAInfoExtractor:
                 "loras": [],
                 "summary": summary,
                 "combined_display": fallback_label,
+                "wan_model_type": wan_model_type,
                 "error": "LoRA stack did not contain any LoRA dictionaries",
             }
             return (json.dumps(empty_payload, indent=2), f"Fallback: {fallback_label}", lora)
@@ -1565,6 +1575,7 @@ class LoRAInfoExtractor:
                 "loras": [],
                 "summary": {"count": 0},
                 "combined_display": fallback_label,
+                "wan_model_type": wan_model_type,
                 "error": str(exc),
             }
             return (json.dumps(error_payload, indent=2), f"Error: {exc}", lora)
@@ -1659,9 +1670,6 @@ class LoRAInfoExtractor:
         name_from_filename = self._clean_name(os.path.basename(file_path)) if file_path else None
         display_name = self._select_display_name(raw_name, name_from_filename)
 
-        file_size = os.path.getsize(normalized_path) if file_exists else 0
-        file_mtime = os.path.getmtime(normalized_path) if file_exists else None
-        
         # Get all hash types
         file_hashes = self.hash_cache.get_hashes(normalized_path) if file_exists else None
         legacy_hash = file_hashes.get('sha256') if file_hashes else None  # For backward compatibility
@@ -1675,10 +1683,10 @@ class LoRAInfoExtractor:
         file_info = {
             "exists": file_exists,
             "path": normalized_path or file_path,
-            "size_bytes": file_size,
-            "size_human": self._human_readable_size(file_size) if file_exists else "0 B",
-            "modified_at": datetime.utcfromtimestamp(file_mtime).isoformat() + "Z" if file_mtime else None,
         }
+
+        # Filter raw entry to remove unwanted fields
+        filtered_raw = {k: v for k, v in entry.items() if k not in ['path', 'blocks', 'layer_filter', 'low_mem_load', 'merge_loras']}
 
         return {
             "index": index,
@@ -1688,21 +1696,18 @@ class LoRAInfoExtractor:
             "file": file_info,
             "strength": strength,
             "original": {
-                "raw": entry,
-                "name": raw_name,
-                "path": file_path,
+                "raw": filtered_raw,
             },
-            "civitai": civitai_data,
+            "civitai": self._filter_civitai_data(civitai_data) if civitai_data else None,
         }
 
-    def _build_summary(self, *, count: int, missing_files: int, civitai_matches: int, total_size: int, tags: List[str]) -> Dict[str, Any]:
+    def _build_summary(self, *, count: int, missing_files: int, civitai_matches: int, cache_hits: int, tags: List[str]) -> Dict[str, Any]:
         return {
             "count": count,
             "missing_files": missing_files,
             "civitai_matches": civitai_matches,
+            "civitai_cache_hits": cache_hits,
             "local_only": max(count - civitai_matches, 0),
-            "total_size_bytes": total_size,
-            "total_size_human": self._human_readable_size(total_size),
             "tags": tags[:25],
         }
 
@@ -1713,7 +1718,8 @@ class LoRAInfoExtractor:
         ]
         if summary["missing_files"]:
             parts.append(f"Missing: {summary['missing_files']}")
-        parts.append(f"Total size: {summary['total_size_human']}")
+        if summary.get("civitai_cache_hits", 0) > 0:
+            parts.append(f"Cache hits: {summary['civitai_cache_hits']}")
         return " • ".join(parts)
 
     def _format_info_line(self, metadata: Dict[str, Any]) -> str:
@@ -1744,11 +1750,42 @@ class LoRAInfoExtractor:
         file_info = metadata["file"]
         if not file_info["exists"]:
             segments.append("missing file")
-        else:
-            segments.append(f"{file_info['size_human']}")
 
         joined_segments = " | ".join(segments)
         return f"• {metadata['display_name']} — {joined_segments}" if joined_segments else f"• {metadata['display_name']}"
+
+    def _filter_civitai_data(self, civitai_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Filter CivitAI data to keep only essential fields."""
+        if not civitai_data:
+            return None
+            
+        # Keep only specified fields
+        filtered = {}
+        
+        # Required fields from the original response
+        keep_fields = ['civitai_name', 'version_name', 'civitai_url', 'model_id', 'version_id', 'fetched_at']
+        for field in keep_fields:
+            if field in civitai_data:
+                filtered[field] = civitai_data[field]
+        
+        # Special handling for air - check if it exists in api_response
+        api_response = civitai_data.get('api_response', {})
+        if 'air' in api_response:
+            filtered['air'] = api_response['air']
+            
+        # Include hash information
+        if 'all_hashes' in civitai_data:
+            filtered['hashes'] = civitai_data['all_hashes']
+            
+        # Include matched hash info and cache status
+        if 'matched_hash_type' in civitai_data:
+            filtered['matched_hash_type'] = civitai_data['matched_hash_type']
+        if 'matched_hash_value' in civitai_data:
+            filtered['matched_hash_value'] = civitai_data['matched_hash_value']
+        if 'cache_hit' in civitai_data:
+            filtered['cache_hit'] = civitai_data['cache_hit']
+            
+        return filtered
 
     def _extract_first(self, source: Dict[str, Any], keys: Tuple[str, ...]) -> Optional[str]:
         for key in keys:

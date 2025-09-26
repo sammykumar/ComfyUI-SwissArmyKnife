@@ -58,7 +58,10 @@ class CivitAIService:
             cache_key = os.path.abspath(file_path)
             if cache_key in self.cache:
                 print(f"Using cached CivitAI data for file: {os.path.basename(file_path)}")
-                return self.cache[cache_key]
+                cached_result = self.cache[cache_key]
+                if cached_result:
+                    cached_result['cache_hit'] = True
+                return cached_result
 
             # Try hash types in priority order
             hash_priority = [
@@ -82,6 +85,7 @@ class CivitAIService:
                     result['matched_hash_type'] = hash_type
                     result['matched_hash_value'] = hash_value
                     result['all_hashes'] = file_hashes
+                    result['cache_hit'] = False  # This is a fresh API call
                     break
                 else:
                     print(f"❌ No CivitAI match for {hash_type} hash")
