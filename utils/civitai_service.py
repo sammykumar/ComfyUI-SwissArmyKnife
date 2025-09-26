@@ -35,6 +35,7 @@ class CivitAIService:
     def get_model_info_by_hash(self, file_path: str) -> Optional[Dict[str, Any]]:
         """
         Get model information from CivitAI using file hash
+        Tries multiple hash types in order: SHA256, AutoV1, AutoV2, Blake3, CRC32
 
         Args:
             file_path: Path to the LoRA file
@@ -47,16 +48,46 @@ class CivitAIService:
                 print(f"File not found: {file_path}")
                 return None
 
-            file_hash = self._hash_cache.get_hash(file_path)
-            if not file_hash:
+            # Get all hash types
+            file_hashes = self._hash_cache.get_hashes(file_path)
+            if not file_hashes:
+                print(f"Could not compute hashes for {file_path}")
                 return None
 
-            if file_hash in self.cache:
-                print(f"Using cached CivitAI data for hash: {file_hash[:16]}...")
-                return self.cache[file_hash]
+            # Check cache for any previously successful hash
+            cache_key = os.path.abspath(file_path)
+            if cache_key in self.cache:
+                print(f"Using cached CivitAI data for file: {os.path.basename(file_path)}")
+                return self.cache[cache_key]
 
-            result = self._run_async(self._get_model_info_by_hash_async(file_hash))
-            self.cache[file_hash] = result
+            # Try hash types in priority order
+            hash_priority = [
+                ('sha256', file_hashes.get('sha256')),
+                ('autov1', file_hashes.get('autov1')),
+                ('autov2', file_hashes.get('autov2')),
+                ('blake3', file_hashes.get('blake3')),
+                ('crc32', file_hashes.get('crc32')),
+            ]
+
+            result = None
+            for hash_type, hash_value in hash_priority:
+                if not hash_value:
+                    continue
+                    
+                print(f"Trying CivitAI lookup with {hash_type}: {hash_value[:16]}...")
+                result = self._run_async(self._get_model_info_by_hash_async(hash_value, hash_type))
+                if result:
+                    print(f"✅ Found CivitAI match using {hash_type} hash")
+                    # Add hash information to result
+                    result['matched_hash_type'] = hash_type
+                    result['matched_hash_value'] = hash_value
+                    result['all_hashes'] = file_hashes
+                    break
+                else:
+                    print(f"❌ No CivitAI match for {hash_type} hash")
+
+            # Cache the result (even if None) to avoid repeated API calls
+            self.cache[cache_key] = result
             return result
 
         except Exception as e:  # pylint: disable=broad-except
@@ -64,19 +95,31 @@ class CivitAIService:
             return None
 
     def _run_async(self, coro):
+        import concurrent.futures
+        import threading
+        
         try:
+            # Check if we're in an event loop
             loop = asyncio.get_running_loop()
+            # If we are, we need to run the coroutine in a separate thread
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(self._run_in_thread, coro)
+                return future.result()
         except RuntimeError:
+            # No event loop running, we can use asyncio.run directly
             return asyncio.run(coro)
-
-        # Running inside an active loop – create a dedicated loop to run synchronously.
+    
+    def _run_in_thread(self, coro):
+        """Run coroutine in a new event loop in the current thread."""
         new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
         try:
             return new_loop.run_until_complete(coro)
         finally:
             new_loop.close()
+            asyncio.set_event_loop(None)
 
-    async def _get_model_info_by_hash_async(self, file_hash: str, attempt: int = 0) -> Optional[Dict[str, Any]]:
+    async def _get_model_info_by_hash_async(self, file_hash: str, hash_type: str = "unknown", attempt: int = 0) -> Optional[Dict[str, Any]]:
         url = f"{self.BASE_URL}/model-versions/by-hash/{file_hash}"
         headers = {}
         if self.api_key:
@@ -87,19 +130,19 @@ class CivitAIService:
             try:
                 response = await client.get(url, headers=headers)
             except httpx.RequestError as exc:
-                print(f"Network error fetching CivitAI data for hash {file_hash[:16]}...: {exc}")
+                print(f"Network error fetching CivitAI data for {hash_type} hash {file_hash[:16]}...: {exc}")
                 return None
 
-        print(f"[DEBUG] Response status: {response.status_code}")
+        print(f"[DEBUG] CivitAI response for {hash_type} hash: {response.status_code}")
         if response.status_code == 429 and attempt < self.MAX_RETRIES:
             retry_after = response.headers.get("Retry-After")
             delay = min(float(retry_after) if retry_after else 1.0, 5.0)
             print(f"[DEBUG] Rate limited by CivitAI, retrying in {delay} seconds")
             await asyncio.sleep(delay)
-            return await self._get_model_info_by_hash_async(file_hash, attempt=attempt + 1)
+            return await self._get_model_info_by_hash_async(file_hash, hash_type, attempt=attempt + 1)
 
         if response.status_code == 404:
-            print(f"Model not found on CivitAI for hash: {file_hash[:16]}...")
+            print(f"Model not found on CivitAI for {hash_type} hash: {file_hash[:16]}...")
             return None
 
         if response.status_code != 200:
@@ -118,6 +161,7 @@ class CivitAIService:
         metrics = model_data.get("stats", {})
 
         result = {
+            # Processed/legacy fields for backward compatibility
             "civitai_name": model.get("name", "Unknown"),
             "version_name": model_data.get("name", ""),
             "description": model_data.get("description", ""),
@@ -131,6 +175,9 @@ class CivitAIService:
             "nsfw": model.get("nsfw", False),
             "stats": metrics,
             "fetched_at": datetime.utcnow().isoformat() + "Z",
+            
+            # Full API response for comprehensive access
+            "api_response": model_data,
         }
 
         print(f"Found CivitAI model: {result['civitai_name']} by {result['creator']}")

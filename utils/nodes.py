@@ -1661,7 +1661,10 @@ class LoRAInfoExtractor:
 
         file_size = os.path.getsize(normalized_path) if file_exists else 0
         file_mtime = os.path.getmtime(normalized_path) if file_exists else None
-        file_hash = self.hash_cache.get_hash(normalized_path) if file_exists else None
+        
+        # Get all hash types
+        file_hashes = self.hash_cache.get_hashes(normalized_path) if file_exists else None
+        legacy_hash = file_hashes.get('sha256') if file_hashes else None  # For backward compatibility
 
         civitai_data = None
         if file_exists and use_civitai_api and civitai_service:
@@ -1680,7 +1683,8 @@ class LoRAInfoExtractor:
         return {
             "index": index,
             "display_name": display_name,
-            "hash": file_hash,
+            "hash": legacy_hash,  # Keep for backward compatibility
+            "hashes": file_hashes,  # All computed hash types
             "file": file_info,
             "strength": strength,
             "original": {
@@ -1720,12 +1724,22 @@ class LoRAInfoExtractor:
             version = civitai.get("version_name")
             creator = civitai.get("creator", "Unknown")
             version_fragment = f" ({version})" if version and version != metadata["display_name"] else ""
-            segments.append(f"CivitAI{version_fragment} by {creator}")
+            
+            # Show which hash type was used for the match
+            matched_hash_type = civitai.get("matched_hash_type", "unknown")
+            segments.append(f"CivitAI{version_fragment} by {creator} [{matched_hash_type}]")
         else:
             segments.append("Local metadata")
 
+        # Show primary hash for backward compatibility
         if metadata.get("hash"):
-            segments.append(f"hash {metadata['hash'][:10]}…")
+            segments.append(f"SHA256 {metadata['hash'][:10]}…")
+        
+        # Show count of available hash types
+        hashes = metadata.get("hashes", {})
+        if hashes:
+            hash_count = sum(1 for v in hashes.values() if v is not None)
+            segments.append(f"{hash_count} hash types")
 
         file_info = metadata["file"]
         if not file_info["exists"]:
