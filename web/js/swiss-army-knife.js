@@ -223,6 +223,7 @@ app.registerExtension({
                         "uploaded_video_file",
                         "seed",
                         "reddit_url",
+                        "aspect_ratio",  // Hide by default, will be shown for videos
                     ];
 
                     for (const widgetName of widgetsToHide) {
@@ -360,6 +361,7 @@ app.registerExtension({
                         (w) => w.name === "uploaded_video_file"
                     );
                     const originalSeedWidget = this.widgets.find((w) => w.name === "seed");
+                    const originalAspectRatioWidget = this.widgets.find((w) => w.name === "aspect_ratio");
 
                     console.log("[DEBUG] Found widgets:");
                     console.log("  originalMediaPathWidget:", !!originalMediaPathWidget);
@@ -666,6 +668,23 @@ app.registerExtension({
                             );
                             this.videoInfoWidget.serialize = false;
                         }
+                    }
+
+                    // Manage aspect_ratio widget visibility based on media_type
+                    if (originalAspectRatioWidget) {
+                        if (mediaType === "video") {
+                            // Show aspect ratio widget for videos
+                            originalAspectRatioWidget.type = "combo";
+                            originalAspectRatioWidget.computeSize = () => [0, LiteGraph.NODE_WIDGET_HEIGHT];
+                            console.log("[WIDGET] Showing aspect_ratio widget for video");
+                        } else {
+                            // Hide aspect ratio widget for images
+                            originalAspectRatioWidget.type = "hidden";
+                            originalAspectRatioWidget.computeSize = () => [0, -4];
+                            console.log("[WIDGET] Hiding aspect_ratio widget for image");
+                        }
+                    } else {
+                        console.log("[DEBUG] aspect_ratio widget not found");
                     }
 
                     console.log(
