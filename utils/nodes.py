@@ -169,6 +169,58 @@ class GeminiMediaDescribe:
             print("FFmpeg not found. Please install ffmpeg to use duration trimming.")
             return False
 
+    def _crop_video(self, input_path, output_path, aspect_ratio):
+        """
+        Crop video to specified aspect ratio using ffmpeg
+
+        Args:
+            input_path: Path to input video file
+            output_path: Path to output cropped video file
+            aspect_ratio: "portrait" (480x832) or "landscape" (832x480)
+        """
+        try:
+            # Determine target dimensions based on aspect ratio
+            if aspect_ratio == "landscape":
+                target_width = 832
+                target_height = 480
+            else:  # portrait (default)
+                target_width = 480
+                target_height = 832
+
+            # Use ffmpeg to crop and resize the video
+            cmd = [
+                'ffmpeg',
+                '-i', input_path,
+                '-vf', f'scale={target_width}:{target_height}:force_original_aspect_ratio=increase,crop={target_width}:{target_height}',
+                '-c:a', 'copy',  # Copy audio without re-encoding
+                '-y',  # Overwrite output file if it exists
+                output_path
+            ]
+
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
+            return True
+
+        except subprocess.CalledProcessError as e:
+            print(f"FFmpeg crop error: {e.stderr}")
+            # Fallback: try simpler crop without scale
+            try:
+                cmd = [
+                    'ffmpeg',
+                    '-i', input_path,
+                    '-vf', f'crop={target_width}:{target_height}',
+                    '-c:a', 'copy',
+                    '-y',
+                    output_path
+                ]
+                subprocess.run(cmd, capture_output=True, text=True, check=True)
+                return True
+            except subprocess.CalledProcessError as e2:
+                print(f"FFmpeg simple crop also failed: {e2.stderr}")
+                return False
+        except FileNotFoundError:
+            print("FFmpeg not found. Please install ffmpeg to use video cropping.")
+            return False
+
     def _download_reddit_media(self, reddit_url):
         """
         Download media from a Reddit post URL
@@ -768,7 +820,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Image analysis failed: {str(e)}")
 
-    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text):
+    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text, aspect_ratio="portrait"):
         """
         Process video using logic from GeminiVideoDescribe
         """
@@ -912,15 +964,52 @@ Generate descriptions that adhere to the following structured layers and constra
                     actual_duration = original_duration
                     trimmed_video_output_path = selected_media_path
 
-            # Read the final video file (original or trimmed)
+            # Apply aspect ratio cropping to the video (trimmed or original)
+            cropped = False
+            with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
+                cropped_video_path = temp_file.name
+
+            # Attempt to crop the video to the specified aspect ratio
+            video_to_crop = final_video_path  # This is either the original or trimmed video
+            if self._crop_video(video_to_crop, cropped_video_path, aspect_ratio):
+                # Update the final video path to the cropped version
+                if final_video_path != selected_media_path:
+                    # If we had a trimmed video, clean up the temporary file
+                    try:
+                        os.unlink(final_video_path)
+                    except OSError:
+                        pass
+                final_video_path = cropped_video_path
+                cropped = True
+                print(f"Video cropped to {aspect_ratio} aspect ratio")
+            else:
+                print(f"Warning: Could not crop video to {aspect_ratio} aspect ratio. Using original dimensions.")
+                # Clean up the failed crop file
+                try:
+                    os.unlink(cropped_video_path)
+                except OSError:
+                    pass
+
+            # Read the final video file (original, trimmed, or cropped)
             with open(final_video_path, 'rb') as video_file:
                 video_data = video_file.read()
 
             file_size = len(video_data) / 1024 / 1024  # Size in MB
 
-            # Update video info to include trimming details
+            # Update video info to include trimming and cropping details
             end_time = actual_duration  # Since we start from 0
             trim_info = f" (trimmed: 0.0s → {end_time:.1f}s)" if trimmed else ""
+            
+            # Determine final resolution after cropping
+            if cropped:
+                if aspect_ratio == "landscape":
+                    final_width, final_height = 832, 480
+                else:  # portrait
+                    final_width, final_height = 480, 832
+                crop_info = f" → {final_width}x{final_height} (cropped to {aspect_ratio})"
+            else:
+                final_width, final_height = width, height
+                crop_info = ""
 
             updated_media_info = f"""{media_info_text}
 • Original Duration: {original_duration:.2f} seconds
@@ -929,7 +1018,7 @@ Generate descriptions that adhere to the following structured layers and constra
 • Processed Duration: {actual_duration:.2f} seconds{trim_info}
 • Frames: {frame_count}
 • Frame Rate: {fps:.2f} FPS
-• Resolution: {width}x{height}
+• Resolution: {width}x{height}{crop_info}
 • File Size: {file_size:.2f} MB"""
 
             # Determine media identifier for caching (always file-based for videos)
@@ -945,7 +1034,8 @@ Generate descriptions that adhere to the following structured layers and constra
                 "describe_hair_style": describe_hair_style,
                 "describe_bokeh": describe_bokeh,
                 "describe_subject": describe_subject,
-                "max_duration": max_duration  # Include duration in cache key
+                "max_duration": max_duration,  # Include duration in cache key
+                "aspect_ratio": aspect_ratio  # Include aspect ratio in cache key
             }
 
             cached_result = cache.get(
@@ -1036,9 +1126,22 @@ Generate descriptions that adhere to the following structured layers and constra
 
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
+            # Cleanup temporary files
+            if final_video_path != selected_media_path:
+                try:
+                    os.unlink(final_video_path)
+                except OSError:
+                    pass
+
             return (description, updated_media_info, gemini_status, trimmed_video_output_path, final_string)
 
         except Exception as e:
+            # Cleanup temporary files in case of error
+            if 'final_video_path' in locals() and final_video_path != selected_media_path:
+                try:
+                    os.unlink(final_video_path)
+                except OSError:
+                    pass
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Video analysis failed: {str(e)}")
 
@@ -1101,6 +1204,10 @@ Generate descriptions that adhere to the following structured layers and constra
                     "default": "",
                     "tooltip": "Reddit post URL (used when media_source is Reddit Post)"
                 }),
+                "aspect_ratio": (["portrait", "landscape"], {
+                    "default": "portrait",
+                    "tooltip": "Aspect ratio for video processing: portrait (480w x 832h) or landscape (832w x 480h)"
+                }),
             }
         }
 
@@ -1109,7 +1216,7 @@ Generate descriptions that adhere to the following structured layers and constra
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def describe_media(self, media_source, media_type, seed, gemini_options=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0, reddit_url=""):
+    def describe_media(self, media_source, media_type, seed, gemini_options=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0, reddit_url="", aspect_ratio="portrait"):
         """
         Process media (image or video) and analyze with Gemini
 
@@ -1124,6 +1231,7 @@ Generate descriptions that adhere to the following structured layers and constra
             frame_rate: Frame rate for temporary video (legacy parameter, not used)
             max_duration: Maximum duration in seconds (0 = use full video, only applies to videos)
             reddit_url: Reddit post URL (used when media_source is Reddit post)
+            aspect_ratio: Aspect ratio for video processing ("portrait" or "landscape")
         """
         # Initialize variables that might be needed in exception handler
         selected_media_path = None
@@ -1287,7 +1395,7 @@ Directory scan results:
                 # Process as video - delegate to video logic  
                 return self._process_video(
                     gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text,
-                    selected_media_path, frame_rate, max_duration, media_info_text
+                    selected_media_path, frame_rate, max_duration, media_info_text, aspect_ratio
                 )
 
         except Exception as e:
