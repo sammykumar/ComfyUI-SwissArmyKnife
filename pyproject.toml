@@ -19,6 +19,14 @@ dependencies = [
     "opencv-python",
     "pillow",
     "requests",
+    # JoyCaption dependencies
+    "torch>=2.0.0",
+    "torchvision>=0.15.0", 
+    "transformers>=4.35.0",
+    "accelerate>=0.20.0",
+    "huggingface-hub>=0.16.0",
+    "bitsandbytes>=0.41.0",
+    "numpy>=1.21.0",
 ]
 
 
@@ -33,6 +41,9 @@ dev = [
     "pytest",    # testing
     "pytest-cov", # coverage reporting
     "ruff",      # linting
+]
+joycaption-gguf = [
+    "llama-cpp-python>=0.2.0",  # GGUF quantized model support
 ]
 
 [project.urls]

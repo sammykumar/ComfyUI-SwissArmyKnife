@@ -1,0 +1,125 @@
+{
+    "caption_type_map": {
+        "Descriptive": [
+            "Write a descriptive caption for this image in a formal tone.",
+            "Write a descriptive caption for this image in a formal tone within {length} words.",
+            "Write a descriptive caption for this image in a formal tone, make it {length}."
+        ],
+        "Descriptive (Casual)": [
+            "Write a descriptive caption for this image in a casual tone.",
+            "Write a descriptive caption for this image in a casual tone within {length} words.",
+            "Write a descriptive caption for this image in a casual tone, make it {length}."
+        ],
+        "Training Prompt": [
+            "Write a stable diffusion prompt for this image.",
+            "Write a stable diffusion prompt for this image within {length} words.",
+            "Write a stable diffusion prompt for this image, make it {length}."
+        ],
+        "MidJourney": [
+            "Write a MidJourney prompt for this image.",
+            "Write a MidJourney prompt for this image within {length} words.",
+            "Write a MidJourney prompt for this image, make it {length}."
+        ],
+        "Booru tag list": [
+            "Write a list of Booru tags for this image.",
+            "Write a list of Booru tags for this image within {length} words.",
+            "Write a list of Booru tags for this image, make it {length}."
+        ],
+        "Booru-like tag list": [
+            "Write a list of Booru-like tags for this image.",
+            "Write a list of Booru-like tags for this image within {length} words.",
+            "Write a list of Booru-like tags for this image, make it {length}."
+        ],
+        "Art Critic": [
+            "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc.",
+            "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc. Keep it within {length} words.",
+            "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc. Make it {length}."
+        ],
+        "Product Listing": [
+            "Write a caption for this image as though it were a product listing.",
+            "Write a caption for this image as though it were a product listing within {length} words.",
+            "Write a caption for this image as though it were a product listing, make it {length}."
+        ],
+        "Social Media Post": [
+            "Write a caption for this image as if it were being used for a social media post.",
+            "Write a caption for this image as if it were being used for a social media post within {length} words.",
+            "Write a caption for this image as if it were being used for a social media post, make it {length}."
+        ]
+    },
+    "extra_options": {
+        "Censor faces and NSFW": {
+            "description": "Avoid describing faces or any NSFW content.",
+            "default": false
+        },
+        "Censor identity and ethnicity": {
+            "description": "Avoid mentioning identity or ethnicity.",
+            "default": false
+        },
+        "Include character description": {
+            "description": "Include a character description for {name}.",
+            "default": false
+        },
+        "Avoid fiction or fantasy": {
+            "description": "Avoid any mention of fictional or fantasy characters, concepts, or elements.",
+            "default": false
+        },
+        "Describe clothing in detail": {
+            "description": "Include detailed descriptions of clothing and accessories.",
+            "default": false
+        },
+        "Describe the style": {
+            "description": "Include details about the artistic style, medium, or technique.",
+            "default": false
+        },
+        "Include emotions and mood": {
+            "description": "Describe the emotions and overall mood of the image.",
+            "default": false
+        }
+    },
+    "memory_efficient_configs": {
+        "Full Precision (bf16)": "Full Precision (bf16)",
+        "Balanced (8-bit)": "Balanced (8-bit)",
+        "Maximum Savings (4-bit)": "Maximum Savings (4-bit)"
+    },
+    "model_settings": {
+        "default_temperature": 0.6,
+        "default_top_p": 0.9,
+        "default_top_k": 0,
+        "default_max_tokens": 512,
+        "default_system_prompt": "You are a helpful AI assistant specialized in describing images with high accuracy and detail.",
+        "context_window": 4096,
+        "cpu_threads": 4
+    },
+    "caption_length_choices": [
+        "any",
+        "very short",
+        "short",
+        "medium",
+        "long",
+        "very long"
+    ],
+    "hf_models": {
+        "JoyCaption Beta One": {
+            "name": "fancyfeast/llama-joycaption-beta-one-hf-llava",
+            "description": "Latest JoyCaption model with enhanced performance"
+        },
+        "JoyCaption Alpha Two": {
+            "name": "fancyfeast/llama-joycaption-alpha-two-hf-llava",
+            "description": "Earlier stable version of JoyCaption"
+        }
+    },
+    "gguf_models": {
+        "JoyCaption Beta One (Q2_K)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q2_K.gguf",
+        "JoyCaption Beta One (Q3_K_S)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q3_K_S.gguf",
+        "JoyCaption Beta One (Q3_K_M)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q3_K_M.gguf",
+        "JoyCaption Beta One (Q3_K_L)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q3_K_L.gguf",
+        "JoyCaption Beta One (IQ4_XS)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.IQ4_XS.gguf",
+        "JoyCaption Beta One (Q4_K_S)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q4_K_S.gguf",
+        "JoyCaption Beta One (Q4_K_M)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q4_K_M.gguf",
+        "JoyCaption Beta One (Q5_K_S)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q5_K_S.gguf",
+        "JoyCaption Beta One (Q5_K_M)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q5_K_M.gguf",
+        "JoyCaption Beta One (Q6_K)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q6_K.gguf",
+        "JoyCaption Beta One (Q8_0)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q8_0.gguf",
+        "JoyCaption Beta One (F16)": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.f16.gguf"
+    }
+}

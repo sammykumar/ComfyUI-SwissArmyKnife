@@ -1,0 +1,21 @@
+# JoyCaption Dependencies
+# Core ML libraries
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.35.0
+accelerate>=0.20.0
+
+# Image processing
+Pillow>=9.0.0
+
+# HuggingFace integration
+huggingface-hub>=0.16.0
+
+# Quantization support
+bitsandbytes>=0.41.0
+
+# GGUF model support (optional - for quantized models)
+llama-cpp-python>=0.2.0
+
+# Utility libraries
+numpy>=1.21.0

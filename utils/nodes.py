@@ -21,6 +21,16 @@ from .civitai_service import CivitAIService
 from .lora_hash_cache import get_cache as get_lora_hash_cache
 from .media_describe import MediaDescribe
 
+# JoyCaption imports
+try:
+    from .media_describe.joycaption.joy_caption_hf import JC, JC_adv, JC_ExtraOptions
+    from .media_describe.joycaption.joy_caption_gguf import JC_GGUF, JC_GGUF_adv
+    from .media_describe.joycaption.caption_tools import ImageBatchPath, CaptionSaver, ImageCaptionBatch
+    JOYCAPTION_AVAILABLE = True
+except ImportError as e:
+    print(f"JoyCaption nodes not available: {e}")
+    JOYCAPTION_AVAILABLE = False
+
 
 class GeminiUtilOptions:
     """
@@ -2012,6 +2022,19 @@ NODE_CLASS_MAPPINGS = {
     "MediaDescribe": MediaDescribe
 }
 
+# Add JoyCaption nodes if available
+if JOYCAPTION_AVAILABLE:
+    NODE_CLASS_MAPPINGS.update({
+        "JC": JC,
+        "JC_adv": JC_adv,
+        "JC_ExtraOptions": JC_ExtraOptions,
+        "JC_GGUF": JC_GGUF,
+        "JC_GGUF_adv": JC_GGUF_adv,
+        "ImageBatchPath": ImageBatchPath,
+        "CaptionSaver": CaptionSaver,
+        "ImageCaptionBatch": ImageCaptionBatch,
+    })
+
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "GeminiUtilMediaDescribe": "Gemini Util - Media Describe",
@@ -2021,3 +2044,16 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "LoRAInfoExtractor": "LoRA Info Extractor",
     "MediaDescribe": "Media Describe"
 }
+
+# Add JoyCaption display names if available
+if JOYCAPTION_AVAILABLE:
+    NODE_DISPLAY_NAME_MAPPINGS.update({
+        "JC": "JoyCaption",
+        "JC_adv": "JoyCaption (Advanced)",
+        "JC_ExtraOptions": "JoyCaption Extra Options",
+        "JC_GGUF": "JoyCaption (GGUF)",
+        "JC_GGUF_adv": "JoyCaption (GGUF Advanced)",
+        "ImageBatchPath": "Load Images from Path",
+        "CaptionSaver": "Save Captions",
+        "ImageCaptionBatch": "Batch Caption Images",
+    })
