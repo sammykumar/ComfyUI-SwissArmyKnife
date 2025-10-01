@@ -64,6 +64,7 @@ The backend nodes are located in `utils/`:
 
 -   `utils/nodes.py` - Main Gemini AI integration nodes
 -   `utils/helper_nodes.py` - Helper/utility nodes
+-   `utils/lora_manager/` - LoRA Manager (forked from nd-super-nodes)
 
 **Development commands:**
 
@@ -171,12 +172,25 @@ comfyui_swissarmyknife/
 │   └── run-comfy.sh        # ComfyUI start script
 ├── utils/                  # Python backend nodes
 │   ├── nodes.py           # Main Gemini AI nodes
-│   └── helper_nodes.py    # Helper nodes
+│   ├── helper_nodes.py    # Helper nodes
+│   └── lora_manager/      # LoRA Manager (forked from nd-super-nodes)
+│       ├── __init__.py
+│       ├── nd_super_lora_node.py
+│       ├── lora_utils.py
+│       ├── civitai_service.py
+│       ├── template_manager.py
+│       ├── web_api.py
+│       ├── file_api.py
+│       └── version_utils.py
 ├── web/                   # JavaScript web extension
 │   ├── js/                # Widget JavaScript files
+│   │   └── lora_manager/  # LoRA Manager web extension
 │   ├── css/               # Widget CSS files
+│   │   └── lora_manager/  # LoRA Manager styles
 │   ├── tests/             # Playwright tests
 │   └── package.json       # Node.js dependencies
+├── docs/                  # Project documentation
+│   └── LORA_MANAGER_INTEGRATION.md  # LoRA Manager docs
 ├── __init__.py            # ComfyUI entry point
 ├── pyproject.toml         # Python project configuration
 └── README.md              # Project documentation
@@ -223,6 +237,24 @@ comfyui_swissarmyknife/
 2. Add styling to `web/css/`
 3. Register with ComfyUI using `app.registerExtension()`
 4. Test with browser refresh
+
+### Working with LoRA Manager
+
+The LoRA Manager is a forked sub-module from [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes). See [docs/LORA_MANAGER_INTEGRATION.md](docs/LORA_MANAGER_INTEGRATION.md) for detailed information.
+
+**Key files:**
+- Backend: `utils/lora_manager/*.py`
+- Frontend: `web/js/lora_manager/extension.js`
+- Styles: `web/css/lora_manager/style.css`
+
+**Testing lora_manager:**
+```bash
+# Test imports
+python -c "from utils.lora_manager import NODE_CLASS_MAPPINGS; print('LoRA Manager nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
+
+# With ComfyUI running, check console for:
+# "Swiss Army Knife LoRA Manager: API routes registered"
+```
 
 ### Running Local Tests
 
