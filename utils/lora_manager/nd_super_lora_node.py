@@ -44,15 +44,17 @@ class NdSuperLoraLoader:
     """
     
     CATEGORY = "Swiss Army Knife 🔪"
-    RETURN_TYPES = ("MODEL", "CLIP", "STRING")
-    RETURN_NAMES = ("MODEL", "CLIP", "TRIGGER_WORDS")
+    RETURN_TYPES = ("WANVIDLORA", "CLIP", "STRING")
+    RETURN_NAMES = ("lora", "CLIP", "TRIGGER_WORDS")
     FUNCTION = "load_loras"
     
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "model": ("MODEL",),
+                "lora": ("WANVIDLORA",{
+                    "tooltip": "LoRA stack from WanVideo Lora Select or compatible nodes"
+             }),
             },
             "optional": {
                 "clip": ("CLIP",),
