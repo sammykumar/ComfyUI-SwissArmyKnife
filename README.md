@@ -5,6 +5,7 @@ A collection of custom nodes for ComfyUI featuring Gemini AI integration for vid
 ## Features
 
 -   **🤖 Gemini AI Integration**: Video, image, and media analysis using Google's Gemini AI
+-   **🎨 Super LoRA Loader**: Advanced multi-LoRA management with enhanced UI (forked from nd-super-nodes)
 -   **🎮 JavaScript Widgets**: Enhanced ComfyUI interfaces with custom video controls
 -   **🐳 Dev Container Support**: GPU-enabled development environment with mmartial/ComfyUI-Nvidia-Docker
 -   **🧪 Full Testing Suite**: Python and JavaScript testing with CI/CD integration
@@ -96,6 +97,14 @@ pre-commit install
 -   **GeminiUtilVideoDescribe**: Analyze videos using Gemini AI
 -   **GeminiUtilImageDescribe**: Analyze images using Gemini AI
 -   **GeminiUtilMediaDescribe**: Multi-media analysis functionality
+-   **Super LoRA Loader 🔪**: Advanced multi-LoRA loading with UI enhancements (from nd-super-nodes)
+    -   Load multiple LoRAs in a single node
+    -   Individual enable/disable controls per LoRA
+    -   Dual strength support (model and CLIP)
+    -   Automatic trigger word extraction
+    -   Template save/load system
+    -   Enhanced file picker with search
+    -   See [docs/LORA_MANAGER_INTEGRATION.md](docs/LORA_MANAGER_INTEGRATION.md) for details
 
 ### Web Extension (JavaScript)
 
@@ -361,6 +370,16 @@ Example tests can be found in the `src/__tests__` directory. The setup includes:
 ## Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests to improve this template.
+
+## Credits
+
+### Third-Party Integrations
+
+-   **LoRA Manager** - Forked from [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes) by HenkDz
+    -   Super LoRA Loader with multi-LoRA management
+    -   Enhanced file picker overlay
+    -   Template management system
+    -   CivitAI integration for trigger words
 
 ## License
 
