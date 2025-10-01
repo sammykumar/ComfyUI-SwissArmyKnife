@@ -12,7 +12,7 @@ except Exception:
 from .lora_utils import get_available_loras, extract_trigger_words
 from .template_manager import get_template_manager
 from .civitai_service import get_civitai_service
-from .version_utils import get_update_status
+from .version_utils import get_local_version
 
 
 async def get_loras(request):
@@ -223,11 +223,14 @@ async def delete_template_by_name(request):
 
 
 async def get_version_info(request):
-    """Return local version info plus cached update availability."""
+    """Return local version info only (forked version, no update checking)."""
     try:
-        force = request.rel_url.query.get("force") in {"1", "true", "yes"}
-        status = await get_update_status(force=force)
-        return web.json_response(status)
+        local_version = get_local_version()
+        return web.json_response({
+            "localVersion": local_version,
+            "hasUpdate": False,
+            "message": "This is a forked version. Update checking disabled."
+        })
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 

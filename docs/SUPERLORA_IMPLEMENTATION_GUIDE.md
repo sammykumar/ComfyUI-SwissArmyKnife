@@ -110,13 +110,10 @@ ComfyUI-SwissArmyKnife/
     - Template management for saving/loading LoRA sets
     - Search overlay with folder filtering
     - Automatic trigger word fetching from CivitAI
-    - Settings persistence via LocalStorage
-    - Update checking for nd-super-nodes
+    - Settings persistence via LocalStorage## Data Flow
 
-## Data Flow
-
-1. User adds LoRAs via the UI widget
-2. Each LoRA is stored as a `SuperLoraWidget` with config:
+4. User adds LoRAs via the UI widget
+5. Each LoRA is stored as a `SuperLoraWidget` with config:
     ```javascript
     {
       lora: "lora_filename.safetensors",
@@ -128,16 +125,16 @@ ComfyUI-SwissArmyKnife/
       autoFetched: true
     }
     ```
-3. On workflow save/execution, configs are bundled into JSON:
+6. On workflow save/execution, configs are bundled into JSON:
     ```javascript
     [
       { lora: "...", enabled: true, strength: 1.0, ... },
       { lora: "...", enabled: true, strength: 0.8, ... }
     ]
     ```
-4. JSON string passed to backend via `lora_bundle` parameter
-5. Backend Python applies each enabled LoRA sequentially
-6. Returns modified model(s), clip, and combined trigger words
+7. JSON string passed to backend via `lora_bundle` parameter
+8. Backend Python applies each enabled LoRA sequentially
+9. Returns modified model(s), clip, and combined trigger words
 
 ## Services (extension.js)
 
@@ -172,12 +169,6 @@ ComfyUI-SwissArmyKnife/
 - Folder filtering with chips
 - Multi-select support
 - Dual-panel selector (for SuperDualLoraLoader)
-
-### UpdateService
-
-- Check for nd-super-nodes updates
-- Notify users of new versions
-- Version comparison
 
 ### FilePickerService
 

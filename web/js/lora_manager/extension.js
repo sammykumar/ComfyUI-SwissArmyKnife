@@ -1893,113 +1893,7 @@ class OverlayService {
         return panel;
     }
 }
-class UpdateService {
-    constructor() {
-        this.status = null;
-        this.checkingPromise = null;
-        this.lastNotifiedVersion = null;
-    }
-    static getInstance() {
-        if (!UpdateService.instance) {
-            UpdateService.instance = new UpdateService();
-        }
-        return UpdateService.instance;
-    }
-    getStatus() {
-        return this.status;
-    }
-    async initialize() {
-        try {
-            const status = await this.checkForUpdates({ silent: true });
-            this.maybeNotify(status);
-        } catch (error) {
-            console.warn("ND Super Nodes: update check failed to initialize", error);
-        }
-    }
-    async checkForUpdates(options = {}) {
-        const { force = false, silent = false } = options;
-        if (this.checkingPromise) {
-            return this.checkingPromise;
-        }
-        if (!force && this.status) {
-            if (!silent) {
-                this.maybeNotify(this.status, { showUpToDate: true });
-            }
-            return this.status;
-        }
-        this.checkingPromise = this.fetchStatus(force)
-            .then((status) => {
-                this.status = status;
-                if (!silent) {
-                    this.maybeNotify(status, { showUpToDate: true });
-                } else {
-                    this.maybeNotify(status);
-                }
-                return status;
-            })
-            .catch((error) => {
-                console.warn("ND Super Nodes: update check failed", error);
-                if (!silent) {
-                    OverlayService.getInstance().showToast(
-                        "ND Super Nodes update check failed. See console for details.",
-                        "warning"
-                    );
-                }
-                throw error;
-            })
-            .finally(() => {
-                this.checkingPromise = null;
-            });
-        return this.checkingPromise;
-    }
-    openReleasePage() {
-        const url =
-            this.status?.releaseUrl || "https://github.com/HenkDz/nd-super-nodes/releases/latest";
-        try {
-            window.open(url, "_blank", "noopener,noreferrer");
-        } catch (error) {
-            OverlayService.getInstance().showToast(
-                "Unable to open release page. Copy URL from console.",
-                "warning"
-            );
-            console.warn("ND Super Nodes release URL:", url, error);
-        }
-    }
-    async fetchStatus(force) {
-        const url = force ? "/super_lora/version?force=1" : "/super_lora/version";
-        const response = await fetch(url, { cache: force ? "reload" : "no-store" });
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(`HTTP ${response.status}: ${text}`);
-        }
-        const payload = await response.json();
-        return payload;
-    }
-    maybeNotify(status, options = {}) {
-        if (!status) {
-            return;
-        }
-        const latestVersion = status.latestVersion || status.localVersion?.version;
-        const alreadyNotified = latestVersion && latestVersion === this.lastNotifiedVersion;
-        if (status.hasUpdate) {
-            if (alreadyNotified) {
-                return;
-            }
-            this.lastNotifiedVersion = latestVersion || null;
-            const messageParts = [
-                `🚀 ND Super Nodes v${latestVersion} available`,
-                "Run update.ps1 / update.sh in your node folder to upgrade.",
-            ];
-            OverlayService.getInstance().showToast(messageParts.join("\n"), "info");
-            console.info("ND Super Nodes: Update available", status);
-            return;
-        }
-        if (options.showUpToDate && !alreadyNotified) {
-            this.lastNotifiedVersion = latestVersion || null;
-            OverlayService.getInstance().showToast("ND Super Nodes is up to date.", "success");
-        }
-    }
-}
+// UpdateService removed - this is a forked version and does not check for nd-super-nodes updates
 const _FilePickerService = class _FilePickerService {
     constructor() {
         this.fileCache = /* @__PURE__ */ new Map();
@@ -3727,7 +3621,6 @@ const _SuperLoraNode = class _SuperLoraNode {
             this.loraService = LoraService.getInstance();
             this.templateService = TemplateService.getInstance();
             this.civitaiService = CivitAiService.getInstance();
-            this.updateService = UpdateService.getInstance();
             FilePickerService.getInstance();
             setWidgetAPI({
                 showLoraSelector: (node, widget, e) =>
@@ -3748,14 +3641,7 @@ const _SuperLoraNode = class _SuperLoraNode {
                 civitaiService: _SuperLoraNode.civitaiService,
                 syncExecutionWidgets: (node) => _SuperLoraNode.syncExecutionWidgets(node),
             });
-            await Promise.all([
-                this.loraService.initialize(),
-                this.templateService.initialize(),
-                this.updateService.initialize(),
-            ]);
-            try {
-                window.NDSuperNodesUpdateStatus = this.updateService.getStatus();
-            } catch {}
+            await Promise.all([this.loraService.initialize(), this.templateService.initialize()]);
             this.initialized = true;
         })();
         try {
@@ -4371,8 +4257,11 @@ const _SuperLoraNode = class _SuperLoraNode {
                 disabled: usedLoras.has(name),
             }));
 
-            // Use dual-panel selector for adding new LoRA pairs
-            if (!widget) {
+            // Check if this is a dual-stream node (SuperDualLoraLoader)
+            const isDualStreamNode = node.type === "SuperDualLoraLoader";
+
+            // Use dual-panel selector ONLY for SuperDualLoraLoader when adding new LoRAs
+            if (!widget && isDualStreamNode) {
                 OverlayService.getInstance().showDualLoraSelector({
                     title: "Add LoRA Pair (High + Low Noise)",
                     items,
@@ -6927,15 +6816,6 @@ const superLoraExtension = {
             label: "Show All Trigger Words",
             function: () => {
                 console.log("Super LoRA Loader: Show trigger words command triggered");
-            },
-        },
-        {
-            id: "superLora.checkUpdates",
-            label: "Check ND Super Nodes Updates",
-            function: () => {
-                UpdateService.getInstance()
-                    .checkForUpdates({ force: true, silent: false })
-                    .catch(() => {});
             },
         },
     ],

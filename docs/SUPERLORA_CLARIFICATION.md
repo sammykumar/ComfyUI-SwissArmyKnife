@@ -40,7 +40,6 @@ The `extension.js` file contains the **complete nd-super-nodes implementation**:
 - CivitAiService: Auto-fetch trigger words from CivitAI
 - TagSetService: Organize LoRAs by tags
 - OverlayService: Enhanced search and selection dialogs
-- UpdateService: Check for updates
 - FilePickerService: Enhanced file selection with caching
 
 ### Widget Classes (~1500 lines)
