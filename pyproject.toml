@@ -19,6 +19,7 @@ dependencies = [
     "opencv-python",
     "pillow",
     "requests",
+    "aiohttp>=3.8.0",
 ]
 
 
