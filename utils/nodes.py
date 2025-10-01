@@ -769,6 +769,18 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             else:
                 raise ValueError("No image data available for processing")
 
+            # Determine output dimensions based on image orientation
+            img_width = pil_image.size[0]
+            img_height = pil_image.size[1]
+            if img_width > img_height:
+                # Landscape: width is longer
+                output_width = 832
+                output_height = 480
+            else:
+                # Portrait or square: height is longer or equal
+                output_width = 480
+                output_height = 832
+
             # Determine media identifier for caching
             if selected_media_path:
                 # For file-based media, use file path + modification time
@@ -811,7 +823,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 processed_media_path = selected_media_path if selected_media_path else ""
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
-                return (description, media_info_text, gemini_status, processed_media_path, final_string)
+                return (description, media_info_text, gemini_status, processed_media_path, final_string, output_height, output_width)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -880,7 +892,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             processed_media_path = selected_media_path if selected_media_path else ""
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
-            return (description, media_info_text, gemini_status, processed_media_path, final_string)
+            return (description, media_info_text, gemini_status, processed_media_path, final_string, output_height, output_width)
 
         except Exception as e:
             # Re-raise the exception to stop workflow execution
@@ -1006,6 +1018,16 @@ Generate descriptions that adhere to the following structured layers and constra
             
             print(f"Original video properties: {frame_count} frames, {fps:.2f} fps, {width}x{height}, {original_duration:.2f}s duration")
             
+            # Determine output dimensions based on video orientation
+            if width > height:
+                # Landscape: width is longer
+                output_width = 832
+                output_height = 480
+            else:
+                # Portrait or square: height is longer or equal
+                output_width = 480
+                output_height = 832
+            
             # Validate video has content
             if original_duration <= 0:
                 raise ValueError(f"Invalid video: duration is {original_duration:.2f} seconds. The video file may be corrupted or empty.")
@@ -1125,7 +1147,7 @@ Generate descriptions that adhere to the following structured layers and constra
                 processed_media_path = selected_media_path if selected_media_path else ""
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
-                return (description, updated_media_info, gemini_status, processed_media_path, final_string)
+                return (description, updated_media_info, gemini_status, processed_media_path, final_string, output_height, output_width)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -1192,7 +1214,7 @@ Generate descriptions that adhere to the following structured layers and constra
 
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
-            return (description, updated_media_info, gemini_status, trimmed_video_output_path, final_string)
+            return (description, updated_media_info, gemini_status, trimmed_video_output_path, final_string, output_height, output_width)
 
         except Exception as e:
             # Provide more specific error messages for common issues
@@ -1269,8 +1291,8 @@ Generate descriptions that adhere to the following structured layers and constra
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("description", "media_info", "gemini_status", "processed_media_path", "final_string")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("description", "media_info", "gemini_status", "processed_media_path", "final_string", "length", "width")
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪"
 
