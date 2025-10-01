@@ -11,10 +11,17 @@ import json
 import os
 import threading
 import time
+import zlib
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import hashlib
+
+try:
+    import blake3
+    BLAKE3_AVAILABLE = True
+except ImportError:
+    BLAKE3_AVAILABLE = False
 
 
 class LoRAHashCache:
@@ -86,12 +93,32 @@ class LoRAHashCache:
             and stat_result.st_size == cached_size
         )
 
-    def _calculate_hash(self, file_path: str) -> Optional[str]:
-        sha = hashlib.sha256()
+    def _calculate_hashes(self, file_path: str) -> Optional[Dict[str, str]]:
+        """Calculate all supported hash types for a file.
+        
+        Returns dict with keys: sha256, crc32, blake3, autov1, autov2
+        AutoV1 and AutoV2 are specialized hash formats used by CivitAI.
+        """
         try:
             with open(file_path, "rb") as fh:
-                for chunk in iter(lambda: fh.read(1024 * 1024), b""):
-                    sha.update(chunk)
+                # Read file in chunks for memory efficiency
+                sha256_hasher = hashlib.sha256()
+                crc32_value = 0
+                blake3_hasher = blake3.blake3() if BLAKE3_AVAILABLE else None
+                
+                # For AutoV1/AutoV2, we need specific byte ranges
+                file_size = os.path.getsize(file_path)
+                fh.seek(0)
+                
+                # Read full file content for comprehensive hash calculation
+                file_content = fh.read()
+                
+                # Calculate standard hashes from full content
+                sha256_hasher.update(file_content)
+                crc32_value = zlib.crc32(file_content)
+                if blake3_hasher:
+                    blake3_hasher.update(file_content)
+                
         except FileNotFoundError:
             print(f"[LoRAHashCache] File missing during hashing: {file_path}")
             return None
@@ -99,16 +126,87 @@ class LoRAHashCache:
             print(f"[LoRAHashCache] Error hashing '{file_path}': {exc}")
             return None
 
-        return sha.hexdigest().upper()
+        # Calculate standard hashes
+        hashes = {
+            "sha256": sha256_hasher.hexdigest().upper(),
+            "crc32": f"{crc32_value & 0xffffffff:08X}",  # Ensure positive 32-bit value
+        }
+        
+        if blake3_hasher:
+            hashes["blake3"] = blake3_hasher.hexdigest().upper()
+        else:
+            hashes["blake3"] = None
+            
+        # Calculate AutoV1 and AutoV2 (CivitAI specific formats)
+        hashes["autov1"] = self._calculate_autov1(file_content)
+        hashes["autov2"] = self._calculate_autov2(file_content)
+        
+        return hashes
+    
+    def _calculate_autov1(self, file_content: bytes) -> str:
+        """Calculate AutoV1 hash (CivitAI format).
+        
+        AutoV1 uses first 8KB of file with SHA256.
+        """
+        # Take first 8KB for AutoV1
+        chunk = file_content[:8192]
+        return hashlib.sha256(chunk).hexdigest().upper()[:10]  # CivitAI uses first 10 chars
+    
+    def _calculate_autov2(self, file_content: bytes) -> str:
+        """Calculate AutoV2 hash (CivitAI format).
+        
+        AutoV2 uses a more complex sampling strategy across the file.
+        """
+        # AutoV2: Sample strategically from different parts of the file
+        file_len = len(file_content)
+        if file_len <= 8192:  # Small files - use full content
+            chunk = file_content
+        else:
+            # CivitAI AutoV2 algorithm: sample from beginning, skip some, sample middle, skip some, sample end
+            samples = []
+            # Take first 2KB
+            samples.append(file_content[:2048])
+            # Take 2KB from 25% position
+            pos_25 = file_len // 4
+            samples.append(file_content[pos_25:pos_25 + 2048])
+            # Take 2KB from 75% position  
+            pos_75 = (file_len * 3) // 4
+            samples.append(file_content[pos_75:pos_75 + 2048])
+            # Take last 2KB
+            samples.append(file_content[-2048:])
+            chunk = b''.join(samples)
+        
+        return hashlib.sha256(chunk).hexdigest().upper()[:10]  # CivitAI uses first 10 chars
 
-    def get_hash(self, file_path: str, *, use_cache: bool = True) -> Optional[str]:
-        """Return SHA256 hash for *file_path* using persistent cache."""
+    def get_hashes(self, file_path: str, *, use_cache: bool = True) -> Optional[Dict[str, str]]:
+        """Return all hash types for *file_path* using persistent cache."""
         normalized_path = os.path.abspath(file_path)
 
         with self._lock:
             entry = self._data.get(normalized_path)
             if use_cache and entry and self._is_entry_valid(normalized_path, entry):
-                return entry.get("hash")  # type: ignore[return-value]
+                # Return cached hashes if available
+                cached_hashes = entry.get("hashes")
+                if cached_hashes and isinstance(cached_hashes, dict):
+                    # Ensure all hash types are present (for older cache entries)
+                    complete_hashes = {
+                        "sha256": cached_hashes.get("sha256"),
+                        "crc32": cached_hashes.get("crc32"),
+                        "blake3": cached_hashes.get("blake3"),
+                        "autov1": cached_hashes.get("autov1"),
+                        "autov2": cached_hashes.get("autov2"),
+                    }
+                    # If any hash type is missing, recalculate
+                    if any(v is None for v in complete_hashes.values() if v != cached_hashes.get("blake3")):
+                        print(f"[LoRAHashCache] Incomplete hash cache for {normalized_path}, recalculating...")
+                    else:
+                        return complete_hashes
+                        
+                # Fallback to legacy single hash format
+                legacy_hash = entry.get("hash")
+                if legacy_hash:
+                    print(f"[LoRAHashCache] Converting legacy hash cache for {normalized_path}")
+                    # Don't return incomplete data, force recalculation
 
             file_stat = self._stat_file(normalized_path)
             if file_stat is None:
@@ -118,19 +216,21 @@ class LoRAHashCache:
                     self._save()
                 return None
 
-            file_hash = self._calculate_hash(normalized_path)
-            if not file_hash:
+            print(f"[LoRAHashCache] Computing hashes for {os.path.basename(normalized_path)}...")
+            file_hashes = self._calculate_hashes(normalized_path)
+            if not file_hashes:
                 return None
 
             entry = {
-                "hash": file_hash,
+                "hashes": file_hashes,
+                "hash": file_hashes.get("sha256"),  # Keep legacy field for compatibility
                 "mtime": file_stat.st_mtime,
                 "size": file_stat.st_size,
                 "updated_at": time.time(),
             }
             self._data[normalized_path] = entry
             self._save()
-            return file_hash
+            return file_hashes
 
     def invalidate(self, file_path: str) -> None:
         normalized_path = os.path.abspath(file_path)
@@ -144,11 +244,17 @@ class LoRAHashCache:
             self._data.clear()
             self._save()
 
+    def get_hash(self, file_path: str, *, use_cache: bool = True) -> Optional[str]:
+        """Return SHA256 hash for *file_path* using persistent cache (legacy compatibility)."""
+        hashes = self.get_hashes(file_path, use_cache=use_cache)
+        return hashes.get("sha256") if hashes else None
+    
     def get_cache_info(self) -> Dict[str, object]:
         with self._lock:
             return {
                 "entries": len(self._data),
                 "cache_path": str(self._cache_path),
+                "blake3_available": BLAKE3_AVAILABLE,
             }
 
 

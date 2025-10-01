@@ -352,13 +352,15 @@ class GeminiMediaDescribe:
                     if post_data.get('media') and post_data['media'].get('reddit_video'):
                         media_url = post_data['media']['reddit_video'].get('fallback_url')
                         media_type = 'video'
-                elif 'redgifs.com' in url:
-                    # RedGifs requires special handling to extract video URL
-                    media_url, media_type = self._extract_redgifs_video_url(url)
-                elif 'gfycat.com' in url:
-                    # Gfycat - use the direct URL (legacy support)
-                    media_url = url
-                    media_type = 'video'
+
+                elif 'redgifs.com' in url or 'gfycat.com' in url:
+                    # External video hosting - extract the actual video URL
+                    media_url, media_type = self._extract_redgifs_url(url)
+                    if not media_url:
+                        # Fallback: try to use the original URL directly
+                        print(f"Warning: Could not extract direct video URL from {url}, trying original URL as fallback")
+                        media_url = url
+                        media_type = 'video'
                     
             # Check for gallery or media_metadata
             if not media_url and post_data.get('media_metadata'):
@@ -377,11 +379,37 @@ class GeminiMediaDescribe:
                 
             # Download the media file
             print(f"Downloading media from: {media_url}")
+            
+            # Special handling for redgifs URLs that might not be direct video URLs
+            if 'redgifs.com' in media_url and not media_url.endswith(('.mp4', '.webm', '.mov')):
+                print(f"Warning: Redgifs URL doesn't appear to be a direct video link, trying to extract...")
+                extracted_url, extracted_type = self._extract_redgifs_url(media_url)
+                if extracted_url:
+                    print(f"Successfully extracted direct video URL: {extracted_url}")
+                    media_url = extracted_url
+                    media_type = extracted_type
+                else:
+                    print(f"Failed to extract direct URL, will try original URL anyway...")
+            
             media_response = requests.get(media_url, headers=headers, timeout=60)
             media_response.raise_for_status()
             
-            # Determine file extension from content type or URL
+            # Check if we got actual media content
             content_type = media_response.headers.get('content-type', '')
+            content_length = len(media_response.content)
+            
+            print(f"Downloaded content: {content_type}, size: {content_length} bytes")
+            
+            # If we got HTML instead of media (common with redgifs), try to extract again
+            if content_type.startswith('text/html') and 'redgifs.com' in media_url:
+                print("Got HTML content instead of video, this suggests URL extraction failed")
+                raise ValueError(f"Redgifs URL returned webpage instead of video: {media_url}")
+            
+            # Validate we have actual content
+            if content_length < 1024:  # Less than 1KB is suspicious for media
+                print(f"Warning: Very small content size ({content_length} bytes), might not be valid media")
+            
+            # Determine file extension from content type or URL
             file_ext = None
             
             if content_type:
@@ -419,6 +447,146 @@ class GeminiMediaDescribe:
             raise Exception(f"Failed to parse Reddit post: Invalid post format - {str(e)}")
         except Exception as e:
             raise Exception(f"Reddit media download failed: {str(e)}")
+
+    def _extract_redgifs_url(self, redgifs_url):
+        """
+        Extract the actual video URL from a redgifs or gfycat page
+        
+        Args:
+            redgifs_url: redgifs or gfycat URL
+            
+        Returns:
+            tuple: (video_url, media_type) or (None, None) on failure
+        """
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+            
+            print(f"[DEBUG] Attempting to extract video URL from: {redgifs_url}")
+            
+            # Handle different redgifs URL formats
+            if 'redgifs.com' in redgifs_url:
+                # Extract gif ID from URL
+                parsed_url = urlparse(redgifs_url)
+                path_parts = parsed_url.path.strip('/').split('/')
+                
+                # Try to find the gif ID (usually the last part or after 'watch')
+                gif_id = None
+                if 'watch' in path_parts:
+                    gif_idx = path_parts.index('watch')
+                    if gif_idx + 1 < len(path_parts):
+                        gif_id = path_parts[gif_idx + 1]
+                elif path_parts:
+                    gif_id = path_parts[-1]
+                
+                print(f"[DEBUG] Extracted gif_id: {gif_id}")
+                
+                if gif_id:
+                    # Strategy 1: Try to scrape the page for video URLs
+                    try:
+                        print(f"[DEBUG] Strategy 1: Scraping page for video URLs")
+                        response = requests.get(redgifs_url, headers=headers, timeout=30)
+                        if response.status_code == 200:
+                            content = response.text
+                            
+                            # Look for various video URL patterns in the HTML
+                            import re
+                            
+                            # Pattern 1: Look for HD/SD video URLs in script tags or data attributes
+                            patterns = [
+                                r'"(https://[^"]*\.redgifs\.com/[^"]*\.mp4[^"]*)"',
+                                r'"(https://files\.redgifs\.com/[^"]*\.mp4[^"]*)"',
+                                r'"(https://thumbs\d*\.redgifs\.com/[^"]*\.mp4[^"]*)"',
+                                r'"videoUrl":"([^"]*)"',
+                                r'"url":"(https://[^"]*\.mp4[^"]*)"',
+                            ]
+                            
+                            for pattern in patterns:
+                                matches = re.findall(pattern, content, re.IGNORECASE)
+                                for match in matches:
+                                    # Clean up the URL (remove escaping)
+                                    clean_url = match.replace('\\', '')
+                                    print(f"[DEBUG] Found potential video URL: {clean_url}")
+                                    
+                                    # Test if the URL is accessible
+                                    try:
+                                        test_response = requests.head(clean_url, headers=headers, timeout=10)
+                                        if test_response.status_code == 200:
+                                            content_type = test_response.headers.get('content-type', '')
+                                            if 'video' in content_type.lower() or clean_url.endswith('.mp4'):
+                                                print(f"[DEBUG] Successfully found working video URL: {clean_url}")
+                                                return clean_url, 'video'
+                                    except:
+                                        continue
+                    except Exception as e:
+                        print(f"[DEBUG] Strategy 1 failed: {str(e)}")
+                    
+                    # Strategy 2: Try common direct URL patterns
+                    try:
+                        print(f"[DEBUG] Strategy 2: Trying direct URL patterns")
+                        direct_patterns = [
+                            f"https://files.redgifs.com/{gif_id}.mp4",
+                            f"https://thumbs.redgifs.com/{gif_id}.mp4",
+                            f"https://thumbs2.redgifs.com/{gif_id}.mp4",
+                            f"https://files.redgifs.com/{gif_id}-mobile.mp4",
+                        ]
+                        
+                        for direct_url in direct_patterns:
+                            try:
+                                print(f"[DEBUG] Testing direct URL: {direct_url}")
+                                test_response = requests.head(direct_url, headers=headers, timeout=10)
+                                if test_response.status_code == 200:
+                                    print(f"[DEBUG] Direct URL successful: {direct_url}")
+                                    return direct_url, 'video'
+                            except:
+                                continue
+                    except Exception as e:
+                        print(f"[DEBUG] Strategy 2 failed: {str(e)}")
+                    
+                    # Strategy 3: Try the API (might be rate limited or require auth)
+                    try:
+                        print(f"[DEBUG] Strategy 3: Trying redgifs API")
+                        api_url = f"https://api.redgifs.com/v2/gifs/{gif_id}"
+                        response = requests.get(api_url, headers=headers, timeout=30)
+                        
+                        if response.status_code == 200:
+                            data = response.json()
+                            print(f"[DEBUG] API response structure: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+                            
+                            if 'gif' in data and 'urls' in data['gif']:
+                                video_urls = data['gif']['urls']
+                                print(f"[DEBUG] Available video qualities: {list(video_urls.keys())}")
+                                
+                                for quality in ['hd', 'sd', 'poster']:
+                                    if quality in video_urls and video_urls[quality]:
+                                        video_url = video_urls[quality]
+                                        print(f"[DEBUG] Found {quality} quality video: {video_url}")
+                                        return video_url, 'video'
+                        else:
+                            print(f"[DEBUG] API returned status {response.status_code}: {response.text[:200]}")
+                    except Exception as e:
+                        print(f"[DEBUG] Strategy 3 failed: {str(e)}")
+            
+            elif 'gfycat.com' in redgifs_url:
+                print(f"[DEBUG] Processing gfycat URL (legacy)")
+                # Gfycat was shut down, but some URLs might redirect to redgifs
+                parsed_url = urlparse(redgifs_url)
+                path_parts = parsed_url.path.strip('/').split('/')
+                
+                if path_parts:
+                    gfy_name = path_parts[-1]
+                    print(f"[DEBUG] Extracted gfy_name: {gfy_name}")
+                    
+                    # Try redgifs with the gfy name
+                    return self._extract_redgifs_url(f"https://www.redgifs.com/watch/{gfy_name}")
+            
+            print(f"[DEBUG] All strategies failed for {redgifs_url}")
+                    
+        except Exception as e:
+            print(f"[DEBUG] Exception in _extract_redgifs_url: {str(e)}")
+            
+        return None, None
 
     def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text):
         """
@@ -1047,7 +1215,7 @@ Generate descriptions that adhere to the following structured layers and constra
         """
         return {
             "required": {
-                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit post"], {
+                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit Post"], {
                     "default": "Upload Media",
                     "tooltip": "Choose whether to upload media, randomize from a directory path, or download from a Reddit post"
                 }),
@@ -1096,7 +1264,7 @@ Generate descriptions that adhere to the following structured layers and constra
                 "reddit_url": ("STRING", {
                     "multiline": False,
                     "default": "",
-                    "tooltip": "Reddit post URL (used when media_source is Reddit post)"
+                    "tooltip": "Reddit post URL (used when media_source is Reddit Post)"
                 }),
             }
         }
@@ -1111,7 +1279,7 @@ Generate descriptions that adhere to the following structured layers and constra
         Process media (image or video) and analyze with Gemini
 
         Args:
-            media_source: Source of media ("Upload Media", "Randomize Media from Path", or "Reddit post")
+            media_source: Source of media ("Upload Media", "Randomize Media from Path", or "Reddit Post")
             media_type: Type of media ("image" or "video")
             seed: Seed for randomization when using 'Randomize Media from Path'. Use different seeds to force re-execution.
             gemini_options: Configuration options from Gemini Util - Options node (optional)
@@ -1231,10 +1399,10 @@ Directory scan results:
                 else:
                     # For random video, set up for video processing
                     media_info_text = f"📹 Video Processing Info (Random Selection):\n• File: {os.path.basename(selected_media_path)}\n• Source: Random from {media_path} (including subdirectories)\n• Full path: {selected_media_path}"
-            elif media_source == "Reddit post":
-                # Reddit post mode
+            elif media_source == "Reddit Post":
+                # Reddit Post mode
                 if not reddit_url or not reddit_url.strip():
-                    raise ValueError("Reddit URL is required when media_source is 'Reddit post'")
+                    raise ValueError("Reddit URL is required when media_source is 'Reddit Post'")
                 
                 # Download media from Reddit post
                 downloaded_path, detected_media_type, reddit_media_info = self._download_reddit_media(reddit_url)
@@ -1470,6 +1638,10 @@ class LoRAInfoExtractor:
                     "default": True,
                     "tooltip": "Disable to skip remote lookups and rely on local metadata only"
                 }),
+                "wan_model_type": (["high", "low", "none"], {
+                    "default": "high",
+                    "tooltip": "Specify whether this LoRA is used with Wan 2.2 High Noise, Low Noise model, or none/other"
+                }),
             }
         }
 
@@ -1478,7 +1650,7 @@ class LoRAInfoExtractor:
     FUNCTION = "extract_lora_info"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def extract_lora_info(self, lora: Any, civitai_api_key: str = "", fallback_name: str = "", use_civitai_api: bool = True):
+    def extract_lora_info(self, lora: Any, civitai_api_key: str = "", fallback_name: str = "", use_civitai_api: bool = True, wan_model_type: str = "high"):
         """Extract LoRA stack metadata and return JSON plus human readable summary."""
 
         debug_repr = repr(lora)
@@ -1486,6 +1658,7 @@ class LoRAInfoExtractor:
         print(f"  - use_civitai_api: {use_civitai_api}")
         print(f"  - civitai_api_key provided: {bool(civitai_api_key and civitai_api_key != 'YOUR_CIVITAI_API_KEY_HERE')}")
         print(f"  - fallback_name: '{fallback_name}'")
+        print(f"  - wan_model_type: '{wan_model_type}'")
         print(f"  - lora type: {type(lora)}")
         print(f"  - lora repr: {debug_repr[:300]}{'...' if len(debug_repr) > 300 else ''}")
 
@@ -1505,9 +1678,9 @@ class LoRAInfoExtractor:
 
             processed_entries = []
             info_lines: List[str] = []
-            total_size = 0
             missing_files = 0
             civitai_matches = 0
+            cache_hits = 0
             tags_accumulator = set()
 
             for index, entry in enumerate(entries):
@@ -1520,14 +1693,17 @@ class LoRAInfoExtractor:
 
                 processed_entries.append(metadata)
 
-                if metadata["file"]["exists"] and metadata["file"]["size_bytes"]:
-                    total_size += metadata["file"]["size_bytes"]
-                else:
+                if not metadata["file"]["exists"]:
                     missing_files += 1
 
                 if metadata["civitai"]:
                     civitai_matches += 1
-                    tags_accumulator.update(metadata["civitai"].get("tags", []))
+                    if metadata["civitai"].get("cache_hit"):
+                        cache_hits += 1
+                    # Extract tags from the filtered civitai data or fall back to empty list
+                    civitai_tags = metadata["civitai"].get("tags", [])
+                    if civitai_tags:
+                        tags_accumulator.update(civitai_tags)
 
                 info_lines.append(self._format_info_line(metadata))
 
@@ -1535,7 +1711,7 @@ class LoRAInfoExtractor:
                 count=len(processed_entries),
                 missing_files=missing_files,
                 civitai_matches=civitai_matches,
-                total_size=total_size,
+                cache_hits=cache_hits,
                 tags=sorted(tag for tag in tags_accumulator if tag)
             )
 
@@ -1547,6 +1723,7 @@ class LoRAInfoExtractor:
                     "loras": processed_entries,
                     "summary": summary,
                     "combined_display": combined_display,
+                    "wan_model_type": wan_model_type,
                 }
                 return (json.dumps(payload, indent=2), info_block, lora)
 
@@ -1556,6 +1733,7 @@ class LoRAInfoExtractor:
                 "loras": [],
                 "summary": summary,
                 "combined_display": fallback_label,
+                "wan_model_type": wan_model_type,
                 "error": "LoRA stack did not contain any LoRA dictionaries",
             }
             return (json.dumps(empty_payload, indent=2), f"Fallback: {fallback_label}", lora)
@@ -1567,6 +1745,7 @@ class LoRAInfoExtractor:
                 "loras": [],
                 "summary": {"count": 0},
                 "combined_display": fallback_label,
+                "wan_model_type": wan_model_type,
                 "error": str(exc),
             }
             return (json.dumps(error_payload, indent=2), f"Error: {exc}", lora)
@@ -1661,9 +1840,9 @@ class LoRAInfoExtractor:
         name_from_filename = self._clean_name(os.path.basename(file_path)) if file_path else None
         display_name = self._select_display_name(raw_name, name_from_filename)
 
-        file_size = os.path.getsize(normalized_path) if file_exists else 0
-        file_mtime = os.path.getmtime(normalized_path) if file_exists else None
-        file_hash = self.hash_cache.get_hash(normalized_path) if file_exists else None
+        # Get all hash types
+        file_hashes = self.hash_cache.get_hashes(normalized_path) if file_exists else None
+        legacy_hash = file_hashes.get('sha256') if file_hashes else None  # For backward compatibility
 
         civitai_data = None
         if file_exists and use_civitai_api and civitai_service:
@@ -1674,33 +1853,31 @@ class LoRAInfoExtractor:
         file_info = {
             "exists": file_exists,
             "path": normalized_path or file_path,
-            "size_bytes": file_size,
-            "size_human": self._human_readable_size(file_size) if file_exists else "0 B",
-            "modified_at": datetime.utcfromtimestamp(file_mtime).isoformat() + "Z" if file_mtime else None,
         }
+
+        # Filter raw entry to remove unwanted fields
+        filtered_raw = {k: v for k, v in entry.items() if k not in ['path', 'blocks', 'layer_filter', 'low_mem_load', 'merge_loras']}
 
         return {
             "index": index,
             "display_name": display_name,
-            "hash": file_hash,
+            "hash": legacy_hash,  # Keep for backward compatibility
+            "hashes": file_hashes,  # All computed hash types
             "file": file_info,
             "strength": strength,
             "original": {
-                "raw": entry,
-                "name": raw_name,
-                "path": file_path,
+                "raw": filtered_raw,
             },
-            "civitai": civitai_data,
+            "civitai": self._filter_civitai_data(civitai_data) if civitai_data else None,
         }
 
-    def _build_summary(self, *, count: int, missing_files: int, civitai_matches: int, total_size: int, tags: List[str]) -> Dict[str, Any]:
+    def _build_summary(self, *, count: int, missing_files: int, civitai_matches: int, cache_hits: int, tags: List[str]) -> Dict[str, Any]:
         return {
             "count": count,
             "missing_files": missing_files,
             "civitai_matches": civitai_matches,
+            "civitai_cache_hits": cache_hits,
             "local_only": max(count - civitai_matches, 0),
-            "total_size_bytes": total_size,
-            "total_size_human": self._human_readable_size(total_size),
             "tags": tags[:25],
         }
 
@@ -1711,7 +1888,8 @@ class LoRAInfoExtractor:
         ]
         if summary["missing_files"]:
             parts.append(f"Missing: {summary['missing_files']}")
-        parts.append(f"Total size: {summary['total_size_human']}")
+        if summary.get("civitai_cache_hits", 0) > 0:
+            parts.append(f"Cache hits: {summary['civitai_cache_hits']}")
         return " • ".join(parts)
 
     def _format_info_line(self, metadata: Dict[str, Any]) -> str:
@@ -1722,21 +1900,62 @@ class LoRAInfoExtractor:
             version = civitai.get("version_name")
             creator = civitai.get("creator", "Unknown")
             version_fragment = f" ({version})" if version and version != metadata["display_name"] else ""
-            segments.append(f"CivitAI{version_fragment} by {creator}")
+            
+            # Show which hash type was used for the match
+            matched_hash_type = civitai.get("matched_hash_type", "unknown")
+            segments.append(f"CivitAI{version_fragment} by {creator} [{matched_hash_type}]")
         else:
             segments.append("Local metadata")
 
+        # Show primary hash for backward compatibility
         if metadata.get("hash"):
-            segments.append(f"hash {metadata['hash'][:10]}…")
+            segments.append(f"SHA256 {metadata['hash'][:10]}…")
+        
+        # Show count of available hash types
+        hashes = metadata.get("hashes", {})
+        if hashes:
+            hash_count = sum(1 for v in hashes.values() if v is not None)
+            segments.append(f"{hash_count} hash types")
 
         file_info = metadata["file"]
         if not file_info["exists"]:
             segments.append("missing file")
-        else:
-            segments.append(f"{file_info['size_human']}")
 
         joined_segments = " | ".join(segments)
         return f"• {metadata['display_name']} — {joined_segments}" if joined_segments else f"• {metadata['display_name']}"
+
+    def _filter_civitai_data(self, civitai_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Filter CivitAI data to keep only essential fields."""
+        if not civitai_data:
+            return None
+            
+        # Keep only specified fields
+        filtered = {}
+        
+        # Required fields from the original response
+        keep_fields = ['civitai_name', 'version_name', 'civitai_url', 'model_id', 'version_id', 'fetched_at']
+        for field in keep_fields:
+            if field in civitai_data:
+                filtered[field] = civitai_data[field]
+        
+        # Special handling for air - check if it exists in api_response
+        api_response = civitai_data.get('api_response', {})
+        if 'air' in api_response:
+            filtered['air'] = api_response['air']
+            
+        # Include hash information
+        if 'all_hashes' in civitai_data:
+            filtered['hashes'] = civitai_data['all_hashes']
+            
+        # Include matched hash info and cache status
+        if 'matched_hash_type' in civitai_data:
+            filtered['matched_hash_type'] = civitai_data['matched_hash_type']
+        if 'matched_hash_value' in civitai_data:
+            filtered['matched_hash_value'] = civitai_data['matched_hash_value']
+        if 'cache_hit' in civitai_data:
+            filtered['cache_hit'] = civitai_data['cache_hit']
+            
+        return filtered
 
     def _extract_first(self, source: Dict[str, Any], keys: Tuple[str, ...]) -> Optional[str]:
         for key in keys:

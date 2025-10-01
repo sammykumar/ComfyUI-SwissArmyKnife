@@ -1,7 +1,11 @@
 import { app } from "../../../scripts/app.js";
 import { api } from "../../../scripts/api.js";
 
-console.log("Loading swiss-army-knife.js extension");
+// Version and cache busting info
+const EXTENSION_VERSION = "1.4.0"; // Should match pyproject.toml version
+const LOAD_TIMESTAMP = new Date().toISOString();
+
+console.log(`Loading swiss-army-knife.js extension v${EXTENSION_VERSION} at ${LOAD_TIMESTAMP}`);
 
 // Register custom widgets for Swiss Army Knife nodes
 app.registerExtension({
@@ -396,6 +400,19 @@ app.registerExtension({
                     const originalRedditUrlWidget = this.widgets.find(
                         (w) => w.name === "reddit_url"
                     );
+                    console.log(
+                        `[DEBUG] originalRedditUrlWidget found: ${!!originalRedditUrlWidget}`
+                    );
+                    if (originalRedditUrlWidget) {
+                        console.log(
+                            `[DEBUG] Reddit URL widget current type: ${originalRedditUrlWidget.type}, value: "${originalRedditUrlWidget.value}"`
+                        );
+                    }
+
+                    // Debug: List all widget names
+                    console.log(
+                        `[DEBUG] All widget names: ${this.widgets.map((w) => w.name).join(", ")}`
+                    );
 
                     // Manage visibility of original input widgets
                     if (mediaSource === "Randomize Media from Path") {
@@ -417,10 +434,45 @@ app.registerExtension({
                             console.log("[STATE] Showing seed widget for randomization");
                         }
 
-                        // Hide Reddit URL widget
+                        // Completely remove Reddit URL widget from DOM for randomize mode
                         if (originalRedditUrlWidget) {
-                            originalRedditUrlWidget.type = "hidden";
-                            originalRedditUrlWidget.computeSize = () => [0, -4];
+                            // Store widget for potential restoration
+                            this._hiddenRedditWidget = originalRedditUrlWidget;
+
+                            // Completely remove the widget from the widgets array
+                            const widgetIndex = this.widgets.indexOf(originalRedditUrlWidget);
+                            if (widgetIndex > -1) {
+                                this.widgets.splice(widgetIndex, 1);
+                                console.log(
+                                    "[STATE] Completely removed Reddit URL widget from widgets array"
+                                );
+                            }
+
+                            // Remove DOM element if it exists
+                            if (
+                                originalRedditUrlWidget.element &&
+                                originalRedditUrlWidget.element.parentNode
+                            ) {
+                                originalRedditUrlWidget.element.parentNode.removeChild(
+                                    originalRedditUrlWidget.element
+                                );
+                                console.log("[STATE] Removed Reddit URL widget DOM element");
+                            }
+
+                            // Force node to recompute size and refresh
+                            if (this.setSize) {
+                                setTimeout(() => {
+                                    this.setSize(this.computeSize());
+                                }, 10);
+                            }
+
+                            console.log(
+                                "[STATE] Completely removed Reddit URL widget for randomize mode"
+                            );
+                        } else {
+                            console.log(
+                                "[DEBUG] Reddit URL widget not found for hiding in randomize mode"
+                            );
                         }
 
                         // Hide upload file widgets
@@ -432,15 +484,50 @@ app.registerExtension({
                             originalUploadedVideoWidget.type = "hidden";
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
-                    } else if (mediaSource === "Reddit post") {
-                        console.log("[STATE] Reddit post mode - showing Reddit URL widget");
+                    } else if (mediaSource === "Reddit Post") {
+                        console.log("[STATE] Reddit Post mode - showing Reddit URL widget");
 
-                        // Show the Reddit URL widget
+                        // Show the Reddit URL widget (restore if it was removed)
                         if (originalRedditUrlWidget) {
                             originalRedditUrlWidget.type = "text";
                             originalRedditUrlWidget.computeSize =
                                 originalRedditUrlWidget.constructor.prototype.computeSize;
                             this.redditUrlWidget = originalRedditUrlWidget; // Reference the original
+                            // Ensure the widget is fully visible (reverse ultra-aggressive hiding)
+                            if (originalRedditUrlWidget.element) {
+                                originalRedditUrlWidget.element.style.display = "";
+                                originalRedditUrlWidget.element.style.visibility = "";
+                                originalRedditUrlWidget.element.style.height = "";
+                                originalRedditUrlWidget.element.style.overflow = "";
+                                // Restore parent visibility if it was hidden
+                                if (originalRedditUrlWidget.element.parentNode) {
+                                    originalRedditUrlWidget.element.parentNode.style.display = "";
+                                }
+                            }
+                            originalRedditUrlWidget.options = originalRedditUrlWidget.options || {};
+                            originalRedditUrlWidget.options.serialize = true;
+                            console.log(
+                                "[STATE] Showing Reddit URL widget for Reddit Post mode (with display reset)"
+                            );
+                        } else if (this._hiddenRedditWidget) {
+                            // Restore widget that was completely removed
+                            this.widgets.push(this._hiddenRedditWidget);
+                            this._hiddenRedditWidget.type = "text";
+                            this._hiddenRedditWidget.computeSize =
+                                this._hiddenRedditWidget.constructor.prototype.computeSize;
+                            this.redditUrlWidget = this._hiddenRedditWidget;
+                            this._hiddenRedditWidget.options =
+                                this._hiddenRedditWidget.options || {};
+                            this._hiddenRedditWidget.options.serialize = true;
+                            console.log(
+                                "[STATE] Restored previously removed Reddit URL widget for Reddit Post mode"
+                            );
+                            // Clear the stored reference
+                            this._hiddenRedditWidget = null;
+                        } else {
+                            console.log(
+                                "[DEBUG] Reddit URL widget not found for showing in Reddit Post mode"
+                            );
                         }
 
                         // Hide other widgets
@@ -478,10 +565,38 @@ app.registerExtension({
                             console.log("[STATE] Hiding seed widget for upload mode");
                         }
 
-                        // Hide Reddit URL widget
+                        // Completely remove Reddit URL widget from DOM for upload mode
                         if (originalRedditUrlWidget) {
-                            originalRedditUrlWidget.type = "hidden";
-                            originalRedditUrlWidget.computeSize = () => [0, -4];
+                            // Store widget for potential restoration
+                            this._hiddenRedditWidget = originalRedditUrlWidget;
+
+                            // Completely remove the widget from the widgets array
+                            const widgetIndex = this.widgets.indexOf(originalRedditUrlWidget);
+                            if (widgetIndex > -1) {
+                                this.widgets.splice(widgetIndex, 1);
+                                console.log(
+                                    "[STATE] Completely removed Reddit URL widget from widgets array"
+                                );
+                            }
+
+                            // Remove DOM element if it exists
+                            if (
+                                originalRedditUrlWidget.element &&
+                                originalRedditUrlWidget.element.parentNode
+                            ) {
+                                originalRedditUrlWidget.element.parentNode.removeChild(
+                                    originalRedditUrlWidget.element
+                                );
+                                console.log("[STATE] Removed Reddit URL widget DOM element");
+                            }
+
+                            console.log(
+                                "[STATE] Completely removed Reddit URL widget for upload mode"
+                            );
+                        } else {
+                            console.log(
+                                "[DEBUG] Reddit URL widget not found for hiding in upload mode"
+                            );
                         }
 
                         if (mediaType === "image") {
@@ -559,8 +674,29 @@ app.registerExtension({
                         }`
                     );
 
-                    // Force node to recalculate size
+                    // Final debug check for Reddit URL widget state
+                    const finalRedditUrlWidget = this.widgets.find((w) => w.name === "reddit_url");
+                    if (finalRedditUrlWidget) {
+                        console.log(
+                            `[DEBUG] Final Reddit URL widget state - type: ${finalRedditUrlWidget.type}, visible: ${finalRedditUrlWidget.type !== "hidden"}, value: "${finalRedditUrlWidget.value}"`
+                        );
+                    }
+
+                    // Force node to recalculate size and refresh UI (aggressive refresh)
                     this.setSize(this.computeSize());
+
+                    // Additional UI refresh signals
+                    if (this.graph && this.graph.setDirtyCanvas) {
+                        this.graph.setDirtyCanvas(true, true);
+                    }
+
+                    // Force a render update
+                    setTimeout(() => {
+                        if (this.setDirtyCanvas) {
+                            this.setDirtyCanvas(true);
+                        }
+                        this.setSize(this.computeSize());
+                    }, 10);
                 };
 
                 // Initial setup
@@ -1156,6 +1292,225 @@ app.registerExtension({
                     "[LOADED] Saved uploaded file data found, skipping updateMediaWidgets to preserve onConfigure restoration"
                 );
             }
+        }
+    },
+});
+
+// Cache busting and development utility extension
+app.registerExtension({
+    name: "comfyui_swissarmyknife.cache_control",
+
+    async setup() {
+        // Log cache busting info for debugging
+        console.log(
+            `Swiss Army Knife Cache Info: v${EXTENSION_VERSION}, loaded at ${LOAD_TIMESTAMP}`
+        );
+
+        // Add cache busting utilities for development
+        if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+            console.log("Development mode detected - cache busting utilities available");
+
+            // Add global cache clearing function
+            window.clearSwissArmyKnifeCache = function () {
+                console.log("Clearing Swiss Army Knife extension cache...");
+
+                // Clear localStorage items related to our extension
+                Object.keys(localStorage).forEach((key) => {
+                    if (key.includes("swissarmyknife") || key.includes("swiss_army_knife")) {
+                        localStorage.removeItem(key);
+                        console.log(`Cleared localStorage: ${key}`);
+                    }
+                });
+
+                // Clear sessionStorage items
+                Object.keys(sessionStorage).forEach((key) => {
+                    if (key.includes("swissarmyknife") || key.includes("swiss_army_knife")) {
+                        sessionStorage.removeItem(key);
+                        console.log(`Cleared sessionStorage: ${key}`);
+                    }
+                });
+
+                console.log("Swiss Army Knife cache cleared. Refreshing page...");
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 1000);
+            };
+
+            // Add reload function for development
+            window.reloadSwissArmyKnife = function () {
+                console.log("Reloading Swiss Army Knife extension...");
+                window.location.reload(true);
+            };
+
+            console.log("Development utilities added:");
+            console.log("- clearSwissArmyKnifeCache() - Clear extension cache and reload");
+            console.log("- reloadSwissArmyKnife() - Force page reload with cache bypass");
+        }
+
+        // Add version check mechanism
+        this.checkVersionUpdates();
+    },
+
+    checkVersionUpdates() {
+        const lastSeenVersion = localStorage.getItem("swissarmyknife_last_version");
+
+        if (lastSeenVersion && lastSeenVersion !== EXTENSION_VERSION) {
+            console.log(
+                `Swiss Army Knife updated from v${lastSeenVersion} to v${EXTENSION_VERSION}`
+            );
+
+            // Show update notification if available
+            if (app.extensionManager?.toast?.add) {
+                app.extensionManager.toast.add({
+                    severity: "info",
+                    summary: "Extension Updated",
+                    detail: `Swiss Army Knife updated to v${EXTENSION_VERSION}`,
+                    life: 5000,
+                });
+            }
+        }
+
+        // Store current version
+        localStorage.setItem("swissarmyknife_last_version", EXTENSION_VERSION);
+    },
+});
+
+// LoRAInfoExtractor workflow serialization extension
+app.registerExtension({
+    name: "comfyui_swissarmyknife.lora_info_extractor",
+
+    async setup() {
+        // Listen for execution results at the app level
+        const original_onExecuted = app.onExecuted;
+        app.onExecuted = function (nodeId, data) {
+            console.log("[DEBUG] App execution completed for node:", nodeId, "data:", data);
+
+            // Find the node by ID and check if it's LoRAInfoExtractor
+            const node = app.graph.getNodeById(nodeId);
+            if (node && node.comfyClass === "LoRAInfoExtractor") {
+                console.log("[DEBUG] Found LoRAInfoExtractor execution result");
+
+                // Try to extract lora_json from the execution data
+                if (data && data[0]) {
+                    // First output should be lora_json
+                    node._cached_lora_json = data[0];
+                    console.log(
+                        "[DEBUG] Cached lora_json from app execution:",
+                        data[0].substring(0, 100) + "..."
+                    );
+                }
+            }
+
+            // Call original handler
+            return original_onExecuted?.call(this, nodeId, data);
+        };
+    },
+
+    async beforeRegisterNodeDef(nodeType, nodeData, app) {
+        if (nodeData.name === "LoRAInfoExtractor") {
+            console.log("[DEBUG] Registering LoRAInfoExtractor widget extensions");
+
+            // Add onSerialize method to save lora_json output to workflow
+            const onSerialize = nodeType.prototype.onSerialize;
+            nodeType.prototype.onSerialize = function (o) {
+                const result = onSerialize?.apply(this, arguments);
+
+                console.log("[DEBUG] LoRAInfoExtractor onSerialize called for node:", this.id);
+                console.log("[DEBUG] Current cached lora_json:", !!this._cached_lora_json);
+                console.log("[DEBUG] Serialization object before:", JSON.stringify(o, null, 2));
+
+                // Save the cached lora_json output if available
+                if (this._cached_lora_json) {
+                    o.lora_json_output = this._cached_lora_json;
+                    console.log(
+                        "[SERIALIZE] Saved lora_json to workflow:",
+                        typeof this._cached_lora_json === "string"
+                            ? this._cached_lora_json.substring(0, 100) + "..."
+                            : JSON.stringify(this._cached_lora_json).substring(0, 100) + "..."
+                    );
+                } else {
+                    console.log("[SERIALIZE] No cached lora_json to save");
+                }
+
+                console.log("[DEBUG] Serialization object after:", JSON.stringify(o, null, 2));
+                return result;
+            };
+
+            // Add onConfigure method to restore lora_json from workflow
+            const onConfigure = nodeType.prototype.onConfigure;
+            nodeType.prototype.onConfigure = function (o) {
+                const result = onConfigure?.apply(this, arguments);
+
+                console.log("[DEBUG] LoRAInfoExtractor onConfigure called");
+
+                // Restore the cached lora_json output if available
+                if (o.lora_json_output) {
+                    this._cached_lora_json = o.lora_json_output;
+                    console.log(
+                        "[CONFIGURE] Restored lora_json from workflow:",
+                        o.lora_json_output?.substring(0, 100) + "..."
+                    );
+                }
+
+                return result;
+            };
+        }
+    },
+
+    async nodeCreated(node) {
+        if (node.comfyClass === "LoRAInfoExtractor") {
+            console.log("[DEBUG] LoRAInfoExtractor node created, ID:", node.id);
+
+            // Listen for node execution results
+            const originalOnExecuted = node.onExecuted;
+            node.onExecuted = function (message) {
+                console.log("[DEBUG] LoRAInfoExtractor onExecuted called");
+                console.log("[DEBUG] Full message object:", JSON.stringify(message, null, 2));
+
+                // Try different possible message structures
+                let loraJsonValue = null;
+
+                // Try different paths where the lora_json might be
+                if (message && message.output) {
+                    console.log("[DEBUG] message.output exists:", message.output);
+
+                    // Check if it's directly in output
+                    if (message.output.lora_json) {
+                        console.log("[DEBUG] Found lora_json in message.output.lora_json");
+                        loraJsonValue = Array.isArray(message.output.lora_json)
+                            ? message.output.lora_json[0]
+                            : message.output.lora_json;
+                    }
+                    // Check if it's in a different structure
+                    else if (message.output[0]) {
+                        console.log("[DEBUG] Found output[0]:", message.output[0]);
+                        loraJsonValue = message.output[0];
+                    }
+                }
+
+                // Also check if message itself has the data
+                if (!loraJsonValue && message.lora_json) {
+                    console.log("[DEBUG] Found lora_json in message.lora_json");
+                    loraJsonValue = Array.isArray(message.lora_json)
+                        ? message.lora_json[0]
+                        : message.lora_json;
+                }
+
+                if (loraJsonValue) {
+                    this._cached_lora_json = loraJsonValue;
+                    console.log(
+                        "[DEBUG] Cached lora_json from execution:",
+                        typeof loraJsonValue === "string"
+                            ? loraJsonValue.substring(0, 100) + "..."
+                            : JSON.stringify(loraJsonValue).substring(0, 100) + "..."
+                    );
+                } else {
+                    console.log("[DEBUG] No lora_json found in execution message");
+                }
+
+                // Call original onExecuted if it exists
+                return originalOnExecuted?.call(this, message);
+            };
         }
     },
 });

@@ -1,8 +1,8 @@
-# Reddit Post Media Source Implementation
+# Reddit Post Media Source - Enhanced Implementation Guide
 
 ## Overview
 
-The Media Describe node now supports downloading media directly from Reddit posts as a third media source option alongside "Upload Media" and "Randomize Media from Path".
+The "Reddit Post" media source option in the **Gemini Util - Media Describe** node allows users to directly input Reddit post URLs to download and analyze media content. This feature has been enhanced with improved redgifs support and proper capitalization, now supporting both images and videos from Reddit posts, including content hosted on external platforms like redgifs.
 
 ## Features
 
@@ -12,7 +12,25 @@ The Media Describe node now supports downloading media directly from Reddit post
 - **Direct Video Links**: v.redd.it hosted videos (mp4, webm)
 - **External Links**: Images and videos ending with common extensions
 - **Reddit Galleries**: First media item from gallery posts
-- **External Video Hosts**: Basic support for redgifs.com and gfycat.com URLs
+- **External Video Hosts**: Enhanced support for redgifs.com with API v2 integration and legacy gfycat.com support
+
+### Recent Enhancements (Latest Update)
+
+#### 1. Improved Redgifs Support
+
+- **API Integration**: Now uses redgifs API v2 for proper video URL extraction
+- **Quality Selection**: Automatically selects best available quality (HD > SD > poster)
+- **Fallback Mechanisms**: Multiple fallback strategies for URL extraction
+- **Legacy Support**: Handles old gfycat URLs that may redirect to redgifs
+
+#### 2. Capitalization Fix
+
+- Updated option from "Reddit post" to "Reddit Post" for UI consistency
+
+#### 3. Enhanced Error Handling
+
+- Better error messages for failed redgifs extraction
+- Improved debugging information for troubleshooting
 
 ### Automatic Media Type Detection
 
@@ -20,16 +38,26 @@ The system automatically detects whether the Reddit post contains image or video
 
 ## Usage
 
-1. Set `media_source` to "Reddit post"
+1. Set `media_source` to "Reddit Post"
 2. Enter a Reddit post URL in the `reddit_url` field
 3. Select the expected `media_type` (image or video)
 4. Configure other Gemini processing options as normal
+
+### Video Trimming Integration
+
+The Reddit Post option fully supports video trimming through the existing `max_duration` parameter:
+
+- **Automatic Trimming**: Videos downloaded from Reddit posts are trimmed from the beginning if `max_duration` > 0
+- **FFmpeg Integration**: Uses the same `_trim_video()` method as other media sources
+- **Absolute Path Handling**: Downloaded temporary files maintain proper absolute paths throughout the trimming process
+- **Fallback Support**: If trimming fails, the original video is used with appropriate warnings
 
 ### Supported URL Formats
 
 - Full Reddit URLs: `https://www.reddit.com/r/subreddit/comments/postid/title/`
 - Shortened URLs: `reddit.com/r/subreddit/comments/postid/title/`
 - URLs with or without trailing slashes
+- Redgifs URLs: `https://redgifs.com/watch/gifname` or `https://www.redgifs.com/watch/gifname`
 
 ## Implementation Details
 

@@ -8,6 +8,7 @@
         "lint": "eslint js/**/*.js",
         "lint:fix": "eslint js/**/*.js --fix",
         "format": "prettier --write js/**/*.js css/**/*.css",
+        "cache-bust": "../scripts/cache_bust.sh",
         "test": "cd tests && npm test"
     },
     "devDependencies": {

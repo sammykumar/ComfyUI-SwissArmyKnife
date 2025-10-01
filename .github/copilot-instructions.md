@@ -6,8 +6,9 @@
 
 For technical implementation details, reference these official ComfyUI custom node development guides:
 
--   **Backend (Python) Development**: https://docs.comfy.org/custom-nodes/backend/server_overview
--   **Web Extension (JavaScript) Development**: https://docs.comfy.org/custom-nodes/js/javascript_overview
+- **Backend (Python) Development**: https://docs.comfy.org/custom-nodes/backend/server_overview
+- **Web Extension (JavaScript) Development**: https://docs.comfy.org/custom-nodes/js/javascript_overview
+- **Lite Graph (ComfyUi is built on top of Lite Graph)**:https://github.com/jagenjo/litegraph.js/tree/master
 
 _Note: These are the official JavaScript widget docs, not React-based extensions._
 
@@ -17,22 +18,22 @@ ComfyUI-SwissArmyKnife is a ComfyUI extension that consists of two essential com
 
 ### Backend (Python Custom Nodes)
 
--   Python custom nodes in `utils/*.py` for Gemini AI video analysis and processing
--   Core business logic and AI integration
--   Requires ComfyUI server restart when modified
+- Python custom nodes in `utils/*.py` for Gemini AI video analysis and processing
+- Core business logic and AI integration
+- Requires ComfyUI server restart when modified
 
 ### Web Extension (JavaScript Widgets)
 
--   Plain JavaScript widgets in `./web/js/` for enhanced ComfyUI interaction
--   UI components and client-side functionality
--   Requires browser cache refresh when modified
+- Plain JavaScript widgets in `./web/js/` for enhanced ComfyUI interaction
+- UI components and client-side functionality
+- Requires browser cache refresh when modified
 
 ### Additional Components
 
--   ~~React/TypeScript UI extension with internationalization~~ **DISABLED FOR NOW**
--   GitHub Actions for automated building and publishing
--   Playwright tests in `./web/tests/` for testing against hosted ComfyUI server
--   Documentation in `docs/` directory for all project documentation
+- ~~React/TypeScript UI extension with internationalization~~ **DISABLED FOR NOW**
+- GitHub Actions for automated building and publishing
+- Playwright tests in `./web/tests/` for testing against hosted ComfyUI server
+- Documentation in `docs/` directory for all project documentation
 
 **IMPORTANT**: Both backend and web extension components are required for the custom node to function properly. Changes to backend Python files require restarting the ComfyUI server, while changes to web JavaScript files require refreshing the browser cache.
 
@@ -259,9 +260,9 @@ ruff check --fix .
 
 The repository includes automated publishing via `.github/workflows/react-build.yml`:
 
--   Triggers on `pyproject.toml` changes pushed to main branch
--   Requires `REGISTRY_ACCESS_TOKEN` secret in repository settings
--   Automatically builds React UI and publishes to ComfyUI Registry
+- Triggers on `pyproject.toml` changes pushed to main branch
+- Requires `REGISTRY_ACCESS_TOKEN` secret in repository settings
+- Automatically builds React UI and publishes to ComfyUI Registry
 
 ## Validation Scenarios
 
@@ -333,27 +334,27 @@ ls -la ../../__init__.py  # Python entry point (ACTIVE)
 
 ### Jest Testing Configuration
 
--   Jest tests fail due to ES module configuration issues
--   Example test exists in `src/__tests__/dummy.test.tsx` but won't run
--   Fix requires updating jest.config.js and jest.setup.js for ESM support
+- Jest tests fail due to ES module configuration issues
+- Example test exists in `src/__tests__/dummy.test.tsx` but won't run
+- Fix requires updating jest.config.js and jest.setup.js for ESM support
 
 ### ESLint Configuration
 
--   ESLint shows TypeScript project configuration warnings
--   Code builds and runs correctly despite these warnings
--   Focus on functional validation rather than linting perfection
+- ESLint shows TypeScript project configuration warnings
+- Code builds and runs correctly despite these warnings
+- Focus on functional validation rather than linting perfection
 
 ### Python Import Warnings
 
--   Ruff reports unused imports in `__init__.py` files
--   These imports are intentional for ComfyUI integration
--   The warnings can be safely ignored
+- Ruff reports unused imports in `__init__.py` files
+- These imports are intentional for ComfyUI integration
+- The warnings can be safely ignored
 
 ### System Dependencies
 
--   FFmpeg is required for video processing features
--   Without FFmpeg, video-related functionality will fail at runtime
--   Always verify FFmpeg is installed in your environment
+- FFmpeg is required for video processing features
+- Without FFmpeg, video-related functionality will fail at runtime
+- Always verify FFmpeg is installed in your environment
 
 ## Common Tasks
 
@@ -434,20 +435,20 @@ pip3 list | grep -E "(torch|opencv|google-genai)"  # Show Python ML deps
 
 **NEVER CANCEL these operations - they may appear to hang but are working:**
 
--   `npm install`: 40 seconds (normal)
--   `npm run build`: 5 seconds (very fast)
--   `pip3 install torch opencv-python`: 2-3 minutes (downloads large binaries)
--   `npm run watch`: Runs continuously until stopped
--   `ruff check`: < 1 second (very fast)
--   `pytest`: < 30 seconds (but no tests exist currently)
+- `npm install`: 40 seconds (normal)
+- `npm run build`: 5 seconds (very fast)
+- `pip3 install torch opencv-python`: 2-3 minutes (downloads large binaries)
+- `npm run watch`: Runs continuously until stopped
+- `ruff check`: < 1 second (very fast)
+- `pytest`: < 30 seconds (but no tests exist currently)
 
 Set appropriate timeouts: 60+ seconds for npm install, 300+ seconds for Python ML dependencies.
 
 ## Development Tips
 
--   **Backend changes**: Restart ComfyUI server after modifying Python files in `utils/`
--   **Web extension changes**: Refresh browser cache after modifying JavaScript files in `web/js/`
--   JavaScript widgets require no build step (plain JS files)
--   Use Playwright tests in `web/tests/` to validate functionality against hosted ComfyUI server
--   Focus on functional testing since automated tests have configuration issues
--   FFmpeg must be available in PATH for video processing features to work
+- **Backend changes**: Restart ComfyUI server after modifying Python files in `utils/`
+- **Web extension changes**: Refresh browser cache after modifying JavaScript files in `web/js/`
+- JavaScript widgets require no build step (plain JS files)
+- Use Playwright tests in `web/tests/` to validate functionality against hosted ComfyUI server
+- Focus on functional testing since automated tests have configuration issues
+- FFmpeg must be available in PATH for video processing features to work
