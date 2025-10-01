@@ -5,20 +5,22 @@ A suite of modern implementations for enhanced LoRA loading and UI features.
 """
 
 try:
-    from .nd_super_lora_node import NdSuperLoraLoader
+    from .nd_super_lora_node import SuperDualLoraLoader, SuperLoraLoader
 except ImportError:
     # Fallback for development/testing
     import sys
     import os
     sys.path.append(os.path.dirname(__file__))
-    from nd_super_lora_node import NdSuperLoraLoader
+    from nd_super_lora_node import SuperDualLoraLoader, SuperLoraLoader
 
 NODE_CLASS_MAPPINGS = {
-    "NdSuperLoraLoader": NdSuperLoraLoader,
+    "SuperDualLoraLoader": SuperDualLoraLoader,
+    "SuperLoraLoader": SuperLoraLoader,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "NdSuperLoraLoader": "Super LoRA Loader 🔪",
+    "SuperDualLoraLoader": "SuperDualLoraLoader (WanVideoWrapper) 🔪",
+    "SuperLoraLoader": "SuperLoraLoader 🔪",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
