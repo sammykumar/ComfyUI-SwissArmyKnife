@@ -7,8 +7,6 @@ import requests
 import io
 import os
 import subprocess
-import random
-import json
 import time
 from urllib.parse import urlparse
 from html import unescape
@@ -46,7 +44,7 @@ class MediaDescribe:
             Exception: If all retries fail
         """
         last_error = None
-        
+
         for attempt in range(max_retries):
             try:
                 response = client.models.generate_content(
@@ -54,18 +52,18 @@ class MediaDescribe:
                     contents=contents,
                     config=config,
                 )
-                
+
                 # Check if response has valid text
                 if response.text is not None:
                     return response
-                
+
                 # If response is empty, construct error message
                 error_msg = "Error: Gemini returned empty response"
                 if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
                     error_msg += f" (Prompt feedback: {response.prompt_feedback})"
                 if hasattr(response, 'candidates') and response.candidates:
                     error_msg += f" (Candidates available: {len(response.candidates)})"
-                
+
                 # If not the last attempt, retry after delay
                 if attempt < max_retries - 1:
                     print(f"Gemini API returned empty response. Retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
@@ -75,10 +73,10 @@ class MediaDescribe:
                 else:
                     # Last attempt failed
                     raise RuntimeError(error_msg)
-                    
+
             except Exception as e:
                 last_error = e
-                
+
                 # Check if it's an error we should retry
                 error_str = str(e)
                 should_retry = (
@@ -87,7 +85,7 @@ class MediaDescribe:
                     "overloaded" in error_str.lower() or
                     "empty response" in error_str.lower()
                 )
-                
+
                 # If not the last attempt and it's a retryable error, retry after delay
                 if attempt < max_retries - 1 and should_retry:
                     print(f"Gemini API error: {error_str}")
@@ -97,7 +95,7 @@ class MediaDescribe:
                 else:
                     # Last attempt or non-retryable error
                     raise
-        
+
         # If we exhausted all retries, raise the last error
         if last_error:
             raise last_error

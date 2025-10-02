@@ -11,7 +11,7 @@ async def get_config(request):
     try:
         # Read DEBUG setting from environment
         debug = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
-        
+
         return web.json_response({
             "debug": debug
         })
