@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .civitai_service import CivitAIService
 from .lora_hash_cache import get_cache as get_lora_hash_cache
-from .media_describe import GeminiUtilOptions, GeminiMediaDescribe
+from .media_describe import GeminiUtilOptions, MediaDescribe
 
 
 
@@ -768,7 +768,7 @@ class VideoMetadataNode:
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
-    "GeminiUtilMediaDescribe": GeminiMediaDescribe,
+    "GeminiUtilMediaDescribe": MediaDescribe,
     "GeminiUtilOptions": GeminiUtilOptions,
     "FilenameGenerator": FilenameGenerator,
     "VideoMetadataNode": VideoMetadataNode,

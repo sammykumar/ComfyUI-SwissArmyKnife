@@ -17,7 +17,7 @@ from google.genai import types
 
 from ..cache import get_cache, get_file_media_identifier, get_tensor_media_identifier
 
-class GeminiMediaDescribe:
+class MediaDescribe:
     """
     A ComfyUI custom node for describing images or videos using Google's Gemini API.
     Supports both uploaded media and random selection from a directory path (including subdirectories).
