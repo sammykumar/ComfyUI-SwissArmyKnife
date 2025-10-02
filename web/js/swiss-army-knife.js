@@ -956,10 +956,36 @@ app.registerExtension({
                 return result;
             };
 
-            // Add onExecuted method to update the final_string widget
+            // Add display widgets for dimensions (height and width)
+            this.addWidget(
+                "text",
+                "dimensions_display",
+                "Dimensions: Not executed yet",
+                () => {}, // Read-only widget
+                { serialize: false }
+            );
+
+            // Add onExecuted method to update the dimensions display
             const onExecutedMedia = nodeType.prototype.onExecuted;
             nodeType.prototype.onExecuted = function (message) {
                 const result = onExecutedMedia?.apply(this, arguments);
+
+                // Update dimensions display widget with height and width from execution results
+                if (message && message.length >= 7) {
+                    const height = message[5]; // Index 5 is height
+                    const width = message[6]; // Index 6 is width
+
+                    const dimensionsWidget = this.widgets.find(
+                        (w) => w.name === "dimensions_display"
+                    );
+                    if (dimensionsWidget) {
+                        dimensionsWidget.value = `Dimensions: ${height} x ${width}`;
+                        console.log(
+                            `[GeminiMediaDescribe] Updated dimensions display: ${height} x ${width}`
+                        );
+                    }
+                }
+
                 return result;
             };
 

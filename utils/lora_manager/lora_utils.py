@@ -27,24 +27,24 @@ def get_lora_by_filename(filename: str) -> Optional[str]:
     """
     if not filename or filename == "None":
         return None
-    
+
     if not COMFYUI_AVAILABLE or folder_paths is None:
         print(f"Super LoRA Loader: Cannot find LoRA '{filename}' - ComfyUI not available")
         return None
-        
+
     try:
         lora_paths = folder_paths.get_filename_list("loras")
-        
+
         # Try exact match first
         if filename in lora_paths:
             return filename
-            
+
         # Try case-insensitive match
         filename_lower = filename.lower()
         for lora_path in lora_paths:
             if lora_path.lower() == filename_lower:
                 return lora_path
-                
+
         print(f"Super LoRA Loader: LoRA file '{filename}' not found")
         return None
     except Exception as e:
@@ -278,7 +278,7 @@ def get_available_loras() -> List[str]:
     if not COMFYUI_AVAILABLE or folder_paths is None:
         print("Super LoRA Loader: Cannot get LoRA list - ComfyUI not available")
         return []
-        
+
     try:
         return folder_paths.get_filename_list("loras")
     except Exception as e:
@@ -297,19 +297,19 @@ def validate_lora_config(config: dict) -> bool:
         True if valid, False otherwise
     """
     required_fields = ['lora', 'enabled']
-    
+
     for field in required_fields:
         if field not in config:
             return False
-            
+
     # Check that strength values are valid
     strength_model = config.get('strength_model', 1.0)
     strength_clip = config.get('strength_clip', strength_model)
-    
+
     try:
         float(strength_model)
         float(strength_clip)
     except (ValueError, TypeError):
         return False
-        
+
     return True

@@ -1,7 +1,6 @@
 from google import genai
 from google.genai import types
 import cv2
-import hashlib
 import tempfile
 import os
 import subprocess
@@ -14,7 +13,7 @@ import mimetypes
 import requests
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 from .cache import get_cache, get_file_media_identifier, get_tensor_media_identifier
 from .civitai_service import CivitAIService
@@ -131,19 +130,19 @@ class GeminiMediaDescribe:
             output_path: Path to output trimmed video file
             duration: Duration in seconds from the beginning
         """
-        
+
         # Validate inputs
         if duration <= 0:
             print(f"Error: Invalid duration {duration} seconds for video trimming")
             return False
-            
+
         if not os.path.exists(input_path):
             print(f"Error: Input video file does not exist: {input_path}")
             return False
 
         try:
             print(f"Trimming video: {input_path} -> {output_path} (duration: {duration}s)")
-            
+
             # Use ffmpeg to trim the video from the beginning
             cmd = [
                 'ffmpeg',
@@ -156,7 +155,7 @@ class GeminiMediaDescribe:
             ]
 
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            
+
             # Check if output file was created and has content
             if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
                 print(f"Successfully trimmed video with copy codec: {os.path.getsize(output_path)} bytes")
@@ -181,7 +180,7 @@ class GeminiMediaDescribe:
                     output_path
                 ]
                 result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-                
+
                 # Check if output file was created and has content
                 if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
                     print(f"Successfully trimmed video with re-encoding: {os.path.getsize(output_path)} bytes")
@@ -189,7 +188,7 @@ class GeminiMediaDescribe:
                 else:
                     print("Error: Re-encoded file is also empty")
                     return False
-                    
+
             except subprocess.CalledProcessError as e2:
                 print(f"FFmpeg re-encoding also failed: {e2.stderr}")
                 return False
@@ -211,9 +210,9 @@ class GeminiMediaDescribe:
             # Extract the gif ID from the URL
             # URL format: https://www.redgifs.com/watch/GIFID  
             gif_id = redgifs_url.split('/')[-1].lower()
-            
+
             print(f"Extracting RedGifs video for ID: {gif_id}")
-            
+
             # Try common RedGifs video URL patterns
             # RedGifs typically serves videos in these formats
             possible_urls = [
@@ -223,13 +222,13 @@ class GeminiMediaDescribe:
                 f"https://thumbs2.redgifs.com/{gif_id}-mobile.mp4",
                 f"https://thumbs.redgifs.com/{gif_id}-mobile.mp4"
             ]
-            
+
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                 'Accept': 'video/mp4,video/webm,video/*,*/*;q=0.9',
                 'Referer': 'https://www.redgifs.com/'
             }
-            
+
             # Try each possible URL to find a working video
             for video_url in possible_urls:
                 try:
@@ -242,15 +241,15 @@ class GeminiMediaDescribe:
                             return video_url, 'video'
                 except requests.RequestException:
                     continue
-            
+
             # If direct URLs don't work, try to parse the page
             print("Direct URLs failed, attempting to parse RedGifs page...")
             page_response = requests.get(redgifs_url, headers=headers, timeout=30)
             page_response.raise_for_status()
-            
+
             # Look for video URLs in the page content
             page_content = page_response.text
-            
+
             # Try to find video URLs in common patterns
             import re
             video_patterns = [
@@ -259,7 +258,7 @@ class GeminiMediaDescribe:
                 r'src="([^"]*\.mp4[^"]*)"',
                 r'data-src="([^"]*\.mp4[^"]*)"'
             ]
-            
+
             for pattern in video_patterns:
                 matches = re.findall(pattern, page_content, re.IGNORECASE)
                 for match in matches:
@@ -269,7 +268,7 @@ class GeminiMediaDescribe:
                         video_url = 'https:' + video_url
                     elif not video_url.startswith('http'):
                         video_url = 'https://' + video_url
-                    
+
                     try:
                         # Verify this URL works
                         test_response = requests.head(video_url, headers=headers, timeout=10)
@@ -280,9 +279,9 @@ class GeminiMediaDescribe:
                                 return video_url, 'video'
                     except requests.RequestException:
                         continue
-            
+
             raise ValueError(f"Could not extract video URL from RedGifs page: {redgifs_url}")
-            
+
         except Exception as e:
             raise ValueError(f"Failed to extract RedGifs video: {str(e)}")
 
@@ -300,43 +299,43 @@ class GeminiMediaDescribe:
             # Validate URL format
             if not reddit_url or not isinstance(reddit_url, str):
                 raise ValueError("Invalid Reddit URL provided")
-                
+
             # Clean up URL - ensure it's a proper Reddit URL
             reddit_url = reddit_url.strip()
             if not reddit_url.startswith(('http://', 'https://')):
                 reddit_url = 'https://' + reddit_url
-                
+
             parsed_url = urlparse(reddit_url)
             if 'reddit.com' not in parsed_url.netloc:
                 raise ValueError("URL must be a Reddit post URL")
-            
+
             # Convert to JSON API URL
             json_url = reddit_url.rstrip('/') + '.json'
-            
+
             # Set headers to mimic a browser request
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
-            
+
             # Get Reddit post data
             response = requests.get(json_url, headers=headers, timeout=30)
             response.raise_for_status()
-            
+
             data = response.json()
             if not data or len(data) < 1:
                 raise ValueError("Unable to parse Reddit post data")
-                
+
             post_data = data[0]['data']['children'][0]['data']
-            
+
             # Extract media information
             media_url = None
             media_type = None
             post_title = post_data.get('title', 'Reddit Post')
-            
+
             # Check for direct image/video URL
             if post_data.get('url'):
                 url = post_data['url']
-                
+
                 # Handle different Reddit media formats
                 if url.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
                     media_url = url
@@ -361,7 +360,7 @@ class GeminiMediaDescribe:
                         print(f"Warning: Could not extract direct video URL from {url}, trying original URL as fallback")
                         media_url = url
                         media_type = 'video'
-                    
+
             # Check for gallery or media_metadata
             if not media_url and post_data.get('media_metadata'):
                 # Handle Reddit gallery posts - take the first media item
@@ -373,62 +372,62 @@ class GeminiMediaDescribe:
                         elif media_info.get('m', '').startswith('video/'):
                             media_type = 'video'
                         break
-                        
+
             if not media_url:
                 raise ValueError(f"No downloadable media found in Reddit post: {post_title}")
-                
+
             # Download the media file
             print(f"Downloading media from: {media_url}")
-            
+
             # Special handling for redgifs URLs that might not be direct video URLs
             if 'redgifs.com' in media_url and not media_url.endswith(('.mp4', '.webm', '.mov')):
-                print(f"Warning: Redgifs URL doesn't appear to be a direct video link, trying to extract...")
+                print("Warning: Redgifs URL doesn't appear to be a direct video link, trying to extract...")
                 extracted_url, extracted_type = self._extract_redgifs_url(media_url)
                 if extracted_url:
                     print(f"Successfully extracted direct video URL: {extracted_url}")
                     media_url = extracted_url
                     media_type = extracted_type
                 else:
-                    print(f"Failed to extract direct URL, will try original URL anyway...")
-            
+                    print("Failed to extract direct URL, will try original URL anyway...")
+
             media_response = requests.get(media_url, headers=headers, timeout=60)
             media_response.raise_for_status()
-            
+
             # Check if we got actual media content
             content_type = media_response.headers.get('content-type', '')
             content_length = len(media_response.content)
-            
+
             print(f"Downloaded content: {content_type}, size: {content_length} bytes")
-            
+
             # If we got HTML instead of media (common with redgifs), try to extract again
             if content_type.startswith('text/html') and 'redgifs.com' in media_url:
                 print("Got HTML content instead of video, this suggests URL extraction failed")
                 raise ValueError(f"Redgifs URL returned webpage instead of video: {media_url}")
-            
+
             # Validate we have actual content
             if content_length < 1024:  # Less than 1KB is suspicious for media
                 print(f"Warning: Very small content size ({content_length} bytes), might not be valid media")
-            
+
             # Determine file extension from content type or URL
             file_ext = None
-            
+
             if content_type:
                 file_ext = mimetypes.guess_extension(content_type)
-            
+
             if not file_ext:
                 # Fallback to URL extension
                 parsed_media_url = urlparse(media_url)
                 if '.' in parsed_media_url.path:
                     file_ext = '.' + parsed_media_url.path.split('.')[-1].lower()
-                    
+
             if not file_ext:
                 file_ext = '.mp4' if media_type == 'video' else '.jpg'
-                
+
             # Create temporary file
             with tempfile.NamedTemporaryFile(suffix=file_ext, delete=False) as temp_file:
                 temp_file.write(media_response.content)
                 temp_path = temp_file.name
-                
+
             # Create media info
             file_size = len(media_response.content)
             media_info = {
@@ -438,9 +437,9 @@ class GeminiMediaDescribe:
                 'file_size': file_size,
                 'content_type': content_type
             }
-            
+
             return temp_path, media_type, media_info
-            
+
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to download Reddit media: Network error - {str(e)}")
         except (KeyError, IndexError, TypeError) as e:
@@ -462,15 +461,15 @@ class GeminiMediaDescribe:
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
-            
+
             print(f"[DEBUG] Attempting to extract video URL from: {redgifs_url}")
-            
+
             # Handle different redgifs URL formats
             if 'redgifs.com' in redgifs_url:
                 # Extract gif ID from URL
                 parsed_url = urlparse(redgifs_url)
                 path_parts = parsed_url.path.strip('/').split('/')
-                
+
                 # Try to find the gif ID (usually the last part or after 'watch')
                 gif_id = None
                 if 'watch' in path_parts:
@@ -479,20 +478,20 @@ class GeminiMediaDescribe:
                         gif_id = path_parts[gif_idx + 1]
                 elif path_parts:
                     gif_id = path_parts[-1]
-                
+
                 print(f"[DEBUG] Extracted gif_id: {gif_id}")
-                
+
                 if gif_id:
                     # Strategy 1: Try to scrape the page for video URLs
                     try:
-                        print(f"[DEBUG] Strategy 1: Scraping page for video URLs")
+                        print("[DEBUG] Strategy 1: Scraping page for video URLs")
                         response = requests.get(redgifs_url, headers=headers, timeout=30)
                         if response.status_code == 200:
                             content = response.text
-                            
+
                             # Look for various video URL patterns in the HTML
                             import re
-                            
+
                             # Pattern 1: Look for HD/SD video URLs in script tags or data attributes
                             patterns = [
                                 r'"(https://[^"]*\.redgifs\.com/[^"]*\.mp4[^"]*)"',
@@ -501,14 +500,14 @@ class GeminiMediaDescribe:
                                 r'"videoUrl":"([^"]*)"',
                                 r'"url":"(https://[^"]*\.mp4[^"]*)"',
                             ]
-                            
+
                             for pattern in patterns:
                                 matches = re.findall(pattern, content, re.IGNORECASE)
                                 for match in matches:
                                     # Clean up the URL (remove escaping)
                                     clean_url = match.replace('\\', '')
                                     print(f"[DEBUG] Found potential video URL: {clean_url}")
-                                    
+
                                     # Test if the URL is accessible
                                     try:
                                         test_response = requests.head(clean_url, headers=headers, timeout=10)
@@ -521,17 +520,17 @@ class GeminiMediaDescribe:
                                         continue
                     except Exception as e:
                         print(f"[DEBUG] Strategy 1 failed: {str(e)}")
-                    
+
                     # Strategy 2: Try common direct URL patterns
                     try:
-                        print(f"[DEBUG] Strategy 2: Trying direct URL patterns")
+                        print("[DEBUG] Strategy 2: Trying direct URL patterns")
                         direct_patterns = [
                             f"https://files.redgifs.com/{gif_id}.mp4",
                             f"https://thumbs.redgifs.com/{gif_id}.mp4",
                             f"https://thumbs2.redgifs.com/{gif_id}.mp4",
                             f"https://files.redgifs.com/{gif_id}-mobile.mp4",
                         ]
-                        
+
                         for direct_url in direct_patterns:
                             try:
                                 print(f"[DEBUG] Testing direct URL: {direct_url}")
@@ -543,21 +542,21 @@ class GeminiMediaDescribe:
                                 continue
                     except Exception as e:
                         print(f"[DEBUG] Strategy 2 failed: {str(e)}")
-                    
+
                     # Strategy 3: Try the API (might be rate limited or require auth)
                     try:
-                        print(f"[DEBUG] Strategy 3: Trying redgifs API")
+                        print("[DEBUG] Strategy 3: Trying redgifs API")
                         api_url = f"https://api.redgifs.com/v2/gifs/{gif_id}"
                         response = requests.get(api_url, headers=headers, timeout=30)
-                        
+
                         if response.status_code == 200:
                             data = response.json()
                             print(f"[DEBUG] API response structure: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
-                            
+
                             if 'gif' in data and 'urls' in data['gif']:
                                 video_urls = data['gif']['urls']
                                 print(f"[DEBUG] Available video qualities: {list(video_urls.keys())}")
-                                
+
                                 for quality in ['hd', 'sd', 'poster']:
                                     if quality in video_urls and video_urls[quality]:
                                         video_url = video_urls[quality]
@@ -567,25 +566,25 @@ class GeminiMediaDescribe:
                             print(f"[DEBUG] API returned status {response.status_code}: {response.text[:200]}")
                     except Exception as e:
                         print(f"[DEBUG] Strategy 3 failed: {str(e)}")
-            
+
             elif 'gfycat.com' in redgifs_url:
-                print(f"[DEBUG] Processing gfycat URL (legacy)")
+                print("[DEBUG] Processing gfycat URL (legacy)")
                 # Gfycat was shut down, but some URLs might redirect to redgifs
                 parsed_url = urlparse(redgifs_url)
                 path_parts = parsed_url.path.strip('/').split('/')
-                
+
                 if path_parts:
                     gfy_name = path_parts[-1]
                     print(f"[DEBUG] Extracted gfy_name: {gfy_name}")
-                    
+
                     # Try redgifs with the gfy name
                     return self._extract_redgifs_url(f"https://www.redgifs.com/watch/{gfy_name}")
-            
+
             print(f"[DEBUG] All strategies failed for {redgifs_url}")
-                    
+
         except Exception as e:
             print(f"[DEBUG] Exception in _extract_redgifs_url: {str(e)}")
-            
+
         return None, None
 
     def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text):
@@ -1015,9 +1014,9 @@ Generate descriptions that adhere to the following structured layers and constra
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             original_duration = frame_count / fps if fps > 0 else 0
             cap.release()
-            
+
             print(f"Original video properties: {frame_count} frames, {fps:.2f} fps, {width}x{height}, {original_duration:.2f}s duration")
-            
+
             # Determine output dimensions based on video orientation
             if width > height:
                 # Landscape: width is longer
@@ -1027,7 +1026,7 @@ Generate descriptions that adhere to the following structured layers and constra
                 # Portrait or square: height is longer or equal
                 output_width = 480
                 output_height = 832
-            
+
             # Validate video has content
             if original_duration <= 0:
                 raise ValueError(f"Invalid video: duration is {original_duration:.2f} seconds. The video file may be corrupted or empty.")
@@ -1061,12 +1060,12 @@ Generate descriptions that adhere to the following structured layers and constra
                     final_video_path = trimmed_video_path
                     trimmed = True
                     trimmed_video_output_path = trimmed_video_path
-                    
+
                     # Verify trimmed file exists and has content
                     if os.path.exists(trimmed_video_path) and os.path.getsize(trimmed_video_path) > 0:
                         print(f"Successfully trimmed video to {trimmed_video_path}")
                     else:
-                        print(f"Warning: Trimmed video file is empty or missing, using original")
+                        print("Warning: Trimmed video file is empty or missing, using original")
                         final_video_path = selected_media_path
                         trimmed = False
                 else:
@@ -1079,12 +1078,12 @@ Generate descriptions that adhere to the following structured layers and constra
                 video_data = video_file.read()
 
             file_size = len(video_data) / 1024 / 1024  # Size in MB
-            
+
             # Validate video size and format for Gemini API
             max_file_size_mb = 50  # Gemini's file size limit
             if file_size > max_file_size_mb:
                 raise ValueError(f"Video file too large for Gemini API: {file_size:.2f} MB (max: {max_file_size_mb} MB). Try reducing max_duration.")
-            
+
             # Determine correct MIME type based on file extension
             video_mime_type = "video/mp4"  # Default
             if final_video_path.lower().endswith(('.webm',)):
@@ -1093,7 +1092,7 @@ Generate descriptions that adhere to the following structured layers and constra
                 video_mime_type = "video/quicktime"
             elif final_video_path.lower().endswith(('.avi',)):
                 video_mime_type = "video/x-msvideo"
-            
+
             print(f"Processing video: {file_size:.2f} MB, {actual_duration:.2f}s, MIME: {video_mime_type}")
 
             # Update video info to include trimming details
@@ -1225,7 +1224,7 @@ Generate descriptions that adhere to the following structured layers and constra
                 error_msg += "\n\nVideo file is too large. Try reducing max_duration to create a smaller video."
             elif "unsupported" in error_msg.lower():
                 error_msg += "\n\nVideo format may not be supported. Try with a different video."
-            
+
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Video analysis failed: {error_msg}")
 
@@ -1292,7 +1291,7 @@ Generate descriptions that adhere to the following structured layers and constra
         }
 
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "INT", "INT")
-    RETURN_NAMES = ("description", "media_info", "gemini_status", "processed_media_path", "final_string", "length", "width")
+    RETURN_NAMES = ("description", "media_info", "gemini_status", "processed_media_path", "final_string", "height", "width")
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪"
 
@@ -1425,21 +1424,21 @@ Directory scan results:
                 # Reddit Post mode
                 if not reddit_url or not reddit_url.strip():
                     raise ValueError("Reddit URL is required when media_source is 'Reddit Post'")
-                
+
                 # Download media from Reddit post
                 downloaded_path, detected_media_type, reddit_media_info = self._download_reddit_media(reddit_url)
                 selected_media_path = downloaded_path
-                
+
                 # Override media_type if detected type is different (but warn user)
                 if detected_media_type != media_type:
                     print(f"Warning: Media type mismatch. Expected '{media_type}' but detected '{detected_media_type}' from Reddit post. Using detected type.")
                     media_type = detected_media_type
-                
+
                 # Create media info text
                 file_size_mb = reddit_media_info.get('file_size', 0) / 1024 / 1024
                 emoji = "📷" if media_type == "image" else "📹"
                 media_info_text = f"{emoji} {media_type.title()} Processing Info (Reddit Post):\n• Title: {reddit_media_info.get('title', 'Unknown')}\n• Source: {reddit_url}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {reddit_media_info.get('content_type', 'Unknown')}"
-                
+
                 # For Reddit videos, automatically limit duration if file is large and no duration limit is set
                 if media_type == "video" and file_size_mb > 30 and max_duration <= 0:
                     max_duration = 10.0  # Limit to 10 seconds for large Reddit videos
@@ -1922,7 +1921,7 @@ class LoRAInfoExtractor:
             version = civitai.get("version_name")
             creator = civitai.get("creator", "Unknown")
             version_fragment = f" ({version})" if version and version != metadata["display_name"] else ""
-            
+
             # Show which hash type was used for the match
             matched_hash_type = civitai.get("matched_hash_type", "unknown")
             segments.append(f"CivitAI{version_fragment} by {creator} [{matched_hash_type}]")
@@ -1932,7 +1931,7 @@ class LoRAInfoExtractor:
         # Show primary hash for backward compatibility
         if metadata.get("hash"):
             segments.append(f"SHA256 {metadata['hash'][:10]}…")
-        
+
         # Show count of available hash types
         hashes = metadata.get("hashes", {})
         if hashes:
@@ -1950,25 +1949,25 @@ class LoRAInfoExtractor:
         """Filter CivitAI data to keep only essential fields."""
         if not civitai_data:
             return None
-            
+
         # Keep only specified fields
         filtered = {}
-        
+
         # Required fields from the original response
         keep_fields = ['civitai_name', 'version_name', 'civitai_url', 'model_id', 'version_id', 'fetched_at']
         for field in keep_fields:
             if field in civitai_data:
                 filtered[field] = civitai_data[field]
-        
+
         # Special handling for air - check if it exists in api_response
         api_response = civitai_data.get('api_response', {})
         if 'air' in api_response:
             filtered['air'] = api_response['air']
-            
+
         # Include hash information
         if 'all_hashes' in civitai_data:
             filtered['hashes'] = civitai_data['all_hashes']
-            
+
         # Include matched hash info and cache status
         if 'matched_hash_type' in civitai_data:
             filtered['matched_hash_type'] = civitai_data['matched_hash_type']
@@ -1976,7 +1975,7 @@ class LoRAInfoExtractor:
             filtered['matched_hash_value'] = civitai_data['matched_hash_value']
         if 'cache_hit' in civitai_data:
             filtered['cache_hit'] = civitai_data['cache_hit']
-            
+
         return filtered
 
     def _extract_first(self, source: Dict[str, Any], keys: Tuple[str, ...]) -> Optional[str]:
@@ -2081,7 +2080,7 @@ class VideoMetadataNode:
                 filename = filenames  # Direct string filename
             else:
                 raise Exception(f"Invalid filenames input: {filenames}")
-                
+
             # Validate input file exists
             if not os.path.exists(filename):
                 raise Exception(f"Input video file not found: {filename}")
@@ -2123,31 +2122,31 @@ class VideoMetadataNode:
                 try:
                     import json
                     lora_data = json.loads(lora_json)
-                    
+
                     # Extract title from combined_display for video title (append to existing)
                     if 'combined_display' in lora_data and lora_data['combined_display']:
                         existing_title = existing_metadata.get('title', '')
                         combined_title = self._combine_metadata_field(existing_title, lora_data['combined_display'])
                         cmd.extend(['-metadata', f'title={combined_title}'])
-                    
+
                     # Create description from LoRA info (append to existing)
                     if 'loras' in lora_data and lora_data['loras']:
                         descriptions = []
                         keywords = []
-                        
+
                         for lora in lora_data['loras']:
                             if 'info' in lora and lora['info']:
                                 descriptions.append(lora['info'])
                             if 'name' in lora and lora['name']:
                                 keywords.append(lora['name'])
-                        
+
                         if descriptions:
                             description_text = '\n'.join([f'• {desc}' for desc in descriptions])
                             lora_description = f'LoRA Information:\n{description_text}'
                             existing_description = existing_metadata.get('description', '')
                             combined_description = self._combine_metadata_field(existing_description, lora_description)
                             cmd.extend(['-metadata', f'description={combined_description}'])
-                        
+
                         if keywords:
                             lora_keywords = ', '.join(keywords)
                             existing_keywords = existing_metadata.get('keywords', '')
@@ -2157,10 +2156,10 @@ class VideoMetadataNode:
                             else:
                                 combined_keywords = f'LoRA: {lora_keywords}'
                             cmd.extend(['-metadata', f'keywords={combined_keywords}'])
-                    
+
                     # Add raw LoRA JSON as custom metadata for advanced use
                     cmd.extend(['-metadata', f'lora_json={lora_json.strip()}'])
-                    
+
                 except json.JSONDecodeError:
                     # If JSON parsing fails, treat as simple string
                     cmd.extend(['-metadata', f'lora={lora_json.strip()}'])
@@ -2185,7 +2184,7 @@ class VideoMetadataNode:
             raise Exception(f"FFmpeg metadata operation failed: {e.stderr}")
         except Exception as e:
             raise Exception(f"Video metadata operation failed: {str(e)}")
-    
+
     def _get_existing_metadata(self, filename):
         """
         Read existing metadata from video file using ffprobe.
@@ -2204,20 +2203,20 @@ class VideoMetadataNode:
                 '-show_format',
                 filename
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             metadata_info = json.loads(result.stdout)
-            
+
             # Extract metadata tags from format section
             if 'format' in metadata_info and 'tags' in metadata_info['format']:
                 return metadata_info['format']['tags']
             else:
                 return {}
-                
+
         except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError):
             # If we can't read metadata, return empty dict (metadata will be created fresh)
             return {}
-    
+
     def _combine_metadata_field(self, existing, new):
         """
         Combine existing metadata field with new content.
@@ -2231,7 +2230,7 @@ class VideoMetadataNode:
         """
         existing = existing.strip() if existing else ''
         new = new.strip() if new else ''
-        
+
         if not existing:
             return new
         elif not new:

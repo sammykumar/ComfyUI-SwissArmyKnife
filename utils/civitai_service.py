@@ -25,11 +25,11 @@ class CivitAIService:
         self.api_key = api_key or os.environ.get("CIVITAI_API_KEY") or os.environ.get("CIVIT_API_KEY", "")
         self.timeout = timeout
         self._hash_cache = get_lora_hash_cache()
-        print(f"[DEBUG] CivitAI Service initialized")
+        print("[DEBUG] CivitAI Service initialized")
         if self.api_key:
             print(f"[DEBUG] ✅ CivitAI API key found: {self.api_key[:8]}...{self.api_key[-4:]}")
         else:
-            print(f"[DEBUG] ❌ No CivitAI API key found (neither provided nor in environment)")
+            print("[DEBUG] ❌ No CivitAI API key found (neither provided nor in environment)")
             print(f"[DEBUG] Available env vars: {[k for k in os.environ.keys() if 'CIVIT' in k.upper()]}")
 
     def get_model_info_by_hash(self, file_path: str) -> Optional[Dict[str, Any]]:
@@ -76,7 +76,7 @@ class CivitAIService:
             for hash_type, hash_value in hash_priority:
                 if not hash_value:
                     continue
-                    
+
                 print(f"Trying CivitAI lookup with {hash_type}: {hash_value[:16]}...")
                 result = self._run_async(self._get_model_info_by_hash_async(hash_value, hash_type))
                 if result:
@@ -100,8 +100,7 @@ class CivitAIService:
 
     def _run_async(self, coro):
         import concurrent.futures
-        import threading
-        
+
         try:
             # Check if we're in an event loop
             loop = asyncio.get_running_loop()
@@ -112,7 +111,7 @@ class CivitAIService:
         except RuntimeError:
             # No event loop running, we can use asyncio.run directly
             return asyncio.run(coro)
-    
+
     def _run_in_thread(self, coro):
         """Run coroutine in a new event loop in the current thread."""
         new_loop = asyncio.new_event_loop()
@@ -179,7 +178,7 @@ class CivitAIService:
             "nsfw": model.get("nsfw", False),
             "stats": metrics,
             "fetched_at": datetime.utcnow().isoformat() + "Z",
-            
+
             # Full API response for comprehensive access
             "api_response": model_data,
         }

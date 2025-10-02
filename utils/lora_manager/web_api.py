@@ -2,7 +2,6 @@
 Web API endpoints for ND Super Nodes
 """
 
-import json
 from aiohttp import web
 import os
 try:
@@ -140,18 +139,18 @@ async def load_template(request):
     """Load a LoRA template"""
     try:
         template_name = request.match_info.get("name")
-        
+
         if not template_name:
             return web.json_response({"error": "Template name is required"}, status=400)
-        
+
         template_manager = get_template_manager()
         template_data = template_manager.load_template(template_name)
-        
+
         if template_data:
             return web.json_response(template_data)
         else:
             return web.json_response({"error": "Template not found"}, status=404)
-            
+
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 
@@ -161,10 +160,10 @@ async def get_civitai_info(request):
     try:
         data = await request.json()
         lora_filename = data.get("lora_filename")
-        
+
         if not lora_filename:
             return web.json_response({"error": "LoRA filename is required"}, status=400)
-        
+
         civitai_service = get_civitai_service()
         trigger_words = await civitai_service.get_trigger_words(lora_filename)
 
@@ -186,7 +185,7 @@ async def get_civitai_info(request):
         }
 
         return web.json_response(payload)
-        
+
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 

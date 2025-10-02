@@ -3,7 +3,6 @@ ND Super LoRA Loader Node - Main implementation
 """
 
 from typing import Union, Dict, Any, Tuple, List
-import re
 import json
 
 # Import ComfyUI modules with fallbacks
@@ -26,8 +25,7 @@ except ImportError:
     import sys
     import os
     sys.path.append(os.path.dirname(__file__))
-    from lora_utils import get_lora_by_filename, extract_trigger_words
-    from civitai_service import CivitAiService, get_civitai_service
+    from lora_utils import get_lora_by_filename
 
 
 class SuperDualLoraLoader:
@@ -43,12 +41,12 @@ class SuperDualLoraLoader:
     - Tag-based organization
     - Template save/load system
     """
-    
+
     CATEGORY = "Swiss Army Knife 🔪"
     RETURN_TYPES = ("WANVIDLORA", "WANVIDLORA", "CLIP", "STRING")
     RETURN_NAMES = ("high_noise_lora", "low_noise_lora", "CLIP", "TRIGGER_WORDS")
     FUNCTION = "load_loras"
-    
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -67,7 +65,7 @@ class SuperDualLoraLoader:
             },
             "hidden": {}
         }
-    
+
     def load_loras(self, high_noise_lora, low_noise_lora, clip=None, lora_bundle: Union[str, None] = None, **kwargs) -> Tuple[Any, Any, Any, str]:
         """
         Load multiple LoRAs from provided bundle and return modified high noise model, low noise model, clip, and trigger words.
@@ -121,7 +119,7 @@ class SuperDualLoraLoader:
 
             strength_model = float(value.get('strength', 1.0))
             strength_clip = float(value.get('strengthClip', value.get('strengthTwo', strength_model)))
-            
+
             # Determine which model(s) to apply to (default: both)
             model_type = value.get('modelType', 'both')  # 'high', 'low', or 'both'
 
@@ -146,7 +144,7 @@ class SuperDualLoraLoader:
                                 strength_clip
                             )
                             print(f"Super LoRA Loader: Loaded '{lora_name}' to HIGH noise model {strength_model}/{strength_clip}")
-                        
+
                         # Apply to low noise model
                         if (model_type in ['low', 'both']) and current_low_noise_model is not None:
                             current_low_noise_model, current_clip = LoraLoader().load_lora(
@@ -189,12 +187,12 @@ class SuperLoraLoader:
     - Tag-based organization
     - Template save/load system
     """
-    
+
     CATEGORY = "Swiss Army Knife 🔪"
     RETURN_TYPES = ("WANVIDLORA", "CLIP", "STRING")
     RETURN_NAMES = ("WANVIDLORA", "CLIP", "TRIGGER_WORDS")
     FUNCTION = "load_loras"
-    
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -210,7 +208,7 @@ class SuperLoraLoader:
             },
             "hidden": {}
         }
-    
+
     def load_loras(self, lora, clip=None, lora_bundle: Union[str, None] = None, **kwargs) -> Tuple[Any, Any, str]:
         """
         Load multiple LoRAs from provided bundle and return modified lora model, clip, and trigger words.

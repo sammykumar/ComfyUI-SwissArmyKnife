@@ -13,7 +13,7 @@ import threading
 import time
 import zlib
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 import hashlib
 
@@ -105,20 +105,20 @@ class LoRAHashCache:
                 sha256_hasher = hashlib.sha256()
                 crc32_value = 0
                 blake3_hasher = blake3.blake3() if BLAKE3_AVAILABLE else None
-                
+
                 # For AutoV1/AutoV2, we need specific byte ranges
                 file_size = os.path.getsize(file_path)
                 fh.seek(0)
-                
+
                 # Read full file content for comprehensive hash calculation
                 file_content = fh.read()
-                
+
                 # Calculate standard hashes from full content
                 sha256_hasher.update(file_content)
                 crc32_value = zlib.crc32(file_content)
                 if blake3_hasher:
                     blake3_hasher.update(file_content)
-                
+
         except FileNotFoundError:
             print(f"[LoRAHashCache] File missing during hashing: {file_path}")
             return None
@@ -131,18 +131,18 @@ class LoRAHashCache:
             "sha256": sha256_hasher.hexdigest().upper(),
             "crc32": f"{crc32_value & 0xffffffff:08X}",  # Ensure positive 32-bit value
         }
-        
+
         if blake3_hasher:
             hashes["blake3"] = blake3_hasher.hexdigest().upper()
         else:
             hashes["blake3"] = None
-            
+
         # Calculate AutoV1 and AutoV2 (CivitAI specific formats)
         hashes["autov1"] = self._calculate_autov1(file_content)
         hashes["autov2"] = self._calculate_autov2(file_content)
-        
+
         return hashes
-    
+
     def _calculate_autov1(self, file_content: bytes) -> str:
         """Calculate AutoV1 hash (CivitAI format).
         
@@ -151,7 +151,7 @@ class LoRAHashCache:
         # Take first 8KB for AutoV1
         chunk = file_content[:8192]
         return hashlib.sha256(chunk).hexdigest().upper()[:10]  # CivitAI uses first 10 chars
-    
+
     def _calculate_autov2(self, file_content: bytes) -> str:
         """Calculate AutoV2 hash (CivitAI format).
         
@@ -175,7 +175,7 @@ class LoRAHashCache:
             # Take last 2KB
             samples.append(file_content[-2048:])
             chunk = b''.join(samples)
-        
+
         return hashlib.sha256(chunk).hexdigest().upper()[:10]  # CivitAI uses first 10 chars
 
     def get_hashes(self, file_path: str, *, use_cache: bool = True) -> Optional[Dict[str, str]]:
@@ -201,7 +201,7 @@ class LoRAHashCache:
                         print(f"[LoRAHashCache] Incomplete hash cache for {normalized_path}, recalculating...")
                     else:
                         return complete_hashes
-                        
+
                 # Fallback to legacy single hash format
                 legacy_hash = entry.get("hash")
                 if legacy_hash:
@@ -248,7 +248,7 @@ class LoRAHashCache:
         """Return SHA256 hash for *file_path* using persistent cache (legacy compatibility)."""
         hashes = self.get_hashes(file_path, use_cache=use_cache)
         return hashes.get("sha256") if hashes else None
-    
+
     def get_cache_info(self) -> Dict[str, object]:
         with self._lock:
             return {
