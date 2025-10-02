@@ -234,6 +234,212 @@ app.registerExtension({
             };
         }
 
+        // Handle Control Panel node
+        else if (nodeData.name === "ControlPanel") {
+            debugLog("Registering ControlPanel node");
+
+            // Augment prototype to add helpers and context menu
+            const onConfigure = nodeType.prototype.onConfigure;
+            nodeType.prototype.onConfigure = function (info) {
+                const result = onConfigure?.call(this, info);
+                // Ensure we have a counter for dynamic inputs
+                this._cp_inputCount = this._cp_inputCount ?? 0;
+                return result;
+            };
+
+            // Add context menu entry to add wildcard inputs
+            const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
+            nodeType.prototype.getExtraMenuOptions = function (_, options) {
+                getExtraMenuOptions?.call(this, _, options);
+                options.push(
+                    {
+                        content: "➕ Add input",
+                        callback: () => {
+                            this._cp_inputCount = (this._cp_inputCount ?? 0) + 1;
+                            const name = `in${this._cp_inputCount}`;
+                            // "*" accepts any datatype (except primitives)
+                            this.addInput(name, "*");
+                            this.setDirtyCanvas(true, true);
+                            // Update summary after adding input
+                            if (this.updateControlPanelSummary) {
+                                this.updateControlPanelSummary();
+                            }
+                        },
+                    },
+                    {
+                        content: "♻︎ Rebuild summary",
+                        callback: () => {
+                            if (this.updateControlPanelSummary) {
+                                this.updateControlPanelSummary();
+                            }
+                        },
+                    }
+                );
+            };
+
+            // When links are made/broken, refresh the DOM widget
+            const onConnectionsChange = nodeType.prototype.onConnectionsChange;
+            nodeType.prototype.onConnectionsChange = function (
+                type,
+                index,
+                connected,
+                link_info,
+                io_slot
+            ) {
+                const result = onConnectionsChange?.call(
+                    this,
+                    type,
+                    index,
+                    connected,
+                    link_info,
+                    io_slot
+                );
+                // Small debounce
+                queueMicrotask(() => {
+                    if (this.updateControlPanelSummary) {
+                        this.updateControlPanelSummary();
+                    }
+                });
+                return result;
+            };
+
+            // On resize, keep DOM width sensible
+            const onResize = nodeType.prototype.onResize;
+            nodeType.prototype.onResize = function (size) {
+                const result = onResize?.call(this, size);
+                if (this._cp_dom) {
+                    this._cp_dom.style.width = this.size[0] - 20 + "px";
+                }
+                return result;
+            };
+
+            // Node creation
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Note: The node already has "all_media_describe_data" input from Python
+                // We don't need to add default inputs since it has a predefined input
+                // Users can still add more inputs via context menu if needed
+
+                // Initialize input counter based on existing inputs
+                this._cp_inputCount = this.inputs?.length || 0;
+
+                // Create a DOM widget area (scrollable display)
+                if (!this._cp_dom) {
+                    const dom = document.createElement("div");
+                    dom.style.fontFamily =
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontSize = "11px";
+                    dom.style.lineHeight = "1.35";
+                    dom.style.whiteSpace = "pre-wrap";
+                    dom.style.overflow = "auto";
+                    dom.style.maxHeight = "300px";
+                    dom.style.padding = "8px";
+                    dom.style.borderRadius = "6px";
+                    dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
+                    dom.style.border = "1px solid var(--border-color, #333)";
+                    dom.style.color = "var(--fg-color, #d4d4d4)";
+                    dom.style.wordBreak = "break-word";
+
+                    // Add a DOM widget
+                    const widget = this.addDOMWidget("ControlPanel", "cp_display", dom, {
+                        serialize: false, // Don't store big text in workflow JSON
+                        hideOnZoom: false,
+                    });
+
+                    // Store references
+                    this._cp_dom = dom;
+                    this._cp_widget = widget;
+                }
+
+                // Function to update summary display
+                this.updateControlPanelSummary = function () {
+                    if (!this._cp_dom) return;
+
+                    const lines = [];
+                    const inputs = this.inputs || [];
+
+                    for (let i = 0; i < inputs.length; i++) {
+                        const slot = inputs[i];
+                        const link = this.getInputLink(i);
+
+                        if (!link) {
+                            lines.push(`${slot.name}: (not connected)`);
+                            continue;
+                        }
+
+                        // Get origin node information - with null checks
+                        const graph = this.graph || app.graph;
+                        if (!graph) {
+                            lines.push(`${slot.name}: (connected, graph not ready)`);
+                            continue;
+                        }
+
+                        const originNode = graph.getNodeById?.(link.origin_id);
+                        const originName = originNode?.title || `Node#${link.origin_id}`;
+                        const outName =
+                            originNode?.outputs?.[link.origin_slot]?.name ??
+                            `out${link.origin_slot}`;
+
+                        lines.push(`${slot.name} ⇐ ${originName}.${outName}`);
+                    }
+
+                    this._cp_dom.textContent = lines.length
+                        ? lines.join("\n")
+                        : "No inputs yet. Right-click → ➕ Add input";
+                    this.setDirtyCanvas(true, true);
+                };
+
+                // Function to update with execution data
+                this.updateControlPanelData = function (data) {
+                    if (!this._cp_dom || !data) return;
+
+                    const lines = [];
+                    lines.push("═══ EXECUTION RESULTS ═══\n");
+
+                    for (const [key, value] of Object.entries(data)) {
+                        const displayValue = Array.isArray(value) ? value[0] : value;
+                        let valueStr = String(displayValue);
+
+                        // Truncate very long values
+                        if (valueStr.length > 500) {
+                            valueStr = valueStr.substring(0, 500) + "... (truncated)";
+                        }
+
+                        lines.push(`📊 ${key}:`);
+                        lines.push(valueStr);
+                        lines.push(""); // Empty line for spacing
+                    }
+
+                    this._cp_dom.textContent = lines.join("\n");
+                    debugLog("[ControlPanel] Updated display with execution data");
+                };
+
+                // Add onExecuted handler to update display with execution results
+                const originalOnExecuted = this.onExecuted;
+                this.onExecuted = function (message) {
+                    debugLog("[ControlPanel] onExecuted called with message:", message);
+
+                    if (message && message.output) {
+                        this.updateControlPanelData(message.output);
+                    }
+
+                    // Call original onExecuted if it exists
+                    return originalOnExecuted?.call(this, message);
+                };
+
+                // Initial summary update - defer to ensure graph is ready
+                setTimeout(() => {
+                    if (this.updateControlPanelSummary) {
+                        this.updateControlPanelSummary();
+                    }
+                }, 100);
+
+                return result;
+            };
+        }
+
         // Handle MediaDescribe node
         else if (nodeData.name === "MediaDescribe") {
             debugLog("Registering MediaDescribe node with dynamic media widgets");
@@ -1004,41 +1210,6 @@ app.registerExtension({
                 return result;
             };
 
-            // Helper function to update dimensions display
-            nodeType.prototype.updateDimensionsDisplay = function (height, width) {
-                debugLog("[MediaDescribe] updateDimensionsDisplay called with:", height, width);
-
-                if (height != null && width != null) {
-                    let dimensionsWidget = this.widgets.find(
-                        (w) => w.name === "dimensions_display"
-                    );
-
-                    if (!dimensionsWidget) {
-                        // Create the widget if it doesn't exist
-                        dimensionsWidget = this.addWidget(
-                            "text",
-                            "dimensions_display",
-                            `📐 ${width} x ${height}`,
-                            () => {}, // Read-only widget
-                            { serialize: false }
-                        );
-                        debugLog("[MediaDescribe] Created dimensions display widget");
-                    } else {
-                        // Update existing widget
-                        dimensionsWidget.value = `📐 ${width} x ${height}`;
-                        debugLog("[MediaDescribe] Updated dimensions display:", width, "x", height);
-                    }
-
-                    // Force UI refresh to show the updated widget
-                    this.setSize(this.computeSize());
-                    if (this.graph && this.graph.setDirtyCanvas) {
-                        this.graph.setDirtyCanvas(true, true);
-                    }
-                } else {
-                    debugLog("[MediaDescribe] Invalid dimensions, not updating display");
-                }
-            };
-
             // Add onExecuted method to update the dimensions display
             const onExecutedMedia = nodeType.prototype.onExecuted;
             nodeType.prototype.onExecuted = function (message) {
@@ -1432,7 +1603,7 @@ app.registerExtension({
         }
     },
 
-    // Setup app-level execution handler for MediaDescribe
+    // Setup app-level execution handler for MediaDescribe and ControlPanel
     async setup() {
         // Hook into API events to catch execution results
         api.addEventListener("executed", ({ detail }) => {
@@ -1454,6 +1625,7 @@ app.registerExtension({
                 node?.comfyClass
             );
 
+            // Handle MediaDescribe execution
             if (node && node.comfyClass === "MediaDescribe") {
                 debugLog("[API] ✅ Found MediaDescribe execution result");
                 debugLog("[API] Full output structure:", JSON.stringify(output, null, 2));
@@ -1479,8 +1651,22 @@ app.registerExtension({
                 } else {
                     debugLog("[API] ⚠️ No height/width in output. Output structure:", output);
                 }
+            }
+            // Handle ControlPanel execution
+            else if (node && node.comfyClass === "ControlPanel") {
+                debugLog("[API] ✅ Found ControlPanel execution result");
+                debugLog("[API] Full output structure:", JSON.stringify(output, null, 2));
+
+                // Update the control panel display with execution data
+                if (node.updateControlPanelData && output) {
+                    node.updateControlPanelData(output);
+                } else {
+                    debugLog(
+                        "[API] WARNING: updateControlPanelData method not found or no output!"
+                    );
+                }
             } else {
-                debugLog("[API] ❌ Not a MediaDescribe node, skipping");
+                debugLog("[API] ❌ Not a MediaDescribe or ControlPanel node, skipping");
             }
         });
     },
@@ -1564,141 +1750,265 @@ app.registerExtension({
 });
 
 // LoRAInfoExtractor workflow serialization extension
-app.registerExtension({
-    name: "comfyui_swissarmyknife.lora_info_extractor",
+// app.registerExtension({
+//     name: "comfyui_swissarmyknife.lora_info_extractor",
 
-    async setup() {
-        // Listen for execution results at the app level
-        const original_onExecuted = app.onExecuted;
-        app.onExecuted = function (nodeId, data) {
-            debugLog("[DEBUG] App execution completed for node:", nodeId, "data:", data);
+//     async setup() {
+//         // Listen for execution results at the app level
+//         const original_onExecuted = app.onExecuted;
+//         app.onExecuted = function (nodeId, data) {
+//             debugLog("[DEBUG] App execution completed for node:", nodeId, "data:", data);
 
-            // Find the node by ID and check if it's LoRAInfoExtractor
-            const node = app.graph.getNodeById(nodeId);
-            if (node && node.comfyClass === "LoRAInfoExtractor") {
-                debugLog("[DEBUG] Found LoRAInfoExtractor execution result");
+//             // Find the node by ID and check if it's LoRAInfoExtractor
+//             const node = app.graph.getNodeById(nodeId);
+//             if (node && node.comfyClass === "LoRAInfoExtractor") {
+//                 debugLog("[DEBUG] Found LoRAInfoExtractor execution result");
 
-                // Try to extract lora_json from the execution data
-                if (data && data[0]) {
-                    // First output should be lora_json
-                    node._cached_lora_json = data[0];
-                    debugLog(
-                        "[DEBUG] Cached lora_json from app execution:",
-                        data[0].substring(0, 100) + "..."
-                    );
-                }
-            }
+//                 // Try to extract lora_json from the execution data
+//                 if (data && data[0]) {
+//                     // First output should be lora_json
+//                     node._cached_lora_json = data[0];
+//                     debugLog(
+//                         "[DEBUG] Cached lora_json from app execution:",
+//                         data[0].substring(0, 100) + "..."
+//                     );
+//                 }
+//             }
 
-            // Call original handler
-            return original_onExecuted?.call(this, nodeId, data);
-        };
-    },
+//             // Call original handler
+//             return original_onExecuted?.call(this, nodeId, data);
+//         };
+//     },
 
-    async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeData.name === "LoRAInfoExtractor") {
-            debugLog("[DEBUG] Registering LoRAInfoExtractor widget extensions");
+//     async beforeRegisterNodeDef(nodeType, nodeData, app) {
+//         if (nodeData.name === "LoRAInfoExtractor") {
+//             debugLog("[DEBUG] Registering LoRAInfoExtractor widget extensions");
 
-            // Add onSerialize method to save lora_json output to workflow
-            const onSerialize = nodeType.prototype.onSerialize;
-            nodeType.prototype.onSerialize = function (o) {
-                const result = onSerialize?.apply(this, arguments);
+//             // Add onSerialize method to save lora_json output to workflow
+//             const onSerialize = nodeType.prototype.onSerialize;
+//             nodeType.prototype.onSerialize = function (o) {
+//                 const result = onSerialize?.apply(this, arguments);
 
-                debugLog("[DEBUG] LoRAInfoExtractor onSerialize called for node:", this.id);
-                debugLog("[DEBUG] Current cached lora_json:", !!this._cached_lora_json);
-                debugLog("[DEBUG] Serialization object before:", JSON.stringify(o, null, 2));
+//                 debugLog("[DEBUG] LoRAInfoExtractor onSerialize called for node:", this.id);
+//                 debugLog("[DEBUG] Current cached lora_json:", !!this._cached_lora_json);
+//                 debugLog("[DEBUG] Serialization object before:", JSON.stringify(o, null, 2));
 
-                // Save the cached lora_json output if available
-                if (this._cached_lora_json) {
-                    o.lora_json_output = this._cached_lora_json;
-                    debugLog(
-                        "[SERIALIZE] Saved lora_json to workflow:",
-                        typeof this._cached_lora_json === "string"
-                            ? this._cached_lora_json.substring(0, 100) + "..."
-                            : JSON.stringify(this._cached_lora_json).substring(0, 100) + "..."
-                    );
-                } else {
-                    debugLog("[SERIALIZE] No cached lora_json to save");
-                }
+//                 // Save the cached lora_json output if available
+//                 if (this._cached_lora_json) {
+//                     o.lora_json_output = this._cached_lora_json;
+//                     debugLog(
+//                         "[SERIALIZE] Saved lora_json to workflow:",
+//                         typeof this._cached_lora_json === "string"
+//                             ? this._cached_lora_json.substring(0, 100) + "..."
+//                             : JSON.stringify(this._cached_lora_json).substring(0, 100) + "..."
+//                     );
+//                 } else {
+//                     debugLog("[SERIALIZE] No cached lora_json to save");
+//                 }
 
-                debugLog("[DEBUG] Serialization object after:", JSON.stringify(o, null, 2));
-                return result;
-            };
+//                 debugLog("[DEBUG] Serialization object after:", JSON.stringify(o, null, 2));
+//                 return result;
+//             };
 
-            // Add onConfigure method to restore lora_json from workflow
-            const onConfigure = nodeType.prototype.onConfigure;
-            nodeType.prototype.onConfigure = function (o) {
-                const result = onConfigure?.apply(this, arguments);
+//             // Add onConfigure method to restore lora_json from workflow
+//             const onConfigure = nodeType.prototype.onConfigure;
+//             nodeType.prototype.onConfigure = function (o) {
+//                 const result = onConfigure?.apply(this, arguments);
 
-                debugLog("[DEBUG] LoRAInfoExtractor onConfigure called");
+//                 debugLog("[DEBUG] LoRAInfoExtractor onConfigure called");
 
-                // Restore the cached lora_json output if available
-                if (o.lora_json_output) {
-                    this._cached_lora_json = o.lora_json_output;
-                    debugLog(
-                        "[CONFIGURE] Restored lora_json from workflow:",
-                        o.lora_json_output?.substring(0, 100) + "..."
-                    );
-                }
+//                 // Restore the cached lora_json output if available
+//                 if (o.lora_json_output) {
+//                     this._cached_lora_json = o.lora_json_output;
+//                     debugLog(
+//                         "[CONFIGURE] Restored lora_json from workflow:",
+//                         o.lora_json_output?.substring(0, 100) + "..."
+//                     );
+//                 }
 
-                return result;
-            };
-        }
-    },
+//                 return result;
+//             };
+//         }
+//     },
 
-    async nodeCreated(node) {
-        if (node.comfyClass === "LoRAInfoExtractor") {
-            debugLog("[DEBUG] LoRAInfoExtractor node created, ID:", node.id);
+//     async nodeCreated(node) {
+//         if (node.comfyClass === "LoRAInfoExtractor") {
+//             debugLog("[DEBUG] LoRAInfoExtractor node created, ID:", node.id);
 
-            // Listen for node execution results
-            const originalOnExecuted = node.onExecuted;
-            node.onExecuted = function (message) {
-                debugLog("[DEBUG] LoRAInfoExtractor onExecuted called");
-                debugLog("[DEBUG] Full message object:", JSON.stringify(message, null, 2));
+//             // Listen for node execution results
+//             const originalOnExecuted = node.onExecuted;
+//             node.onExecuted = function (message) {
+//                 debugLog("[DEBUG] LoRAInfoExtractor onExecuted called");
+//                 debugLog("[DEBUG] Full message object:", JSON.stringify(message, null, 2));
 
-                // Try different possible message structures
-                let loraJsonValue = null;
+//                 // Try different possible message structures
+//                 let loraJsonValue = null;
 
-                // Try different paths where the lora_json might be
-                if (message && message.output) {
-                    debugLog("[DEBUG] message.output exists:", message.output);
+//                 // Try different paths where the lora_json might be
+//                 if (message && message.output) {
+//                     debugLog("[DEBUG] message.output exists:", message.output);
 
-                    // Check if it's directly in output
-                    if (message.output.lora_json) {
-                        debugLog("[DEBUG] Found lora_json in message.output.lora_json");
-                        loraJsonValue = Array.isArray(message.output.lora_json)
-                            ? message.output.lora_json[0]
-                            : message.output.lora_json;
-                    }
-                    // Check if it's in a different structure
-                    else if (message.output[0]) {
-                        debugLog("[DEBUG] Found output[0]:", message.output[0]);
-                        loraJsonValue = message.output[0];
-                    }
-                }
+//                     // Check if it's directly in output
+//                     if (message.output.lora_json) {
+//                         debugLog("[DEBUG] Found lora_json in message.output.lora_json");
+//                         loraJsonValue = Array.isArray(message.output.lora_json)
+//                             ? message.output.lora_json[0]
+//                             : message.output.lora_json;
+//                     }
+//                     // Check if it's in a different structure
+//                     else if (message.output[0]) {
+//                         debugLog("[DEBUG] Found output[0]:", message.output[0]);
+//                         loraJsonValue = message.output[0];
+//                     }
+//                 }
 
-                // Also check if message itself has the data
-                if (!loraJsonValue && message.lora_json) {
-                    debugLog("[DEBUG] Found lora_json in message.lora_json");
-                    loraJsonValue = Array.isArray(message.lora_json)
-                        ? message.lora_json[0]
-                        : message.lora_json;
-                }
+//                 // Also check if message itself has the data
+//                 if (!loraJsonValue && message.lora_json) {
+//                     debugLog("[DEBUG] Found lora_json in message.lora_json");
+//                     loraJsonValue = Array.isArray(message.lora_json)
+//                         ? message.lora_json[0]
+//                         : message.lora_json;
+//                 }
 
-                if (loraJsonValue) {
-                    this._cached_lora_json = loraJsonValue;
-                    debugLog(
-                        "[DEBUG] Cached lora_json from execution:",
-                        typeof loraJsonValue === "string"
-                            ? loraJsonValue.substring(0, 100) + "..."
-                            : JSON.stringify(loraJsonValue).substring(0, 100) + "..."
-                    );
-                } else {
-                    debugLog("[DEBUG] No lora_json found in execution message");
-                }
+//                 if (loraJsonValue) {
+//                     this._cached_lora_json = loraJsonValue;
+//                     debugLog(
+//                         "[DEBUG] Cached lora_json from execution:",
+//                         typeof loraJsonValue === "string"
+//                             ? loraJsonValue.substring(0, 100) + "..."
+//                             : JSON.stringify(loraJsonValue).substring(0, 100) + "..."
+//                     );
+//                 } else {
+//                     debugLog("[DEBUG] No lora_json found in execution message");
+//                 }
 
-                // Call original onExecuted if it exists
-                return originalOnExecuted?.call(this, message);
-            };
-        }
-    },
-});
+//                 // Call original onExecuted if it exists
+//                 return originalOnExecuted?.call(this, message);
+//             };
+//         }
+
+//         // Handle Control Panel node
+//         if (nodeData.name === "ControlPanel") {
+//             debugLog("Registering ControlPanel node");
+
+//             const onNodeCreated = nodeType.prototype.onNodeCreated;
+//             nodeType.prototype.onNodeCreated = function () {
+//                 const result = onNodeCreated?.apply(this, arguments);
+
+//                 // Create container div for all the display elements
+//                 const containerEl = document.createElement("div");
+//                 containerEl.style.cssText = `
+//                     padding: 10px;
+//                     background: #1e1e1e;
+//                     border-radius: 4px;
+//                     font-family: monospace;
+//                     font-size: 12px;
+//                     line-height: 1.5;
+//                     color: #d4d4d4;
+//                     width: 100%;
+//                     box-sizing: border-box;
+//                 `;
+
+//                 // Create individual display sections
+//                 const createSection = (label, id) => {
+//                     const section = document.createElement("div");
+//                     section.style.cssText = `
+//                         margin-bottom: 10px;
+//                         border-bottom: 1px solid #333;
+//                         padding-bottom: 8px;
+//                     `;
+
+//                     const labelEl = document.createElement("div");
+//                     labelEl.textContent = label;
+//                     labelEl.style.cssText = `
+//                         font-weight: bold;
+//                         color: #569cd6;
+//                         margin-bottom: 4px;
+//                     `;
+
+//                     const valueEl = document.createElement("div");
+//                     valueEl.textContent = "(not connected)";
+//                     valueEl.style.cssText = `
+//                         color: #888;
+//                         word-wrap: break-word;
+//                         white-space: pre-wrap;
+//                     `;
+//                     valueEl.dataset.field = id;
+
+//                     section.appendChild(labelEl);
+//                     section.appendChild(valueEl);
+//                     return section;
+//                 };
+
+//                 // Add all sections to container
+//                 containerEl.appendChild(createSection("📝 Description", "description"));
+//                 containerEl.appendChild(createSection("📊 Media Info", "media_info"));
+//                 containerEl.appendChild(createSection("🔄 Gemini Status", "gemini_status"));
+//                 containerEl.appendChild(
+//                     createSection("📁 Processed Media", "processed_media_path")
+//                 );
+//                 containerEl.appendChild(createSection("✨ Final String", "final_string"));
+//                 containerEl.appendChild(createSection("📐 Dimensions", "dimensions"));
+
+//                 // Add as a DOM widget
+//                 const displayWidget = this.addDOMWidget("controlpanel", "display", containerEl, {
+//                     serialize: false,
+//                     hideOnZoom: false,
+//                 });
+
+//                 // Compute size based on content
+//                 displayWidget.computeSize = function (width) {
+//                     // Calculate approximate height based on content
+//                     // Each section is roughly 60px minimum
+//                     return [width, 400]; // Fixed height for now
+//                 };
+
+//                 // Store reference to container for easy updates
+//                 this.controlPanelContainer = containerEl;
+
+//                 // Helper function to update display
+//                 this.updateControlPanel = function (data) {
+//                     if (!data || !this.controlPanelContainer) return;
+
+//                     const fields = [
+//                         "description",
+//                         "media_info",
+//                         "gemini_status",
+//                         "processed_media_path",
+//                         "final_string",
+//                         "dimensions",
+//                     ];
+
+//                     fields.forEach((field) => {
+//                         const valueEl = this.controlPanelContainer.querySelector(
+//                             `[data-field="${field}"]`
+//                         );
+//                         if (valueEl && data[field]) {
+//                             const value = Array.isArray(data[field]) ? data[field][0] : data[field];
+//                             valueEl.textContent = value || "(not connected)";
+//                             valueEl.style.color =
+//                                 value && value !== "(not connected)" ? "#d4d4d4" : "#888";
+//                         }
+//                     });
+
+//                     debugLog("[ControlPanel] Updated display with execution data");
+//                 };
+
+//                 // Add onExecuted handler to update display with execution results
+//                 const originalOnExecuted = this.onExecuted;
+//                 this.onExecuted = function (message) {
+//                     debugLog("[ControlPanel] onExecuted called with message:", message);
+
+//                     if (message && message.output) {
+//                         this.updateControlPanel(message.output);
+//                     }
+
+//                     // Call original onExecuted if it exists
+//                     return originalOnExecuted?.call(this, message);
+//                 };
+
+//                 return result;
+//             };
+//         }
+//     },
+// });

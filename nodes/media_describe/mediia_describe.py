@@ -809,7 +809,17 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 processed_media_path = selected_media_path if selected_media_path else ""
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
-                return (description, media_info_text, gemini_status, processed_media_path, final_string, output_height, output_width)
+                # Create aggregated data output for Control Panel
+                all_data = (
+                    f"📝 Description:\n{description}\n\n"
+                    f"📊 Media Info:\n{media_info_text}\n\n"
+                    f"🔄 Gemini Status:\n{gemini_status}\n\n"
+                    f"📁 Processed Media Path:\n{processed_media_path}\n\n"
+                    f"✨ Final String:\n{final_string}\n\n"
+                    f"📐 Dimensions:\n{output_width} x {output_height}"
+                )
+
+                return (description, media_info_text, gemini_status, processed_media_path, final_string, output_height, output_width, all_data)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -872,7 +882,17 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             processed_media_path = selected_media_path if selected_media_path else ""
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
-            return (description, media_info_text, gemini_status, processed_media_path, final_string, output_height, output_width)
+            # Create aggregated data output for Control Panel
+            all_data = (
+                f"📝 Description:\n{description}\n\n"
+                f"📊 Media Info:\n{media_info_text}\n\n"
+                f"🔄 Gemini Status:\n{gemini_status}\n\n"
+                f"📁 Processed Media Path:\n{processed_media_path}\n\n"
+                f"✨ Final String:\n{final_string}\n\n"
+                f"📐 Dimensions:\n{output_width} x {output_height}"
+            )
+
+            return (description, media_info_text, gemini_status, processed_media_path, final_string, output_height, output_width, all_data)
 
         except Exception as e:
             # Re-raise the exception to stop workflow execution
@@ -1128,7 +1148,17 @@ Generate descriptions that adhere to the following structured layers and constra
                 processed_media_path = selected_media_path if selected_media_path else ""
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
-                return (description, updated_media_info, gemini_status, processed_media_path, final_string, output_height, output_width)
+                # Create aggregated data output for Control Panel
+                all_data = (
+                    f"📝 Description:\n{description}\n\n"
+                    f"📊 Media Info:\n{updated_media_info}\n\n"
+                    f"🔄 Gemini Status:\n{gemini_status}\n\n"
+                    f"📁 Processed Media Path:\n{processed_media_path}\n\n"
+                    f"✨ Final String:\n{final_string}\n\n"
+                    f"📐 Dimensions:\n{output_width} x {output_height}"
+                )
+
+                return (description, updated_media_info, gemini_status, processed_media_path, final_string, output_height, output_width, all_data)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -1189,7 +1219,17 @@ Generate descriptions that adhere to the following structured layers and constra
 
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
-            return (description, updated_media_info, gemini_status, trimmed_video_output_path, final_string, output_height, output_width)
+            # Create aggregated data output for Control Panel
+            all_data = (
+                f"📝 Description:\n{description}\n\n"
+                f"📊 Media Info:\n{updated_media_info}\n\n"
+                f"🔄 Gemini Status:\n{gemini_status}\n\n"
+                f"📁 Processed Media Path:\n{trimmed_video_output_path}\n\n"
+                f"✨ Final String:\n{final_string}\n\n"
+                f"📐 Dimensions:\n{output_width} x {output_height}"
+            )
+
+            return (description, updated_media_info, gemini_status, trimmed_video_output_path, final_string, output_height, output_width, all_data)
 
         except Exception as e:
             # Provide more specific error messages for common issues
@@ -1266,8 +1306,8 @@ Generate descriptions that adhere to the following structured layers and constra
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "INT", "INT")
-    RETURN_NAMES = ("description", "media_info", "gemini_status", "processed_media_path", "final_string", "height", "width")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "INT", "INT", "STRING")
+    RETURN_NAMES = ("description", "media_info", "gemini_status", "processed_media_path", "final_string", "height", "width", "all_media_describe_data")
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪"
 
