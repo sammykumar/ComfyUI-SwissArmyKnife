@@ -1105,6 +1105,7 @@ Generate descriptions that adhere to the following structured layers and constra
                 "describe_hair_style": describe_hair_style,
                 "describe_bokeh": describe_bokeh,
                 "describe_subject": describe_subject,
+                "replace_action_with_twerking": replace_action_with_twerking,  # Include in cache key
                 "max_duration": max_duration  # Include duration in cache key
             }
 
