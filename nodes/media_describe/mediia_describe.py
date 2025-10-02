@@ -9,6 +9,7 @@ import os
 import subprocess
 import random
 import json
+import time
 from urllib.parse import urlparse
 from html import unescape
 
@@ -25,6 +26,81 @@ class MediaDescribe:
 
     def __init__(self):
         pass
+
+    def _call_gemini_with_retry(self, client, model, contents, config, max_retries=3, retry_delay=5):
+        """
+        Call Gemini API with retry logic for handling overload errors.
+        
+        Args:
+            client: Gemini client instance
+            model: Gemini model name
+            contents: Content to send to Gemini
+            config: Generation config
+            max_retries: Maximum number of retry attempts (default: 3)
+            retry_delay: Delay in seconds between retries (default: 5)
+            
+        Returns:
+            Response from Gemini API
+            
+        Raises:
+            Exception: If all retries fail
+        """
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=contents,
+                    config=config,
+                )
+                
+                # Check if response has valid text
+                if response.text is not None:
+                    return response
+                
+                # If response is empty, construct error message
+                error_msg = "Error: Gemini returned empty response"
+                if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
+                    error_msg += f" (Prompt feedback: {response.prompt_feedback})"
+                if hasattr(response, 'candidates') and response.candidates:
+                    error_msg += f" (Candidates available: {len(response.candidates)})"
+                
+                # If not the last attempt, retry after delay
+                if attempt < max_retries - 1:
+                    print(f"Gemini API returned empty response. Retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
+                    time.sleep(retry_delay)
+                    last_error = RuntimeError(error_msg)
+                    continue
+                else:
+                    # Last attempt failed
+                    raise RuntimeError(error_msg)
+                    
+            except Exception as e:
+                last_error = e
+                
+                # Check if it's an error we should retry
+                error_str = str(e)
+                should_retry = (
+                    "500" in error_str or 
+                    "503" in error_str or 
+                    "overloaded" in error_str.lower() or
+                    "empty response" in error_str.lower()
+                )
+                
+                # If not the last attempt and it's a retryable error, retry after delay
+                if attempt < max_retries - 1 and should_retry:
+                    print(f"Gemini API error: {error_str}")
+                    print(f"Retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
+                    time.sleep(retry_delay)
+                    continue
+                else:
+                    # Last attempt or non-retryable error
+                    raise
+        
+        # If we exhausted all retries, raise the last error
+        if last_error:
+            raise last_error
 
     def _ordinal(self, n):
         """Convert number to ordinal string (1->First, 2->Second, etc.)"""
@@ -766,33 +842,27 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 ),
             )
 
-            # Generate the image description
-            response = client.models.generate_content(
+            # Generate the image description with retry logic
+            response = self._call_gemini_with_retry(
+                client=client,
                 model=gemini_model,
                 contents=contents,
                 config=generate_content_config,
+                max_retries=3,
+                retry_delay=5
             )
 
-            # Process response
-            if response.text is not None:
-                description = response.text.strip()
+            # Process response (response.text is guaranteed to be non-None from retry logic)
+            description = response.text.strip()
 
-                # Store successful result in cache
-                cache.set(
-                    media_identifier=media_identifier,
-                    gemini_model=gemini_model,
-                    description=description,
-                    model_type=model_type,
-                    options=cache_options
-                )
-            else:
-                error_msg = "Error: Gemini returned empty response"
-                if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
-                    error_msg += f" (Prompt feedback: {response.prompt_feedback})"
-                if hasattr(response, 'candidates') and response.candidates:
-                    error_msg += f" (Candidates available: {len(response.candidates)})"
-                # Raise exception to stop workflow execution
-                raise RuntimeError(error_msg)
+            # Store successful result in cache
+            cache.set(
+                media_identifier=media_identifier,
+                gemini_model=gemini_model,
+                description=description,
+                model_type=model_type,
+                options=cache_options
+            )
 
             # Format outputs for image processing
             gemini_status = f"""🤖 Gemini Analysis Status: ✅ Complete
@@ -1090,33 +1160,27 @@ Generate descriptions that adhere to the following structured layers and constra
                 ),
             )
 
-            # Generate the video description
-            response = client.models.generate_content(
+            # Generate the video description with retry logic
+            response = self._call_gemini_with_retry(
+                client=client,
                 model=gemini_model,
                 contents=contents,
                 config=generate_content_config,
+                max_retries=3,
+                retry_delay=5
             )
 
-            # Process response
-            if response.text is not None:
-                description = response.text.strip()
+            # Process response (response.text is guaranteed to be non-None from retry logic)
+            description = response.text.strip()
 
-                # Store successful result in cache
-                cache.set(
-                    media_identifier=media_identifier,
-                    gemini_model=gemini_model,
-                    description=description,
-                    model_type="",  # Videos don't use model_type
-                    options=cache_options
-                )
-            else:
-                error_msg = "Error: Gemini returned empty response"
-                if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
-                    error_msg += f" (Prompt feedback: {response.prompt_feedback})"
-                if hasattr(response, 'candidates') and response.candidates:
-                    error_msg += f" (Candidates available: {len(response.candidates)})"
-                # Raise exception to stop workflow execution
-                raise RuntimeError(error_msg)
+            # Store successful result in cache
+            cache.set(
+                media_identifier=media_identifier,
+                gemini_model=gemini_model,
+                description=description,
+                model_type="",  # Videos don't use model_type
+                options=cache_options
+            )
 
             # Format outputs for video processing
             gemini_status = f"""🤖 Gemini Analysis Status: ✅ Complete
