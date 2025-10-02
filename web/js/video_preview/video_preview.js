@@ -6,7 +6,12 @@
 import { app as app$2 } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
 
-console.log(`Loading video_preview.js extension`);
+// Debug mode - set to true to enable verbose logging
+const SWISS_ARMY_KNIFE_DEBUG = false;
+
+if (SWISS_ARMY_KNIFE_DEBUG) {
+    console.log(`Loading video_preview.js extension`);
+}
 
 app$2.registerExtension({
     name: "video_preview",
@@ -297,25 +302,31 @@ app$2.registerExtension({
                             const video = videoElements[index];
                             const placeholder = placeholders[index];
 
-                            console.log(
-                                `[VideoPreview] ${inputName} raw value:`,
-                                videoPath,
-                                typeof videoPath
-                            );
+                            if (SWISS_ARMY_KNIFE_DEBUG) {
+                                console.log(
+                                    `[VideoPreview] ${inputName} raw value:`,
+                                    videoPath,
+                                    typeof videoPath
+                                );
+                            }
 
                             // If videoPath is a string that looks like JSON, parse it
                             if (typeof videoPath === "string" && videoPath.startsWith("[")) {
                                 try {
                                     videoPath = JSON.parse(videoPath);
-                                    console.log(
-                                        `[VideoPreview] ${inputName} parsed from JSON:`,
-                                        videoPath
-                                    );
+                                    if (SWISS_ARMY_KNIFE_DEBUG) {
+                                        console.log(
+                                            `[VideoPreview] ${inputName} parsed from JSON:`,
+                                            videoPath
+                                        );
+                                    }
                                 } catch (e) {
-                                    console.log(
-                                        `[VideoPreview] ${inputName} failed to parse JSON:`,
-                                        e
-                                    );
+                                    if (SWISS_ARMY_KNIFE_DEBUG) {
+                                        console.log(
+                                            `[VideoPreview] ${inputName} failed to parse JSON:`,
+                                            e
+                                        );
+                                    }
                                 }
                             }
 
@@ -324,29 +335,46 @@ app$2.registerExtension({
                             // Handle array format: [false, ["/path/image.png", "/path/video.mp4"]]
                             // or [true, ["/path/image.png", "/path/video.mp4"]]
                             if (Array.isArray(videoPath)) {
-                                console.log(`[VideoPreview] ${inputName} is array:`, videoPath);
+                                if (SWISS_ARMY_KNIFE_DEBUG) {
+                                    console.log(`[VideoPreview] ${inputName} is array:`, videoPath);
+                                }
 
                                 // Check if it's the format [boolean, [files...]]
                                 if (videoPath.length > 1 && Array.isArray(videoPath[1])) {
                                     const files = videoPath[1];
-                                    console.log(`[VideoPreview] ${inputName} files array:`, files);
+                                    if (SWISS_ARMY_KNIFE_DEBUG) {
+                                        console.log(
+                                            `[VideoPreview] ${inputName} files array:`,
+                                            files
+                                        );
+                                    }
 
                                     // Find the .mp4 file
                                     const mp4File = files.find((f) => {
-                                        console.log(`[VideoPreview] Checking file:`, f, typeof f);
+                                        if (SWISS_ARMY_KNIFE_DEBUG) {
+                                            console.log(
+                                                `[VideoPreview] Checking file:`,
+                                                f,
+                                                typeof f
+                                            );
+                                        }
                                         return typeof f === "string" && f.endsWith(".mp4");
                                     });
 
                                     if (mp4File) {
                                         videoPath = mp4File;
-                                        console.log(
-                                            `[VideoPreview] ${inputName} extracted MP4:`,
-                                            videoPath
-                                        );
+                                        if (SWISS_ARMY_KNIFE_DEBUG) {
+                                            console.log(
+                                                `[VideoPreview] ${inputName} extracted MP4:`,
+                                                videoPath
+                                            );
+                                        }
                                     } else {
-                                        console.log(
-                                            `[VideoPreview] ${inputName} no .mp4 found, using last file`
-                                        );
+                                        if (SWISS_ARMY_KNIFE_DEBUG) {
+                                            console.log(
+                                                `[VideoPreview] ${inputName} no .mp4 found, using last file`
+                                            );
+                                        }
                                         videoPath = files[files.length - 1];
                                     }
                                 } else if (videoPath.length > 0) {
@@ -394,17 +422,21 @@ app$2.registerExtension({
                                             (v) => v.src && v.readyState >= 2
                                         );
 
-                                        console.log(
-                                            `[VideoPreview] Video loaded for ${inputName}, total loaded: ${loadedVideos.length}`
-                                        );
+                                        if (SWISS_ARMY_KNIFE_DEBUG) {
+                                            console.log(
+                                                `[VideoPreview] Video loaded for ${inputName}, total loaded: ${loadedVideos.length}`
+                                            );
+                                        }
 
                                         // Play all loaded videos together
                                         loadedVideos.forEach((v) => {
                                             v.play().catch((err) => {
-                                                console.log(
-                                                    `[VideoPreview] Autoplay prevented:`,
-                                                    err
-                                                );
+                                                if (SWISS_ARMY_KNIFE_DEBUG) {
+                                                    console.log(
+                                                        `[VideoPreview] Autoplay prevented:`,
+                                                        err
+                                                    );
+                                                }
                                             });
                                         });
 
@@ -418,23 +450,27 @@ app$2.registerExtension({
                                     { once: true }
                                 );
 
-                                console.log(
-                                    `[VideoPreview] Loaded ${inputName}:`,
-                                    `\n  Extracted: ${videoPath}`,
-                                    `\n  Type: ${type}`,
-                                    `\n  Subfolder: ${subfolder || "(none)"}`,
-                                    `\n  Filename: ${filename}`,
-                                    `\n  URL: ${videoUrl}`,
-                                    `\n  Original: ${originalPath}`
-                                );
+                                if (SWISS_ARMY_KNIFE_DEBUG) {
+                                    console.log(
+                                        `[VideoPreview] Loaded ${inputName}:`,
+                                        `\n  Extracted: ${videoPath}`,
+                                        `\n  Type: ${type}`,
+                                        `\n  Subfolder: ${subfolder || "(none)"}`,
+                                        `\n  Filename: ${filename}`,
+                                        `\n  URL: ${videoUrl}`,
+                                        `\n  Original: ${originalPath}`
+                                    );
+                                }
                             } else {
                                 // Clear video if no path
                                 video.src = "";
                                 video.style.display = "none";
                                 if (placeholder) placeholder.style.display = "block";
-                                console.log(
-                                    `[VideoPreview] No valid path for ${inputName}, original: ${originalPath}`
-                                );
+                                if (SWISS_ARMY_KNIFE_DEBUG) {
+                                    console.log(
+                                        `[VideoPreview] No valid path for ${inputName}, original: ${originalPath}`
+                                    );
+                                }
                             }
                         });
                     }
