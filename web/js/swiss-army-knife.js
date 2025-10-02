@@ -570,20 +570,12 @@ app.registerExtension({
                 // Find the media_type widget
                 this.mediaTypeWidget = this.widgets.find((w) => w.name === "media_type");
 
-                // Define clearVideoPreview early so it can be used by clearAllMediaState
-                this.clearVideoPreview = function () {
-                    // For the media node, we don't have complex video preview
-                    // This is just a placeholder method
-                    console.log("Video preview cleared for media node");
-                };
-
                 // Method to clear all media state (images, videos, previews, file data)
                 this.clearAllMediaState = function () {
                     debugLog("[DEBUG] clearAllMediaState called");
                     debugLog("[DEBUG] _pendingFileRestore exists:", !!this._pendingFileRestore);
 
-                    // Clear video state and preview
-                    this.clearVideoPreview();
+                    // Clear video state
                     this.uploadedVideoFile = null;
                     this.uploadedVideoSubfolder = null;
 
@@ -1376,7 +1368,6 @@ app.registerExtension({
 
                 if (mediaType === "video") {
                     // Clear video state
-                    this.clearVideoPreview();
                     this.uploadedVideoFile = null;
                     this.uploadedVideoSubfolder = null;
 
@@ -1636,7 +1627,6 @@ app.registerExtension({
                         console.error("Upload error:", error);
 
                         // Clear everything on error
-                        this.clearVideoPreview();
                         this.videoInfoWidget.value = "Upload failed";
                         this.uploadedVideoFile = null;
                         this.uploadedVideoSubfolder = null;

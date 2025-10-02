@@ -392,8 +392,16 @@ app$2.registerExtension({
                                 videoPath.trim() !== ""
                             ) {
                                 // Parse the path to extract directory type and filename
-                                // Expected format: /workspace/ComfyUI/output/._00003.mp4
-                                let cleanPath = videoPath.replace(/^\/workspace\/ComfyUI\//, "");
+                                // Handle multiple possible path prefixes (Docker, local, production, etc.)
+                                // Examples:
+                                //   /workspace/ComfyUI/output/._00003.mp4
+                                //   /comfyui-nvidia/temp/._00001.mp4
+                                //   /app/ComfyUI/input/video.mp4
+                                let cleanPath = videoPath
+                                    .replace(/^\/workspace\/ComfyUI\//, "")
+                                    .replace(/^\/comfyui-nvidia\//, "")
+                                    .replace(/^\/app\/ComfyUI\//, "")
+                                    .replace(/^\/ComfyUI\//, "");
 
                                 // Extract type (output, temp, input) and filename
                                 const pathParts = cleanPath.split("/");
