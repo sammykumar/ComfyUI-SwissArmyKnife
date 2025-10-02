@@ -16,19 +16,22 @@ class VideoPreview:
     def INPUT_TYPES(cls):
         """
         Define input fields for the video preview node.
-        All inputs are optional IMAGE types to support flexible workflow connections.
+        All inputs are optional STRING types containing video file paths.
         """
         return {
             "required": {},
             "optional": {
-                "reference_vid": ("IMAGE", {
-                    "tooltip": "Reference video for comparison"
+                "reference_vid": ("STRING", {
+                    "default": "",
+                    "tooltip": "Reference video file path for comparison"
                 }),
-                "base_vid": ("IMAGE", {
-                    "tooltip": "Base video input"
+                "base_vid": ("STRING", {
+                    "default": "",
+                    "tooltip": "Base video file path"
                 }),
-                "upscaled_vid": ("IMAGE", {
-                    "tooltip": "Upscaled video for comparison"
+                "upscaled_vid": ("STRING", {
+                    "default": "",
+                    "tooltip": "Upscaled video file path for comparison"
                 }),
             },
         }
@@ -38,15 +41,15 @@ class VideoPreview:
     CATEGORY = "Utils"
     OUTPUT_NODE = True  # Makes this an output node that displays in the UI
 
-    def preview_videos(self, reference_vid=None, base_vid=None, upscaled_vid=None):
+    def preview_videos(self, reference_vid="", base_vid="", upscaled_vid=""):
         """
         Display the video inputs for preview.
-        Accepts optional video inputs and prepares them for UI display.
+        Accepts optional video file paths and prepares them for UI display.
 
         Args:
-            reference_vid: Optional reference video (IMAGE type)
-            base_vid: Optional base video (IMAGE type)
-            upscaled_vid: Optional upscaled video (IMAGE type)
+            reference_vid: Optional reference video file path (STRING)
+            base_vid: Optional base video file path (STRING)
+            upscaled_vid: Optional upscaled video file path (STRING)
 
         Returns:
             Dictionary with UI data for display
@@ -56,19 +59,23 @@ class VideoPreview:
         print("VIDEO PREVIEW - Connected Inputs")
         print("="*60)
 
+        video_paths = {}
         connected_inputs = []
 
-        if reference_vid is not None:
-            print(f"📹 reference_vid: Connected (shape: {reference_vid.shape if hasattr(reference_vid, 'shape') else 'unknown'})")
+        if reference_vid and reference_vid.strip():
+            print(f"📹 reference_vid: {reference_vid}")
             connected_inputs.append("reference_vid")
+            video_paths["reference_vid"] = reference_vid
 
-        if base_vid is not None:
-            print(f"📹 base_vid: Connected (shape: {base_vid.shape if hasattr(base_vid, 'shape') else 'unknown'})")
+        if base_vid and base_vid.strip():
+            print(f"📹 base_vid: {base_vid}")
             connected_inputs.append("base_vid")
+            video_paths["base_vid"] = base_vid
 
-        if upscaled_vid is not None:
-            print(f"📹 upscaled_vid: Connected (shape: {upscaled_vid.shape if hasattr(upscaled_vid, 'shape') else 'unknown'})")
+        if upscaled_vid and upscaled_vid.strip():
+            print(f"📹 upscaled_vid: {upscaled_vid}")
             connected_inputs.append("upscaled_vid")
+            video_paths["upscaled_vid"] = upscaled_vid
 
         if not connected_inputs:
             print("\n(No video inputs connected)")
@@ -78,8 +85,9 @@ class VideoPreview:
         # Return UI data - all values must be lists for ComfyUI
         return {
             "ui": {
-                "connected_inputs": [connected_inputs],  # Wrap list in list
-                "input_count": [len(connected_inputs)]   # Wrap int in list
+                "video_paths": [video_paths],            # Dict of video paths
+                "connected_inputs": [connected_inputs],  # List of connected input names
+                "input_count": [len(connected_inputs)]   # Count of connected inputs
             }
         }
 
