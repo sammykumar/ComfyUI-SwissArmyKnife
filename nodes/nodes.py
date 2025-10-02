@@ -768,7 +768,7 @@ class VideoMetadataNode:
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
-    "GeminiUtilMediaDescribe": MediaDescribe,
+    "MediaDescribe": MediaDescribe,
     "GeminiUtilOptions": GeminiUtilOptions,
     "FilenameGenerator": FilenameGenerator,
     "VideoMetadataNode": VideoMetadataNode,

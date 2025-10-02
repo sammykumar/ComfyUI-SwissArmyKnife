@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the completed implementation of the seed widget functionality for the GeminiMediaDescribe node, which was restored after being accidentally removed in a previous commit.
+This document describes the completed implementation of the seed widget functionality for the MediaDescribe node (GeminiUtilMediaDescribe), which was restored after being accidentally removed in a previous commit.
 
 ## Problem Solved
 

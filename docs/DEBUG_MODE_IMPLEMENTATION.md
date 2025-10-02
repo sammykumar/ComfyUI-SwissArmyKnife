@@ -15,6 +15,7 @@ The Swiss Army Knife extension now respects the `DEBUG` environment variable set
     - Registered in `__init__.py` at extension load time
 
 2. **Environment Variable Reading**:
+
     ```python
     debug = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
     ```
@@ -167,15 +168,16 @@ After complete implementation:
 
 - **Total debugLog calls**: 167 (converted from console.log)
 - **Remaining console.log calls**: 15 (all user-facing or system-required)
-  - 1 inside debugLog function itself (required)
-  - 2 user-facing status messages (debug mode, extension loading)
-  - 2 error/status messages (filename preview error, video preview status)
-  - 10 development utility messages (cache busting, localhost only)
+    - 1 inside debugLog function itself (required)
+    - 2 user-facing status messages (debug mode, extension loading)
+    - 2 error/status messages (filename preview error, video preview status)
+    - 10 development utility messages (cache busting, localhost only)
 - **Conversion rate**: ~92% of logging now respects DEBUG flag
 
 ### Log Categories Converted to debugLog
 
 All these message types now respect the DEBUG environment variable:
+
 - `[DEBUG]` - Implementation details and diagnostics
 - `[STATE]` - Widget state management
 - `[WIDGET]` - Widget operations
@@ -184,7 +186,7 @@ All these message types now respect the DEBUG environment variable:
 - `[LOADED]` - Workflow loading
 - `[UPLOAD]` - File upload operations
 - `[API]` - API event handling
-- `[GeminiMediaDescribe]` - Media description node diagnostics
+- `[MediaDescribe]` - Media description node diagnostics
 - Widget discovery and manipulation
 - File restoration and state management
 - Dimensions display updates
@@ -192,6 +194,7 @@ All these message types now respect the DEBUG environment variable:
 ### User-Facing Messages (Always Visible)
 
 These messages always appear regardless of DEBUG setting:
+
 - Extension version and load timestamp
 - Debug mode status (ENABLED/DISABLED)
 - Development utilities info (localhost only)
@@ -203,46 +206,50 @@ These messages always appear regardless of DEBUG setting:
 ### "Still seeing debug logs after setting DEBUG=false"
 
 1. **Verify .env file**:
-   ```bash
-   cat /Users/samkumar/Development/dev-lab-hq/ai-image-hub/apps/comfyui-swiss-army-knife/.env | grep DEBUG
-   ```
-   Should show: `DEBUG=false`
+
+    ```bash
+    cat /Users/samkumar/Development/dev-lab-hq/ai-image-hub/apps/comfyui-swiss-army-knife/.env | grep DEBUG
+    ```
+
+    Should show: `DEBUG=false`
 
 2. **Test config API**:
-   ```bash
-   curl http://127.0.0.1:8188/swissarmyknife/config
-   ```
-   Should return: `{"debug": false}`
-   
-   If it returns `{"debug": true}`, the .env file isn't being read correctly.
+
+    ```bash
+    curl http://127.0.0.1:8188/swissarmyknife/config
+    ```
+
+    Should return: `{"debug": false}`
+
+    If it returns `{"debug": true}`, the .env file isn't being read correctly.
 
 3. **Clear ALL caches**:
-   - Stop ComfyUI server completely
-   - Clear browser cache (hard refresh: Cmd+Shift+R / Ctrl+Shift+F5)
-   - In browser console, run: `localStorage.clear(); sessionStorage.clear()`
-   - Or use the built-in utility: `clearSwissArmyKnifeCache()`
-   - Restart ComfyUI server
-   - Reload page
+    - Stop ComfyUI server completely
+    - Clear browser cache (hard refresh: Cmd+Shift+R / Ctrl+Shift+F5)
+    - In browser console, run: `localStorage.clear(); sessionStorage.clear()`
+    - Or use the built-in utility: `clearSwissArmyKnifeCache()`
+    - Restart ComfyUI server
+    - Reload page
 
 4. **Check for cached JavaScript**:
-   - Browser may have cached the old swiss-army-knife.js
-   - Force cache bypass: Disable browser cache in DevTools Network tab
-   - Or increment EXTENSION_VERSION in swiss-army-knife.js to force reload
+    - Browser may have cached the old swiss-army-knife.js
+    - Force cache bypass: Disable browser cache in DevTools Network tab
+    - Or increment EXTENSION_VERSION in swiss-army-knife.js to force reload
 
 5. **Verify server restart**:
-   - Ensure you fully restarted the ComfyUI server (not just refreshed browser)
-   - Environment variables are only read at server startup
+    - Ensure you fully restarted the ComfyUI server (not just refreshed browser)
+    - Environment variables are only read at server startup
 
 ### "Debug mode status shows DISABLED but still see logs from other extensions"
 
 The DEBUG flag only controls Swiss Army Knife logs. Other extensions (Node Enhancer, Super LoRA Loader, etc.) have their own logging that isn't affected by this setting.
 
 Logs from other extensions will show different formats:
+
 - `extension.js:6753 NodeEnhancer: Registering extension...`
 - `extension.js:6891 Super LoRA Loader: Registering extension...`
 
 These are separate extensions and not controlled by Swiss Army Knife's DEBUG setting.
-
 
 ## Final Statistics
 
@@ -255,6 +262,7 @@ After complete implementation:
 ### User-Facing Messages (Always Visible)
 
 These messages always appear regardless of DEBUG setting:
+
 - Extension version and load timestamp
 - Debug mode status (ENABLED/DISABLED)
 - Development utilities info (localhost only)
@@ -267,11 +275,13 @@ These messages always appear regardless of DEBUG setting:
 The logs you're seeing are from **other extensions** (Node Enhancer, Super LoRA Loader). Swiss Army Knife debug logs will have tags like `[DEBUG]`, `[STATE]`, `[WIDGET]`, etc.
 
 **Verification steps:**
+
 1. Check browser console shows: "Swiss Army Knife Debug Mode: DISABLED"
 2. Verify no messages with `[DEBUG]`, `[STATE]`, `[WIDGET]` tags appear
 3. Other extensions' logs (extension.js:XXXX) are normal and unrelated
 
 **If Swiss Army Knife debug logs still appear:**
+
 1. Verify `.env` has `DEBUG=false`
 2. Fully restart ComfyUI server (environment variables load at startup)
 3. Hard refresh browser (Cmd+Shift+R / Ctrl+Shift+F5)

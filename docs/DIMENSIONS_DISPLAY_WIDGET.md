@@ -47,13 +47,9 @@ width = Array.isArray(message.width) ? message.width[0] : message.width;
 The implementation includes extensive logging for troubleshooting:
 
 ```javascript
-console.log('[GeminiMediaDescribe] onExecuted called with message:', message);
-console.log(
-    '[GeminiMediaDescribe] Found dimensions in array format:',
-    height,
-    width,
-);
-console.log('[GeminiMediaDescribe] Updated dimensions display:', width, height);
+console.log('[MediaDescribe] onExecuted called with message:', message);
+console.log('[MediaDescribe] Found dimensions in array format:', height, width);
+console.log('[MediaDescribe] Updated dimensions display:', width, height);
 ```
 
 ## Python Node Output Structure
@@ -100,7 +96,7 @@ RETURN_NAMES = ("description", "media_info", "gemini_status", "processed_media_p
 
 ### Widget Not Appearing
 
-1. **Check Browser Console**: Look for "[GeminiMediaDescribe]" log messages
+1. **Check Browser Console**: Look for "[MediaDescribe]" log messages
 2. **Verify Execution**: Ensure the node actually executed (green border)
 3. **Check Message Structure**: The debug logs show the exact message structure received
 4. **Browser Cache**: Clear browser cache with hard refresh (Cmd+Shift+R / Ctrl+Shift+R)

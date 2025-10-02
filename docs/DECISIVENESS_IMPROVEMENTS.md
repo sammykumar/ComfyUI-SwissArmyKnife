@@ -68,7 +68,7 @@ Always be completely decisive and definitive - when you see something that could
 
 ## Technical Implementation
 
-- Changes applied to `nodes/nodes.py` in the `GeminiMediaDescribe` class
+- Changes applied to `nodes/media_describe/mediia_describe.py` in the `MediaDescribe` class
 - Affects all three processing modes: Text2Image, ImageEdit, and Video
 - Maintains backward compatibility with existing options
 - No breaking changes to API or node structure

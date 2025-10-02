@@ -58,19 +58,19 @@ Look for **BOTH** of these log sequences:
 [API] Output data: {description: ..., height: [1080], width: [1920], ...}
 [API] Found GeminiUtilMediaDescribe execution result
 [API] Extracted dimensions from API event: 1920 x 1080
-[GeminiMediaDescribe] updateDimensionsDisplay called with: 1080 1920
-[GeminiMediaDescribe] Created dimensions display widget
+[MediaDescribe] updateDimensionsDisplay called with: 1080 1920
+[MediaDescribe] Created dimensions display widget
 ```
 
 **From onExecuted Method:**
 
 ```
-[GeminiMediaDescribe] onExecuted called
-[GeminiMediaDescribe] Message type: object
-[GeminiMediaDescribe] Message keys: [array of keys]
-[GeminiMediaDescribe] Found dimensions in [format]: [height] [width]
-[GeminiMediaDescribe] updateDimensionsDisplay called with: [height] [width]
-[GeminiMediaDescribe] Updated dimensions display: [width] x [height]
+[MediaDescribe] onExecuted called
+[MediaDescribe] Message type: object
+[MediaDescribe] Message keys: [array of keys]
+[MediaDescribe] Found dimensions in [format]: [height] [width]
+[MediaDescribe] updateDimensionsDisplay called with: [height] [width]
+[MediaDescribe] Updated dimensions display: [width] x [height]
 ```
 
 ### Step 3: Verify Widget Appears
@@ -102,7 +102,7 @@ After executing the workflow, you should see a new text field on the node that d
 
 **Solution:**
 
-1. Check the full console log for `[GeminiMediaDescribe] Message keys:`
+1. Check the full console log for `[MediaDescribe] Message keys:`
 2. Look at what keys are available in the message object
 3. Report the message structure for further debugging
 
@@ -202,7 +202,7 @@ Added extensive logging to help troubleshoot:
 
 If after following all these steps the widget still doesn't appear:
 
-1. **Check browser console** and copy ALL `[GeminiMediaDescribe]` and `[API]` log messages
+1. **Check browser console** and copy ALL `[MediaDescribe]` and `[API]` log messages
 2. **Check for JavaScript errors** (red text in console)
 3. **Verify Python node** is returning height and width correctly:
     ```python

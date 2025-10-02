@@ -70,7 +70,7 @@ Both instances now use the comprehensive text exclusion language.
 
 This enhancement automatically applies when:
 
-- Using `GeminiMediaDescribe` node with clothing descriptions enabled
+- Using `MediaDescribe` node (GeminiUtilMediaDescribe) with clothing descriptions enabled
 - Processing images or videos with visible text on clothing
 - Any workflow where clothing description is part of the output
 

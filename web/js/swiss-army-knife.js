@@ -1006,11 +1006,7 @@ app.registerExtension({
 
             // Helper function to update dimensions display
             nodeType.prototype.updateDimensionsDisplay = function (height, width) {
-                debugLog(
-                    "[GeminiMediaDescribe] updateDimensionsDisplay called with:",
-                    height,
-                    width
-                );
+                debugLog("[MediaDescribe] updateDimensionsDisplay called with:", height, width);
 
                 if (height != null && width != null) {
                     let dimensionsWidget = this.widgets.find(
@@ -1026,16 +1022,11 @@ app.registerExtension({
                             () => {}, // Read-only widget
                             { serialize: false }
                         );
-                        debugLog("[GeminiMediaDescribe] Created dimensions display widget");
+                        debugLog("[MediaDescribe] Created dimensions display widget");
                     } else {
                         // Update existing widget
                         dimensionsWidget.value = `📐 ${width} x ${height}`;
-                        debugLog(
-                            "[GeminiMediaDescribe] Updated dimensions display:",
-                            width,
-                            "x",
-                            height
-                        );
+                        debugLog("[MediaDescribe] Updated dimensions display:", width, "x", height);
                     }
 
                     // Force UI refresh to show the updated widget
@@ -1044,7 +1035,7 @@ app.registerExtension({
                         this.graph.setDirtyCanvas(true, true);
                     }
                 } else {
-                    debugLog("[GeminiMediaDescribe] Invalid dimensions, not updating display");
+                    debugLog("[MediaDescribe] Invalid dimensions, not updating display");
                 }
             };
 
@@ -1053,17 +1044,11 @@ app.registerExtension({
             nodeType.prototype.onExecuted = function (message) {
                 const result = onExecutedMedia?.apply(this, arguments);
 
-                debugLog("[GeminiMediaDescribe] ⭐ onExecuted called for node ID:", this.id);
-                debugLog("[GeminiMediaDescribe] Message type:", typeof message);
-                debugLog("[GeminiMediaDescribe] Message:", message);
-                debugLog(
-                    "[GeminiMediaDescribe] Message keys:",
-                    message ? Object.keys(message) : "null"
-                );
-                debugLog(
-                    "[GeminiMediaDescribe] Full message JSON:",
-                    JSON.stringify(message, null, 2)
-                );
+                debugLog("[MediaDescribe] ⭐ onExecuted called for node ID:", this.id);
+                debugLog("[MediaDescribe] Message type:", typeof message);
+                debugLog("[MediaDescribe] Message:", message);
+                debugLog("[MediaDescribe] Message keys:", message ? Object.keys(message) : "null");
+                debugLog("[MediaDescribe] Full message JSON:", JSON.stringify(message, null, 2));
 
                 // Update dimensions display widget with height and width from execution results
                 if (message) {
@@ -1076,7 +1061,7 @@ app.registerExtension({
                         height = message[5]; // Index 5 is height
                         width = message[6]; // Index 6 is width
                         debugLog(
-                            "[GeminiMediaDescribe] Found dimensions in array format:",
+                            "[MediaDescribe] Found dimensions in array format:",
                             height,
                             width
                         );
@@ -1086,19 +1071,19 @@ app.registerExtension({
                         height = Array.isArray(message.height) ? message.height[0] : message.height;
                         width = Array.isArray(message.width) ? message.width[0] : message.width;
                         debugLog(
-                            "[GeminiMediaDescribe] Found dimensions in message properties:",
+                            "[MediaDescribe] Found dimensions in message properties:",
                             height,
                             width
                         );
                     }
                     // Structure 3: Check if message has output property
                     else if (message.output) {
-                        debugLog("[GeminiMediaDescribe] Checking message.output");
+                        debugLog("[MediaDescribe] Checking message.output");
                         if (Array.isArray(message.output) && message.output.length >= 7) {
                             height = message.output[5];
                             width = message.output[6];
                             debugLog(
-                                "[GeminiMediaDescribe] Found dimensions in message.output array:",
+                                "[MediaDescribe] Found dimensions in message.output array:",
                                 height,
                                 width
                             );
@@ -1110,7 +1095,7 @@ app.registerExtension({
                                 ? message.output.width[0]
                                 : message.output.width;
                             debugLog(
-                                "[GeminiMediaDescribe] Found dimensions in message.output properties:",
+                                "[MediaDescribe] Found dimensions in message.output properties:",
                                 height,
                                 width
                             );

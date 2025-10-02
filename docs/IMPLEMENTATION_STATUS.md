@@ -1,4 +1,4 @@
-# GeminiMediaDescribe Implementation Summary
+# MediaDescribe Implementation Summary
 
 ## ✅ COMPLETED SUCCESSFULLY
 
@@ -7,7 +7,7 @@
 - **File**: `nodes/nodes.py`
 - **Status**: ✅ Working correctly
 - **Features**:
-    - Clean GeminiMediaDescribe class with proper INPUT_TYPES structure
+    - Clean MediaDescribe class with proper INPUT_TYPES structure
     - Support for media_source: "Upload Media" vs "Randomize Media from Path"
     - Support for media_type: "image" vs "video"
     - Proper error handling for missing inputs
@@ -62,7 +62,7 @@ The node returns 3 outputs:
 
 ## 🎯 CURRENT STATUS: READY FOR TESTING
 
-The consolidated GeminiMediaDescribe node is now fully implemented and ready for UI testing in ComfyUI. The implementation supports:
+The consolidated MediaDescribe node (GeminiUtilMediaDescribe) is now fully implemented and ready for UI testing in ComfyUI. The implementation supports:
 
 1. **Upload Media Mode**: Users can upload images/videos via widgets
 2. **Randomize Media from Path Mode**: Users can specify a directory path and the node will randomly select a file

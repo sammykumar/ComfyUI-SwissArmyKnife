@@ -27,7 +27,7 @@ Purpose: Add a boolean option to the Gemini Util - Options node to instruct Gemi
 - `nodes/nodes.py`
     - Added `change_clothing_color` to `GeminiUtilOptions.INPUT_TYPES`
     - Updated `GeminiUtilOptions.create_options` signature and returned options
-    - Propagated option into `GeminiMediaDescribe.describe_media`
+    - Propagated option into `MediaDescribe.describe_media`
     - Updated `_process_image` and `_process_video` prompts and cache keys
 - No changes needed in `web/js/swiss-army-knife.js` because ComfyUI auto-renders standard widgets for Python-defined inputs for the Options node.
 
