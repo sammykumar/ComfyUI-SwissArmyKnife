@@ -745,11 +745,17 @@ app.registerExtension({
                 console.log("[DEBUG] uploadedImageSubfolder:", this.uploadedImageSubfolder);
                 console.log("[DEBUG] imageInfoWidget value:", this.imageInfoWidget?.value);
 
+                // Find the reddit_url widget for persistence
+                const redditUrlWidget = this.widgets.find((w) => w.name === "reddit_url");
+                const redditUrlValue = redditUrlWidget?.value || "";
+                console.log("[DEBUG] reddit_url widget value:", redditUrlValue);
+
                 // Save current widget state for persistence
                 o.widgets_values = o.widgets_values || [];
                 o.ui_state = {
                     media_source: this.mediaSourceWidget?.value || "Upload Media",
                     media_type: this.mediaTypeWidget?.value || "image",
+                    reddit_url: redditUrlValue,
                     // Add uploaded file persistence
                     uploaded_file_info: {
                         image: {
@@ -808,6 +814,15 @@ app.registerExtension({
                     if (this.mediaTypeWidget && o.ui_state.media_type) {
                         console.log("[DEBUG] Setting mediaTypeWidget to:", o.ui_state.media_type);
                         this.mediaTypeWidget.value = o.ui_state.media_type;
+                    }
+
+                    // Restore reddit_url widget value if available
+                    if (o.ui_state.reddit_url !== undefined) {
+                        const redditUrlWidget = this.widgets.find((w) => w.name === "reddit_url");
+                        if (redditUrlWidget) {
+                            console.log("[DEBUG] Restoring reddit_url to:", o.ui_state.reddit_url);
+                            redditUrlWidget.value = o.ui_state.reddit_url;
+                        }
                     }
 
                     // Store upload file info for later restoration (after updateMediaWidgets clears state)
