@@ -7,7 +7,7 @@ import { app as app$2 } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
 
 // Debug mode - set to true to enable verbose logging
-const SWISS_ARMY_KNIFE_DEBUG = false;
+const SWISS_ARMY_KNIFE_DEBUG = true;
 
 if (SWISS_ARMY_KNIFE_DEBUG) {
     console.log(`Loading video_preview.js extension`);
