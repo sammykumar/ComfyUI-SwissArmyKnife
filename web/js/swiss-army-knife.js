@@ -325,22 +325,42 @@ app.registerExtension({
                 // Initialize input counter based on existing inputs
                 this._cp_inputCount = this.inputs?.length || 0;
 
-                // Create a DOM widget area (scrollable display)
+                // Create a DOM widget area with two-column layout
                 if (!this._cp_dom) {
+                    // Main container
                     const dom = document.createElement("div");
                     dom.style.fontFamily =
                         "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
                     dom.style.fontSize = "11px";
                     dom.style.lineHeight = "1.35";
-                    dom.style.whiteSpace = "pre-wrap";
                     dom.style.overflow = "auto";
-                    dom.style.maxHeight = "300px";
+                    dom.style.maxHeight = "100%";
                     dom.style.padding = "8px";
                     dom.style.borderRadius = "6px";
                     dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
                     dom.style.border = "1px solid var(--border-color, #333)";
                     dom.style.color = "var(--fg-color, #d4d4d4)";
-                    dom.style.wordBreak = "break-word";
+                    dom.style.display = "flex";
+                    dom.style.gap = "12px";
+
+                    // Left column (media_info, gemini_status, processed_media_path)
+                    const leftColumn = document.createElement("div");
+                    leftColumn.style.flex = "1";
+                    leftColumn.style.minWidth = "0"; // Allow flex to shrink below content size
+                    leftColumn.style.whiteSpace = "pre-wrap";
+                    leftColumn.style.wordBreak = "break-word";
+                    leftColumn.style.overflow = "auto";
+
+                    // Right column (description, final_string, height, width)
+                    const rightColumn = document.createElement("div");
+                    rightColumn.style.flex = "1";
+                    rightColumn.style.minWidth = "0"; // Allow flex to shrink below content size
+                    rightColumn.style.whiteSpace = "pre-wrap";
+                    rightColumn.style.wordBreak = "break-word";
+                    rightColumn.style.overflow = "auto";
+
+                    dom.appendChild(leftColumn);
+                    dom.appendChild(rightColumn);
 
                     // Add a DOM widget
                     const widget = this.addDOMWidget("ControlPanel", "cp_display", dom, {
@@ -350,12 +370,14 @@ app.registerExtension({
 
                     // Store references
                     this._cp_dom = dom;
+                    this._cp_leftColumn = leftColumn;
+                    this._cp_rightColumn = rightColumn;
                     this._cp_widget = widget;
                 }
 
                 // Function to update summary display
                 this.updateControlPanelSummary = function () {
-                    if (!this._cp_dom) return;
+                    if (!this._cp_leftColumn || !this._cp_rightColumn) return;
 
                     const lines = [];
                     const inputs = this.inputs || [];
@@ -385,34 +407,102 @@ app.registerExtension({
                         lines.push(`${slot.name} ⇐ ${originName}.${outName}`);
                     }
 
-                    this._cp_dom.textContent = lines.length
+                    const summaryText = lines.length
                         ? lines.join("\n")
                         : "No inputs yet. Right-click → ➕ Add input";
+
+                    // Display summary in left column, leave right column empty
+                    this._cp_leftColumn.textContent = summaryText;
+                    this._cp_rightColumn.textContent = "Awaiting execution...";
                     this.setDirtyCanvas(true, true);
                 };
 
                 // Function to update with execution data
                 this.updateControlPanelData = function (data) {
-                    if (!this._cp_dom || !data) return;
+                    if (!this._cp_leftColumn || !this._cp_rightColumn || !data) return;
 
-                    const lines = [];
-                    lines.push("═══ EXECUTION RESULTS ═══\n");
-
-                    for (const [key, value] of Object.entries(data)) {
-                        const displayValue = Array.isArray(value) ? value[0] : value;
-                        let valueStr = String(displayValue);
-
+                    // Helper function to format field display
+                    const formatField = (emoji, label, value) => {
+                        let valueStr = String(value);
                         // Truncate very long values
                         if (valueStr.length > 500) {
                             valueStr = valueStr.substring(0, 500) + "... (truncated)";
                         }
+                        return `${emoji} ${label}:\n${valueStr}\n\n`;
+                    };
 
-                        lines.push(`📊 ${key}:`);
-                        lines.push(valueStr);
-                        lines.push(""); // Empty line for spacing
+                    const leftLines = [];
+                    const rightLines = [];
+
+                    leftLines.push("═══ LEFT PANEL ═══\n\n");
+                    rightLines.push("═══ RIGHT PANEL ═══\n\n");
+
+                    // Check if we have all_media_describe_data and it's JSON
+                    if (data.all_media_describe_data) {
+                        try {
+                            const jsonValue = Array.isArray(data.all_media_describe_data)
+                                ? data.all_media_describe_data[0]
+                                : data.all_media_describe_data;
+                            const parsedData = JSON.parse(jsonValue);
+
+                            debugLog("[ControlPanel] Parsed JSON data:", parsedData);
+
+                            // Left column: media_info, gemini_status, processed_media_path, height, width
+                            const leftFields = [
+                                { key: "media_info", emoji: "📊", label: "Media Info" },
+                                { key: "gemini_status", emoji: "🔄", label: "Gemini Status" },
+                                {
+                                    key: "processed_media_path",
+                                    emoji: "📁",
+                                    label: "Processed Media Path",
+                                },
+                                { key: "height", emoji: "📐", label: "Height" },
+                                { key: "width", emoji: "📐", label: "Width" },
+                            ];
+
+                            // Right column: description, final_string
+                            const rightFields = [
+                                { key: "description", emoji: "�", label: "Description" },
+                                { key: "final_string", emoji: "✨", label: "Final String" },
+                            ];
+
+                            // Populate left column
+                            for (const field of leftFields) {
+                                if (parsedData.hasOwnProperty(field.key)) {
+                                    leftLines.push(
+                                        formatField(field.emoji, field.label, parsedData[field.key])
+                                    );
+                                }
+                            }
+
+                            // Populate right column
+                            for (const field of rightFields) {
+                                if (parsedData.hasOwnProperty(field.key)) {
+                                    rightLines.push(
+                                        formatField(field.emoji, field.label, parsedData[field.key])
+                                    );
+                                }
+                            }
+                        } catch (e) {
+                            debugLog("[ControlPanel] Error parsing JSON:", e);
+                            // Fall back to displaying raw data in left column only
+                            for (const [key, value] of Object.entries(data)) {
+                                const displayValue = Array.isArray(value) ? value[0] : value;
+                                leftLines.push(formatField("📊", key, displayValue));
+                            }
+                            rightLines.push("(Error parsing data)");
+                        }
+                    } else {
+                        // No all_media_describe_data, display all fields in left column
+                        for (const [key, value] of Object.entries(data)) {
+                            const displayValue = Array.isArray(value) ? value[0] : value;
+                            leftLines.push(formatField("📊", key, displayValue));
+                        }
+                        rightLines.push("(No media describe data)");
                     }
 
-                    this._cp_dom.textContent = lines.join("\n");
+                    this._cp_leftColumn.textContent = leftLines.join("");
+                    this._cp_rightColumn.textContent = rightLines.join("");
                     debugLog("[ControlPanel] Updated display with execution data");
                 };
 

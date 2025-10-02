@@ -8,6 +8,7 @@ import io
 import os
 import subprocess
 import time
+import json
 from urllib.parse import urlparse
 from html import unescape
 
@@ -809,15 +810,16 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 processed_media_path = selected_media_path if selected_media_path else ""
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
-                # Create aggregated data output for Control Panel
-                all_data = (
-                    f"📝 Description:\n{description}\n\n"
-                    f"📊 Media Info:\n{media_info_text}\n\n"
-                    f"🔄 Gemini Status:\n{gemini_status}\n\n"
-                    f"📁 Processed Media Path:\n{processed_media_path}\n\n"
-                    f"✨ Final String:\n{final_string}\n\n"
-                    f"📐 Dimensions:\n{output_width} x {output_height}"
-                )
+                # Create aggregated data output for Control Panel as JSON
+                all_data = json.dumps({
+                    "description": description,
+                    "media_info": media_info_text,
+                    "gemini_status": gemini_status,
+                    "processed_media_path": processed_media_path,
+                    "final_string": final_string,
+                    "height": output_height,
+                    "width": output_width
+                })
 
                 return (description, media_info_text, gemini_status, processed_media_path, final_string, output_height, output_width, all_data)
 
@@ -882,15 +884,16 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             processed_media_path = selected_media_path if selected_media_path else ""
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
-            # Create aggregated data output for Control Panel
-            all_data = (
-                f"📝 Description:\n{description}\n\n"
-                f"📊 Media Info:\n{media_info_text}\n\n"
-                f"🔄 Gemini Status:\n{gemini_status}\n\n"
-                f"📁 Processed Media Path:\n{processed_media_path}\n\n"
-                f"✨ Final String:\n{final_string}\n\n"
-                f"📐 Dimensions:\n{output_width} x {output_height}"
-            )
+            # Create aggregated data output for Control Panel as JSON
+            all_data = json.dumps({
+                "description": description,
+                "media_info": media_info_text,
+                "gemini_status": gemini_status,
+                "processed_media_path": processed_media_path,
+                "final_string": final_string,
+                "height": output_height,
+                "width": output_width
+            })
 
             return (description, media_info_text, gemini_status, processed_media_path, final_string, output_height, output_width, all_data)
 
@@ -1148,15 +1151,16 @@ Generate descriptions that adhere to the following structured layers and constra
                 processed_media_path = selected_media_path if selected_media_path else ""
                 final_string = f"{prefix_text}{description}" if prefix_text else description
 
-                # Create aggregated data output for Control Panel
-                all_data = (
-                    f"📝 Description:\n{description}\n\n"
-                    f"📊 Media Info:\n{updated_media_info}\n\n"
-                    f"🔄 Gemini Status:\n{gemini_status}\n\n"
-                    f"📁 Processed Media Path:\n{processed_media_path}\n\n"
-                    f"✨ Final String:\n{final_string}\n\n"
-                    f"📐 Dimensions:\n{output_width} x {output_height}"
-                )
+                # Create aggregated data output for Control Panel as JSON
+                all_data = json.dumps({
+                    "description": description,
+                    "media_info": updated_media_info,
+                    "gemini_status": gemini_status,
+                    "processed_media_path": processed_media_path,
+                    "final_string": final_string,
+                    "height": output_height,
+                    "width": output_width
+                })
 
                 return (description, updated_media_info, gemini_status, processed_media_path, final_string, output_height, output_width, all_data)
 
@@ -1219,15 +1223,16 @@ Generate descriptions that adhere to the following structured layers and constra
 
             final_string = f"{prefix_text}{description}" if prefix_text else description
 
-            # Create aggregated data output for Control Panel
-            all_data = (
-                f"📝 Description:\n{description}\n\n"
-                f"📊 Media Info:\n{updated_media_info}\n\n"
-                f"🔄 Gemini Status:\n{gemini_status}\n\n"
-                f"📁 Processed Media Path:\n{trimmed_video_output_path}\n\n"
-                f"✨ Final String:\n{final_string}\n\n"
-                f"📐 Dimensions:\n{output_width} x {output_height}"
-            )
+            # Create aggregated data output for Control Panel as JSON
+            all_data = json.dumps({
+                "description": description,
+                "media_info": updated_media_info,
+                "gemini_status": gemini_status,
+                "processed_media_path": trimmed_video_output_path,
+                "final_string": final_string,
+                "height": output_height,
+                "width": output_width
+            })
 
             return (description, updated_media_info, gemini_status, trimmed_video_output_path, final_string, output_height, output_width, all_data)
 
