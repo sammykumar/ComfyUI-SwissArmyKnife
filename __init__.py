@@ -13,6 +13,18 @@ except ImportError as e:
     LORA_MANAGER_NODE_CLASS_MAPPINGS = {}
     LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+# Register config API routes
+try:
+    from .nodes.config_api import register_config_routes
+    from server import PromptServer
+    app = getattr(PromptServer.instance, "app", None) or PromptServer.instance
+    if app:
+        register_config_routes(app)
+        print("Swiss Army Knife: Registered config API routes")
+except Exception as e:
+    print(f"Swiss Army Knife: Could not register config API routes: {e}")
+
+
 # Get version from pyproject.toml for cache busting
 def get_version():
     try:
@@ -41,4 +53,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 WEB_DIRECTORY = "./web"
 VERSION = get_version()
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY", "VERSION"]
+# Load DEBUG setting from environment
+DEBUG = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY", "VERSION", "DEBUG"]

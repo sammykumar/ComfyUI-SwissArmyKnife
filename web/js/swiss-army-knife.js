@@ -5,6 +5,35 @@ import { api } from "../../../scripts/api.js";
 const EXTENSION_VERSION = "1.4.0"; // Should match pyproject.toml version
 const LOAD_TIMESTAMP = new Date().toISOString();
 
+// DEBUG mode - will be loaded from server config
+let DEBUG_ENABLED = false;
+
+// Conditional logging wrapper
+const debugLog = (...args) => {
+    if (DEBUG_ENABLED) {
+        console.log(...args);
+    }
+};
+
+// Load DEBUG setting from server
+async function loadDebugConfig() {
+    try {
+        const response = await fetch("/swissarmyknife/config");
+        if (response.ok) {
+            const config = await response.json();
+            DEBUG_ENABLED = config.debug || false;
+            console.log(`Swiss Army Knife Debug Mode: ${DEBUG_ENABLED ? "ENABLED" : "DISABLED"}`);
+        } else {
+            console.warn("Failed to load Swiss Army Knife config, defaulting to DEBUG=false");
+        }
+    } catch (error) {
+        console.warn("Error loading Swiss Army Knife config:", error);
+    }
+}
+
+// Load config immediately
+loadDebugConfig();
+
 console.log(`Loading swiss-army-knife.js extension v${EXTENSION_VERSION} at ${LOAD_TIMESTAMP}`);
 
 // Register custom widgets for Swiss Army Knife nodes
@@ -14,7 +43,7 @@ app.registerExtension({
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         // Handle GeminiUtilOptions node
         if (nodeData.name === "GeminiUtilOptions") {
-            console.log("Registering GeminiUtilOptions node");
+            debugLog("Registering GeminiUtilOptions node");
 
             // This node doesn't need special widgets - it just provides configuration
             // The existing ComfyUI widgets are sufficient for this node
@@ -22,7 +51,7 @@ app.registerExtension({
 
         // Handle FilenameGenerator node
         else if (nodeData.name === "FilenameGenerator") {
-            console.log("Registering FilenameGenerator node");
+            debugLog("Registering FilenameGenerator node");
 
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
@@ -207,7 +236,7 @@ app.registerExtension({
 
         // Handle GeminiUtilMediaDescribe node
         else if (nodeData.name === "GeminiUtilMediaDescribe") {
-            console.log("Registering GeminiUtilMediaDescribe node with dynamic media widgets");
+            debugLog("Registering GeminiUtilMediaDescribe node with dynamic media widgets");
 
             // Add custom widget after the node is created
             const onNodeCreated = nodeType.prototype.onNodeCreated;
@@ -231,7 +260,7 @@ app.registerExtension({
                             // Hide the widget by setting its type to 'hidden'
                             widget.type = "hidden";
                             widget.computeSize = () => [0, -4]; // Make it take no space
-                            console.log(`[WIDGET] Hidden optional input widget: ${widgetName}`);
+                            debugLog(`[WIDGET] Hidden optional input widget: ${widgetName}`);
                         }
                     }
                 };
@@ -254,8 +283,8 @@ app.registerExtension({
 
                 // Method to clear all media state (images, videos, previews, file data)
                 this.clearAllMediaState = function () {
-                    console.log("[DEBUG] clearAllMediaState called");
-                    console.log("[DEBUG] _pendingFileRestore exists:", !!this._pendingFileRestore);
+                    debugLog("[DEBUG] clearAllMediaState called");
+                    debugLog("[DEBUG] _pendingFileRestore exists:", !!this._pendingFileRestore);
 
                     // Clear video state and preview
                     this.clearVideoPreview();
@@ -269,21 +298,17 @@ app.registerExtension({
                     // Reset widget values to defaults (only upload-related widgets)
                     // FIXED: Only clear if widgets exist and we're not in restoration mode
                     if (this.videoInfoWidget && !this._pendingFileRestore) {
-                        console.log("[DEBUG] Clearing videoInfoWidget");
+                        debugLog("[DEBUG] Clearing videoInfoWidget");
                         this.videoInfoWidget.value = "No video selected";
                     } else if (this.videoInfoWidget && this._pendingFileRestore) {
-                        console.log(
-                            "[DEBUG] Skipping videoInfoWidget clear due to pending restore"
-                        );
+                        debugLog("[DEBUG] Skipping videoInfoWidget clear due to pending restore");
                     }
 
                     if (this.imageInfoWidget && !this._pendingFileRestore) {
-                        console.log("[DEBUG] Clearing imageInfoWidget");
+                        debugLog("[DEBUG] Clearing imageInfoWidget");
                         this.imageInfoWidget.value = "No image selected";
                     } else if (this.imageInfoWidget && this._pendingFileRestore) {
-                        console.log(
-                            "[DEBUG] Skipping imageInfoWidget clear due to pending restore"
-                        );
+                        debugLog("[DEBUG] Skipping imageInfoWidget clear due to pending restore");
                     }
 
                     // Don't clear media_path as it's not related to upload state
@@ -293,21 +318,17 @@ app.registerExtension({
 
                     // Clear hidden widgets that store file paths for Python node
                     if (this.videoFileWidget && !this._pendingFileRestore) {
-                        console.log("[DEBUG] Clearing videoFileWidget");
+                        debugLog("[DEBUG] Clearing videoFileWidget");
                         this.videoFileWidget.value = "";
                     } else if (this.videoFileWidget && this._pendingFileRestore) {
-                        console.log(
-                            "[DEBUG] Skipping videoFileWidget clear due to pending restore"
-                        );
+                        debugLog("[DEBUG] Skipping videoFileWidget clear due to pending restore");
                     }
 
                     if (this.imageFileWidget && !this._pendingFileRestore) {
-                        console.log("[DEBUG] Clearing imageFileWidget");
+                        debugLog("[DEBUG] Clearing imageFileWidget");
                         this.imageFileWidget.value = "";
                     } else if (this.imageFileWidget && this._pendingFileRestore) {
-                        console.log(
-                            "[DEBUG] Skipping imageFileWidget clear due to pending restore"
-                        );
+                        debugLog("[DEBUG] Skipping imageFileWidget clear due to pending restore");
                     }
 
                     // Also clear the original input widgets if not restoring
@@ -320,20 +341,18 @@ app.registerExtension({
                         );
 
                         if (originalUploadedImageWidget) {
-                            console.log("[DEBUG] Clearing uploaded_image_file widget");
+                            debugLog("[DEBUG] Clearing uploaded_image_file widget");
                             originalUploadedImageWidget.value = "";
                         }
                         if (originalUploadedVideoWidget) {
-                            console.log("[DEBUG] Clearing uploaded_video_file widget");
+                            debugLog("[DEBUG] Clearing uploaded_video_file widget");
                             originalUploadedVideoWidget.value = "";
                         }
                     } else {
-                        console.log(
-                            "[DEBUG] Skipping original widget clear due to pending restore"
-                        );
+                        debugLog("[DEBUG] Skipping original widget clear due to pending restore");
                     }
 
-                    console.log("[DEBUG] clearAllMediaState completed");
+                    debugLog("[DEBUG] clearAllMediaState completed");
                 };
 
                 // Function to safely remove a widget
@@ -351,10 +370,10 @@ app.registerExtension({
                     const mediaSource = this.mediaSourceWidget?.value || "Upload Media";
                     const mediaType = this.mediaTypeWidget?.value || "image";
 
-                    console.log(
+                    debugLog(
                         `[STATE] Updating widgets: mediaSource=${mediaSource}, mediaType=${mediaType}`
                     );
-                    console.log("[DEBUG] _pendingFileRestore exists:", !!this._pendingFileRestore);
+                    debugLog("[DEBUG] _pendingFileRestore exists:", !!this._pendingFileRestore);
 
                     // Find the original input widgets that we want to control
                     const originalMediaPathWidget = this.widgets.find(
@@ -368,26 +387,26 @@ app.registerExtension({
                     );
                     const originalSeedWidget = this.widgets.find((w) => w.name === "seed");
 
-                    console.log("[DEBUG] Found widgets:");
-                    console.log("  originalMediaPathWidget:", !!originalMediaPathWidget);
-                    console.log(
+                    debugLog("[DEBUG] Found widgets:");
+                    debugLog("  originalMediaPathWidget:", !!originalMediaPathWidget);
+                    debugLog(
                         "  originalUploadedImageWidget:",
                         !!originalUploadedImageWidget,
                         originalUploadedImageWidget?.value
                     );
-                    console.log(
+                    debugLog(
                         "  originalUploadedVideoWidget:",
                         !!originalUploadedVideoWidget,
                         originalUploadedVideoWidget?.value
                     );
-                    console.log("  originalSeedWidget:", !!originalSeedWidget);
+                    debugLog("  originalSeedWidget:", !!originalSeedWidget);
 
                     // Clear all previous media state when switching configurations
-                    console.log("[STATE] About to call clearAllMediaState");
+                    debugLog("[STATE] About to call clearAllMediaState");
                     this.clearAllMediaState();
 
                     // Remove all upload-related widgets first to ensure clean state
-                    console.log("[STATE] Removing existing widgets...");
+                    debugLog("[STATE] Removing existing widgets...");
                     this.removeWidgetSafely(this.imageUploadWidget);
                     this.removeWidgetSafely(this.imageInfoWidget);
                     this.removeWidgetSafely(this.videoUploadWidget);
@@ -396,7 +415,7 @@ app.registerExtension({
                     // this.removeWidgetSafely(this.mediaPathWidget);
 
                     // Reset widget references
-                    console.log("[STATE] Resetting widget references");
+                    debugLog("[STATE] Resetting widget references");
                     this.imageUploadWidget = null;
                     this.imageInfoWidget = null;
                     this.videoUploadWidget = null;
@@ -407,23 +426,21 @@ app.registerExtension({
                     const originalRedditUrlWidget = this.widgets.find(
                         (w) => w.name === "reddit_url"
                     );
-                    console.log(
-                        `[DEBUG] originalRedditUrlWidget found: ${!!originalRedditUrlWidget}`
-                    );
+                    debugLog(`[DEBUG] originalRedditUrlWidget found: ${!!originalRedditUrlWidget}`);
                     if (originalRedditUrlWidget) {
-                        console.log(
+                        debugLog(
                             `[DEBUG] Reddit URL widget current type: ${originalRedditUrlWidget.type}, value: "${originalRedditUrlWidget.value}"`
                         );
                     }
 
                     // Debug: List all widget names
-                    console.log(
+                    debugLog(
                         `[DEBUG] All widget names: ${this.widgets.map((w) => w.name).join(", ")}`
                     );
 
                     // Manage visibility of original input widgets
                     if (mediaSource === "Randomize Media from Path") {
-                        console.log("[STATE] Showing media path widget");
+                        debugLog("[STATE] Showing media path widget");
 
                         // Show the original media_path widget
                         if (originalMediaPathWidget) {
@@ -438,7 +455,7 @@ app.registerExtension({
                             originalSeedWidget.type = "number";
                             originalSeedWidget.computeSize =
                                 originalSeedWidget.constructor.prototype.computeSize;
-                            console.log("[STATE] Showing seed widget for randomization");
+                            debugLog("[STATE] Showing seed widget for randomization");
                         }
 
                         // Completely remove Reddit URL widget from DOM for randomize mode
@@ -450,7 +467,7 @@ app.registerExtension({
                             const widgetIndex = this.widgets.indexOf(originalRedditUrlWidget);
                             if (widgetIndex > -1) {
                                 this.widgets.splice(widgetIndex, 1);
-                                console.log(
+                                debugLog(
                                     "[STATE] Completely removed Reddit URL widget from widgets array"
                                 );
                             }
@@ -463,7 +480,7 @@ app.registerExtension({
                                 originalRedditUrlWidget.element.parentNode.removeChild(
                                     originalRedditUrlWidget.element
                                 );
-                                console.log("[STATE] Removed Reddit URL widget DOM element");
+                                debugLog("[STATE] Removed Reddit URL widget DOM element");
                             }
 
                             // Force node to recompute size and refresh
@@ -473,11 +490,11 @@ app.registerExtension({
                                 }, 10);
                             }
 
-                            console.log(
+                            debugLog(
                                 "[STATE] Completely removed Reddit URL widget for randomize mode"
                             );
                         } else {
-                            console.log(
+                            debugLog(
                                 "[DEBUG] Reddit URL widget not found for hiding in randomize mode"
                             );
                         }
@@ -492,7 +509,7 @@ app.registerExtension({
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
                     } else if (mediaSource === "Reddit Post") {
-                        console.log("[STATE] Reddit Post mode - showing Reddit URL widget");
+                        debugLog("[STATE] Reddit Post mode - showing Reddit URL widget");
 
                         // Show the Reddit URL widget (restore if it was removed)
                         if (originalRedditUrlWidget) {
@@ -513,7 +530,7 @@ app.registerExtension({
                             }
                             originalRedditUrlWidget.options = originalRedditUrlWidget.options || {};
                             originalRedditUrlWidget.options.serialize = true;
-                            console.log(
+                            debugLog(
                                 "[STATE] Showing Reddit URL widget for Reddit Post mode (with display reset)"
                             );
                         } else if (this._hiddenRedditWidget) {
@@ -526,13 +543,13 @@ app.registerExtension({
                             this._hiddenRedditWidget.options =
                                 this._hiddenRedditWidget.options || {};
                             this._hiddenRedditWidget.options.serialize = true;
-                            console.log(
+                            debugLog(
                                 "[STATE] Restored previously removed Reddit URL widget for Reddit Post mode"
                             );
                             // Clear the stored reference
                             this._hiddenRedditWidget = null;
                         } else {
-                            console.log(
+                            debugLog(
                                 "[DEBUG] Reddit URL widget not found for showing in Reddit Post mode"
                             );
                         }
@@ -545,7 +562,7 @@ app.registerExtension({
                         if (originalSeedWidget) {
                             originalSeedWidget.type = "hidden";
                             originalSeedWidget.computeSize = () => [0, -4];
-                            console.log("[STATE] Hiding seed widget for Reddit mode");
+                            debugLog("[STATE] Hiding seed widget for Reddit mode");
                         }
                         if (originalUploadedImageWidget) {
                             originalUploadedImageWidget.type = "hidden";
@@ -557,7 +574,7 @@ app.registerExtension({
                         }
                     } else {
                         // Upload Media mode - Show appropriate upload widgets based on media_type
-                        console.log("[STATE] Upload Media mode - hiding media_path widget");
+                        debugLog("[STATE] Upload Media mode - hiding media_path widget");
 
                         // Hide the original media_path widget
                         if (originalMediaPathWidget) {
@@ -569,7 +586,7 @@ app.registerExtension({
                         if (originalSeedWidget) {
                             originalSeedWidget.type = "hidden";
                             originalSeedWidget.computeSize = () => [0, -4];
-                            console.log("[STATE] Hiding seed widget for upload mode");
+                            debugLog("[STATE] Hiding seed widget for upload mode");
                         }
 
                         // Completely remove Reddit URL widget from DOM for upload mode
@@ -581,7 +598,7 @@ app.registerExtension({
                             const widgetIndex = this.widgets.indexOf(originalRedditUrlWidget);
                             if (widgetIndex > -1) {
                                 this.widgets.splice(widgetIndex, 1);
-                                console.log(
+                                debugLog(
                                     "[STATE] Completely removed Reddit URL widget from widgets array"
                                 );
                             }
@@ -594,20 +611,20 @@ app.registerExtension({
                                 originalRedditUrlWidget.element.parentNode.removeChild(
                                     originalRedditUrlWidget.element
                                 );
-                                console.log("[STATE] Removed Reddit URL widget DOM element");
+                                debugLog("[STATE] Removed Reddit URL widget DOM element");
                             }
 
-                            console.log(
+                            debugLog(
                                 "[STATE] Completely removed Reddit URL widget for upload mode"
                             );
                         } else {
-                            console.log(
+                            debugLog(
                                 "[DEBUG] Reddit URL widget not found for hiding in upload mode"
                             );
                         }
 
                         if (mediaType === "image") {
-                            console.log("[STATE] Creating image upload widgets");
+                            debugLog("[STATE] Creating image upload widgets");
 
                             // Hide the video upload widget, show image upload widget reference
                             if (originalUploadedVideoWidget) {
@@ -640,7 +657,7 @@ app.registerExtension({
                             );
                             this.imageInfoWidget.serialize = false;
                         } else if (mediaType === "video") {
-                            console.log("[STATE] Creating video upload widgets");
+                            debugLog("[STATE] Creating video upload widgets");
 
                             // Hide the image upload widget, show video upload widget reference
                             if (originalUploadedImageWidget) {
@@ -675,7 +692,7 @@ app.registerExtension({
                         }
                     }
 
-                    console.log(
+                    debugLog(
                         `[STATE] Widget update complete. Total widgets: ${
                             this.widgets?.length || 0
                         }`
@@ -684,7 +701,7 @@ app.registerExtension({
                     // Final debug check for Reddit URL widget state
                     const finalRedditUrlWidget = this.widgets.find((w) => w.name === "reddit_url");
                     if (finalRedditUrlWidget) {
-                        console.log(
+                        debugLog(
                             `[DEBUG] Final Reddit URL widget state - type: ${finalRedditUrlWidget.type}, visible: ${finalRedditUrlWidget.type !== "hidden"}, value: "${finalRedditUrlWidget.value}"`
                         );
                     }
@@ -737,18 +754,18 @@ app.registerExtension({
             nodeType.prototype.onSerialize = function (o) {
                 const result = onSerialize?.apply(this, arguments);
 
-                console.log("[DEBUG] onSerialize called - collecting state data");
-                console.log("[DEBUG] uploadedVideoFile:", this.uploadedVideoFile);
-                console.log("[DEBUG] uploadedVideoSubfolder:", this.uploadedVideoSubfolder);
-                console.log("[DEBUG] videoInfoWidget value:", this.videoInfoWidget?.value);
-                console.log("[DEBUG] uploadedImageFile:", this.uploadedImageFile);
-                console.log("[DEBUG] uploadedImageSubfolder:", this.uploadedImageSubfolder);
-                console.log("[DEBUG] imageInfoWidget value:", this.imageInfoWidget?.value);
+                debugLog("[DEBUG] onSerialize called - collecting state data");
+                debugLog("[DEBUG] uploadedVideoFile:", this.uploadedVideoFile);
+                debugLog("[DEBUG] uploadedVideoSubfolder:", this.uploadedVideoSubfolder);
+                debugLog("[DEBUG] videoInfoWidget value:", this.videoInfoWidget?.value);
+                debugLog("[DEBUG] uploadedImageFile:", this.uploadedImageFile);
+                debugLog("[DEBUG] uploadedImageSubfolder:", this.uploadedImageSubfolder);
+                debugLog("[DEBUG] imageInfoWidget value:", this.imageInfoWidget?.value);
 
                 // Find the reddit_url widget for persistence
                 const redditUrlWidget = this.widgets.find((w) => w.name === "reddit_url");
                 const redditUrlValue = redditUrlWidget?.value || "";
-                console.log("[DEBUG] reddit_url widget value:", redditUrlValue);
+                debugLog("[DEBUG] reddit_url widget value:", redditUrlValue);
 
                 // Save current widget state for persistence
                 o.widgets_values = o.widgets_values || [];
@@ -771,17 +788,17 @@ app.registerExtension({
                     },
                 };
 
-                console.log("[SERIALIZE] Saving UI state:", JSON.stringify(o.ui_state, null, 2));
+                debugLog("[SERIALIZE] Saving UI state:", JSON.stringify(o.ui_state, null, 2));
 
                 // Also check the actual widget values in widgets_values array
-                console.log("[DEBUG] widgets_values array:", o.widgets_values);
+                debugLog("[DEBUG] widgets_values array:", o.widgets_values);
 
                 // Check if any widgets have video file info
                 if (this.widgets) {
                     const videoWidget = this.widgets.find((w) => w.name === "uploaded_video_file");
                     const imageWidget = this.widgets.find((w) => w.name === "uploaded_image_file");
-                    console.log("[DEBUG] uploaded_video_file widget value:", videoWidget?.value);
-                    console.log("[DEBUG] uploaded_image_file widget value:", imageWidget?.value);
+                    debugLog("[DEBUG] uploaded_video_file widget value:", videoWidget?.value);
+                    debugLog("[DEBUG] uploaded_image_file widget value:", imageWidget?.value);
                 }
 
                 return result;
@@ -792,52 +809,49 @@ app.registerExtension({
             nodeType.prototype.onConfigure = function (o) {
                 const result = onConfigure?.apply(this, arguments);
 
-                console.log("[DEBUG] onConfigure called with data:", o);
-                console.log("[DEBUG] ui_state found:", !!o.ui_state);
-                console.log("[DEBUG] widgets_values found:", !!o.widgets_values);
+                debugLog("[DEBUG] onConfigure called with data:", o);
+                debugLog("[DEBUG] ui_state found:", !!o.ui_state);
+                debugLog("[DEBUG] widgets_values found:", !!o.widgets_values);
 
                 // Restore UI state after widgets are created
                 if (o.ui_state) {
-                    console.log(
+                    debugLog(
                         "[CONFIGURE] Restoring UI state:",
                         JSON.stringify(o.ui_state, null, 2)
                     );
 
                     // Set widget values if they exist
                     if (this.mediaSourceWidget && o.ui_state.media_source) {
-                        console.log(
-                            "[DEBUG] Setting mediaSourceWidget to:",
-                            o.ui_state.media_source
-                        );
+                        debugLog("[DEBUG] Setting mediaSourceWidget to:", o.ui_state.media_source);
                         this.mediaSourceWidget.value = o.ui_state.media_source;
                     }
                     if (this.mediaTypeWidget && o.ui_state.media_type) {
-                        console.log("[DEBUG] Setting mediaTypeWidget to:", o.ui_state.media_type);
+                        debugLog("[DEBUG] Setting mediaTypeWidget to:", o.ui_state.media_type);
                         this.mediaTypeWidget.value = o.ui_state.media_type;
                     }
 
                     // Store upload file info and reddit_url for later restoration (after updateMediaWidgets clears state)
                     this._pendingFileRestore = o.ui_state.uploaded_file_info;
                     this._pendingRedditUrlRestore = o.ui_state.reddit_url;
-                    console.log(
+                    debugLog(
                         "[DEBUG] Stored _pendingFileRestore:",
                         JSON.stringify(this._pendingFileRestore, null, 2)
                     );
 
                     // Update UI to match restored state
                     setTimeout(() => {
-                        console.log("[DEBUG] First timeout - calling updateMediaWidgets");
+                        debugLog("[DEBUG] First timeout - calling updateMediaWidgets");
                         this.updateMediaWidgets();
 
                         // FIXED: Restore uploaded file information after updateMediaWidgets has run
                         // Need a second timeout to ensure widgets are fully created
                         setTimeout(() => {
-                            console.log("[DEBUG] Second timeout - starting file restoration");
-                            console.log(
+                            debugLog("[DEBUG] Second timeout - starting file restoration");
+                            debugLog(
                                 "[DEBUG] _pendingFileRestore still exists:",
                                 !!this._pendingFileRestore
                             );
-                            console.log(
+                            debugLog(
                                 "[DEBUG] _pendingRedditUrlRestore:",
                                 this._pendingRedditUrlRestore
                             );
@@ -849,14 +863,12 @@ app.registerExtension({
                                 );
                                 if (redditUrlWidget) {
                                     redditUrlWidget.value = this._pendingRedditUrlRestore;
-                                    console.log(
+                                    debugLog(
                                         "[CONFIGURE] Restored reddit_url to:",
                                         this._pendingRedditUrlRestore
                                     );
                                 } else {
-                                    console.log(
-                                        "[DEBUG] Reddit URL widget not found for restoration"
-                                    );
+                                    debugLog("[DEBUG] Reddit URL widget not found for restoration");
                                 }
                                 // Clean up
                                 delete this._pendingRedditUrlRestore;
@@ -864,13 +876,13 @@ app.registerExtension({
 
                             if (this._pendingFileRestore) {
                                 const fileInfo = this._pendingFileRestore;
-                                console.log(
+                                debugLog(
                                     "[DEBUG] Processing fileInfo:",
                                     JSON.stringify(fileInfo, null, 2)
                                 );
 
                                 // Debug: List all current widgets
-                                console.log(
+                                debugLog(
                                     "[DEBUG] Current widgets:",
                                     this.widgets.map((w) => ({
                                         name: w.name,
@@ -881,12 +893,12 @@ app.registerExtension({
 
                                 // Restore image upload state
                                 if (fileInfo.image?.file) {
-                                    console.log("[DEBUG] Restoring image state:", fileInfo.image);
+                                    debugLog("[DEBUG] Restoring image state:", fileInfo.image);
                                     this.uploadedImageFile = fileInfo.image.file;
                                     this.uploadedImageSubfolder = fileInfo.image.subfolder;
                                     if (this.imageInfoWidget && fileInfo.image.display) {
                                         this.imageInfoWidget.value = fileInfo.image.display;
-                                        console.log(
+                                        debugLog(
                                             "[DEBUG] Updated imageInfoWidget:",
                                             this.imageInfoWidget.value
                                         );
@@ -898,11 +910,11 @@ app.registerExtension({
                                     );
                                     if (originalUploadedImageWidget) {
                                         originalUploadedImageWidget.value = `${this.uploadedImageSubfolder}/${this.uploadedImageFile}`;
-                                        console.log(
+                                        debugLog(
                                             `[CONFIGURE] Restored image file: ${originalUploadedImageWidget.value}`
                                         );
                                     } else {
-                                        console.log(
+                                        debugLog(
                                             "[DEBUG] WARNING: uploaded_image_file widget not found!"
                                         );
                                     }
@@ -910,15 +922,15 @@ app.registerExtension({
 
                                 // FIXED: Restore video upload state with proper widget handling
                                 if (fileInfo.video?.file) {
-                                    console.log("[DEBUG] Restoring video state:", fileInfo.video);
+                                    debugLog("[DEBUG] Restoring video state:", fileInfo.video);
                                     this.uploadedVideoFile = fileInfo.video.file;
                                     this.uploadedVideoSubfolder = fileInfo.video.subfolder;
 
-                                    console.log(
+                                    debugLog(
                                         "[DEBUG] Set uploadedVideoFile:",
                                         this.uploadedVideoFile
                                     );
-                                    console.log(
+                                    debugLog(
                                         "[DEBUG] Set uploadedVideoSubfolder:",
                                         this.uploadedVideoSubfolder
                                     );
@@ -931,11 +943,11 @@ app.registerExtension({
                                             // Fallback display if display info is missing
                                             this.videoInfoWidget.value = `${this.uploadedVideoFile} (restored)`;
                                         }
-                                        console.log(
+                                        debugLog(
                                             `[CONFIGURE] Restored video info widget: ${this.videoInfoWidget.value}`
                                         );
                                     } else {
-                                        console.log("[DEBUG] WARNING: videoInfoWidget not found!");
+                                        debugLog("[DEBUG] WARNING: videoInfoWidget not found!");
                                     }
 
                                     // Update the hidden widget with file path
@@ -945,11 +957,11 @@ app.registerExtension({
                                     if (originalUploadedVideoWidget) {
                                         const filePath = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
                                         originalUploadedVideoWidget.value = filePath;
-                                        console.log(
+                                        debugLog(
                                             `[CONFIGURE] Restored video file widget: ${originalUploadedVideoWidget.value}`
                                         );
                                     } else {
-                                        console.log(
+                                        debugLog(
                                             "[DEBUG] WARNING: uploaded_video_file widget not found!"
                                         );
                                     }
@@ -957,34 +969,32 @@ app.registerExtension({
                                     // Also ensure the videoFileWidget is updated if it exists
                                     if (this.videoFileWidget) {
                                         this.videoFileWidget.value = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
-                                        console.log(
+                                        debugLog(
                                             `[CONFIGURE] Updated videoFileWidget: ${this.videoFileWidget.value}`
                                         );
                                     } else {
-                                        console.log(
+                                        debugLog(
                                             "[DEBUG] videoFileWidget not found (this might be OK)"
                                         );
                                     }
                                 } else {
-                                    console.log("[DEBUG] No video file info to restore");
+                                    debugLog("[DEBUG] No video file info to restore");
                                 }
 
                                 // Clean up temporary storage
                                 delete this._pendingFileRestore;
-                                console.log("[DEBUG] Cleaned up _pendingFileRestore");
+                                debugLog("[DEBUG] Cleaned up _pendingFileRestore");
                             } else {
-                                console.log(
-                                    "[DEBUG] No _pendingFileRestore found in second timeout"
-                                );
+                                debugLog("[DEBUG] No _pendingFileRestore found in second timeout");
                             }
 
-                            console.log("[CONFIGURE] File state restoration complete");
+                            debugLog("[CONFIGURE] File state restoration complete");
                         }, 50); // Small delay to ensure widget creation is complete
 
-                        console.log("[CONFIGURE] UI state restored and widgets updated");
+                        debugLog("[CONFIGURE] UI state restored and widgets updated");
                     }, 0);
                 } else {
-                    console.log("[CONFIGURE] No UI state found, using defaults");
+                    debugLog("[CONFIGURE] No UI state found, using defaults");
                     // Ensure initial state is applied even without saved state
                     setTimeout(() => {
                         this.updateMediaWidgets();
@@ -996,7 +1006,7 @@ app.registerExtension({
 
             // Helper function to update dimensions display
             nodeType.prototype.updateDimensionsDisplay = function (height, width) {
-                console.log(
+                debugLog(
                     "[GeminiMediaDescribe] updateDimensionsDisplay called with:",
                     height,
                     width
@@ -1016,11 +1026,11 @@ app.registerExtension({
                             () => {}, // Read-only widget
                             { serialize: false }
                         );
-                        console.log("[GeminiMediaDescribe] Created dimensions display widget");
+                        debugLog("[GeminiMediaDescribe] Created dimensions display widget");
                     } else {
                         // Update existing widget
                         dimensionsWidget.value = `📐 ${width} x ${height}`;
-                        console.log(
+                        debugLog(
                             "[GeminiMediaDescribe] Updated dimensions display:",
                             width,
                             "x",
@@ -1034,7 +1044,7 @@ app.registerExtension({
                         this.graph.setDirtyCanvas(true, true);
                     }
                 } else {
-                    console.log("[GeminiMediaDescribe] Invalid dimensions, not updating display");
+                    debugLog("[GeminiMediaDescribe] Invalid dimensions, not updating display");
                 }
             };
 
@@ -1043,11 +1053,16 @@ app.registerExtension({
             nodeType.prototype.onExecuted = function (message) {
                 const result = onExecutedMedia?.apply(this, arguments);
 
-                console.log("[GeminiMediaDescribe] onExecuted called");
-                console.log("[GeminiMediaDescribe] Message type:", typeof message);
-                console.log(
+                debugLog("[GeminiMediaDescribe] ⭐ onExecuted called for node ID:", this.id);
+                debugLog("[GeminiMediaDescribe] Message type:", typeof message);
+                debugLog("[GeminiMediaDescribe] Message:", message);
+                debugLog(
                     "[GeminiMediaDescribe] Message keys:",
                     message ? Object.keys(message) : "null"
+                );
+                debugLog(
+                    "[GeminiMediaDescribe] Full message JSON:",
+                    JSON.stringify(message, null, 2)
                 );
 
                 // Update dimensions display widget with height and width from execution results
@@ -1060,7 +1075,7 @@ app.registerExtension({
                     if (Array.isArray(message) && message.length >= 7) {
                         height = message[5]; // Index 5 is height
                         width = message[6]; // Index 6 is width
-                        console.log(
+                        debugLog(
                             "[GeminiMediaDescribe] Found dimensions in array format:",
                             height,
                             width
@@ -1070,7 +1085,7 @@ app.registerExtension({
                     else if (message.height && message.width) {
                         height = Array.isArray(message.height) ? message.height[0] : message.height;
                         width = Array.isArray(message.width) ? message.width[0] : message.width;
-                        console.log(
+                        debugLog(
                             "[GeminiMediaDescribe] Found dimensions in message properties:",
                             height,
                             width
@@ -1078,11 +1093,11 @@ app.registerExtension({
                     }
                     // Structure 3: Check if message has output property
                     else if (message.output) {
-                        console.log("[GeminiMediaDescribe] Checking message.output");
+                        debugLog("[GeminiMediaDescribe] Checking message.output");
                         if (Array.isArray(message.output) && message.output.length >= 7) {
                             height = message.output[5];
                             width = message.output[6];
-                            console.log(
+                            debugLog(
                                 "[GeminiMediaDescribe] Found dimensions in message.output array:",
                                 height,
                                 width
@@ -1094,7 +1109,7 @@ app.registerExtension({
                             width = Array.isArray(message.output.width)
                                 ? message.output.width[0]
                                 : message.output.width;
-                            console.log(
+                            debugLog(
                                 "[GeminiMediaDescribe] Found dimensions in message.output properties:",
                                 height,
                                 width
@@ -1141,7 +1156,7 @@ app.registerExtension({
 
             // Add image upload handler
             nodeType.prototype.onImageUploadButtonPressed = function () {
-                console.log("Image upload button pressed!");
+                debugLog("Image upload button pressed!");
 
                 // Clear current image state before starting new upload
                 this.clearCurrentMediaState();
@@ -1203,7 +1218,7 @@ app.registerExtension({
                         );
                         if (originalUploadedImageWidget) {
                             originalUploadedImageWidget.value = `${this.uploadedImageSubfolder}/${this.uploadedImageFile}`;
-                            console.log(
+                            debugLog(
                                 `[UPLOAD] Updated original uploaded_image_file widget: ${originalUploadedImageWidget.value}`
                             );
                         } else {
@@ -1230,7 +1245,7 @@ app.registerExtension({
                             life: 3000,
                         });
 
-                        console.log("Image uploaded:", uploadResult);
+                        debugLog("Image uploaded:", uploadResult);
                     } catch (error) {
                         console.error("Upload error:", error);
 
@@ -1257,7 +1272,7 @@ app.registerExtension({
 
             // Add video upload handler (reuse from existing video node)
             nodeType.prototype.onVideoUploadButtonPressed = function () {
-                console.log("Video upload button pressed!");
+                debugLog("Video upload button pressed!");
 
                 // Clear current video state before starting new upload
                 this.clearCurrentMediaState();
@@ -1302,7 +1317,7 @@ app.registerExtension({
 
                         const uploadResult = await uploadResponse.json();
 
-                        console.log("[DEBUG] Video upload successful, result:", uploadResult);
+                        debugLog("[DEBUG] Video upload successful, result:", uploadResult);
 
                         // Update the video info widget
                         this.videoInfoWidget.value = `${file.name} (${(
@@ -1316,12 +1331,12 @@ app.registerExtension({
                         this.uploadedVideoSubfolder =
                             uploadResult.subfolder || "swiss_army_knife_videos";
 
-                        console.log("[DEBUG] Set uploadedVideoFile to:", this.uploadedVideoFile);
-                        console.log(
+                        debugLog("[DEBUG] Set uploadedVideoFile to:", this.uploadedVideoFile);
+                        debugLog(
                             "[DEBUG] Set uploadedVideoSubfolder to:",
                             this.uploadedVideoSubfolder
                         );
-                        console.log("[DEBUG] Set videoInfoWidget to:", this.videoInfoWidget.value);
+                        debugLog("[DEBUG] Set videoInfoWidget to:", this.videoInfoWidget.value);
 
                         // Use the original uploaded_video_file widget to store the file path
                         const originalUploadedVideoWidget = this.widgets.find(
@@ -1329,11 +1344,11 @@ app.registerExtension({
                         );
                         if (originalUploadedVideoWidget) {
                             originalUploadedVideoWidget.value = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
-                            console.log(
+                            debugLog(
                                 `[UPLOAD] Updated original uploaded_video_file widget: ${originalUploadedVideoWidget.value}`
                             );
                         } else {
-                            console.log(
+                            debugLog(
                                 "[DEBUG] WARNING: uploaded_video_file widget not found during upload!"
                             );
                             // Fallback: create a hidden widget if the original doesn't exist
@@ -1347,19 +1362,19 @@ app.registerExtension({
                                 );
                                 this.videoFileWidget.serialize = true;
                                 this.videoFileWidget.type = "hidden";
-                                console.log("[DEBUG] Created fallback videoFileWidget");
+                                debugLog("[DEBUG] Created fallback videoFileWidget");
                             }
                             this.videoFileWidget.value = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
-                            console.log(
+                            debugLog(
                                 "[DEBUG] Updated fallback videoFileWidget:",
                                 this.videoFileWidget.value
                             );
                         }
 
                         // Debug: Show all widget states after upload
-                        console.log("[DEBUG] All widgets after upload:");
+                        debugLog("[DEBUG] All widgets after upload:");
                         this.widgets.forEach((w) => {
-                            console.log(`  ${w.name}: ${w.value} (type: ${w.type})`);
+                            debugLog(`  ${w.name}: ${w.value} (type: ${w.type})`);
                         });
 
                         // Show success notification
@@ -1370,7 +1385,7 @@ app.registerExtension({
                             life: 3000,
                         });
 
-                        console.log("Video uploaded:", uploadResult);
+                        debugLog("Video uploaded:", uploadResult);
                     } catch (error) {
                         console.error("Upload error:", error);
 
@@ -1401,33 +1416,31 @@ app.registerExtension({
     // Hook to handle workflow loading
     loadedGraphNode(node, app) {
         if (node.comfyClass === "GeminiUtilMediaDescribe") {
-            console.log("[LOADED] loadedGraphNode called for GeminiUtilMediaDescribe");
+            debugLog("[LOADED] loadedGraphNode called for GeminiUtilMediaDescribe");
 
             // Check if this node has saved UI state with uploaded file data
             const hasSavedVideoData = node.ui_state?.uploaded_file_info?.video?.file;
             const hasSavedImageData = node.ui_state?.uploaded_file_info?.image?.file;
 
-            console.log(
+            debugLog(
                 "[LOADED] hasSavedVideoData:",
                 !!hasSavedVideoData,
                 "hasSavedImageData:",
                 !!hasSavedImageData
             );
-            console.log("[LOADED] Saved video file:", hasSavedVideoData);
-            console.log("[LOADED] Saved image file:", hasSavedImageData);
+            debugLog("[LOADED] Saved video file:", hasSavedVideoData);
+            debugLog("[LOADED] Saved image file:", hasSavedImageData);
 
             // Only call updateMediaWidgets if we don't have any saved uploaded file data
             // If we have saved data, onConfigure will handle the restoration
             if (!hasSavedVideoData && !hasSavedImageData && node.updateMediaWidgets) {
-                console.log(
-                    "[LOADED] No saved uploaded file data found, applying default UI state"
-                );
+                debugLog("[LOADED] No saved uploaded file data found, applying default UI state");
                 setTimeout(() => {
                     node.updateMediaWidgets();
-                    console.log("[LOADED] Applied default UI state for loaded workflow node");
+                    debugLog("[LOADED] Applied default UI state for loaded workflow node");
                 }, 100); // Small delay to ensure all widgets are properly initialized
             } else {
-                console.log(
+                debugLog(
                     "[LOADED] Saved uploaded file data found, skipping updateMediaWidgets to preserve onConfigure restoration"
                 );
             }
@@ -1440,13 +1453,25 @@ app.registerExtension({
         api.addEventListener("executed", ({ detail }) => {
             const { node: nodeId, output } = detail;
 
-            console.log("[API] Execution event received for node:", nodeId);
-            console.log("[API] Output data:", output);
+            debugLog("[API] Execution event received for node:", nodeId);
+            debugLog("[API] Output data:", output);
+            debugLog("[API] Output keys:", output ? Object.keys(output) : "null");
 
             // Find the node by ID
             const node = app.graph.getNodeById(parseInt(nodeId));
+            debugLog("[API] Node found:", !!node, "comfyClass:", node?.comfyClass);
+
+            // Log ALL execution events to see what's happening
+            debugLog(
+                "[API] All execution event - nodeId:",
+                nodeId,
+                "comfyClass:",
+                node?.comfyClass
+            );
+
             if (node && node.comfyClass === "GeminiUtilMediaDescribe") {
-                console.log("[API] Found GeminiUtilMediaDescribe execution result");
+                debugLog("[API] ✅ Found GeminiUtilMediaDescribe execution result");
+                debugLog("[API] Full output structure:", JSON.stringify(output, null, 2));
 
                 // Extract dimensions from output
                 // Output structure: {height: [1080], width: [1920], ...}
@@ -1456,13 +1481,21 @@ app.registerExtension({
                 if (output && output.height && output.width) {
                     height = Array.isArray(output.height) ? output.height[0] : output.height;
                     width = Array.isArray(output.width) ? output.width[0] : output.width;
-                    console.log("[API] Extracted dimensions from API event:", width, "x", height);
+                    debugLog("[API] Extracted dimensions from API event:", width, "x", height);
 
                     // Update the dimensions display using the helper method
                     if (node.updateDimensionsDisplay) {
                         node.updateDimensionsDisplay(height, width);
+                    } else {
+                        debugLog(
+                            "[API] WARNING: updateDimensionsDisplay method not found on node!"
+                        );
                     }
+                } else {
+                    debugLog("[API] ⚠️ No height/width in output. Output structure:", output);
                 }
+            } else {
+                debugLog("[API] ❌ Not a GeminiUtilMediaDescribe node, skipping");
             }
         });
     },
@@ -1474,9 +1507,7 @@ app.registerExtension({
 
     async setup() {
         // Log cache busting info for debugging
-        console.log(
-            `Swiss Army Knife Cache Info: v${EXTENSION_VERSION}, loaded at ${LOAD_TIMESTAMP}`
-        );
+        debugLog(`Swiss Army Knife Cache Info: v${EXTENSION_VERSION}, loaded at ${LOAD_TIMESTAMP}`);
 
         // Add cache busting utilities for development
         if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
@@ -1555,18 +1586,18 @@ app.registerExtension({
         // Listen for execution results at the app level
         const original_onExecuted = app.onExecuted;
         app.onExecuted = function (nodeId, data) {
-            console.log("[DEBUG] App execution completed for node:", nodeId, "data:", data);
+            debugLog("[DEBUG] App execution completed for node:", nodeId, "data:", data);
 
             // Find the node by ID and check if it's LoRAInfoExtractor
             const node = app.graph.getNodeById(nodeId);
             if (node && node.comfyClass === "LoRAInfoExtractor") {
-                console.log("[DEBUG] Found LoRAInfoExtractor execution result");
+                debugLog("[DEBUG] Found LoRAInfoExtractor execution result");
 
                 // Try to extract lora_json from the execution data
                 if (data && data[0]) {
                     // First output should be lora_json
                     node._cached_lora_json = data[0];
-                    console.log(
+                    debugLog(
                         "[DEBUG] Cached lora_json from app execution:",
                         data[0].substring(0, 100) + "..."
                     );
@@ -1580,31 +1611,31 @@ app.registerExtension({
 
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === "LoRAInfoExtractor") {
-            console.log("[DEBUG] Registering LoRAInfoExtractor widget extensions");
+            debugLog("[DEBUG] Registering LoRAInfoExtractor widget extensions");
 
             // Add onSerialize method to save lora_json output to workflow
             const onSerialize = nodeType.prototype.onSerialize;
             nodeType.prototype.onSerialize = function (o) {
                 const result = onSerialize?.apply(this, arguments);
 
-                console.log("[DEBUG] LoRAInfoExtractor onSerialize called for node:", this.id);
-                console.log("[DEBUG] Current cached lora_json:", !!this._cached_lora_json);
-                console.log("[DEBUG] Serialization object before:", JSON.stringify(o, null, 2));
+                debugLog("[DEBUG] LoRAInfoExtractor onSerialize called for node:", this.id);
+                debugLog("[DEBUG] Current cached lora_json:", !!this._cached_lora_json);
+                debugLog("[DEBUG] Serialization object before:", JSON.stringify(o, null, 2));
 
                 // Save the cached lora_json output if available
                 if (this._cached_lora_json) {
                     o.lora_json_output = this._cached_lora_json;
-                    console.log(
+                    debugLog(
                         "[SERIALIZE] Saved lora_json to workflow:",
                         typeof this._cached_lora_json === "string"
                             ? this._cached_lora_json.substring(0, 100) + "..."
                             : JSON.stringify(this._cached_lora_json).substring(0, 100) + "..."
                     );
                 } else {
-                    console.log("[SERIALIZE] No cached lora_json to save");
+                    debugLog("[SERIALIZE] No cached lora_json to save");
                 }
 
-                console.log("[DEBUG] Serialization object after:", JSON.stringify(o, null, 2));
+                debugLog("[DEBUG] Serialization object after:", JSON.stringify(o, null, 2));
                 return result;
             };
 
@@ -1613,12 +1644,12 @@ app.registerExtension({
             nodeType.prototype.onConfigure = function (o) {
                 const result = onConfigure?.apply(this, arguments);
 
-                console.log("[DEBUG] LoRAInfoExtractor onConfigure called");
+                debugLog("[DEBUG] LoRAInfoExtractor onConfigure called");
 
                 // Restore the cached lora_json output if available
                 if (o.lora_json_output) {
                     this._cached_lora_json = o.lora_json_output;
-                    console.log(
+                    debugLog(
                         "[CONFIGURE] Restored lora_json from workflow:",
                         o.lora_json_output?.substring(0, 100) + "..."
                     );
@@ -1631,38 +1662,38 @@ app.registerExtension({
 
     async nodeCreated(node) {
         if (node.comfyClass === "LoRAInfoExtractor") {
-            console.log("[DEBUG] LoRAInfoExtractor node created, ID:", node.id);
+            debugLog("[DEBUG] LoRAInfoExtractor node created, ID:", node.id);
 
             // Listen for node execution results
             const originalOnExecuted = node.onExecuted;
             node.onExecuted = function (message) {
-                console.log("[DEBUG] LoRAInfoExtractor onExecuted called");
-                console.log("[DEBUG] Full message object:", JSON.stringify(message, null, 2));
+                debugLog("[DEBUG] LoRAInfoExtractor onExecuted called");
+                debugLog("[DEBUG] Full message object:", JSON.stringify(message, null, 2));
 
                 // Try different possible message structures
                 let loraJsonValue = null;
 
                 // Try different paths where the lora_json might be
                 if (message && message.output) {
-                    console.log("[DEBUG] message.output exists:", message.output);
+                    debugLog("[DEBUG] message.output exists:", message.output);
 
                     // Check if it's directly in output
                     if (message.output.lora_json) {
-                        console.log("[DEBUG] Found lora_json in message.output.lora_json");
+                        debugLog("[DEBUG] Found lora_json in message.output.lora_json");
                         loraJsonValue = Array.isArray(message.output.lora_json)
                             ? message.output.lora_json[0]
                             : message.output.lora_json;
                     }
                     // Check if it's in a different structure
                     else if (message.output[0]) {
-                        console.log("[DEBUG] Found output[0]:", message.output[0]);
+                        debugLog("[DEBUG] Found output[0]:", message.output[0]);
                         loraJsonValue = message.output[0];
                     }
                 }
 
                 // Also check if message itself has the data
                 if (!loraJsonValue && message.lora_json) {
-                    console.log("[DEBUG] Found lora_json in message.lora_json");
+                    debugLog("[DEBUG] Found lora_json in message.lora_json");
                     loraJsonValue = Array.isArray(message.lora_json)
                         ? message.lora_json[0]
                         : message.lora_json;
@@ -1670,14 +1701,14 @@ app.registerExtension({
 
                 if (loraJsonValue) {
                     this._cached_lora_json = loraJsonValue;
-                    console.log(
+                    debugLog(
                         "[DEBUG] Cached lora_json from execution:",
                         typeof loraJsonValue === "string"
                             ? loraJsonValue.substring(0, 100) + "..."
                             : JSON.stringify(loraJsonValue).substring(0, 100) + "..."
                     );
                 } else {
-                    console.log("[DEBUG] No lora_json found in execution message");
+                    debugLog("[DEBUG] No lora_json found in execution message");
                 }
 
                 // Call original onExecuted if it exists
