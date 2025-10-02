@@ -161,6 +161,6 @@ After applying this fix:
 ## Related Files
 
 - `web/js/swiss-army-knife.js` - JavaScript widget management (enhanced)
-- `utils/nodes.py` - Python backend with `reddit_url` input definition
+- `nodes/nodes.py` - Python backend with `reddit_url` input definition
 - `docs/JAVASCRIPT_REDDIT_POST_FIX.md` - Original Reddit Post JavaScript fix
 - `docs/REDDIT_POST_MEDIA_SOURCE.md` - Overall Reddit Post feature documentation

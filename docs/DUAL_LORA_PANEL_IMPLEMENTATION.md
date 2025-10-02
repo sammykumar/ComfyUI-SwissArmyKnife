@@ -242,7 +242,7 @@ The `SuperLoraWidget.drawFirstRow` method now includes:
 
 ## Files Modified
 
-1. **utils/lora_manager/nd_super_lora_node.py**
+1. **nodes/lora_manager/nd_super_lora_node.py**
     - Updated INPUT_TYPES to accept two WANVIDLORA inputs
     - Updated RETURN_TYPES to output two WANVIDLORA stacks
     - Modified load_loras to handle high/low model separation
@@ -300,5 +300,5 @@ The `SuperLoraWidget.drawFirstRow` method now includes:
 
 - `docs/IMPLEMENTATION_STATUS.md` - Overall project status
 - `docs/LORA_MANAGER_INTEGRATION.md` - LoRA manager details
-- `utils/lora_manager/nd_super_lora_node.py` - Backend implementation
+- `nodes/lora_manager/nd_super_lora_node.py` - Backend implementation
 - `web/js/lora_manager/extension.js` - Frontend implementation

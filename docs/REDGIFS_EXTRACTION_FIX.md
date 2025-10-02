@@ -144,6 +144,6 @@ To test the fix:
 
 ## Related Files
 
-- `utils/nodes.py` - Main implementation
+- `nodes/nodes.py` - Main implementation
 - `docs/REDDIT_POST_MEDIA_SOURCE.md` - Overall Reddit Post documentation
 - `docs/JAVASCRIPT_REDDIT_POST_FIX.md` - JavaScript widget fix

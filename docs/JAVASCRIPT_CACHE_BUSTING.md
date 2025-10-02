@@ -22,10 +22,10 @@ Add version query parameters to JavaScript file URLs to force browser cache inva
 
 ```python
 import os
-from .utils.nodes import NODE_CLASS_MAPPINGS as MAIN_NODE_CLASS_MAPPINGS
-from .utils.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MAPPINGS
-from .utils.helper_nodes import HELPER_NODE_CLASS_MAPPINGS
-from .utils.helper_nodes import HELPER_NODE_DISPLAY_NAME_MAPPINGS
+from .nodes.nodes import NODE_CLASS_MAPPINGS as MAIN_NODE_CLASS_MAPPINGS
+from .nodes.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MAPPINGS
+from .nodes.helper_nodes import HELPER_NODE_CLASS_MAPPINGS
+from .nodes.helper_nodes import HELPER_NODE_DISPLAY_NAME_MAPPINGS
 
 # Get version from pyproject.toml for cache busting
 def get_version():

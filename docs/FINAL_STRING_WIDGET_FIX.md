@@ -55,15 +55,15 @@ Added `onExecuted` methods to both node types that:
 
 ### JavaScript Changes (web/js/gemini_widgets.js)
 
--   Added `onExecuted` method for `GeminiUtilVideoDescribe` (output index 4)
--   Added `onExecuted` method for `GeminiUtilImageDescribe` (output index 2)
--   Widget updates are logged to browser console for debugging
+- Added `onExecuted` method for `GeminiUtilVideoDescribe` (output index 4)
+- Added `onExecuted` method for `GeminiUtilImageDescribe` (output index 2)
+- Widget updates are logged to browser console for debugging
 
 ### Python Changes
 
--   Added `ShowText` helper node in `utils/helper_nodes.py`
--   Updated `__init__.py` to include helper nodes
--   All nodes return `final_string` as documented
+- Added `ShowText` helper node in `nodes/helper_nodes.py`
+- Updated `__init__.py` to include helper nodes
+- All nodes return `final_string` as documented
 
 ### Before (Broken)
 
@@ -79,8 +79,8 @@ final_string widget: "A woman with flowing hair stands gracefully in a sunlit ga
 
 ## Debugging
 
--   Check browser console for "Updated final_string widget with:" messages
--   Verify execution completes without errors
--   Ensure API key is valid and has quota
+- Check browser console for "Updated final_string widget with:" messages
+- Verify execution completes without errors
+- Ensure API key is valid and has quota
 
 The `final_string` widget should now properly display the generated prompt text after node execution!

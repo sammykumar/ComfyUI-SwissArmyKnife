@@ -13,21 +13,21 @@ Key goals:
 
 ## Architecture
 
-### 1. Persistent Hash Cache (`utils/lora_hash_cache.py`)
+### 1. Persistent Hash Cache (`nodes/lora_hash_cache.py`)
 
 - Stores file path ➜ SHA256 mappings with `mtime` + `size` validation
 - Persists to `cache/lora_hash_cache.json` in the repository root
 - Uses an `RLock` to guarantee thread-safe read/write access
 - Automatically invalidates entries when LoRA files change or disappear
 
-### 2. CivitAI Service (`utils/civitai_service.py`)
+### 2. CivitAI Service (`nodes/civitai_service.py`)
 
 - Async HTTP client powered by `httpx`
 - Automatically reuses hashes from the persistent cache
 - Retries on HTTP 429 up to two times with respect for `Retry-After`
 - Returns detailed payloads: model name, version, creator, tags, stats, NSFW flag, etc.
 
-### 3. LoRA Stack Walker (`utils/nodes.py#LoRAInfoExtractor`)
+### 3. LoRA Stack Walker (`nodes/nodes.py#LoRAInfoExtractor`)
 
 - Recursively inspects WanVideo stack structures (`stack`, `loras`, `children`, `items`, `chain` keys)
 - Deduplicates LoRA entries using `(path, name)` keys to avoid double counting
@@ -105,7 +105,7 @@ The `lora_info` output (human-readable string) contains a summary line followed 
 - Cache files live in `<repo>/cache/lora_hash_cache.json`
 - Use the helper:
     ```python
-    from utils.lora_hash_cache import get_cache
+    from nodes.lora_hash_cache import get_cache
     get_cache().clear()
     ```
     to purge hashes and force recomputation

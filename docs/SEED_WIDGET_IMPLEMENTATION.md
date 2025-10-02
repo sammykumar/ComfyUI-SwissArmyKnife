@@ -19,9 +19,10 @@ Added a `seed` parameter that:
 
 ## Technical Implementation
 
-### Python Backend Changes (`utils/nodes.py`)
+### Python Backend Changes (`nodes/nodes.py`)
 
 1. **Added seed parameter to INPUT_TYPES**:
+
 ```python
 "seed": ("INT", {
     "default": 0,
@@ -32,11 +33,13 @@ Added a `seed` parameter that:
 ```
 
 2. **Updated function signature**:
+
 ```python
 def describe_media(self, gemini_api_key, gemini_model, model_type, description_mode, prefix_text, media_source, media_type, seed, image=None, ...):
 ```
 
 3. **Implemented seed-based file selection**:
+
 ```python
 # Randomly select a file using the seed for reproducible selection
 # When seed changes, a different file may be selected, forcing re-execution
@@ -50,32 +53,34 @@ random.seed(None)
 ### JavaScript Frontend Changes (`web/js/gemini_widgets.js`)
 
 1. **Conditional Widget Visibility**:
-   - Seed widget shows only when `media_source = "Randomize Media from Path"`
-   - Seed widget is hidden when `media_source = "Upload Media"`
+    - Seed widget shows only when `media_source = "Randomize Media from Path"`
+    - Seed widget is hidden when `media_source = "Upload Media"`
 
 2. **Randomize Seed Button**:
+
 ```javascript
 // Add randomize seed button for convenience
 this.randomizeSeedWidget = this.addWidget(
-    "button",
-    "🎲 Randomize Seed",
-    "randomize_seed",
+    'button',
+    '🎲 Randomize Seed',
+    'randomize_seed',
     () => {
         this.onRandomizeSeedButtonPressed();
-    }
+    },
 );
 ```
 
 3. **Random Seed Generation**:
+
 ```javascript
 nodeType.prototype.onRandomizeSeedButtonPressed = function () {
-    const seedWidget = this.widgets.find((w) => w.name === "seed");
+    const seedWidget = this.widgets.find((w) => w.name === 'seed');
     if (seedWidget) {
         // Generate a random seed (large integer)
-        const randomSeed = Math.floor(Math.random() * 0xFFFFFFFFFFFFFFFF);
+        const randomSeed = Math.floor(Math.random() * 0xffffffffffffffff);
         seedWidget.value = randomSeed;
         console.log(`[SEED] Generated random seed: ${randomSeed}`);
-        
+
         // Trigger widget update to ensure ComfyUI recognizes the change
         if (seedWidget.callback) {
             seedWidget.callback(randomSeed);
@@ -87,11 +92,13 @@ nodeType.prototype.onRandomizeSeedButtonPressed = function () {
 ## User Interface Behavior
 
 ### Upload Media Mode
+
 - Seed widget: **Hidden**
 - Randomize seed button: **Hidden**
 - Upload widgets: **Visible**
 
-### Randomize Media from Path Mode  
+### Randomize Media from Path Mode
+
 - Seed widget: **Visible** (number input, 0 to 18446744073709551615)
 - Randomize seed button: **Visible** (🎲 Randomize Seed)
 - Media path widget: **Visible**
@@ -104,8 +111,8 @@ nodeType.prototype.onRandomizeSeedButtonPressed = function () {
 1. **Set media_source** to "Randomize Media from Path"
 2. **Specify media_path** to your directory containing images/videos
 3. **Use the seed widget** to control randomization:
-   - **Manual**: Enter any number (0 to 18446744073709551615)
-   - **Automatic**: Click "🎲 Randomize Seed" for instant random generation
+    - **Manual**: Enter any number (0 to 18446744073709551615)
+    - **Automatic**: Click "🎲 Randomize Seed" for instant random generation
 4. **Change the seed** to force ComfyUI to re-select a different random file
 
 ### For "Upload Media" Mode:

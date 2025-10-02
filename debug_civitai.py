@@ -66,7 +66,7 @@ def check_environment():
     # Test service initialization
     print("\n🔧 Service Test:")
     try:
-        from utils.civitai_service import CivitAIService
+        from nodes.civitai_service import CivitAIService
         service = CivitAIService()
         if service.api_key:
             print("  ✅ CivitAI service initialized with API key")

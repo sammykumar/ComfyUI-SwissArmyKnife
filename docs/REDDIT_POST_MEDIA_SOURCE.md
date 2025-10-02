@@ -61,7 +61,7 @@ The Reddit Post option fully supports video trimming through the existing `max_d
 
 ## Implementation Details
 
-### Backend Processing (`utils/nodes.py`)
+### Backend Processing (`nodes/nodes.py`)
 
 #### New Method: `_download_reddit_media(self, reddit_url)`
 
@@ -126,7 +126,7 @@ The Reddit Post option fully supports video trimming through the existing `max_d
 
 ### Dependencies
 
-New imports added to `utils/nodes.py`:
+New imports added to `nodes/nodes.py`:
 
 - `hashlib`: For content hashing
 - `html.unescape`: For decoding HTML entities in URLs

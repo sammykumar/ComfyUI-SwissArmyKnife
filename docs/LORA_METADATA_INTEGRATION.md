@@ -10,7 +10,7 @@ The solution consists of three main components:
 
 ### 1. CivitAI Service Module
 
-A dedicated service (`utils/civitai_service.py`) that handles CivitAI API integration:
+A dedicated service (`nodes/civitai_service.py`) that handles CivitAI API integration:
 
 - **File Hash Calculation**: SHA256 hash generation for LoRA files
 - **API Integration**: Queries CivitAI's API using file hashes
@@ -272,7 +272,7 @@ The integration works without an API key but with limitations:
 1. **Import Test**:
 
     ```python
-    from utils.nodes import NODE_CLASS_MAPPINGS
+    from nodes.nodes import NODE_CLASS_MAPPINGS
     print("LoRAInfoExtractor" in NODE_CLASS_MAPPINGS)  # Should be True
     ```
 
@@ -356,7 +356,7 @@ Potential improvements for future versions:
 
 This feature required changes to:
 
-- `utils/nodes.py`: Added LoRAInfoExtractor class and enhanced VideoMetadataNode
+- `nodes/nodes.py`: Added LoRAInfoExtractor class and enhanced VideoMetadataNode
 - `docs/LORA_METADATA_INTEGRATION.md`: This documentation file
 
 ## Workflow JSON Example

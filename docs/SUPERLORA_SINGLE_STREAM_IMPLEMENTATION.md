@@ -10,7 +10,7 @@ Created a single-stream variant of the SuperDualLoraLoader node for WanVideo wor
 
 ### 1. Backend Python Implementation
 
-#### File: `utils/lora_manager/nd_super_lora_node.py`
+#### File: `nodes/lora_manager/nd_super_lora_node.py`
 
 **New Class: `SuperLoraLoader`**
 
@@ -34,7 +34,7 @@ RETURN_NAMES = ("WANVIDLORA", "CLIP", "TRIGGER_WORDS")
 INPUT: lora (single WANVIDLORA)
 ```
 
-#### File: `utils/lora_manager/__init__.py`
+#### File: `nodes/lora_manager/__init__.py`
 
 **Updated Imports:**
 
@@ -219,8 +219,8 @@ Potential improvements for both nodes:
 
 ## Files Modified
 
-1. `utils/lora_manager/nd_super_lora_node.py` - Added SuperLoraLoader class
-2. `utils/lora_manager/__init__.py` - Updated imports and registrations
+1. `nodes/lora_manager/nd_super_lora_node.py` - Added SuperLoraLoader class
+2. `nodes/lora_manager/__init__.py` - Updated imports and registrations
 3. `web/js/lora_manager/extension.js` - Added multi-node-type support
 4. `docs/SUPER_LORA_LOADER_VARIANTS.md` - New comprehensive documentation
 5. `docs/SUPERLORA_SINGLE_STREAM_IMPLEMENTATION.md` - This implementation summary

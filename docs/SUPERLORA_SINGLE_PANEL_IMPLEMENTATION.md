@@ -15,7 +15,7 @@ This document describes the implementation of the JavaScript widget for `SuperLo
 
 ### Backend Python (Already Implemented)
 
-- Located in: `utils/lora_manager/nd_super_lora_node.py`
+- Located in: `nodes/lora_manager/nd_super_lora_node.py`
 - Class: `SuperLoraLoader`
 - Accepts: `lora` (WANVIDLORA), optional `clip` (CLIP), `lora_bundle` (STRING JSON)
 - Returns: Modified `lora` stack, `clip`, and trigger words
@@ -148,5 +148,5 @@ Potential features to add from nd-super-nodes original:
 ## References
 
 - Original implementation: https://github.com/HenkDz/nd-super-nodes
-- Backend file: `utils/lora_manager/nd_super_lora_node.py`
+- Backend file: `nodes/lora_manager/nd_super_lora_node.py`
 - Target file: `web/js/swiss-army-knife.js`

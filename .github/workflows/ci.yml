@@ -35,7 +35,7 @@ jobs:
 
       - name: Test Python imports and node loading
         run: |
-          python -c "from utils.nodes import NODE_CLASS_MAPPINGS; print('✓ Custom nodes loaded successfully:', list(NODE_CLASS_MAPPINGS.keys()))"
+          python -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('✓ Custom nodes loaded successfully:', list(NODE_CLASS_MAPPINGS.keys()))"
 
       - name: Check pyproject.toml validity
         run: |

@@ -180,7 +180,7 @@ RedGifs serves videos from multiple CDN endpoints:
 
 ## Related Files
 
-- `utils/nodes.py`: Main implementation with video processing improvements
+- `nodes/nodes.py`: Main implementation with video processing improvements
 - `docs/REDDIT_POST_MEDIA_SOURCE.md`: Reddit feature documentation
 - `docs/GEMINI_API_500_ERROR_FIX.md`: Original error fix documentation
 

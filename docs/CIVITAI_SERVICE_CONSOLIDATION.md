@@ -4,23 +4,23 @@
 
 ## Overview
 
-Consolidated two separate CivitAI service implementations into a single, unified service at `utils/civitai_service.py`.
+Consolidated two separate CivitAI service implementations into a single, unified service at `nodes/civitai_service.py`.
 
 ## Problem
 
 The codebase had two separate CivitAI service implementations:
 
-1. **`utils/civitai_service.py`** - More mature implementation
+1. **`nodes/civitai_service.py`** - More mature implementation
     - Used `httpx` for HTTP requests
     - Integrated with hash caching system (`lora_hash_cache`)
     - Supported multiple hash types (SHA256, AutoV1, AutoV2, Blake3, CRC32)
     - Had retry logic and rate limiting handling
-    - Used by `utils/nodes.py` for LoRA metadata extraction
+    - Used by `nodes/nodes.py` for LoRA metadata extraction
 
-2. **`utils/lora_manager/civitai_service.py`** - Simpler implementation
+2. **`nodes/lora_manager/civitai_service.py`** - Simpler implementation
     - Used `aiohttp` for HTTP requests
     - Had basic trigger word extraction
-    - Used by `utils/lora_manager/web_api.py`
+    - Used by `nodes/lora_manager/web_api.py`
 
 ## Solution
 
@@ -50,7 +50,7 @@ def get_civitai_service() -> CivitAIService:
 
 ## Changes Made
 
-### 1. Enhanced `utils/civitai_service.py`
+### 1. Enhanced `nodes/civitai_service.py`
 
 - Added `List` to type imports
 - Added optional ComfyUI `folder_paths` import for path resolution
@@ -58,7 +58,7 @@ def get_civitai_service() -> CivitAIService:
 - Added `get_trigger_words_by_filename()` method for resolving LoRA filenames to paths
 - Added global `get_civitai_service()` singleton function
 
-### 2. Updated `utils/lora_manager/web_api.py`
+### 2. Updated `nodes/lora_manager/web_api.py`
 
 **Before:**
 
@@ -78,11 +78,11 @@ trigger_words = civitai_service.get_trigger_words_by_filename(lora_filename)
 
 ### 3. Removed Duplicate File
 
-Deleted `utils/lora_manager/civitai_service.py` as it's no longer needed.
+Deleted `nodes/lora_manager/civitai_service.py` as it's no longer needed.
 
 ## API Compatibility
 
-### For `utils/nodes.py` (No Changes Required)
+### For `nodes/nodes.py` (No Changes Required)
 
 ```python
 from .civitai_service import CivitAIService
@@ -92,7 +92,7 @@ service = CivitAIService(api_key=api_key)
 model_info = service.get_model_info_by_hash(file_path)
 ```
 
-### For `utils/lora_manager/web_api.py` (Updated)
+### For `nodes/lora_manager/web_api.py` (Updated)
 
 ```python
 from ..civitai_service import get_civitai_service
@@ -126,13 +126,13 @@ If you have custom code importing from the old location:
 **Before:**
 
 ```python
-from utils.lora_manager.civitai_service import CivitAiService, get_civitai_service
+from nodes.lora_manager.civitai_service import CivitAiService, get_civitai_service
 ```
 
 **After:**
 
 ```python
-from utils.civitai_service import CivitAIService, get_civitai_service
+from nodes.civitai_service import CivitAIService, get_civitai_service
 ```
 
 Note: Class name changed from `CivitAiService` to `CivitAIService` (capitalization).

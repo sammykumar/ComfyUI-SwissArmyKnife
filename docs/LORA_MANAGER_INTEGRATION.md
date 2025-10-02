@@ -2,7 +2,7 @@
 
 ## Overview
 
-The LoRA Manager is a powerful suite of tools forked from [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes) that has been integrated into ComfyUI-SwissArmyKnife under `utils/lora_manager/`. This integration provides advanced LoRA loading and management capabilities with an enhanced UI.
+The LoRA Manager is a powerful suite of tools forked from [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes) that has been integrated into ComfyUI-SwissArmyKnife under `nodes/lora_manager/`. This integration provides advanced LoRA loading and management capabilities with an enhanced UI.
 
 ## Features
 
@@ -29,6 +29,7 @@ The file picker overlay provides:
 - **Persistent Settings**: Settings saved across workflow loads
 
 Supported nodes for enhanced file picker:
+
 - CheckpointLoader
 - VAELoader
 - LoraLoader
@@ -41,6 +42,7 @@ Supported nodes for enhanced file picker:
 ### 3. Template Management
 
 Templates allow you to:
+
 - **Save**: Store current LoRA configurations with names
 - **Load**: Quickly restore saved configurations
 - **Rename**: Update template names
@@ -50,6 +52,7 @@ Templates allow you to:
 ### 4. CivitAI Integration
 
 Automatic metadata fetching:
+
 - **Trigger Words**: Auto-fetch from CivitAI API
 - **Model Info**: Retrieve model descriptions and details
 - **Fallback**: Uses local safetensors metadata if API unavailable
@@ -59,7 +62,7 @@ Automatic metadata fetching:
 
 ### Backend Components
 
-Located in `utils/lora_manager/`:
+Located in `nodes/lora_manager/`:
 
 - **`nd_super_lora_node.py`**: Main LoRA loader node implementation
 - **`lora_utils.py`**: LoRA file discovery and metadata extraction
@@ -82,17 +85,20 @@ Located in `web/js/lora_manager/` and `web/css/lora_manager/`:
 The lora_manager registers the following API endpoints:
 
 **LoRA Operations:**
+
 - `GET /super_lora/loras` - List available LoRAs
 - `GET /super_lora/files?folder_name=loras` - List files in folder
 - `POST /super_lora/civitai_info` - Fetch CivitAI metadata
 
 **Template Operations:**
+
 - `GET /super_lora/templates` - List all templates
 - `GET /super_lora/templates/{name}` - Get specific template
 - `POST /super_lora/templates` - Save new template
 - `DELETE /super_lora/templates/{name}` - Delete template
 
 **Version Info:**
+
 - `GET /super_lora/version` - Get version and update status
 
 ## Integration with Swiss Army Knife
@@ -102,8 +108,8 @@ The lora_manager registers the following API endpoints:
 The lora_manager nodes are integrated into the main node mappings in `__init__.py`:
 
 ```python
-from .utils.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
-from .utils.lora_manager import NODE_DISPLAY_NAME_MAPPINGS as LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
+from .nodes.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
+from .nodes.lora_manager import NODE_DISPLAY_NAME_MAPPINGS as LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
 
 NODE_CLASS_MAPPINGS = {
     **MAIN_NODE_CLASS_MAPPINGS,
@@ -144,11 +150,11 @@ dependencies = [
 2. Connect a MODEL input (required)
 3. Connect a CLIP input (optional)
 4. Use the enhanced UI to:
-   - Add LoRAs by clicking the "+" button
-   - Adjust per-LoRA strengths with sliders
-   - Enable/disable individual LoRAs with checkboxes
-   - View and edit trigger words
-   - Organize LoRAs with tags
+    - Add LoRAs by clicking the "+" button
+    - Adjust per-LoRA strengths with sliders
+    - Enable/disable individual LoRAs with checkboxes
+    - View and edit trigger words
+    - Organize LoRAs with tags
 
 ### Template Workflow
 
@@ -170,7 +176,7 @@ dependencies = [
 
 When extending the lora_manager:
 
-1. Add backend logic to appropriate file in `utils/lora_manager/`
+1. Add backend logic to appropriate file in `nodes/lora_manager/`
 2. Update web frontend in `web/js/lora_manager/extension.js`
 3. Add new API routes to `web_api.py` if needed
 4. Update this documentation
@@ -181,7 +187,7 @@ To test lora_manager functionality:
 
 ```bash
 # Test Python imports
-python3 -c "from utils.lora_manager import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_MAPPINGS.keys()))"
+python3 -c "from nodes.lora_manager import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_MAPPINGS.keys()))"
 
 # Test with ComfyUI running
 # 1. Start ComfyUI server
@@ -196,6 +202,7 @@ python3 -c "from utils.lora_manager import NODE_CLASS_MAPPINGS; print(list(NODE_
 **Symptom**: Message "Failed to register API routes" in console
 
 **Solutions**:
+
 - Check that aiohttp is installed: `pip install aiohttp>=3.8.0`
 - Verify ComfyUI server is running
 - Check for conflicting route registrations
@@ -205,6 +212,7 @@ python3 -c "from utils.lora_manager import NODE_CLASS_MAPPINGS; print(list(NODE_
 **Symptom**: No LoRAs appear in the node
 
 **Solutions**:
+
 - Verify LoRAs are in ComfyUI's loras directory
 - Check folder_paths configuration
 - Try refreshing the node
@@ -214,6 +222,7 @@ python3 -c "from utils.lora_manager import NODE_CLASS_MAPPINGS; print(list(NODE_
 **Symptom**: Trigger words show as empty
 
 **Solutions**:
+
 - Check internet connection for CivitAI API
 - Verify LoRA file has metadata (safetensors format)
 - Check console for API errors
@@ -223,23 +232,26 @@ python3 -c "from utils.lora_manager import NODE_CLASS_MAPPINGS; print(list(NODE_
 **Symptom**: Template save fails silently
 
 **Solutions**:
+
 - Check write permissions on ComfyUI user directory
 - Verify sufficient disk space
 - Check console for error messages
 
 ## Credits
 
-The lora_manager component is forked from [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes) by HenkDz. 
+The lora_manager component is forked from [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes) by HenkDz.
 
 **Original Features:**
+
 - Super LoRA Loader implementation
 - Enhanced file picker overlay
 - Template management system
 - CivitAI integration
 
 **Swiss Army Knife Adaptations:**
+
 - Category integration (Swiss Army Knife 🔪)
-- Module restructuring under `utils/lora_manager/`
+- Module restructuring under `nodes/lora_manager/`
 - Updated branding and print statements
 - Documentation and contribution guidelines
 

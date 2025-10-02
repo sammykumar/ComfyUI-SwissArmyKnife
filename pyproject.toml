@@ -51,7 +51,7 @@ Repository = "https://github.com/sammykumar/ComfyUI-SwissArmyKnife"
 includes = ["dist/"]
 
 [tool.setuptools]
-packages = ["utils"]
+packages = ["nodes"]
 
 [tool.setuptools.package-data]
 "*" = ["web/js/*.js"]

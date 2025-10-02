@@ -6,10 +6,10 @@ This document explains the caching functionality implemented for the Gemini cust
 
 The caching system automatically stores Gemini API responses to avoid redundant API calls when analyzing the same media with the same description prompt. This provides:
 
--   **Fast repeated analyses** - Cached results return in milliseconds instead of waiting for API calls
--   **API cost savings** - Avoids duplicate API requests for identical media+prompt combinations
--   **Transparent operation** - Caching is always enabled and requires no user configuration
--   **Accurate isolation** - Separate cache entries for each unique media+prompt+model combination
+- **Fast repeated analyses** - Cached results return in milliseconds instead of waiting for API calls
+- **API cost savings** - Avoids duplicate API requests for identical media+prompt combinations
+- **Transparent operation** - Caching is always enabled and requires no user configuration
+- **Accurate isolation** - Separate cache entries for each unique media+prompt+model combination
 
 ## How It Works
 
@@ -23,18 +23,18 @@ Each cache entry uses a unique key based on:
 
 ### Media Identification
 
--   **Video files**: Uses file path + modification time + file size
--   **Image tensors**: Uses content hash of the tensor data
--   **Uploaded files**: Uses the file path in ComfyUI's input directory + metadata
+- **Video files**: Uses file path + modification time + file size
+- **Image tensors**: Uses content hash of the tensor data
+- **Uploaded files**: Uses the file path in ComfyUI's input directory + metadata
 
 ### Description Modes
 
 Caching works with all 4 description modes:
 
--   "Describe without clothing"
--   "Describe with clothing"
--   "Describe without clothing (No bokeh)"
--   "Describe with clothing (No bokeh)"
+- "Describe without clothing"
+- "Describe with clothing"
+- "Describe without clothing (No bokeh)"
+- "Describe with clothing (No bokeh)"
 
 Each mode creates a separate cache entry for the same media file.
 
@@ -42,10 +42,10 @@ Each mode creates a separate cache entry for the same media file.
 
 Cache entries are stored as JSON files in the `cache/gemini_descriptions/` directory:
 
--   Each file contains the description, metadata, and timestamp
--   Cache persists across ComfyUI restarts
--   Cache directory is created automatically
--   Cache files are excluded from git via `.gitignore`
+- Each file contains the description, metadata, and timestamp
+- Cache persists across ComfyUI restarts
+- Cache directory is created automatically
+- Cache files are excluded from git via `.gitignore`
 
 ## Cache Behavior
 
@@ -65,22 +65,22 @@ User analyzes media → Check cache → Not found → Call Gemini API → Store 
 
 Same video file with different prompts:
 
--   `video.mp4` + "Describe without clothing" → Cache entry A
--   `video.mp4` + "Describe with clothing" → Cache entry B
--   `video.mp4` + "Describe without clothing (No bokeh)" → Cache entry C
--   `video.mp4` + "Describe with clothing (No bokeh)" → Cache entry D
+- `video.mp4` + "Describe without clothing" → Cache entry A
+- `video.mp4` + "Describe with clothing" → Cache entry B
+- `video.mp4` + "Describe without clothing (No bokeh)" → Cache entry C
+- `video.mp4` + "Describe with clothing (No bokeh)" → Cache entry D
 
 Same prompt with different models:
 
--   `video.mp4` + "Describe without clothing" + `gemini-2.5-flash` → Cache entry A
--   `video.mp4` + "Describe without clothing" + `gemini-2.5-pro` → Cache entry B
+- `video.mp4` + "Describe without clothing" + `gemini-2.5-flash` → Cache entry A
+- `video.mp4` + "Describe without clothing" + `gemini-2.5-pro` → Cache entry B
 
 ## Implementation Details
 
 ### Files Modified
 
--   `utils/cache.py` - New cache utility module
--   `utils/nodes.py` - Added caching to GeminiVideoDescribe and GeminiImageDescribe classes
+- `utils/cache.py` - New cache utility module
+- `utils/nodes.py` - Added caching to GeminiVideoDescribe and GeminiImageDescribe classes
 
 ### Cache Integration Points
 
@@ -108,26 +108,26 @@ Regular API calls show:
 
 ## Performance Benefits
 
--   **First analysis**: Normal API call timing (~2-5 seconds)
--   **Subsequent analyses**: Cache retrieval (~0.1ms)
--   **API savings**: 100% reduction in duplicate calls
--   **User experience**: Instant results for repeated workflows
+- **First analysis**: Normal API call timing (~2-5 seconds)
+- **Subsequent analyses**: Cache retrieval (~0.1ms)
+- **API savings**: 100% reduction in duplicate calls
+- **User experience**: Instant results for repeated workflows
 
 ## Cache Management
 
 ### Automatic Behavior
 
--   Cache entries are created automatically
--   No user configuration required
--   Cache persists across sessions
--   Old entries remain until manually cleared
+- Cache entries are created automatically
+- No user configuration required
+- Cache persists across sessions
+- Old entries remain until manually cleared
 
 ### Manual Management
 
 The cache can be inspected or cleared programmatically:
 
 ```python
-from utils.cache import get_cache
+from nodes.cache import get_cache
 
 cache = get_cache()
 
@@ -141,9 +141,9 @@ print(f"Entries: {info['entries']}, Size: {info['total_size_mb']} MB")
 
 ### Cache Directory Location
 
--   Default: `<comfyui_swissarmyknife>/cache/gemini_descriptions/`
--   Contains JSON files with SHA256 hash names
--   Safe to delete entire directory to clear all cache
+- Default: `<comfyui_swissarmyknife>/cache/gemini_descriptions/`
+- Contains JSON files with SHA256 hash names
+- Safe to delete entire directory to clear all cache
 
 ## User Workflow Impact
 
@@ -156,7 +156,7 @@ The caching is completely transparent to users:
 
 Users will notice:
 
--   Faster repeated analyses
--   Cache hit indicators in status messages
--   No additional configuration needed
--   Consistent behavior across ComfyUI restarts
+- Faster repeated analyses
+- Cache hit indicators in status messages
+- No additional configuration needed
+- Consistent behavior across ComfyUI restarts

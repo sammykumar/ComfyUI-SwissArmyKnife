@@ -8,7 +8,7 @@ Purpose: Add a boolean option to the Gemini Util - Options node to instruct Gemi
     - Name: `change_clothing_color`
     - Type: Boolean (Yes/No)
     - Default: No
-    - Location: `utils/nodes.py` under `GeminiUtilOptions.INPUT_TYPES`
+    - Location: `nodes/nodes.py` under `GeminiUtilOptions.INPUT_TYPES`
 - Propagated through the options object as `change_clothing_color: bool`.
 - Used by both image and video prompts to adjust clothing color language when clothing descriptions are enabled.
 - Included in caching options to avoid stale results when toggled.
@@ -24,7 +24,7 @@ Purpose: Add a boolean option to the Gemini Util - Options node to instruct Gemi
 
 ## Files touched
 
-- `utils/nodes.py`
+- `nodes/nodes.py`
     - Added `change_clothing_color` to `GeminiUtilOptions.INPUT_TYPES`
     - Updated `GeminiUtilOptions.create_options` signature and returned options
     - Propagated option into `GeminiMediaDescribe.describe_media`
@@ -33,7 +33,7 @@ Purpose: Add a boolean option to the Gemini Util - Options node to instruct Gemi
 
 ## Validation
 
-- Import check: `from utils.nodes import NODE_CLASS_MAPPINGS` loads successfully
+- Import check: `from nodes.nodes import NODE_CLASS_MAPPINGS` loads successfully
 - Expected available nodes include `GeminiUtilVideoDescribe` or `GeminiUtilMediaDescribe` depending on current implementation; in this repo: `GeminiUtilMediaDescribe`, `GeminiUtilOptions`, `FilenameGenerator`.
 
 ## Usage

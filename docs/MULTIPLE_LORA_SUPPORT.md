@@ -203,8 +203,8 @@ The enhanced debug logging shows detailed processing:
 
 ## Related Files
 
-- `utils/nodes.py`: Enhanced LoRAInfoExtractor with multiple LoRA support
-- `utils/civitai_service.py`: CivitAI API integration service
+- `nodes/nodes.py`: Enhanced LoRAInfoExtractor with multiple LoRA support
+- `nodes/civitai_service.py`: CivitAI API integration service
 - `docs/CIVITAI_API_KEY_WIDGET.md`: API key widget documentation
 
 ## Date

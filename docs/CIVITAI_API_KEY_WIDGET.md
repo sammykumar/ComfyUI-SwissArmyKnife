@@ -139,8 +139,8 @@ When running with debug logging enabled:
 
 ## Related Files
 
-- `utils/nodes.py`: LoRAInfoExtractor class with new widget
-- `utils/civitai_service.py`: Enhanced CivitAIService with API key parameter
+- `nodes/nodes.py`: LoRAInfoExtractor class with new widget
+- `nodes/civitai_service.py`: Enhanced CivitAIService with API key parameter
 - `docs/LORA_METADATA_INTEGRATION.md`: Updated documentation
 
 ## Next Steps

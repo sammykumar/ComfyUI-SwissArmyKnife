@@ -6,11 +6,11 @@ This guide explains how to set up a local ComfyUI development environment using 
 
 The Docker development environment provides:
 
--   **CPU-only ComfyUI**: No GPU drivers needed, perfect for UI and functionality testing
--   **Isolated environment**: Won't interfere with your production ComfyUI installation
--   **Auto-mounted custom nodes**: Your custom nodes are automatically available in ComfyUI
--   **Environment variable integration**: Automatically uses your API keys from `.env` file
--   **Fresh start capability**: Easy to rebuild if something breaks
+- **CPU-only ComfyUI**: No GPU drivers needed, perfect for UI and functionality testing
+- **Isolated environment**: Won't interfere with your production ComfyUI installation
+- **Auto-mounted custom nodes**: Your custom nodes are automatically available in ComfyUI
+- **Environment variable integration**: Automatically uses your API keys from `.env` file
+- **Fresh start capability**: Easy to rebuild if something breaks
 
 ## Quick Start
 
@@ -36,9 +36,9 @@ docker-compose up -d --build
 
 ### 3. Access ComfyUI
 
--   Open your browser to: **http://localhost:8188**
--   Your custom nodes will be automatically loaded
--   The Gemini API key will be automatically populated from your `.env` file
+- Open your browser to: **http://localhost:8188**
+- Your custom nodes will be automatically loaded
+- The Gemini API key will be automatically populated from your `.env` file
 
 ### 4. Stop the environment
 
@@ -56,16 +56,16 @@ docker-compose down -v
 
 Your custom nodes now **automatically use environment variables**:
 
--   **Environment variable**: `GEMINI_API_KEY` from your `.env` file
--   **Docker integration**: Passed through `docker-compose.yml` to the container
--   **Node integration**: Automatically populates the `gemini_api_key` field in your nodes
--   **Fallback**: Shows `"YOUR_GEMINI_API_KEY_HERE"` if no environment variable is found
+- **Environment variable**: `GEMINI_API_KEY` from your `.env` file
+- **Docker integration**: Passed through `docker-compose.yml` to the container
+- **Node integration**: Automatically populates the `gemini_api_key` field in your nodes
+- **Fallback**: Shows `"YOUR_GEMINI_API_KEY_HERE"` if no environment variable is found
 
 ### Security Benefits
 
--   **No hardcoded keys**: API keys never committed to version control
--   **Local development**: Each developer can use their own API keys
--   **Environment isolation**: Development and production keys stay separate
+- **No hardcoded keys**: API keys never committed to version control
+- **Local development**: Each developer can use their own API keys
+- **Environment isolation**: Development and production keys stay separate
 
 ## File Structure & Volume Mounts
 
@@ -95,7 +95,7 @@ This mounts your **entire project directory** into the ComfyUI container, making
 /workspace/ComfyUI/                              # ComfyUI installation
 ├── custom_nodes/
 │   └── ComfyUI-SwissArmyKnife/                 # Your mounted project
-│       ├── utils/nodes.py                      # Your custom nodes
+│       ├── nodes/nodes.py                      # Your custom nodes
 │       ├── web/js/gemini_widgets.js           # Your JavaScript widgets
 │       └── __init__.py                        # ComfyUI integration
 ├── models/                                     # ComfyUI models (in container only)
@@ -109,7 +109,7 @@ This mounts your **entire project directory** into the ComfyUI container, making
 
 #### Python Backend Changes
 
-1. **Edit** your Python files in `utils/nodes.py` or related files
+1. **Edit** your Python files in `nodes/nodes.py` or related files
 2. **Restart** the container to see changes:
     ```bash
     docker-compose restart
@@ -155,20 +155,20 @@ python3 -c "import os; print(os.environ.get('GEMINI_API_KEY', 'Not found'))"
 
 **Container won't start:**
 
--   Check that port 8188 isn't already in use: `lsof -i :8188`
--   Ensure Docker has enough resources allocated
+- Check that port 8188 isn't already in use: `lsof -i :8188`
+- Ensure Docker has enough resources allocated
 
 **Custom nodes not loading:**
 
--   Verify your `.env` file has the correct `GEMINI_API_KEY`
--   Check container logs for Python import errors
--   Ensure all dependencies are listed in `pyproject.toml`
+- Verify your `.env` file has the correct `GEMINI_API_KEY`
+- Check container logs for Python import errors
+- Ensure all dependencies are listed in `pyproject.toml`
 
 **API key not working:**
 
--   Verify the environment variable is set: `echo $GEMINI_API_KEY`
--   Check the `.env` file format (no quotes around the value)
--   Restart the container after changing `.env`
+- Verify the environment variable is set: `echo $GEMINI_API_KEY`
+- Check the `.env` file format (no quotes around the value)
+- Restart the container after changing `.env`
 
 ## VS Code Integration
 
@@ -215,19 +215,19 @@ You can create VS Code tasks for common Docker operations:
 
 ### Development Environment (This Setup)
 
--   **Purpose**: Testing custom nodes and UI functionality
--   **Performance**: CPU-only, slower generation
--   **Isolation**: Completely separate from production
--   **API keys**: Local environment variables
--   **Models**: Minimal/none installed
+- **Purpose**: Testing custom nodes and UI functionality
+- **Performance**: CPU-only, slower generation
+- **Isolation**: Completely separate from production
+- **API keys**: Local environment variables
+- **Models**: Minimal/none installed
 
 ### Production Environment
 
--   **Purpose**: Actual image/video generation
--   **Performance**: GPU-accelerated
--   **Persistence**: Permanent installation
--   **API keys**: Production API keys
--   **Models**: Full model library
+- **Purpose**: Actual image/video generation
+- **Performance**: GPU-accelerated
+- **Persistence**: Permanent installation
+- **API keys**: Production API keys
+- **Models**: Full model library
 
 ## Advanced Configuration
 
@@ -264,10 +264,10 @@ ports:
 
 ## Security Notes
 
--   **Never commit `.env`**: Contains sensitive API keys
--   **Use development keys**: Don't use production API keys in development
--   **Limit API access**: Consider API key restrictions/quotas for development
--   **Container isolation**: The container runs as root - keep it isolated
+- **Never commit `.env`**: Contains sensitive API keys
+- **Use development keys**: Don't use production API keys in development
+- **Limit API access**: Consider API key restrictions/quotas for development
+- **Container isolation**: The container runs as root - keep it isolated
 
 ## Cleanup
 

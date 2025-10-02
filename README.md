@@ -4,12 +4,12 @@ A collection of custom nodes for ComfyUI featuring Gemini AI integration for vid
 
 ## Features
 
--   **🤖 Gemini AI Integration**: Video, image, and media analysis using Google's Gemini AI
--   **🎨 Super LoRA Loader**: Advanced multi-LoRA management with enhanced UI (forked from nd-super-nodes)
--   **🎮 JavaScript Widgets**: Enhanced ComfyUI interfaces with custom video controls
--   **🐳 Dev Container Support**: GPU-enabled development environment with mmartial/ComfyUI-Nvidia-Docker
--   **🧪 Full Testing Suite**: Python and JavaScript testing with CI/CD integration
--   **⚡ Hot Reload Development**: Instant feedback for both backend and frontend changes
+- **🤖 Gemini AI Integration**: Video, image, and media analysis using Google's Gemini AI
+- **🎨 Super LoRA Loader**: Advanced multi-LoRA management with enhanced UI (forked from nd-super-nodes)
+- **🎮 JavaScript Widgets**: Enhanced ComfyUI interfaces with custom video controls
+- **🐳 Dev Container Support**: GPU-enabled development environment with mmartial/ComfyUI-Nvidia-Docker
+- **🧪 Full Testing Suite**: Python and JavaScript testing with CI/CD integration
+- **⚡ Hot Reload Development**: Instant feedback for both backend and frontend changes
 
 ## Quick Start with Dev Container (Recommended)
 
@@ -17,9 +17,9 @@ The fastest way to get started is using the provided dev container with GPU supp
 
 ### Prerequisites
 
--   Docker with NVIDIA Container Toolkit
--   VS Code with Dev Containers extension
--   NVIDIA GPU with drivers installed
+- Docker with NVIDIA Container Toolkit
+- VS Code with Dev Containers extension
+- NVIDIA GPU with drivers installed
 
 ### Setup
 
@@ -85,31 +85,31 @@ pre-commit install
 
 **System Requirements:**
 
--   Python 3.10+
--   Node.js 20+ (for development)
--   FFmpeg (for video processing)
--   NVIDIA GPU (optional, for accelerated inference)
+- Python 3.10+
+- Node.js 20+ (for development)
+- FFmpeg (for video processing)
+- NVIDIA GPU (optional, for accelerated inference)
 
 ## Available Nodes
 
 ### Backend Nodes (Python)
 
--   **GeminiUtilVideoDescribe**: Analyze videos using Gemini AI
--   **GeminiUtilImageDescribe**: Analyze images using Gemini AI
--   **GeminiUtilMediaDescribe**: Multi-media analysis functionality
--   **Super LoRA Loader 🔪**: Advanced multi-LoRA loading with UI enhancements (from nd-super-nodes)
-    -   Load multiple LoRAs in a single node
-    -   Individual enable/disable controls per LoRA
-    -   Dual strength support (model and CLIP)
-    -   Automatic trigger word extraction
-    -   Template save/load system
-    -   Enhanced file picker with search
-    -   See [docs/LORA_MANAGER_INTEGRATION.md](docs/LORA_MANAGER_INTEGRATION.md) for details
+- **GeminiUtilVideoDescribe**: Analyze videos using Gemini AI
+- **GeminiUtilImageDescribe**: Analyze images using Gemini AI
+- **GeminiUtilMediaDescribe**: Multi-media analysis functionality
+- **Super LoRA Loader 🔪**: Advanced multi-LoRA loading with UI enhancements (from nd-super-nodes)
+    - Load multiple LoRAs in a single node
+    - Individual enable/disable controls per LoRA
+    - Dual strength support (model and CLIP)
+    - Automatic trigger word extraction
+    - Template save/load system
+    - Enhanced file picker with search
+    - See [docs/LORA_MANAGER_INTEGRATION.md](docs/LORA_MANAGER_INTEGRATION.md) for details
 
 ### Web Extension (JavaScript)
 
--   **Video Controls Widget**: Enhanced video timeline controls with trimming
--   **Custom Styling**: Themed UI components that integrate with ComfyUI
+- **Video Controls Widget**: Enhanced video timeline controls with trimming
+- **Custom Styling**: Themed UI components that integrate with ComfyUI
 
 ## 🔐 API Key Configuration
 
@@ -151,7 +151,7 @@ To use the Gemini AI features, you'll need a Google Gemini API key:
 # Python backend development
 ruff check .                    # Lint Python code
 pytest                         # Run Python tests
-python -c "from utils.nodes import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_MAPPINGS.keys()))"
+python -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_MAPPINGS.keys()))"
 
 # JavaScript web extension development
 cd web
@@ -162,9 +162,9 @@ cd tests && npm test           # Run Playwright tests (requires running ComfyUI)
 
 **Important Notes:**
 
--   Python changes require ComfyUI server restart
--   JavaScript changes require browser cache refresh only
--   JavaScript widgets are plain JS files (no build step required)
+- Python changes require ComfyUI server restart
+- JavaScript changes require browser cache refresh only
+- JavaScript widgets are plain JS files (no build step required)
 
 ## Testing
 
@@ -172,15 +172,15 @@ cd tests && npm test           # Run Playwright tests (requires running ComfyUI)
 
 The project includes comprehensive CI/CD testing:
 
--   **Python**: Linting (ruff), formatting (black), type checking (mypy), unit tests (pytest)
--   **JavaScript**: Linting (eslint), formatting (prettier), integration tests (playwright)
--   **Integration**: ComfyUI node loading, FFmpeg availability, system compatibility
+- **Python**: Linting (ruff), formatting (black), type checking (mypy), unit tests (pytest)
+- **JavaScript**: Linting (eslint), formatting (prettier), integration tests (playwright)
+- **Integration**: ComfyUI node loading, FFmpeg availability, system compatibility
 
 ### Manual Testing
 
 ```bash
 # Test Python nodes
-python -c "from utils.nodes import NODE_CLASS_MAPPINGS; print('Nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
+python -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('Nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
 
 # Test JavaScript widgets
 # 1. Start ComfyUI with the custom node
@@ -220,17 +220,17 @@ npm run watch
 
 This template provides access to ComfyUI's powerful JavaScript APIs through the official type definitions. You can use these APIs to build rich extensions:
 
--   **Sidebar Tabs**: Create custom sidebar panels like this template demonstrates
--   **Bottom Bar Panels**: Add panels to the bottom of the UI
--   **Top Menu Items**: Add custom entries to the top menu
--   **Context Menus**: Create custom context menus for the graph
--   **Settings**: Add settings to the ComfyUI settings panel
--   **Toasts**: Display notification messages
--   **Commands**: Create and register custom commands
--   **Hotkeys/Keybindings**: Register custom keyboard shortcuts
--   **About Panel Badges**: Add badges to the about panel
--   **App Events**: Listen to and respond to app events
--   **Graph Manipulation**: Programmatically manipulate the workflow graph
+- **Sidebar Tabs**: Create custom sidebar panels like this template demonstrates
+- **Bottom Bar Panels**: Add panels to the bottom of the UI
+- **Top Menu Items**: Add custom entries to the top menu
+- **Context Menus**: Create custom context menus for the graph
+- **Settings**: Add settings to the ComfyUI settings panel
+- **Toasts**: Display notification messages
+- **Commands**: Create and register custom commands
+- **Hotkeys/Keybindings**: Register custom keyboard shortcuts
+- **About Panel Badges**: Add badges to the about panel
+- **App Events**: Listen to and respond to app events
+- **Graph Manipulation**: Programmatically manipulate the workflow graph
 
 For comprehensive documentation on all available APIs, see the [ComfyUI JavaScript Developer Documentation](https://docs.comfy.org/custom-nodes/js/javascript_overview).
 
@@ -260,7 +260,7 @@ ComfyUI-SwissArmyKnife/
     │   ├── setupTests.ts       # Testing environment setup
     │   ├── __tests__/          # Unit tests for components
     │   │   └── dummy.test.tsx  # Example test
-    │   └── utils/
+    │   └── nodes/
     │       └── i18n.ts         # Internationalization setup
     ├── eslint.config.js        # ESLint configuration
     ├── jest.config.js          # Jest testing configuration
@@ -328,7 +328,7 @@ This template includes a GitHub Actions workflow that automatically publishes to
 
 The workflow configuration is set up in `.github/workflows/react-build.yml` and will trigger when:
 
--   The `pyproject.toml` file is modified and pushed to the `main` branch
+- The `pyproject.toml` file is modified and pushed to the `main` branch
 
 The workflow automatically:
 
@@ -351,21 +351,21 @@ npm run test:watch
 
 Example tests can be found in the `src/__tests__` directory. The setup includes:
 
--   Jest for running tests
--   React Testing Library for testing components
--   Mock implementation of the ComfyUI window.app object
+- Jest for running tests
+- React Testing Library for testing components
+- Mock implementation of the ComfyUI window.app object
 
 ## Resources
 
--   [ComfyUI JS Extension Documentation](https://docs.comfy.org/custom-nodes/js/javascript_overview) - Official documentation for ComfyUI JavaScript Extensions
--   [ComfyUI Registry Documentation](https://docs.comfy.org/registry/publishing) - Learn how to publish your extension
--   [ComfyUI Frontend Repository](https://github.com/sammykumar/ComfyUI-Frontend) - The main ComfyUI frontend codebase
--   [Official ComfyUI Frontend Types](https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types) - TypeScript definitions for ComfyUI
--   [React Extension Guide](REACT_EXTENSION_GUIDE.md) - Detailed guide for creating React extensions
--   [TypeScript Documentation](https://www.typescriptlang.org/docs/)
--   [React Documentation](https://react.dev/reference/react)
--   [Jest Documentation](https://jestjs.io/docs/getting-started)
--   [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+- [ComfyUI JS Extension Documentation](https://docs.comfy.org/custom-nodes/js/javascript_overview) - Official documentation for ComfyUI JavaScript Extensions
+- [ComfyUI Registry Documentation](https://docs.comfy.org/registry/publishing) - Learn how to publish your extension
+- [ComfyUI Frontend Repository](https://github.com/sammykumar/ComfyUI-Frontend) - The main ComfyUI frontend codebase
+- [Official ComfyUI Frontend Types](https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types) - TypeScript definitions for ComfyUI
+- [React Extension Guide](REACT_EXTENSION_GUIDE.md) - Detailed guide for creating React extensions
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+- [React Documentation](https://react.dev/reference/react)
+- [Jest Documentation](https://jestjs.io/docs/getting-started)
+- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 
 ## Contributing
 
@@ -375,11 +375,11 @@ Contributions are welcome! Feel free to open issues or submit pull requests to i
 
 ### Third-Party Integrations
 
--   **LoRA Manager** - Forked from [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes) by HenkDz
-    -   Super LoRA Loader with multi-LoRA management
-    -   Enhanced file picker overlay
-    -   Template management system
-    -   CivitAI integration for trigger words
+- **LoRA Manager** - Forked from [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes) by HenkDz
+    - Super LoRA Loader with multi-LoRA management
+    - Enhanced file picker overlay
+    - Template management system
+    - CivitAI integration for trigger words
 
 ## License
 

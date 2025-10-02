@@ -82,5 +82,5 @@ When "Reddit Post" is selected as media_source:
 ## Related Files
 
 - `web/js/swiss-army-knife.js` - JavaScript widget logic (fixed)
-- `utils/nodes.py` - Python backend (already working)
+- `nodes/nodes.py` - Python backend (already working)
 - `docs/REDDIT_POST_MEDIA_SOURCE.md` - Feature documentation

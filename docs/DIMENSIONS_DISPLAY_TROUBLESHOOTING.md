@@ -206,7 +206,7 @@ If after following all these steps the widget still doesn't appear:
 2. **Check for JavaScript errors** (red text in console)
 3. **Verify Python node** is returning height and width correctly:
     ```python
-    # In utils/nodes.py, the describe_media method should return:
+    # In nodes/nodes.py, the describe_media method should return:
     return (description, media_info, gemini_status, processed_media_path,
             final_string, height, width)
     ```

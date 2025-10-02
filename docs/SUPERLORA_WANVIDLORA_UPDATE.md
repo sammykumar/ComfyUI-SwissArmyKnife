@@ -37,7 +37,7 @@ This ensures compatibility with WanVideo workflows and maintains consistency acr
 
 ### Code Changes
 
-**File: `utils/lora_manager/nd_super_lora_node.py`**
+**File: `nodes/lora_manager/nd_super_lora_node.py`**
 
 Changed `SuperLoraLoader` class:
 
@@ -129,7 +129,7 @@ WanVideo Lora Select (Low)  →
 
 ## Files Modified
 
-1. ✅ `utils/lora_manager/nd_super_lora_node.py` - Updated SuperLoraLoader class
+1. ✅ `nodes/lora_manager/nd_super_lora_node.py` - Updated SuperLoraLoader class
 2. ✅ `docs/SUPER_LORA_LOADER_VARIANTS.md` - Updated documentation
 3. ✅ `docs/SUPERLORA_SINGLE_STREAM_IMPLEMENTATION.md` - Updated implementation doc
 4. ✅ `docs/SUPERLORA_WANVIDLORA_UPDATE.md` - This summary document

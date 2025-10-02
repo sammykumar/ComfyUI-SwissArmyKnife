@@ -35,14 +35,14 @@ Added explanatory comment at line 1896:
 
 ### Backend Changes (Python)
 
-**File**: `utils/lora_manager/web_api.py`
+**File**: `nodes/lora_manager/web_api.py`
 
 - Changed import from `get_update_status` to `get_local_version`
 - Modified `get_version_info()` function to return only local version information
 - Disabled GitHub release checking functionality
 - Returns simple response: `{ "localVersion": {...}, "hasUpdate": false, "message": "This is a forked version. Update checking disabled." }`
 
-**File**: `utils/lora_manager/version_utils.py`
+**File**: `nodes/lora_manager/version_utils.py`
 
 - No changes made to this file
 - Functions like `get_update_status()` and `_fetch_latest_release()` remain in code but are no longer called
@@ -89,7 +89,7 @@ Users will no longer see:
 
 The following files are no longer used and can be removed in the future:
 
-- `utils/lora_manager/version_utils.py`: Contains GitHub release checking logic
+- `nodes/lora_manager/version_utils.py`: Contains GitHub release checking logic
 - Any cached update files in `<ComfyUI user dir>/nd_super_nodes/nd_super_nodes_update_cache.json`
 
 ## Future Considerations

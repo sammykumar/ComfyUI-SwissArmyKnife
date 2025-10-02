@@ -146,7 +146,7 @@ Possible improvements:
 
 - `CLEAR_VIDEO_PREVIEW_FUNCTION_ORDER_FIX.md` - JavaScript method ordering
 - `IMPLEMENTATION_STATUS.md` - Overall feature status
-- Python node documentation in `utils/nodes.py`
+- Python node documentation in `nodes/nodes.py`
 
 ## Date Implemented
 

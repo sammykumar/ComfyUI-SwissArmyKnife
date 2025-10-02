@@ -18,7 +18,7 @@ ComfyUI-SwissArmyKnife is a ComfyUI extension that consists of two essential com
 
 ### Backend (Python Custom Nodes)
 
-- Python custom nodes in `utils/*.py` for Gemini AI video analysis and processing
+- Python custom nodes in `nodes/*.py` for Gemini AI video analysis and processing
 - Core business logic and AI integration
 - Requires ComfyUI server restart when modified
 
@@ -85,7 +85,7 @@ pip3 install torch opencv-python
 pip3 install pytest mypy coverage ruff pre-commit
 
 # Verify Python modules work
-python3 -c "from utils.nodes import NODE_CLASS_MAPPINGS; print('Available nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
+python3 -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('Available nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
 # Should output: Available nodes: ['GeminiUtilVideoDescribe']
 ```
 
@@ -140,7 +140,7 @@ vim docs/EXISTING_GUIDE.md
 
 ```bash
 # Import and test Python nodes
-python3 -c "from utils.nodes import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_MAPPINGS.keys()))"
+python3 -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_MAPPINGS.keys()))"
 
 # Run Python linting (fast, < 1 second)
 ruff check .
@@ -286,7 +286,7 @@ grep -r "TODO\|FIXME\|OUTDATED" docs/  # Should return no results
 
 ```bash
 # 1. Import test
-python3 -c "from utils.nodes import NODE_CLASS_MAPPINGS; print('✓ Python imports work')"
+python3 -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('✓ Python imports work')"
 
 # 2. Linting
 ruff check .  # Accept unused import warnings as normal
@@ -397,7 +397,7 @@ comfyui_swissarmyknife/
 │   ├── WIDGET_INVESTIGATION_AND_FIXES.md  # Technical troubleshooting
 │   ├── SEED_WIDGET_IMPLEMENTATION.md  # Specific feature documentation
 │   └── *.md                          # All other documentation files
-├── utils/nodes.py                      # Main Python custom nodes
+├── nodes/nodes.py                      # Main Python custom nodes
 ├── web/js/gemini_widgets.js           # JavaScript widgets
 └── ui-react_backup/                   # React UI extension
     ├── ui/src/                        # React source code
@@ -446,7 +446,7 @@ Set appropriate timeouts: 60+ seconds for npm install, 300+ seconds for Python M
 
 ## Development Tips
 
-- **Backend changes**: Restart ComfyUI server after modifying Python files in `utils/`
+- **Backend changes**: Restart ComfyUI server after modifying Python files in `nodes/`
 - **Web extension changes**: Refresh browser cache after modifying JavaScript files in `web/js/`
 - JavaScript widgets require no build step (plain JS files)
 - Use Playwright tests in `web/tests/` to validate functionality against hosted ComfyUI server

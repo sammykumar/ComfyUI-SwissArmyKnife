@@ -38,6 +38,7 @@ For detailed information, see [docs/LORA_MANAGER_INTEGRATION.md](../../docs/LORA
 ## Original Project
 
 This component is forked from:
+
 - **Repository**: https://github.com/HenkDz/nd-super-nodes
 - **Author**: HenkDz
 - **Original License**: See original repository
@@ -46,7 +47,7 @@ This component is forked from:
 
 - Category changed to "Swiss Army Knife 🔪"
 - Print statements updated with "Swiss Army Knife LoRA Manager" branding
-- Module restructured under `utils/lora_manager/`
+- Module restructured under `nodes/lora_manager/`
 - Documentation added for integration
 - Display name updated to "Super LoRA Loader 🔪"
 

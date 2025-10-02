@@ -24,7 +24,7 @@ Do not describe any text, typography, words, letters, logos, brand names, or wri
 
 ## Implementation Details
 
-The changes were applied to both image and video processing in `utils/nodes.py`:
+The changes were applied to both image and video processing in `nodes/nodes.py`:
 
 1. **Image Processing** (Line ~174): Updated the CLOTHING paragraph prompt in the `_process_image` method
 2. **Video Processing** (Line ~416): Updated the CLOTHING paragraph prompt in the `_process_video` method

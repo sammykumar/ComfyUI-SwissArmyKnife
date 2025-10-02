@@ -2,9 +2,10 @@
 
 ## Overview
 
-Successfully forked [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes) by HenkDz into ComfyUI-SwissArmyKnife under `utils/lora_manager/` with full integration into the Swiss Army Knife ecosystem.
+Successfully forked [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes) by HenkDz into ComfyUI-SwissArmyKnife under `nodes/lora_manager/` with full integration into the Swiss Army Knife ecosystem.
 
 ## Date
+
 October 1, 2024
 
 ## Files Added
@@ -12,7 +13,7 @@ October 1, 2024
 ### Backend Python Files (8 files)
 
 ```
-utils/lora_manager/
+nodes/lora_manager/
 ├── __init__.py                 # Module initialization and node registration
 ├── nd_super_lora_node.py      # Main Super LoRA Loader node implementation
 ├── lora_utils.py              # LoRA file discovery and metadata extraction
@@ -47,34 +48,34 @@ docs/
 ### Core Integration Files
 
 1. **`__init__.py`** (root)
-   - Added lora_manager node imports
-   - Integrated NODE_CLASS_MAPPINGS
-   - Added error handling for missing dependencies
+    - Added lora_manager node imports
+    - Integrated NODE_CLASS_MAPPINGS
+    - Added error handling for missing dependencies
 
 2. **`pyproject.toml`**
-   - Added `aiohttp>=3.8.0` dependency
+    - Added `aiohttp>=3.8.0` dependency
 
 3. **`CONTRIBUTING.md`**
-   - Added lora_manager section
-   - Updated project structure diagram
-   - Added testing instructions
+    - Added lora_manager section
+    - Updated project structure diagram
+    - Added testing instructions
 
 4. **`README.md`**
-   - Added LoRA Manager to features list
-   - Updated available nodes section
-   - Added credits section
+    - Added LoRA Manager to features list
+    - Updated available nodes section
+    - Added credits section
 
 ### Branding Updates in Forked Code
 
 Updated the following in forked files to match Swiss Army Knife branding:
 
-1. **`utils/lora_manager/__init__.py`**
-   - Changed header comment to reference fork origin
-   - Updated NODE_DISPLAY_NAME_MAPPINGS: "Super LoRA Loader 🔪"
-   - Updated print statements: "Swiss Army Knife LoRA Manager"
+1. **`nodes/lora_manager/__init__.py`**
+    - Changed header comment to reference fork origin
+    - Updated NODE_DISPLAY_NAME_MAPPINGS: "Super LoRA Loader 🔪"
+    - Updated print statements: "Swiss Army Knife LoRA Manager"
 
-2. **`utils/lora_manager/nd_super_lora_node.py`**
-   - Changed CATEGORY from "loaders" to "Swiss Army Knife 🔪"
+2. **`nodes/lora_manager/nd_super_lora_node.py`**
+    - Changed CATEGORY from "loaders" to "Swiss Army Knife 🔪"
 
 ## Integration Details
 
@@ -84,8 +85,8 @@ The lora_manager nodes are integrated into the main node mappings:
 
 ```python
 # In __init__.py
-from .utils.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
-from .utils.lora_manager import NODE_DISPLAY_NAME_MAPPINGS as LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
+from .nodes.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
+from .nodes.lora_manager import NODE_DISPLAY_NAME_MAPPINGS as LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
 
 NODE_CLASS_MAPPINGS = {
     **MAIN_NODE_CLASS_MAPPINGS,
@@ -99,16 +100,19 @@ NODE_CLASS_MAPPINGS = {
 The lora_manager automatically registers HTTP API routes when ComfyUI's PromptServer is available:
 
 **LoRA Operations:**
+
 - `GET /super_lora/loras` - List available LoRAs
 - `GET /super_lora/files?folder_name=loras` - List files
 - `POST /super_lora/civitai_info` - Fetch CivitAI metadata
 
 **Template Operations:**
+
 - `GET /super_lora/templates` - List all templates
 - `POST /super_lora/templates` - Save template
 - `DELETE /super_lora/templates/{name}` - Delete template
 
 **File Picker:**
+
 - `GET /superlora/files` - Enhanced file listing
 - `GET /superlora/folders` - Folder information
 - `GET /superlora/search` - File search
@@ -127,6 +131,7 @@ The web extension is automatically loaded by ComfyUI from the `web/js/lora_manag
 - **Outputs**: MODEL, CLIP, TRIGGER_WORDS (string)
 
 **Capabilities:**
+
 - Load multiple LoRAs in a single node
 - Individual enable/disable toggles per LoRA
 - Dual strength controls (model and CLIP)
@@ -200,6 +205,7 @@ dependencies = [
 ### Optional Dependencies
 
 The lora_manager works best with:
+
 - `safetensors` - For reading LoRA metadata (usually included with ComfyUI)
 - Internet connection - For CivitAI API integration (optional)
 
@@ -208,7 +214,7 @@ The lora_manager works best with:
 ### Before
 
 ```
-utils/
+nodes/
 ├── __init__.py
 ├── cache.py
 ├── civitai_service.py
@@ -225,7 +231,7 @@ web/
 ### After
 
 ```
-utils/
+nodes/
 ├── __init__.py
 ├── cache.py
 ├── civitai_service.py
@@ -273,43 +279,44 @@ All other code from nd-super-nodes remains unchanged to maintain compatibility a
 ### Created Documentation
 
 1. **`docs/LORA_MANAGER_INTEGRATION.md`** (8,432 bytes)
-   - Comprehensive integration guide
-   - Feature descriptions
-   - Architecture overview
-   - API routes documentation
-   - Usage examples
-   - Troubleshooting guide
-   - Credits and license information
+    - Comprehensive integration guide
+    - Feature descriptions
+    - Architecture overview
+    - API routes documentation
+    - Usage examples
+    - Troubleshooting guide
+    - Credits and license information
 
-2. **`utils/lora_manager/README.md`** (2,480 bytes)
-   - Backend module overview
-   - File descriptions
-   - Integration details
-   - Development guidelines
+2. **`nodes/lora_manager/README.md`** (2,480 bytes)
+    - Backend module overview
+    - File descriptions
+    - Integration details
+    - Development guidelines
 
 3. **`web/js/lora_manager/README.md`** (2,743 bytes)
-   - Web extension overview
-   - Features description
-   - API integration details
-   - Testing and debugging guide
+    - Web extension overview
+    - Features description
+    - API integration details
+    - Testing and debugging guide
 
 ### Updated Documentation
 
 1. **`README.md`**
-   - Added LoRA Manager to features list
-   - Updated available nodes section
-   - Added credits for nd-super-nodes fork
+    - Added LoRA Manager to features list
+    - Updated available nodes section
+    - Added credits for nd-super-nodes fork
 
 2. **`CONTRIBUTING.md`**
-   - Added lora_manager section
-   - Updated project structure diagram
-   - Added testing instructions
+    - Added lora_manager section
+    - Updated project structure diagram
+    - Added testing instructions
 
 ## Compatibility Notes
 
 ### ComfyUI Compatibility
 
 The lora_manager is designed to work with:
+
 - ComfyUI's standard LoraLoader node API
 - ComfyUI's folder_paths system
 - ComfyUI's PromptServer for API routes
@@ -318,6 +325,7 @@ The lora_manager is designed to work with:
 ### Graceful Degradation
 
 The module handles missing dependencies gracefully:
+
 - Works without ComfyUI (for testing)
 - Works without CivitAI API (falls back to local metadata)
 - Works without safetensors library (with reduced functionality)
@@ -327,17 +335,19 @@ The module handles missing dependencies gracefully:
 ### Maintenance
 
 When updating from nd-super-nodes upstream:
-1. Copy new files to `utils/lora_manager/`
+
+1. Copy new files to `nodes/lora_manager/`
 2. Re-apply branding changes:
-   - Category: "Swiss Army Knife 🔪"
-   - Display name: "Super LoRA Loader 🔪"
-   - Print statements: "Swiss Army Knife LoRA Manager"
+    - Category: "Swiss Army Knife 🔪"
+    - Display name: "Super LoRA Loader 🔪"
+    - Print statements: "Swiss Army Knife LoRA Manager"
 3. Test imports and functionality
 4. Update documentation if API changes
 
 ### Potential Enhancements
 
 Listed in `docs/LORA_MANAGER_INTEGRATION.md`:
+
 - Bulk LoRA operations
 - LoRA preview thumbnails
 - Custom LoRA categories/collections

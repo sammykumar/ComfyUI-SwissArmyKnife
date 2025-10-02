@@ -155,7 +155,7 @@ The LoRA JSON output now includes comprehensive hash information:
 ### Basic Hash Computation
 
 ```python
-from utils.lora_hash_cache import get_cache
+from nodes.lora_hash_cache import get_cache
 
 cache = get_cache()
 hashes = cache.get_hashes("/path/to/lora.safetensors")
@@ -168,7 +168,7 @@ print(f"AutoV2: {hashes['autov2']}")
 ### CivitAI Lookup with Multiple Hash Types
 
 ```python
-from utils.civitai_service import CivitAIService
+from nodes.civitai_service import CivitAIService
 
 service = CivitAIService(api_key="your_api_key")
 model_info = service.get_model_info_by_hash("/path/to/lora.safetensors")

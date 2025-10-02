@@ -14,7 +14,7 @@ web/js/lora_manager/extension.js  ✅ USE THIS FILE
 
 The SuperLoraLoader system consists of two components working together:
 
-### 1. Backend (Python) - `utils/lora_manager/nd_super_lora_node.py`
+### 1. Backend (Python) - `nodes/lora_manager/nd_super_lora_node.py`
 
 Two node classes:
 
@@ -37,7 +37,7 @@ Complete nd-super-nodes port (~7000+ lines) including:
 
 ```
 ComfyUI-SwissArmyKnife/
-├── utils/lora_manager/
+├── nodes/lora_manager/
 │   └── nd_super_lora_node.py           # Backend Python nodes ✅
 │
 ├── web/js/
@@ -210,6 +210,6 @@ ComfyUI-SwissArmyKnife/
 ## References
 
 - **Original Source**: https://github.com/HenkDz/nd-super-nodes
-- **Backend**: `utils/lora_manager/nd_super_lora_node.py`
+- **Backend**: `nodes/lora_manager/nd_super_lora_node.py`
 - **Frontend**: `web/js/lora_manager/extension.js` ✅ **COMPLETE IMPLEMENTATION**
 - **Other Utils**: `web/js/swiss-army-knife.js` (not for SuperLoraLoader)

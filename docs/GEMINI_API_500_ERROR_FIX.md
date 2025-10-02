@@ -135,7 +135,7 @@ file_size = file_stats.st_size / (1024 * 1024)  # Convert to MB
 
 ## Related Files
 
-- `utils/nodes.py`: Main implementation
+- `nodes/nodes.py`: Main implementation
 - `docs/REDDIT_POST_MEDIA_SOURCE.md`: Reddit feature documentation
 - `web/js/swiss-army-knife.js`: Frontend Reddit URL widget
 

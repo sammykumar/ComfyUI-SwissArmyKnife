@@ -219,7 +219,7 @@ except subprocess.CalledProcessError as e:
 
 ## Related Files
 
-- **Implementation**: `utils/nodes.py` - VideoMetadataNode class
+- **Implementation**: `nodes/nodes.py` - VideoMetadataNode class
 - **VHS Compatibility**: `VHS_VIDEOCOMBINE_COMPATIBILITY_FIX.md`
 - **LoRA Integration**: `VIDEO_METADATA_JSON_INTEGRATION.md`
 - **Multiple LoRA Support**: `MULTIPLE_LORA_SUPPORT.md`

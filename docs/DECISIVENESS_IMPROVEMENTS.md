@@ -16,8 +16,8 @@ DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When 
 
 **Enhanced critical note to be more explicit:**
 
--   Added comprehensive list of uncertainty phrases to avoid
--   Added instruction to "confidently choose one and state it as absolute fact"
+- Added comprehensive list of uncertainty phrases to avoid
+- Added instruction to "confidently choose one and state it as absolute fact"
 
 ### 2. ImageEdit Prompts
 
@@ -31,33 +31,33 @@ Always be completely decisive and definitive - when you see something that could
 
 **Added same decisiveness requirement to video analysis:**
 
--   Includes the same prominent decisiveness section as Text2Image
--   Enhanced critical note with comprehensive uncertainty language elimination
--   Improved clothing descriptions to be more definitive
+- Includes the same prominent decisiveness section as Text2Image
+- Enhanced critical note with comprehensive uncertainty language elimination
+- Improved clothing descriptions to be more definitive
 
 ### 4. Clothing Descriptions
 
 **Enhanced clothing description sections for both image and video:**
 
--   Added "with confidence" and "definitiveness" language
--   Included instruction to "Make decisive choices when multiple interpretations are possible"
--   Emphasized choosing "one specific description and state it as fact"
+- Added "with confidence" and "definitiveness" language
+- Included instruction to "Make decisive choices when multiple interpretations are possible"
+- Emphasized choosing "one specific description and state it as fact"
 
 ## Examples of Improvements
 
 ### Before (Uncertain Language)
 
--   ❌ "She appears to be wearing either lace tights or leggings"
--   ❌ "holding what might be a black folder or book"
--   ❌ "seems to be wearing denim, possibly jeans"
--   ❌ "likely has curly hair texture"
+- ❌ "She appears to be wearing either lace tights or leggings"
+- ❌ "holding what might be a black folder or book"
+- ❌ "seems to be wearing denim, possibly jeans"
+- ❌ "likely has curly hair texture"
 
 ### After (Decisive Language)
 
--   ✅ "She wears black lace tights"
--   ✅ "holding a black folder"
--   ✅ "wearing dark blue denim jeans"
--   ✅ "has curly hair texture"
+- ✅ "She wears black lace tights"
+- ✅ "holding a black folder"
+- ✅ "wearing dark blue denim jeans"
+- ✅ "has curly hair texture"
 
 ## Benefits
 
@@ -68,16 +68,16 @@ Always be completely decisive and definitive - when you see something that could
 
 ## Technical Implementation
 
--   Changes applied to `utils/nodes.py` in the `GeminiMediaDescribe` class
--   Affects all three processing modes: Text2Image, ImageEdit, and Video
--   Maintains backward compatibility with existing options
--   No breaking changes to API or node structure
+- Changes applied to `nodes/nodes.py` in the `GeminiMediaDescribe` class
+- Affects all three processing modes: Text2Image, ImageEdit, and Video
+- Maintains backward compatibility with existing options
+- No breaking changes to API or node structure
 
 ## Validation
 
--   ✅ Python syntax validation passed
--   ✅ Node class mappings intact
--   ✅ All functionality preserved
--   ✅ Enhanced decisiveness implemented across all prompt types
+- ✅ Python syntax validation passed
+- ✅ Node class mappings intact
+- ✅ All functionality preserved
+- ✅ Enhanced decisiveness implemented across all prompt types
 
 The prompts now consistently guide Gemini to make confident, definitive choices rather than expressing uncertainty through hedging language.

@@ -1,13 +1,13 @@
 import os
-from .utils.nodes import NODE_CLASS_MAPPINGS as MAIN_NODE_CLASS_MAPPINGS
-from .utils.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MAPPINGS
-from .utils.helper_nodes import HELPER_NODE_CLASS_MAPPINGS
-from .utils.helper_nodes import HELPER_NODE_DISPLAY_NAME_MAPPINGS
+from .nodes.nodes import NODE_CLASS_MAPPINGS as MAIN_NODE_CLASS_MAPPINGS
+from .nodes.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MAPPINGS
+from .nodes.helper_nodes import HELPER_NODE_CLASS_MAPPINGS
+from .nodes.helper_nodes import HELPER_NODE_DISPLAY_NAME_MAPPINGS
 
 # Import lora_manager nodes
 try:
-    from .utils.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
-    from .utils.lora_manager import NODE_DISPLAY_NAME_MAPPINGS as LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
+    from .nodes.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
+    from .nodes.lora_manager import NODE_DISPLAY_NAME_MAPPINGS as LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
 except ImportError as e:
     print(f"Warning: Could not import lora_manager nodes: {e}")
     LORA_MANAGER_NODE_CLASS_MAPPINGS = {}

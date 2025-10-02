@@ -94,7 +94,7 @@ This fix resolves the blocking issue that prevented the LoRA Info Extractor from
 
 ## Related Files
 
-- `utils/civitai_service.py` - Main implementation
+- `nodes/civitai_service.py` - Main implementation
 - `docs/MULTIPLE_HASH_TYPES_CIVITAI_INTEGRATION.md` - Comprehensive documentation
 
 ## Date Fixed

@@ -19,7 +19,7 @@ I initially created a simple implementation in `swiss-army-knife.js` (~400 lines
 ### ✅ SuperLoraLoader (Use These Files)
 
 ```
-Backend:  utils/lora_manager/nd_super_lora_node.py
+Backend:  nodes/lora_manager/nd_super_lora_node.py
 Frontend: web/js/lora_manager/extension.js  ← COMPLETE IMPLEMENTATION
 ```
 

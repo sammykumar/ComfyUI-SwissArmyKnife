@@ -15,9 +15,9 @@ The cache system was not properly optimized for seed-based media selection, caus
 
 The caching system was already correctly implemented to be seed-independent:
 
--   Cache keys are based on `media_identifier = get_file_media_identifier(selected_media_path)`
--   This uses **file path + modification time**, not the seed used to select it
--   Different seeds selecting the same file will have identical cache keys
+- Cache keys are based on `media_identifier = get_file_media_identifier(selected_media_path)`
+- This uses **file path + modification time**, not the seed used to select it
+- Different seeds selecting the same file will have identical cache keys
 
 ### 2. Added Duration Parameter to Video Cache ✅
 
@@ -46,13 +46,13 @@ cache_options = {
 
 ### Before Fix
 
--   **Same file, different seeds**: New API call each time ❌
--   **Same file, different duration**: Incorrect cache hit ❌
+- **Same file, different seeds**: New API call each time ❌
+- **Same file, different duration**: Incorrect cache hit ❌
 
 ### After Fix
 
--   **Same file, different seeds**: Cache hit ✅
--   **Same file, different duration**: Separate cache entries ✅
+- **Same file, different seeds**: Cache hit ✅
+- **Same file, different duration**: Separate cache entries ✅
 
 ## Cache Key Structure
 
@@ -67,15 +67,15 @@ Cache keys are now properly based on:
 
 Test scenarios that should now work efficiently:
 
--   ✅ Testing multiple seeds with the same file selected → Cache hit after first call
--   ✅ Different duration limits on same file → Separate cache entries
--   ✅ Different option combinations → Separate cache entries (expected)
--   ✅ Different models → Separate cache entries (expected)
+- ✅ Testing multiple seeds with the same file selected → Cache hit after first call
+- ✅ Different duration limits on same file → Separate cache entries
+- ✅ Different option combinations → Separate cache entries (expected)
+- ✅ Different models → Separate cache entries (expected)
 
 ## Files Modified
 
--   `utils/nodes.py` - Added `max_duration` to video cache options
+- `nodes/nodes.py` - Added `max_duration` to video cache options
 
 ## Related Documentation
 
--   `docs/CACHING.md` - General caching implementation details
+- `docs/CACHING.md` - General caching implementation details

@@ -4,7 +4,7 @@
 
 ### 1. Python Backend Implementation
 
-- **File**: `utils/nodes.py`
+- **File**: `nodes/nodes.py`
 - **Status**: ✅ Working correctly
 - **Features**:
     - Clean GeminiMediaDescribe class with proper INPUT_TYPES structure
@@ -130,7 +130,7 @@ All features tested and documented. Full compatibility achieved with:
 
 ## 📁 Files Modified
 
-- `utils/nodes.py` - Clean implementation with all three node classes
+- `nodes/nodes.py` - Clean implementation with all three node classes
 - `web/js/gemini_widgets.js` - Dynamic UI widgets (already working)
-- `utils/nodes_corrupted_backup.py` - Backup of broken version
-- `utils/nodes_clean.py` - Clean working version (used to restore nodes.py)
+- `nodes/nodes_corrupted_backup.py` - Backup of broken version
+- `nodes/nodes_clean.py` - Clean working version (used to restore nodes.py)
