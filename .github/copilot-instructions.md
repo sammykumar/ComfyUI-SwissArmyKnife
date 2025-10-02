@@ -43,6 +43,29 @@ ComfyUI-SwissArmyKnife is a ComfyUI extension that consists of two essential com
 
 ## Working Effectively
 
+### Virtual Environment Activation
+
+**CRITICAL**: Always activate the virtual environment before running any Python commands:
+
+```bash
+# Activate virtual environment (REQUIRED for all Python operations)
+source /Users/samkumar/Development/dev-lab-hq/ai-image-hub/apps/comfyui-swiss-army-knife/.venv/bin/activate
+
+# Or use relative path if in project root:
+source .venv/bin/activate
+
+# Verify activation (you should see (.venv) in your prompt)
+which python3  # Should show path inside .venv directory
+```
+
+**IMPORTANT**: Run the activation command before:
+
+- Installing Python packages (`pip3 install`)
+- Running Python scripts or commands
+- Running tests (`pytest`)
+- Linting Python code (`ruff check`)
+- Any other Python-related terminal operations
+
 ### Essential System Dependencies
 
 Install these system dependencies first:
@@ -74,6 +97,9 @@ ffmpeg -version  # Should show version 6.1.1 or newer
 ### Bootstrap Python Development
 
 ```bash
+# ALWAYS activate virtual environment first
+source .venv/bin/activate
+
 # Install Python package and dependencies
 pip3 install -e .  # Takes ~12 seconds for basic dependencies
 
@@ -139,6 +165,9 @@ vim docs/EXISTING_GUIDE.md
 ### Backend (Python) Development
 
 ```bash
+# ALWAYS activate virtual environment first
+source .venv/bin/activate
+
 # Import and test Python nodes
 python3 -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_MAPPINGS.keys()))"
 
@@ -169,6 +198,9 @@ ls -la web/css/gemini_widgets.css
 ### Backend (Python) Testing
 
 ```bash
+# ALWAYS activate virtual environment first
+source .venv/bin/activate
+
 # Run pytest (currently no tests exist)
 pytest  # NEVER CANCEL: Takes < 30 seconds. Set timeout to 60+ seconds.
 # Expected: "no tests ran" - this is normal, no tests exist yet
@@ -211,6 +243,9 @@ npm test
 ### Python Linting (Works)
 
 ```bash
+# ALWAYS activate virtual environment first
+source .venv/bin/activate
+
 # Fast linting check (< 1 second)
 ruff check .
 
@@ -285,6 +320,9 @@ grep -r "TODO\|FIXME\|OUTDATED" docs/  # Should return no results
 #### Python Node Validation
 
 ```bash
+# ALWAYS activate virtual environment first
+source .venv/bin/activate
+
 # 1. Import test
 python3 -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('✓ Python imports work')"
 
@@ -412,7 +450,8 @@ comfyui_swissarmyknife/
 cd ui-react_backup/ui
 npm install  # Install from package.json
 
-# Python dependencies
+# Python dependencies (ALWAYS activate venv first)
+source .venv/bin/activate
 pip3 install -e .  # Install from pyproject.toml
 pip3 install torch opencv-python  # Additional ML dependencies
 ```
@@ -426,9 +465,13 @@ npm --version     # Should be 10.8.2+
 python3 --version # Should be 3.12.3+
 ffmpeg -version   # Should be 6.1.1+
 
-# Verify dependencies
-npm list --prefix ui-react_backup/ui  # Show React dependencies
+# Verify Python dependencies (activate venv first)
+source .venv/bin/activate
+which python3     # Should point to .venv/bin/python3
 pip3 list | grep -E "(torch|opencv|google-genai)"  # Show Python ML deps
+
+# Verify Node dependencies
+npm list --prefix ui-react_backup/ui  # Show React dependencies
 ```
 
 ## Timing Expectations
