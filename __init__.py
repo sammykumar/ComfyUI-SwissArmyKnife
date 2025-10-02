@@ -4,6 +4,15 @@ from .nodes.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MA
 from .nodes.helper_nodes import HELPER_NODE_CLASS_MAPPINGS
 from .nodes.helper_nodes import HELPER_NODE_DISPLAY_NAME_MAPPINGS
 
+# Import control panel node
+try:
+    from .nodes.utils.control_panel import CONTROL_PANEL_NODE_CLASS_MAPPINGS
+    from .nodes.utils.control_panel import CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS
+except ImportError as e:
+    print(f"Warning: Could not import control panel node: {e}")
+    CONTROL_PANEL_NODE_CLASS_MAPPINGS = {}
+    CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS = {}
+
 # Import lora_manager nodes
 try:
     from .nodes.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
@@ -38,15 +47,17 @@ def get_version():
         import time
         return str(int(time.time()))
 
-# Combine main nodes, helper nodes, and lora_manager nodes
+# Combine main nodes, helper nodes, control panel, and lora_manager nodes
 NODE_CLASS_MAPPINGS = {
     **MAIN_NODE_CLASS_MAPPINGS,
     **HELPER_NODE_CLASS_MAPPINGS,
+    **CONTROL_PANEL_NODE_CLASS_MAPPINGS,
     **LORA_MANAGER_NODE_CLASS_MAPPINGS
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     **MAIN_NODE_DISPLAY_NAME_MAPPINGS,
     **HELPER_NODE_DISPLAY_NAME_MAPPINGS,
+    **CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS,
     **LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
 }
 
