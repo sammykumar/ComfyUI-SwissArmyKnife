@@ -234,9 +234,9 @@ app.registerExtension({
             };
         }
 
-        // Handle GeminiUtilMediaDescribe node
-        else if (nodeData.name === "GeminiUtilMediaDescribe") {
-            debugLog("Registering GeminiUtilMediaDescribe node with dynamic media widgets");
+        // Handle MediaDescribe node
+        else if (nodeData.name === "MediaDescribe") {
+            debugLog("Registering MediaDescribe node with dynamic media widgets");
 
             // Add custom widget after the node is created
             const onNodeCreated = nodeType.prototype.onNodeCreated;
@@ -1400,8 +1400,8 @@ app.registerExtension({
 
     // Hook to handle workflow loading
     loadedGraphNode(node, app) {
-        if (node.comfyClass === "GeminiUtilMediaDescribe") {
-            debugLog("[LOADED] loadedGraphNode called for GeminiUtilMediaDescribe");
+        if (node.comfyClass === "MediaDescribe") {
+            debugLog("[LOADED] loadedGraphNode called for MediaDescribe");
 
             // Check if this node has saved UI state with uploaded file data
             const hasSavedVideoData = node.ui_state?.uploaded_file_info?.video?.file;
@@ -1432,7 +1432,7 @@ app.registerExtension({
         }
     },
 
-    // Setup app-level execution handler for GeminiUtilMediaDescribe
+    // Setup app-level execution handler for MediaDescribe
     async setup() {
         // Hook into API events to catch execution results
         api.addEventListener("executed", ({ detail }) => {
@@ -1454,8 +1454,8 @@ app.registerExtension({
                 node?.comfyClass
             );
 
-            if (node && node.comfyClass === "GeminiUtilMediaDescribe") {
-                debugLog("[API] ✅ Found GeminiUtilMediaDescribe execution result");
+            if (node && node.comfyClass === "MediaDescribe") {
+                debugLog("[API] ✅ Found MediaDescribe execution result");
                 debugLog("[API] Full output structure:", JSON.stringify(output, null, 2));
 
                 // Extract dimensions from output
@@ -1480,7 +1480,7 @@ app.registerExtension({
                     debugLog("[API] ⚠️ No height/width in output. Output structure:", output);
                 }
             } else {
-                debugLog("[API] ❌ Not a GeminiUtilMediaDescribe node, skipping");
+                debugLog("[API] ❌ Not a MediaDescribe node, skipping");
             }
         });
     },
