@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from .civitai_service import CivitAIService
 from .lora_hash_cache import get_cache as get_lora_hash_cache
 from .media_describe import GeminiUtilOptions, MediaDescribe
+from .utils.video_preview import VideoPreview
 
 
 
@@ -772,7 +773,8 @@ NODE_CLASS_MAPPINGS = {
     "GeminiUtilOptions": GeminiUtilOptions,
     "FilenameGenerator": FilenameGenerator,
     "VideoMetadataNode": VideoMetadataNode,
-    "LoRAInfoExtractor": LoRAInfoExtractor
+    "LoRAInfoExtractor": LoRAInfoExtractor,
+    "VideoPreview": VideoPreview
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -781,5 +783,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "GeminiUtilOptions": "Gemini Util - Options",
     "FilenameGenerator": "Filename Generator",
     "VideoMetadataNode": "Update Video Metadata",
-    "LoRAInfoExtractor": "LoRA Info Extractor"
+    "LoRAInfoExtractor": "LoRA Info Extractor",
+    "VideoPreview": "🎬 Video Preview"
 }
