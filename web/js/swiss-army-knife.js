@@ -816,17 +816,9 @@ app.registerExtension({
                         this.mediaTypeWidget.value = o.ui_state.media_type;
                     }
 
-                    // Restore reddit_url widget value if available
-                    if (o.ui_state.reddit_url !== undefined) {
-                        const redditUrlWidget = this.widgets.find((w) => w.name === "reddit_url");
-                        if (redditUrlWidget) {
-                            console.log("[DEBUG] Restoring reddit_url to:", o.ui_state.reddit_url);
-                            redditUrlWidget.value = o.ui_state.reddit_url;
-                        }
-                    }
-
-                    // Store upload file info for later restoration (after updateMediaWidgets clears state)
+                    // Store upload file info and reddit_url for later restoration (after updateMediaWidgets clears state)
                     this._pendingFileRestore = o.ui_state.uploaded_file_info;
+                    this._pendingRedditUrlRestore = o.ui_state.reddit_url;
                     console.log(
                         "[DEBUG] Stored _pendingFileRestore:",
                         JSON.stringify(this._pendingFileRestore, null, 2)
@@ -845,6 +837,30 @@ app.registerExtension({
                                 "[DEBUG] _pendingFileRestore still exists:",
                                 !!this._pendingFileRestore
                             );
+                            console.log(
+                                "[DEBUG] _pendingRedditUrlRestore:",
+                                this._pendingRedditUrlRestore
+                            );
+
+                            // Restore reddit_url first if available
+                            if (this._pendingRedditUrlRestore !== undefined) {
+                                const redditUrlWidget = this.widgets.find(
+                                    (w) => w.name === "reddit_url"
+                                );
+                                if (redditUrlWidget) {
+                                    redditUrlWidget.value = this._pendingRedditUrlRestore;
+                                    console.log(
+                                        "[CONFIGURE] Restored reddit_url to:",
+                                        this._pendingRedditUrlRestore
+                                    );
+                                } else {
+                                    console.log(
+                                        "[DEBUG] Reddit URL widget not found for restoration"
+                                    );
+                                }
+                                // Clean up
+                                delete this._pendingRedditUrlRestore;
+                            }
 
                             if (this._pendingFileRestore) {
                                 const fileInfo = this._pendingFileRestore;
