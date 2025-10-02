@@ -777,7 +777,7 @@ NODE_CLASS_MAPPINGS = {
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "GeminiUtilMediaDescribe": "Gemini Util - Media Describe",
+    "MediaDescribe": "Media Describe",
     "GeminiUtilOptions": "Gemini Util - Options",
     "FilenameGenerator": "Filename Generator",
     "VideoMetadataNode": "Update Video Metadata",
