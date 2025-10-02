@@ -6,12 +6,38 @@
 import { app as app$2 } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
 
-// Debug mode - set to true to enable verbose logging
-const SWISS_ARMY_KNIFE_DEBUG = true;
+// DEBUG mode - will be loaded from server config
+let DEBUG_ENABLED = false;
 
-if (SWISS_ARMY_KNIFE_DEBUG) {
-    console.log(`Loading video_preview.js extension`);
+// Conditional logging wrapper
+const debugLog = (...args) => {
+    if (DEBUG_ENABLED) {
+        console.log("[VideoPreview]", ...args);
+    }
+};
+
+// Load DEBUG setting from server
+async function loadDebugConfig() {
+    try {
+        const response = await fetch("/swissarmyknife/config");
+        if (response.ok) {
+            const config = await response.json();
+            DEBUG_ENABLED = config.debug || false;
+            console.log(`Video Preview Debug Mode: ${DEBUG_ENABLED ? "ENABLED" : "DISABLED"}`);
+        } else {
+            console.warn(
+                "Failed to load Swiss Army Knife config for video preview, defaulting to DEBUG=false"
+            );
+        }
+    } catch (error) {
+        console.warn("Error loading Swiss Army Knife config for video preview:", error);
+    }
 }
+
+// Load config immediately
+loadDebugConfig();
+
+console.log(`Loading video_preview.js extension`);
 
 app$2.registerExtension({
     name: "video_preview",
@@ -279,7 +305,137 @@ app$2.registerExtension({
                     });
                 });
 
-                // --- 4) Handle execution results to update video previews
+                // --- 4) Helper function to process and load video paths
+                const loadVideoFromPath = (inputName, videoPath, index) => {
+                    const video = videoElements[index];
+                    const placeholder = placeholders[index];
+
+                    debugLog(`${inputName} raw value:`, videoPath, typeof videoPath);
+
+                    // If videoPath is a string that looks like JSON, parse it
+                    if (typeof videoPath === "string" && videoPath.startsWith("[")) {
+                        try {
+                            videoPath = JSON.parse(videoPath);
+                            debugLog(`${inputName} parsed from JSON:`, videoPath);
+                        } catch (e) {
+                            debugLog(`${inputName} failed to parse JSON:`, e);
+                        }
+                    }
+
+                    const originalPath = JSON.stringify(videoPath); // For debugging
+
+                    // Handle array format: [false, ["/path/image.png", "/path/video.mp4"]]
+                    // or [true, ["/path/image.png", "/path/video.mp4"]]
+                    if (Array.isArray(videoPath)) {
+                        debugLog(`${inputName} is array:`, videoPath);
+
+                        // Check if it's the format [boolean, [files...]]
+                        if (videoPath.length > 1 && Array.isArray(videoPath[1])) {
+                            const files = videoPath[1];
+                            debugLog(`${inputName} files array:`, files);
+
+                            // Find the .mp4 file
+                            const mp4File = files.find((f) => {
+                                debugLog(`Checking file:`, f, typeof f);
+                                return typeof f === "string" && f.endsWith(".mp4");
+                            });
+
+                            if (mp4File) {
+                                videoPath = mp4File;
+                                debugLog(`${inputName} extracted MP4:`, videoPath);
+                            } else {
+                                debugLog(`${inputName} no .mp4 found, using last file`);
+                                videoPath = files[files.length - 1];
+                            }
+                        } else if (videoPath.length > 0) {
+                            // Simple array of files
+                            const mp4File = videoPath.find(
+                                (f) => typeof f === "string" && f.endsWith(".mp4")
+                            );
+                            videoPath = mp4File || videoPath[0];
+                        }
+                    }
+
+                    if (videoPath && typeof videoPath === "string" && videoPath.trim() !== "") {
+                        // Parse the path to extract directory type and filename
+                        // Handle multiple possible path prefixes (Docker, local, production, etc.)
+                        // Examples:
+                        //   /workspace/ComfyUI/output/._00003.mp4
+                        //   /comfyui-nvidia/temp/._00001.mp4
+                        //   /app/ComfyUI/input/video.mp4
+                        let cleanPath = videoPath
+                            .replace(/^\/workspace\/ComfyUI\//, "")
+                            .replace(/^\/comfyui-nvidia\//, "")
+                            .replace(/^\/app\/ComfyUI\//, "")
+                            .replace(/^\/ComfyUI\//, "");
+
+                        // Extract type (output, temp, input) and filename
+                        const pathParts = cleanPath.split("/");
+                        const type = pathParts[0] || "output"; // Default to 'output'
+                        const filename = pathParts[pathParts.length - 1];
+                        const subfolder = pathParts.slice(1, -1).join("/"); // Everything between type and filename
+
+                        // Construct URL using VHS-style format with /api/view
+                        const params = new URLSearchParams({
+                            filename: filename,
+                            type: type,
+                            subfolder: subfolder,
+                        });
+                        const videoUrl = `/api/view?${params.toString()}`;
+
+                        video.src = videoUrl;
+                        video.style.display = "block";
+                        if (placeholder) placeholder.style.display = "none";
+
+                        // Autoplay the video when it's loaded
+                        video.addEventListener(
+                            "loadeddata",
+                            function autoplayHandler() {
+                                // Get all loaded videos
+                                const loadedVideos = videoElements.filter(
+                                    (v) => v.src && v.readyState >= 2
+                                );
+
+                                debugLog(
+                                    `Video loaded for ${inputName}, total loaded: ${loadedVideos.length}`
+                                );
+
+                                // Play all loaded videos together
+                                loadedVideos.forEach((v) => {
+                                    v.play().catch((err) => {
+                                        debugLog(`Autoplay prevented:`, err);
+                                    });
+                                });
+
+                                // Update play/pause button state
+                                isPlaying = true;
+                                playPauseBtn.textContent = "⏸️ Pause All";
+
+                                // Remove this listener after first load
+                                video.removeEventListener("loadeddata", autoplayHandler);
+                            },
+                            { once: true }
+                        );
+
+                        debugLog(
+                            `Loaded ${inputName}:`,
+                            `\n  Extracted: ${videoPath}`,
+                            `\n  Type: ${type}`,
+                            `\n  Subfolder: ${subfolder || "(none)"}`,
+                            `\n  Filename: ${filename}`,
+                            `\n  URL: ${videoUrl}`,
+                            `\n  Original: ${originalPath}`
+                        );
+                    } else {
+                        // Clear video if no path
+                        video.src = "";
+                        video.style.display = "none";
+                        if (placeholder) placeholder.style.display = "block";
+                        debugLog(`No valid path for ${inputName}, original: ${originalPath}`);
+                    }
+                };
+
+                // --- 5) Handle execution results to update video previews
                 const onExecuted = this.onExecuted;
                 this.onExecuted = function (message) {
                     // Call original onExecuted if it exists
@@ -296,195 +452,63 @@ app$2.registerExtension({
                             upscaled_vid: 2,
                         };
 
+                        debugLog("VideoPreview onExecuted - Processing video paths:", paths);
+
                         // Update each video element based on the paths received
                         Object.entries(videoMap).forEach(([inputName, index]) => {
-                            let videoPath = paths[inputName];
-                            const video = videoElements[index];
-                            const placeholder = placeholders[index];
-
-                            if (SWISS_ARMY_KNIFE_DEBUG) {
-                                console.log(
-                                    `[VideoPreview] ${inputName} raw value:`,
-                                    videoPath,
-                                    typeof videoPath
-                                );
-                            }
-
-                            // If videoPath is a string that looks like JSON, parse it
-                            if (typeof videoPath === "string" && videoPath.startsWith("[")) {
-                                try {
-                                    videoPath = JSON.parse(videoPath);
-                                    if (SWISS_ARMY_KNIFE_DEBUG) {
-                                        console.log(
-                                            `[VideoPreview] ${inputName} parsed from JSON:`,
-                                            videoPath
-                                        );
-                                    }
-                                } catch (e) {
-                                    if (SWISS_ARMY_KNIFE_DEBUG) {
-                                        console.log(
-                                            `[VideoPreview] ${inputName} failed to parse JSON:`,
-                                            e
-                                        );
-                                    }
-                                }
-                            }
-
-                            const originalPath = JSON.stringify(videoPath); // For debugging
-
-                            // Handle array format: [false, ["/path/image.png", "/path/video.mp4"]]
-                            // or [true, ["/path/image.png", "/path/video.mp4"]]
-                            if (Array.isArray(videoPath)) {
-                                if (SWISS_ARMY_KNIFE_DEBUG) {
-                                    console.log(`[VideoPreview] ${inputName} is array:`, videoPath);
-                                }
-
-                                // Check if it's the format [boolean, [files...]]
-                                if (videoPath.length > 1 && Array.isArray(videoPath[1])) {
-                                    const files = videoPath[1];
-                                    if (SWISS_ARMY_KNIFE_DEBUG) {
-                                        console.log(
-                                            `[VideoPreview] ${inputName} files array:`,
-                                            files
-                                        );
-                                    }
-
-                                    // Find the .mp4 file
-                                    const mp4File = files.find((f) => {
-                                        if (SWISS_ARMY_KNIFE_DEBUG) {
-                                            console.log(
-                                                `[VideoPreview] Checking file:`,
-                                                f,
-                                                typeof f
-                                            );
-                                        }
-                                        return typeof f === "string" && f.endsWith(".mp4");
-                                    });
-
-                                    if (mp4File) {
-                                        videoPath = mp4File;
-                                        if (SWISS_ARMY_KNIFE_DEBUG) {
-                                            console.log(
-                                                `[VideoPreview] ${inputName} extracted MP4:`,
-                                                videoPath
-                                            );
-                                        }
-                                    } else {
-                                        if (SWISS_ARMY_KNIFE_DEBUG) {
-                                            console.log(
-                                                `[VideoPreview] ${inputName} no .mp4 found, using last file`
-                                            );
-                                        }
-                                        videoPath = files[files.length - 1];
-                                    }
-                                } else if (videoPath.length > 0) {
-                                    // Simple array of files
-                                    const mp4File = videoPath.find(
-                                        (f) => typeof f === "string" && f.endsWith(".mp4")
-                                    );
-                                    videoPath = mp4File || videoPath[0];
-                                }
-                            }
-
-                            if (
-                                videoPath &&
-                                typeof videoPath === "string" &&
-                                videoPath.trim() !== ""
-                            ) {
-                                // Parse the path to extract directory type and filename
-                                // Handle multiple possible path prefixes (Docker, local, production, etc.)
-                                // Examples:
-                                //   /workspace/ComfyUI/output/._00003.mp4
-                                //   /comfyui-nvidia/temp/._00001.mp4
-                                //   /app/ComfyUI/input/video.mp4
-                                let cleanPath = videoPath
-                                    .replace(/^\/workspace\/ComfyUI\//, "")
-                                    .replace(/^\/comfyui-nvidia\//, "")
-                                    .replace(/^\/app\/ComfyUI\//, "")
-                                    .replace(/^\/ComfyUI\//, "");
-
-                                // Extract type (output, temp, input) and filename
-                                const pathParts = cleanPath.split("/");
-                                const type = pathParts[0] || "output"; // Default to 'output'
-                                const filename = pathParts[pathParts.length - 1];
-                                const subfolder = pathParts.slice(1, -1).join("/"); // Everything between type and filename
-
-                                // Construct URL using VHS-style format with /api/view
-                                const params = new URLSearchParams({
-                                    filename: filename,
-                                    type: type,
-                                    subfolder: subfolder,
-                                });
-                                const videoUrl = `/api/view?${params.toString()}`;
-
-                                video.src = videoUrl;
-                                video.style.display = "block";
-                                if (placeholder) placeholder.style.display = "none";
-
-                                // Autoplay the video when it's loaded
-                                video.addEventListener(
-                                    "loadeddata",
-                                    function autoplayHandler() {
-                                        // Get all loaded videos
-                                        const loadedVideos = videoElements.filter(
-                                            (v) => v.src && v.readyState >= 2
-                                        );
-
-                                        if (SWISS_ARMY_KNIFE_DEBUG) {
-                                            console.log(
-                                                `[VideoPreview] Video loaded for ${inputName}, total loaded: ${loadedVideos.length}`
-                                            );
-                                        }
-
-                                        // Play all loaded videos together
-                                        loadedVideos.forEach((v) => {
-                                            v.play().catch((err) => {
-                                                if (SWISS_ARMY_KNIFE_DEBUG) {
-                                                    console.log(
-                                                        `[VideoPreview] Autoplay prevented:`,
-                                                        err
-                                                    );
-                                                }
-                                            });
-                                        });
-
-                                        // Update play/pause button state
-                                        isPlaying = true;
-                                        playPauseBtn.textContent = "⏸️ Pause All";
-
-                                        // Remove this listener after first load
-                                        video.removeEventListener("loadeddata", autoplayHandler);
-                                    },
-                                    { once: true }
-                                );
-
-                                if (SWISS_ARMY_KNIFE_DEBUG) {
-                                    console.log(
-                                        `[VideoPreview] Loaded ${inputName}:`,
-                                        `\n  Extracted: ${videoPath}`,
-                                        `\n  Type: ${type}`,
-                                        `\n  Subfolder: ${subfolder || "(none)"}`,
-                                        `\n  Filename: ${filename}`,
-                                        `\n  URL: ${videoUrl}`,
-                                        `\n  Original: ${originalPath}`
-                                    );
-                                }
-                            } else {
-                                // Clear video if no path
-                                video.src = "";
-                                video.style.display = "none";
-                                if (placeholder) placeholder.style.display = "block";
-                                if (SWISS_ARMY_KNIFE_DEBUG) {
-                                    console.log(
-                                        `[VideoPreview] No valid path for ${inputName}, original: ${originalPath}`
-                                    );
-                                }
+                            if (paths[inputName]) {
+                                loadVideoFromPath(inputName, paths[inputName], index);
                             }
                         });
                     }
                 };
 
-                // --- 5) Initial setup complete
+                // --- 6) Listen to progressive execution updates via API events
+                // This allows videos to load as soon as they're available, not just at the end
+                const progressHandler = (event) => {
+                    const { node, output } = event.detail || {};
+
+                    // Check if this event is for our node
+                    if (node !== this.id) return;
+
+                    debugLog("VideoPreview progress event:", event.detail);
+
+                    // Handle progressive updates from the node's output
+                    if (output?.video_paths?.[0]) {
+                        const paths = output.video_paths[0];
+
+                        const videoMap = {
+                            reference_vid: 0,
+                            base_vid: 1,
+                            upscaled_vid: 2,
+                        };
+
+                        debugLog(
+                            "VideoPreview progress - Loading videos as they become available:",
+                            paths
+                        );
+
+                        // Load any videos that have paths
+                        Object.entries(videoMap).forEach(([inputName, index]) => {
+                            if (paths[inputName]) {
+                                loadVideoFromPath(inputName, paths[inputName], index);
+                            }
+                        });
+                    }
+                };
+
+                // Register the progress handler with ComfyUI's API
+                api.addEventListener("executed", progressHandler);
+
+                // Clean up the event listener when the node is removed
+                const onRemoved = this.onRemoved;
+                this.onRemoved = function () {
+                    api.removeEventListener("executed", progressHandler);
+                    onRemoved?.apply(this, arguments);
+                };
+
+                // --- 7) Initial setup complete
+                // Videos will load progressively as they become available via API events
                 // CSS aspect-ratio and flexbox handle automatic resizing
 
                 return r;
