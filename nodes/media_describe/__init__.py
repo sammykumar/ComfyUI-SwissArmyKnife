@@ -1,10 +1,10 @@
 """
 Media Description Module
 
-This module contains the GeminiMediaDescribe node and related functionality
-for analyzing images and videos using Google's Gemini API.
+This module contains the GeminiUtilOptions node and related functionality
+for configuring Gemini API media analysis.
 """
 
-from .gemini_media_describe import GeminiMediaDescribe
+from .gemini_util_options import GeminiUtilOptions
 
-__all__ = ['GeminiMediaDescribe']
+__all__ = ['GeminiUtilOptions']
