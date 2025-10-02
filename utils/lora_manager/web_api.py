@@ -10,7 +10,7 @@ except Exception:
     folder_paths = None
 from .lora_utils import get_available_loras, extract_trigger_words
 from .template_manager import get_template_manager
-from .civitai_service import get_civitai_service
+from ..civitai_service import get_civitai_service
 from .version_utils import get_local_version
 
 
@@ -165,7 +165,7 @@ async def get_civitai_info(request):
             return web.json_response({"error": "LoRA filename is required"}, status=400)
 
         civitai_service = get_civitai_service()
-        trigger_words = await civitai_service.get_trigger_words(lora_filename)
+        trigger_words = civitai_service.get_trigger_words_by_filename(lora_filename)
 
         # Fallback: try extracting from LoRA metadata if CivitAI returns nothing
         if not trigger_words:

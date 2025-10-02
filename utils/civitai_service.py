@@ -5,11 +5,19 @@ from __future__ import annotations
 import asyncio
 import os
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 import httpx
 
 from .lora_hash_cache import get_cache as get_lora_hash_cache
+
+# Optional ComfyUI imports for trigger word extraction
+try:
+    import folder_paths
+    COMFYUI_AVAILABLE = True
+except ImportError:
+    folder_paths = None
+    COMFYUI_AVAILABLE = False
 
 
 class CivitAIService:
@@ -103,7 +111,7 @@ class CivitAIService:
 
         try:
             # Check if we're in an event loop
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # If we are, we need to run the coroutine in a separate thread
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(self._run_in_thread, coro)
@@ -198,3 +206,87 @@ class CivitAIService:
             "has_api_key": bool(self.api_key),
             "api_key_preview": f"{self.api_key[:8]}..." if self.api_key else "Not set"
         }
+
+    def get_trigger_words(self, file_path: str, max_words: int = 3) -> List[str]:
+        """
+        Get trigger words for a LoRA file from CivitAI.
+
+        Args:
+            file_path: Path to the LoRA file
+            max_words: Maximum number of trigger words to return
+
+        Returns:
+            List of trigger words
+        """
+        if not os.path.exists(file_path):
+            print(f"File not found: {file_path}")
+            return []
+
+        try:
+            # Get model info from CivitAI
+            model_info = self.get_model_info_by_hash(file_path)
+            if not model_info:
+                return []
+
+            # Extract trigger words from API response
+            trigger_words = []
+
+            # Try to get trained words from the model version
+            api_response = model_info.get("api_response", {})
+            trained_words = api_response.get("trainedWords", [])
+
+            if trained_words:
+                # Take up to max_words most common trigger words
+                for word in trained_words[:max_words]:
+                    if isinstance(word, str):
+                        trigger_words.append(word)
+                    elif isinstance(word, dict) and "word" in word:
+                        trigger_words.append(word["word"])
+
+            return trigger_words[:max_words]
+
+        except Exception as e:
+            print(f"Error getting trigger words for {file_path}: {e}")
+            return []
+
+    def get_trigger_words_by_filename(self, lora_filename: str, max_words: int = 3) -> List[str]:
+        """
+        Get trigger words for a LoRA file by filename (resolves full path).
+
+        Args:
+            lora_filename: Name of the LoRA file
+            max_words: Maximum number of trigger words to return
+
+        Returns:
+            List of trigger words
+        """
+        if not COMFYUI_AVAILABLE or folder_paths is None:
+            print("CivitAI Service: Cannot resolve LoRA path - ComfyUI not available")
+            return []
+
+        try:
+            # Import lora_utils for path resolution
+            from .lora_manager.lora_utils import resolve_lora_full_path
+
+            full_path = resolve_lora_full_path(lora_filename)
+            if not full_path:
+                print(f"CivitAI Service: LoRA file '{lora_filename}' not found in configured directories")
+                return []
+
+            return self.get_trigger_words(full_path, max_words)
+
+        except Exception as e:
+            print(f"CivitAI Service: Error getting trigger words for '{lora_filename}': {e}")
+            return []
+
+
+# Global service instance
+_civitai_service: Optional[CivitAIService] = None
+
+
+def get_civitai_service() -> CivitAIService:
+    """Get the global CivitAI service instance."""
+    global _civitai_service
+    if _civitai_service is None:
+        _civitai_service = CivitAIService()
+    return _civitai_service

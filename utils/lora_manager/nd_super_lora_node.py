@@ -18,8 +18,7 @@ except ImportError:
 
 # Import local modules
 try:
-    from .lora_utils import get_lora_by_filename, extract_trigger_words
-    from .civitai_service import CivitAiService, get_civitai_service
+    from .lora_utils import get_lora_by_filename
 except ImportError:
     # Fallback for development/testing
     import sys
@@ -31,7 +30,7 @@ except ImportError:
 class SuperDualLoraLoader:
     """
     SuperDualLoraLoader (WanVideoWrapper) - A powerful node for loading multiple LoRAs with advanced features.
-    
+
     Features:
     - Multiple LoRA loading in a single node
     - Separate high noise and low noise model support
@@ -178,7 +177,7 @@ class SuperLoraLoader:
     """
     SuperLoraLoader - A powerful node for loading multiple LoRAs with advanced features.
     Single-stream version for standard workflows using WanVideo LoRA stack.
-    
+
     Features:
     - Multiple LoRA loading in a single node
     - Individual enable/disable controls

@@ -18,10 +18,10 @@ except ImportError:
 def get_lora_by_filename(filename: str) -> Optional[str]:
     """
     Get the full path to a LoRA file by its filename.
-    
+
     Args:
         filename: The LoRA filename (e.g., "my_lora.safetensors")
-        
+
     Returns:
         Full path to the LoRA file, or None if not found
     """
@@ -150,11 +150,11 @@ def resolve_lora_full_path(lora_identifier: str) -> Optional[str]:
 def extract_trigger_words(lora_identifier: str, max_words: int = 3) -> List[str]:
     """
     Extract trigger words from LoRA metadata (e.g., Kohya ss_tag_frequency or ss_trained_words) in safetensors.
-    
+
     Args:
         lora_identifier: Filename (relative to loras dir) or absolute path
         max_words: Maximum number of trigger words to extract
-        
+
     Returns:
         List of trigger words
     """
@@ -271,7 +271,7 @@ def extract_trigger_words(lora_identifier: str, max_words: int = 3) -> List[str]
 def get_available_loras() -> List[str]:
     """
     Get a list of all available LoRA files.
-    
+
     Returns:
         List of LoRA filenames
     """
@@ -289,10 +289,10 @@ def get_available_loras() -> List[str]:
 def validate_lora_config(config: dict) -> bool:
     """
     Validate a LoRA configuration dict.
-    
+
     Args:
         config: LoRA configuration dictionary
-        
+
     Returns:
         True if valid, False otherwise
     """

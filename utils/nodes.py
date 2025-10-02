@@ -154,7 +154,7 @@ class GeminiMediaDescribe:
                 output_path
             ]
 
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
 
             # Check if output file was created and has content
             if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
@@ -179,7 +179,7 @@ class GeminiMediaDescribe:
                     '-y',
                     output_path
                 ]
-                result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+                subprocess.run(cmd, capture_output=True, text=True, check=True)
 
                 # Check if output file was created and has content
                 if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
@@ -199,10 +199,10 @@ class GeminiMediaDescribe:
     def _extract_redgifs_video_url(self, redgifs_url):
         """
         Extract the actual video URL from a RedGifs page
-        
+
         Args:
             redgifs_url: RedGifs watch URL (e.g., https://www.redgifs.com/watch/scientifictriviallizard)
-            
+
         Returns:
             tuple: (video_url, media_type) or raises exception on failure
         """
@@ -288,10 +288,10 @@ class GeminiMediaDescribe:
     def _download_reddit_media(self, reddit_url):
         """
         Download media from a Reddit post URL
-        
+
         Args:
             reddit_url: Reddit post URL
-            
+
         Returns:
             tuple: (media_path, media_type, media_info) or raises exception on failure
         """
@@ -450,10 +450,10 @@ class GeminiMediaDescribe:
     def _extract_redgifs_url(self, redgifs_url):
         """
         Extract the actual video URL from a redgifs or gfycat page
-        
+
         Args:
             redgifs_url: redgifs or gfycat URL
-            
+
         Returns:
             tuple: (video_url, media_type) or (None, None) on failure
         """
@@ -2060,14 +2060,14 @@ class VideoMetadataNode:
     def add_metadata(self, filenames, artist="", comment="", lora_json="", overwrite_original="No"):
         """
         Update metadata in a video file using FFmpeg, appending to existing metadata.
-        
+
         Args:
             filenames: Input video filenames from VHS_VideoCombine (will process first file)
             artist: Artist/Creator name (appends to existing artist info)
             comment: Additional comments (appends to existing comments)
             lora_json: JSON string containing LoRA metadata from LoRAInfoExtractor
             overwrite_original: Whether to overwrite original file
-            
+
         Returns:
             Output filenames (original or new file with updated metadata)
         """
@@ -2188,10 +2188,10 @@ class VideoMetadataNode:
     def _get_existing_metadata(self, filename):
         """
         Read existing metadata from video file using ffprobe.
-        
+
         Args:
             filename: Path to video file
-            
+
         Returns:
             Dictionary of existing metadata fields
         """
@@ -2220,11 +2220,11 @@ class VideoMetadataNode:
     def _combine_metadata_field(self, existing, new):
         """
         Combine existing metadata field with new content.
-        
+
         Args:
             existing: Existing metadata content (string)
             new: New metadata content to append (string)
-            
+
         Returns:
             Combined metadata string
         """

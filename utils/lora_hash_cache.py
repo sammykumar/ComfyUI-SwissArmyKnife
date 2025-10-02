@@ -95,7 +95,7 @@ class LoRAHashCache:
 
     def _calculate_hashes(self, file_path: str) -> Optional[Dict[str, str]]:
         """Calculate all supported hash types for a file.
-        
+
         Returns dict with keys: sha256, crc32, blake3, autov1, autov2
         AutoV1 and AutoV2 are specialized hash formats used by CivitAI.
         """
@@ -107,7 +107,7 @@ class LoRAHashCache:
                 blake3_hasher = blake3.blake3() if BLAKE3_AVAILABLE else None
 
                 # For AutoV1/AutoV2, we need specific byte ranges
-                file_size = os.path.getsize(file_path)
+                os.path.getsize(file_path)
                 fh.seek(0)
 
                 # Read full file content for comprehensive hash calculation
@@ -145,7 +145,7 @@ class LoRAHashCache:
 
     def _calculate_autov1(self, file_content: bytes) -> str:
         """Calculate AutoV1 hash (CivitAI format).
-        
+
         AutoV1 uses first 8KB of file with SHA256.
         """
         # Take first 8KB for AutoV1
@@ -154,7 +154,7 @@ class LoRAHashCache:
 
     def _calculate_autov2(self, file_content: bytes) -> str:
         """Calculate AutoV2 hash (CivitAI format).
-        
+
         AutoV2 uses a more complex sampling strategy across the file.
         """
         # AutoV2: Sample strategically from different parts of the file

@@ -44,11 +44,11 @@ class TemplateManager:
     def save_template(self, name: str, lora_configs: List[Dict[str, Any]]) -> bool:
         """
         Save a LoRA configuration template.
-        
+
         Args:
             name: Template name
             lora_configs: List of LoRA configuration dictionaries
-            
+
         Returns:
             True if saved successfully, False otherwise
         """
@@ -83,10 +83,10 @@ class TemplateManager:
     def load_template(self, name: str) -> Optional[Dict[str, Any]]:
         """
         Load a LoRA configuration template.
-        
+
         Args:
             name: Template name
-            
+
         Returns:
             Template data dict, or None if not found
         """
@@ -124,7 +124,7 @@ class TemplateManager:
     def list_templates(self) -> List[Dict[str, str]]:
         """
         Get a list of available templates.
-        
+
         Returns:
             List of template info dicts with 'name' and 'filename' keys
         """
@@ -158,10 +158,10 @@ class TemplateManager:
     def delete_template(self, name: str) -> bool:
         """
         Delete a template.
-        
+
         Args:
             name: Template name
-            
+
         Returns:
             True if deleted successfully, False otherwise
         """

@@ -245,6 +245,13 @@ app.registerExtension({
                 // Find the media_type widget
                 this.mediaTypeWidget = this.widgets.find((w) => w.name === "media_type");
 
+                // Define clearVideoPreview early so it can be used by clearAllMediaState
+                this.clearVideoPreview = function () {
+                    // For the media node, we don't have complex video preview
+                    // This is just a placeholder method
+                    console.log("Video preview cleared for media node");
+                };
+
                 // Method to clear all media state (images, videos, previews, file data)
                 this.clearAllMediaState = function () {
                     console.log("[DEBUG] clearAllMediaState called");
@@ -956,34 +963,116 @@ app.registerExtension({
                 return result;
             };
 
-            // Add display widgets for dimensions (height and width)
-            this.addWidget(
-                "text",
-                "dimensions_display",
-                "Dimensions: Not executed yet",
-                () => {}, // Read-only widget
-                { serialize: false }
-            );
+            // Helper function to update dimensions display
+            nodeType.prototype.updateDimensionsDisplay = function (height, width) {
+                console.log(
+                    "[GeminiMediaDescribe] updateDimensionsDisplay called with:",
+                    height,
+                    width
+                );
+
+                if (height != null && width != null) {
+                    let dimensionsWidget = this.widgets.find(
+                        (w) => w.name === "dimensions_display"
+                    );
+
+                    if (!dimensionsWidget) {
+                        // Create the widget if it doesn't exist
+                        dimensionsWidget = this.addWidget(
+                            "text",
+                            "dimensions_display",
+                            `📐 ${width} x ${height}`,
+                            () => {}, // Read-only widget
+                            { serialize: false }
+                        );
+                        console.log("[GeminiMediaDescribe] Created dimensions display widget");
+                    } else {
+                        // Update existing widget
+                        dimensionsWidget.value = `📐 ${width} x ${height}`;
+                        console.log(
+                            "[GeminiMediaDescribe] Updated dimensions display:",
+                            width,
+                            "x",
+                            height
+                        );
+                    }
+
+                    // Force UI refresh to show the updated widget
+                    this.setSize(this.computeSize());
+                    if (this.graph && this.graph.setDirtyCanvas) {
+                        this.graph.setDirtyCanvas(true, true);
+                    }
+                } else {
+                    console.log("[GeminiMediaDescribe] Invalid dimensions, not updating display");
+                }
+            };
 
             // Add onExecuted method to update the dimensions display
             const onExecutedMedia = nodeType.prototype.onExecuted;
             nodeType.prototype.onExecuted = function (message) {
                 const result = onExecutedMedia?.apply(this, arguments);
 
-                // Update dimensions display widget with height and width from execution results
-                if (message && message.length >= 7) {
-                    const height = message[5]; // Index 5 is height
-                    const width = message[6]; // Index 6 is width
+                console.log("[GeminiMediaDescribe] onExecuted called");
+                console.log("[GeminiMediaDescribe] Message type:", typeof message);
+                console.log(
+                    "[GeminiMediaDescribe] Message keys:",
+                    message ? Object.keys(message) : "null"
+                );
 
-                    const dimensionsWidget = this.widgets.find(
-                        (w) => w.name === "dimensions_display"
-                    );
-                    if (dimensionsWidget) {
-                        dimensionsWidget.value = `Dimensions: ${height} x ${width}`;
+                // Update dimensions display widget with height and width from execution results
+                if (message) {
+                    let height = null;
+                    let width = null;
+
+                    // Try to extract from different possible message structures
+                    // Structure 1: message is an array of outputs [description, media_info, status, path, final_string, height, width]
+                    if (Array.isArray(message) && message.length >= 7) {
+                        height = message[5]; // Index 5 is height
+                        width = message[6]; // Index 6 is width
                         console.log(
-                            `[GeminiMediaDescribe] Updated dimensions display: ${height} x ${width}`
+                            "[GeminiMediaDescribe] Found dimensions in array format:",
+                            height,
+                            width
                         );
                     }
+                    // Structure 2: message has height/width properties
+                    else if (message.height && message.width) {
+                        height = Array.isArray(message.height) ? message.height[0] : message.height;
+                        width = Array.isArray(message.width) ? message.width[0] : message.width;
+                        console.log(
+                            "[GeminiMediaDescribe] Found dimensions in message properties:",
+                            height,
+                            width
+                        );
+                    }
+                    // Structure 3: Check if message has output property
+                    else if (message.output) {
+                        console.log("[GeminiMediaDescribe] Checking message.output");
+                        if (Array.isArray(message.output) && message.output.length >= 7) {
+                            height = message.output[5];
+                            width = message.output[6];
+                            console.log(
+                                "[GeminiMediaDescribe] Found dimensions in message.output array:",
+                                height,
+                                width
+                            );
+                        } else if (message.output.height && message.output.width) {
+                            height = Array.isArray(message.output.height)
+                                ? message.output.height[0]
+                                : message.output.height;
+                            width = Array.isArray(message.output.width)
+                                ? message.output.width[0]
+                                : message.output.width;
+                            console.log(
+                                "[GeminiMediaDescribe] Found dimensions in message.output properties:",
+                                height,
+                                width
+                            );
+                        }
+                    }
+
+                    // Use the helper function to update the display
+                    this.updateDimensionsDisplay(height, width);
                 }
 
                 return result;
@@ -1275,13 +1364,6 @@ app.registerExtension({
                 document.body.appendChild(fileInput);
                 fileInput.click();
             };
-
-            // Add video preview clearing method (minimal version for media node)
-            nodeType.prototype.clearVideoPreview = function () {
-                // For the media node, we don't have complex video preview
-                // This is just a placeholder method
-                console.log("Video preview cleared for media node");
-            };
         }
     },
 
@@ -1319,6 +1401,39 @@ app.registerExtension({
                 );
             }
         }
+    },
+
+    // Setup app-level execution handler for GeminiUtilMediaDescribe
+    async setup() {
+        // Hook into API events to catch execution results
+        api.addEventListener("executed", ({ detail }) => {
+            const { node: nodeId, output } = detail;
+
+            console.log("[API] Execution event received for node:", nodeId);
+            console.log("[API] Output data:", output);
+
+            // Find the node by ID
+            const node = app.graph.getNodeById(parseInt(nodeId));
+            if (node && node.comfyClass === "GeminiUtilMediaDescribe") {
+                console.log("[API] Found GeminiUtilMediaDescribe execution result");
+
+                // Extract dimensions from output
+                // Output structure: {height: [1080], width: [1920], ...}
+                let height = null;
+                let width = null;
+
+                if (output && output.height && output.width) {
+                    height = Array.isArray(output.height) ? output.height[0] : output.height;
+                    width = Array.isArray(output.width) ? output.width[0] : output.width;
+                    console.log("[API] Extracted dimensions from API event:", width, "x", height);
+
+                    // Update the dimensions display using the helper method
+                    if (node.updateDimensionsDisplay) {
+                        node.updateDimensionsDisplay(height, width);
+                    }
+                }
+            }
+        });
     },
 });
 
