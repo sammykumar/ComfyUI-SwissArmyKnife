@@ -787,5 +787,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "VideoMetadataNode": "Update Video Metadata",
     "LoRAInfoExtractor": "LoRA Info Extractor",
     "VideoPreview": "🎬 Video Preview",
-    "VueExampleNode": "🎨 Vue Example Widget"
+    "VueExampleNode": "Video Preview (Native)"
 }

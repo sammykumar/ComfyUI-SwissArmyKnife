@@ -10,7 +10,10 @@
         "test:install": "cd web/tests && npm install && npm run install-browser",
         "vue:build": "cd vue-components && vite build",
         "vue:dev": "cd vue-components && vite build --watch",
-        "vue:install": "cd vue-components && npm install"
+        "vue:install": "cd vue-components && npm install",
+        "dev": "concurrently \"npm:dev:vue\" \"npm:dev:python\"",
+        "dev:vue": "npm run vue:dev",
+        "dev:python": "nodemon --watch nodes --watch __init__.py --ext py --exec 'docker restart comfyui-swiss-army-knife-comfyui-1'"
     },
     "keywords": [
         "comfyui",
@@ -28,6 +31,8 @@
     "devDependencies": {
         "@comfyorg/comfyui-frontend-types": "^1.24.4",
         "@vitejs/plugin-vue": "^5.2.3",
+        "concurrently": "^9.1.2",
+        "nodemon": "^3.1.9",
         "prettier": "^3.6.2",
         "typescript": "^5.7.3",
         "vite": "^6.3.5",
