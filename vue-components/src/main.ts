@@ -5,6 +5,7 @@ import { app } from '../../../scripts/app.js';
 import { addWidget, ComponentWidgetImpl } from '../../../scripts/domWidget.js';
 import type { ComfyApp } from '@comfyorg/comfyui-frontend-types';
 import ExampleComponent from './components/ExampleComponent.vue';
+import VideoComparisonWidget from './components/VideoComparisonWidget.vue';
 
 const comfyApp: ComfyApp = app;
 
@@ -28,6 +29,23 @@ comfyApp.registerExtension({
                     node,
                     name: inputSpec.name,
                     component: ExampleComponent,
+                    inputSpec,
+                    options: {},
+                });
+
+                addWidget(node, widget);
+                return { widget };
+            },
+            VIDEO_COMPARISON_WIDGET(node: any) {
+                const inputSpec = {
+                    name: 'video_comparison',
+                    type: 'video-comparison',
+                };
+
+                const widget = new ComponentWidgetImpl({
+                    node,
+                    name: inputSpec.name,
+                    component: VideoComparisonWidget,
                     inputSpec,
                     options: {},
                 });

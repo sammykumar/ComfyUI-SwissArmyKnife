@@ -8,6 +8,7 @@ Welcome to the ComfyUI-SwissArmyKnife documentation! This directory contains com
 
 Core custom nodes that extend ComfyUI functionality:
 
+- **[video-comparison](nodes/video-comparison/)** - Vue 3 + Video.js component for professional side-by-side video comparison
 - **[video-preview](nodes/video-preview/)** - Video preview widget for comparing multiple videos side-by-side
 - **[video-metadata](nodes/video-metadata/)** - Video metadata extraction and manipulation
 - **[media-describe](nodes/media-describe/)** - AI-powered media description using Gemini API
@@ -56,6 +57,18 @@ Example workflows and demonstrations:
 - Usage demonstrations
 - Integration examples
 
+### 🎨 Vue Components (`/vue`)
+
+Vue 3 component development and integration:
+
+- **[VUE_SETUP_SUMMARY.md](vue/VUE_SETUP_SUMMARY.md)** - Initial Vue 3 integration setup
+- **[INTEGRATION_GUIDE.md](vue/INTEGRATION_GUIDE.md)** - Creating Vue components for ComfyUI
+- **[VIDEO_COMPARISON_WIDGET.md](vue/VIDEO_COMPARISON_WIDGET.md)** - Video.js comparison widget API
+- **[QUICK_START_VIDEO_COMPARISON.md](vue/QUICK_START_VIDEO_COMPARISON.md)** - Getting started with video comparison
+- **[INTEGRATION_WITH_EXISTING_VIDEO_PREVIEW.md](vue/INTEGRATION_WITH_EXISTING_VIDEO_PREVIEW.md)** - Migration from JS to Vue
+- **[QUICK_REFERENCE.md](vue/QUICK_REFERENCE.md)** - Quick reference for Vue development
+- **[TESTING.md](vue/TESTING.md)** - Testing Vue components
+
 ## 🚀 Quick Start
 
 ### For Developers
@@ -96,7 +109,8 @@ Each documentation file should include:
 
 ### By Topic
 
-- **Video Processing**: Check `/nodes/video-preview/` and `/nodes/video-metadata/`
+- **Video Processing**: Check `/nodes/video-comparison/`, `/nodes/video-preview/`, and `/nodes/video-metadata/`
+- **Vue Components**: See `/vue/` for Vue 3 component development
 - **AI/ML Features**: See `/nodes/media-describe/` and `/nodes/lora-loader/`
 - **External APIs**: Look in `/integrations/`
 - **Performance**: Check `/infrastructure/caching/`
@@ -157,5 +171,5 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for overall project sta
 
 ---
 
-**Last Updated**: October 2, 2025
-**Documentation Structure Version**: 2.0
+**Last Updated**: October 4, 2025
+**Documentation Structure Version**: 2.1

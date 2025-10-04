@@ -1,0 +1,141 @@
+"""
+Video Comparison Node - Vue-based component for side-by-side video comparison
+"""
+import os
+from typing import Dict, Any, Optional, Tuple
+
+
+class VideoComparisonNode:
+    """
+    A node that displays multiple videos side-by-side for easy comparison.
+    Uses a Vue-based Video.js component for professional video playback controls.
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls) -> Dict[str, Any]:
+        """
+        Define the input types for the node.
+        All inputs are optional IMAGE types to support progressive loading.
+        """
+        return {
+            "optional": {
+                "reference_video": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Reference video for comparison (typically the source/original)",
+                    },
+                ),
+                "base_video": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Base processed video (e.g., after initial processing)",
+                    },
+                ),
+                "upscaled_video": (
+                    "IMAGE",
+                    {
+                        "tooltip": "Upscaled or enhanced video for comparison",
+                    },
+                ),
+            }
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "compare_videos"
+    OUTPUT_NODE = True
+    CATEGORY = "Utils"
+
+    def compare_videos(
+        self,
+        reference_video: Optional[Any] = None,
+        base_video: Optional[Any] = None,
+        upscaled_video: Optional[Any] = None,
+    ) -> Dict[str, Any]:
+        """
+        Process and prepare videos for comparison display.
+
+        Args:
+            reference_video: Optional reference video frames
+            base_video: Optional base video frames
+            upscaled_video: Optional upscaled video frames
+
+        Returns:
+            Dictionary containing UI data for the Vue component
+        """
+        # Log connected inputs
+        print("\n" + "=" * 60)
+        print("VIDEO COMPARISON - Connected Inputs")
+        print("=" * 60)
+
+        connected_videos = []
+        video_data = {}
+
+        # Check and log each video input
+        if reference_video is not None:
+            shape = (
+                reference_video.shape if hasattr(reference_video, "shape") else "unknown"
+            )
+            print(f"📹 reference_video: Connected (shape: {shape})")
+            connected_videos.append("reference")
+            video_data["reference"] = self._process_video(reference_video, "reference")
+
+        if base_video is not None:
+            shape = base_video.shape if hasattr(base_video, "shape") else "unknown"
+            print(f"📹 base_video: Connected (shape: {shape})")
+            connected_videos.append("base")
+            video_data["base"] = self._process_video(base_video, "base")
+
+        if upscaled_video is not None:
+            shape = (
+                upscaled_video.shape if hasattr(upscaled_video, "shape") else "unknown"
+            )
+            print(f"📹 upscaled_video: Connected (shape: {shape})")
+            connected_videos.append("upscaled")
+            video_data["upscaled"] = self._process_video(upscaled_video, "upscaled")
+
+        print(f"\n✅ Total videos connected: {len(connected_videos)}")
+        print("=" * 60 + "\n")
+
+        # Return UI data for the Vue component
+        return {
+            "ui": {
+                "widget_type": "VIDEO_COMPARISON_WIDGET",
+                "videos": video_data,
+                "connected_videos": connected_videos,
+                "video_count": len(connected_videos),
+            }
+        }
+
+    def _process_video(self, video_frames: Any, video_type: str) -> Dict[str, Any]:
+        """
+        Process video frames and prepare metadata for display.
+
+        Args:
+            video_frames: Video frame data (IMAGE tensor)
+            video_type: Type of video (reference, base, upscaled)
+
+        Returns:
+            Dictionary containing video metadata and path/URL
+        """
+        # This is a placeholder - in a real implementation, you would:
+        # 1. Save the video frames to a temporary file
+        # 2. Generate a URL accessible to the frontend
+        # 3. Extract metadata (duration, resolution, fps, etc.)
+
+        metadata = {
+            "type": video_type,
+            "url": None,  # This should be set to the actual video URL
+            "shape": str(video_frames.shape) if hasattr(video_frames, "shape") else None,
+        }
+
+        return metadata
+
+
+# Node export mapping
+NODE_CLASS_MAPPINGS = {
+    "VideoComparisonNode": VideoComparisonNode,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "VideoComparisonNode": "🎬 Video Comparison (Vue)",
+}
