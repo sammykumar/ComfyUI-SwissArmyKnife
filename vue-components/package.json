@@ -1,0 +1,12 @@
+{
+    "name": "comfyui-swissarmyknife-vue-components",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Vue-based components for ComfyUI Swiss Army Knife",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite build --watch",
+        "type-check": "vue-tsc --noEmit"
+    }
+}

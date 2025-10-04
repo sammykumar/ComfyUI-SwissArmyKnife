@@ -9,6 +9,7 @@ from .civitai_service import CivitAIService
 from .lora_hash_cache import get_cache as get_lora_hash_cache
 from .media_describe import GeminiUtilOptions, MediaDescribe
 from .utils.video_preview import VideoPreview
+from .vue_example_node import VueExampleNode
 
 
 
@@ -774,7 +775,8 @@ NODE_CLASS_MAPPINGS = {
     "FilenameGenerator": FilenameGenerator,
     "VideoMetadataNode": VideoMetadataNode,
     "LoRAInfoExtractor": LoRAInfoExtractor,
-    "VideoPreview": VideoPreview
+    "VideoPreview": VideoPreview,
+    "VueExampleNode": VueExampleNode
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -784,5 +786,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "FilenameGenerator": "Filename Generator",
     "VideoMetadataNode": "Update Video Metadata",
     "LoRAInfoExtractor": "LoRA Info Extractor",
-    "VideoPreview": "🎬 Video Preview"
+    "VideoPreview": "🎬 Video Preview",
+    "VueExampleNode": "🎨 Vue Example Widget"
 }

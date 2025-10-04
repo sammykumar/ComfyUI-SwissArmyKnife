@@ -7,7 +7,10 @@
         "build": "cd ui-react_backup/ui && npm run build",
         "watch": "cd ui-react_backup/ui && npm run watch",
         "test": "cd web/tests && npm test",
-        "test:install": "cd web/tests && npm install && npm run install-browser"
+        "test:install": "cd web/tests && npm install && npm run install-browser",
+        "vue:build": "cd vue-components && vite build",
+        "vue:dev": "cd vue-components && vite build --watch",
+        "vue:install": "cd vue-components && npm install"
     },
     "keywords": [
         "comfyui",
@@ -17,7 +20,18 @@
     ],
     "author": "Sam Kumar",
     "license": "MIT",
+    "peerDependencies": {
+        "primevue": "^4.2.5",
+        "vue": "^3.5.13",
+        "vue-i18n": "^9.14.3"
+    },
     "devDependencies": {
-        "prettier": "^3.6.2"
+        "@comfyorg/comfyui-frontend-types": "^1.24.4",
+        "@vitejs/plugin-vue": "^5.2.3",
+        "prettier": "^3.6.2",
+        "typescript": "^5.7.3",
+        "vite": "^6.3.5",
+        "vite-plugin-vue-devtools": "^7.7.2",
+        "vue-tsc": "^2.1.10"
     }
 }

@@ -37,9 +37,7 @@ ComfyUI-SwissArmyKnife is a ComfyUI extension that consists of two essential com
 
 **IMPORTANT**: Both backend and web extension components are required for the custom node to function properly. Changes to backend Python files require restarting the ComfyUI server, while changes to web JavaScript files require refreshing the browser cache.
 
-**DOCUMENTATION REQUIREMENT**: All documentation, guides, troubleshooting notes, implementation details, and technical specifications must be added to the appropriate folder in the `docs/` directory. The documentation is organized by category - see the "Documentation Organization" section below for the proper folder structure. Never document directly in code comments when a separate documentation file would be more appropriate.
-
-**Note: The React UI component (`ui-react_backup/`) is currently disabled and not in active development.**
+**DOCUMENTATION REQUIREMENT**: All documentation, guides, troubleshooting notes, implementation details, and technical specifications must be added to the appropriate folder in the `docs/` directory. The documentation is organized by category - see the "Documentation Organization" section below for the proper folder structure. Never document directly in code comments when a separate documentation file would be more appropriate. Always use the existing docs folder structure instead of creating new files outside of that directory.
 
 ## Documentation Organization
 
