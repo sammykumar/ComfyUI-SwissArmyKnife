@@ -92,7 +92,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { VideoPlayer } from '@videojs-player/vue';
 import Button from 'primevue/button';
 import Slider from 'primevue/slider';
@@ -100,8 +99,26 @@ import type { ComponentWidget } from '@/types/comfyui';
 import type { VideoJsPlayer } from 'video.js';
 import 'video.js/dist/video-js.css';
 
-// i18n support
-const { t } = useI18n();
+// Simple translation function
+const translations = {
+    referenceVideo: 'Reference Video',
+    baseVideo: 'Base Video',
+    upscaledVideo: 'Upscaled Video',
+    waitingForVideo: 'Waiting for video...',
+    playAll: 'Play All',
+    pauseAll: 'Pause All',
+    sync: 'Sync',
+    mute: 'Mute All',
+    unmute: 'Unmute All',
+    videosLoaded: 'videos loaded',
+};
+
+const t = (key: string) => {
+    const simplifiedKey = key
+        .replace('videoComparison.', '')
+        .replace('videoPreview.', '');
+    return translations[simplifiedKey as keyof typeof translations] || key;
+};
 
 // Props
 const props = defineProps<{

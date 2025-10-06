@@ -13,6 +13,15 @@ except ImportError as e:
     CONTROL_PANEL_NODE_CLASS_MAPPINGS = {}
     CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+# Import video preview native node
+try:
+    from .nodes.utils.video_preview_native import VIDEO_PREVIEW_NATIVE_NODE_CLASS_MAPPINGS
+    from .nodes.utils.video_preview_native import VIDEO_PREVIEW_NATIVE_NODE_DISPLAY_NAME_MAPPINGS
+except ImportError as e:
+    print(f"Warning: Could not import video preview native node: {e}")
+    VIDEO_PREVIEW_NATIVE_NODE_CLASS_MAPPINGS = {}
+    VIDEO_PREVIEW_NATIVE_NODE_DISPLAY_NAME_MAPPINGS = {}
+
 # Import lora_manager nodes
 try:
     from .nodes.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
@@ -47,17 +56,19 @@ def get_version():
         import time
         return str(int(time.time()))
 
-# Combine main nodes, helper nodes, control panel, and lora_manager nodes
+# Combine main nodes, helper nodes, control panel, video preview, and lora_manager nodes
 NODE_CLASS_MAPPINGS = {
     **MAIN_NODE_CLASS_MAPPINGS,
     **HELPER_NODE_CLASS_MAPPINGS,
     **CONTROL_PANEL_NODE_CLASS_MAPPINGS,
+    **VIDEO_PREVIEW_NATIVE_NODE_CLASS_MAPPINGS,
     **LORA_MANAGER_NODE_CLASS_MAPPINGS
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     **MAIN_NODE_DISPLAY_NAME_MAPPINGS,
     **HELPER_NODE_DISPLAY_NAME_MAPPINGS,
     **CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS,
+    **VIDEO_PREVIEW_NATIVE_NODE_DISPLAY_NAME_MAPPINGS,
     **LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
 }
 

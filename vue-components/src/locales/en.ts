@@ -1,11 +1,6 @@
 export default {
     en: {
-        example: {
-            title: 'Vue Component Example',
-            description: 'This is an example Vue component for ComfyUI',
-            button: 'Click Me',
-        },
-        videoComparison: {
+        videoPreview: {
             referenceVideo: 'Reference Video',
             baseVideo: 'Base Video',
             upscaledVideo: 'Upscaled Video',

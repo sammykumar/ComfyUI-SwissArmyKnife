@@ -4,7 +4,6 @@ import { app } from '../../../scripts/app.js';
 // @ts-expect-error - This module is provided by ComfyUI at runtime
 import { addWidget, ComponentWidgetImpl } from '../../../scripts/domWidget.js';
 import type { ComfyApp } from '@comfyorg/comfyui-frontend-types';
-import ExampleComponent from './components/ExampleComponent.vue';
 import VideoComparisonWidget from './components/VideoComparisonWidget.vue';
 
 const comfyApp: ComfyApp = app;
@@ -19,27 +18,10 @@ comfyApp.registerExtension({
 
     getCustomWidgets(_app) {
         return {
-            EXAMPLE_WIDGET(node: any) {
-                const inputSpec = {
-                    name: 'example_widget',
-                    type: 'example-widget',
-                };
-
-                const widget = new ComponentWidgetImpl({
-                    node,
-                    name: inputSpec.name,
-                    component: ExampleComponent,
-                    inputSpec,
-                    options: {},
-                });
-
-                addWidget(node, widget);
-                return { widget };
-            },
             VIDEO_COMPARISON_WIDGET(node: any) {
                 const inputSpec = {
-                    name: 'video_comparison',
-                    type: 'video-comparison',
+                    name: 'video_widget',
+                    type: 'video-widget',
                 };
 
                 const widget = new ComponentWidgetImpl({
