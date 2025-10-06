@@ -151,24 +151,54 @@ const playerOptions = {
     },
 };
 
+// Extract video URLs from widget value
+// The Python node sends data as: { videos: { reference: { url: "..." }, base: { url: "..." }, upscaled: { url: "..." } } }
+const getVideoUrl = (
+    videoType: 'reference' | 'base' | 'upscaled',
+): string | undefined => {
+    console.log('Widget value:', props.widget?.value);
+
+    // Try to get from widget value first
+    if (props.widget?.value?.videos) {
+        const videos = props.widget.value.videos;
+        const videoData = videos[videoType];
+        if (videoData?.url) {
+            console.log(`Found ${videoType} video URL:`, videoData.url);
+            return videoData.url;
+        }
+    }
+
+    // Fallback to props
+    if (videoType === 'reference') return props.referenceVideo;
+    if (videoType === 'base') return props.baseVideo;
+    if (videoType === 'upscaled') return props.upscaledVideo;
+
+    return undefined;
+};
+
 // Video slots configuration
-const videoSlots = computed(() => [
-    {
-        key: 'reference',
-        label: t('videoComparison.referenceVideo'),
-        src: props.referenceVideo,
-    },
-    {
-        key: 'base',
-        label: t('videoComparison.baseVideo'),
-        src: props.baseVideo,
-    },
-    {
-        key: 'upscaled',
-        label: t('videoComparison.upscaledVideo'),
-        src: props.upscaledVideo,
-    },
-]);
+const videoSlots = computed(() => {
+    const slots = [
+        {
+            key: 'reference',
+            label: t('videoComparison.referenceVideo'),
+            src: getVideoUrl('reference'),
+        },
+        {
+            key: 'base',
+            label: t('videoComparison.baseVideo'),
+            src: getVideoUrl('base'),
+        },
+        {
+            key: 'upscaled',
+            label: t('videoComparison.upscaledVideo'),
+            src: getVideoUrl('upscaled'),
+        },
+    ];
+
+    console.log('Video slots:', slots);
+    return slots;
+});
 
 // Active videos (those that have a source)
 const activeVideos = computed(() => videoSlots.value.filter((v) => v.src));
