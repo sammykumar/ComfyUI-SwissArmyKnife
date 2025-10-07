@@ -725,6 +725,19 @@ app.registerExtension({
                         );
                     }
 
+                    // Find the subreddit_url widget
+                    const originalSubredditUrlWidget = this.widgets.find(
+                        (w) => w.name === "subreddit_url"
+                    );
+                    debugLog(
+                        `[DEBUG] originalSubredditUrlWidget found: ${!!originalSubredditUrlWidget}`
+                    );
+                    if (originalSubredditUrlWidget) {
+                        debugLog(
+                            `[DEBUG] Subreddit URL widget current type: ${originalSubredditUrlWidget.type}, value: "${originalSubredditUrlWidget.value}"`
+                        );
+                    }
+
                     // Debug: List all widget names
                     debugLog(
                         `[DEBUG] All widget names: ${this.widgets.map((w) => w.name).join(", ")}`
@@ -791,7 +804,160 @@ app.registerExtension({
                             );
                         }
 
+                        // Completely remove Subreddit URL widget from DOM for randomize from path mode
+                        if (originalSubredditUrlWidget) {
+                            // Store widget for potential restoration
+                            this._hiddenSubredditWidget = originalSubredditUrlWidget;
+
+                            // Completely remove the widget from the widgets array
+                            const widgetIndex = this.widgets.indexOf(originalSubredditUrlWidget);
+                            if (widgetIndex > -1) {
+                                this.widgets.splice(widgetIndex, 1);
+                                debugLog(
+                                    "[STATE] Completely removed Subreddit URL widget from widgets array"
+                                );
+                            }
+
+                            // Remove DOM element if it exists
+                            if (
+                                originalSubredditUrlWidget.element &&
+                                originalSubredditUrlWidget.element.parentNode
+                            ) {
+                                originalSubredditUrlWidget.element.parentNode.removeChild(
+                                    originalSubredditUrlWidget.element
+                                );
+                                debugLog("[STATE] Removed Subreddit URL widget DOM element");
+                            }
+
+                            // Force node to recompute size and refresh
+                            if (this.setSize) {
+                                setTimeout(() => {
+                                    this.setSize(this.computeSize());
+                                }, 10);
+                            }
+
+                            debugLog(
+                                "[STATE] Completely removed Subreddit URL widget for randomize from path mode"
+                            );
+                        } else {
+                            debugLog(
+                                "[DEBUG] Subreddit URL widget not found for hiding in randomize from path mode"
+                            );
+                        }
+
                         // Hide upload file widgets
+                        if (originalUploadedImageWidget) {
+                            originalUploadedImageWidget.type = "hidden";
+                            originalUploadedImageWidget.computeSize = () => [0, -4];
+                        }
+                        if (originalUploadedVideoWidget) {
+                            originalUploadedVideoWidget.type = "hidden";
+                            originalUploadedVideoWidget.computeSize = () => [0, -4];
+                        }
+                    } else if (mediaSource === "Randomize from Subreddit") {
+                        debugLog(
+                            "[STATE] Randomize from Subreddit mode - showing Subreddit URL widget"
+                        );
+
+                        // Show the Subreddit URL widget (restore if it was removed)
+                        if (originalSubredditUrlWidget) {
+                            originalSubredditUrlWidget.type = "text";
+                            originalSubredditUrlWidget.computeSize =
+                                originalSubredditUrlWidget.constructor.prototype.computeSize;
+                            this.subredditUrlWidget = originalSubredditUrlWidget; // Reference the original
+                            // Ensure the widget is fully visible
+                            if (originalSubredditUrlWidget.element) {
+                                originalSubredditUrlWidget.element.style.display = "";
+                                originalSubredditUrlWidget.element.style.visibility = "";
+                                originalSubredditUrlWidget.element.style.height = "";
+                                originalSubredditUrlWidget.element.style.overflow = "";
+                                // Restore parent visibility if it was hidden
+                                if (originalSubredditUrlWidget.element.parentNode) {
+                                    originalSubredditUrlWidget.element.parentNode.style.display =
+                                        "";
+                                }
+                            }
+                            originalSubredditUrlWidget.options =
+                                originalSubredditUrlWidget.options || {};
+                            originalSubredditUrlWidget.options.serialize = true;
+                            debugLog(
+                                "[STATE] Showing Subreddit URL widget for Randomize from Subreddit mode (with display reset)"
+                            );
+                        } else if (this._hiddenSubredditWidget) {
+                            // Restore widget that was completely removed
+                            this.widgets.push(this._hiddenSubredditWidget);
+                            this._hiddenSubredditWidget.type = "text";
+                            this._hiddenSubredditWidget.computeSize =
+                                this._hiddenSubredditWidget.constructor.prototype.computeSize;
+                            this.subredditUrlWidget = this._hiddenSubredditWidget;
+                            this._hiddenSubredditWidget.options =
+                                this._hiddenSubredditWidget.options || {};
+                            this._hiddenSubredditWidget.options.serialize = true;
+                            debugLog(
+                                "[STATE] Restored previously removed Subreddit URL widget for Randomize from Subreddit mode"
+                            );
+                            // Clear the stored reference
+                            this._hiddenSubredditWidget = null;
+                        } else {
+                            debugLog(
+                                "[DEBUG] Subreddit URL widget not found for showing in Randomize from Subreddit mode"
+                            );
+                        }
+
+                        // Show the seed widget for randomization
+                        if (originalSeedWidget) {
+                            originalSeedWidget.type = "number";
+                            originalSeedWidget.computeSize =
+                                originalSeedWidget.constructor.prototype.computeSize;
+                            debugLog("[STATE] Showing seed widget for subreddit randomization");
+                        }
+
+                        // Completely remove Reddit URL widget from DOM for randomize from subreddit mode
+                        if (originalRedditUrlWidget) {
+                            // Store widget for potential restoration
+                            this._hiddenRedditWidget = originalRedditUrlWidget;
+
+                            // Completely remove the widget from the widgets array
+                            const widgetIndex = this.widgets.indexOf(originalRedditUrlWidget);
+                            if (widgetIndex > -1) {
+                                this.widgets.splice(widgetIndex, 1);
+                                debugLog(
+                                    "[STATE] Completely removed Reddit URL widget from widgets array"
+                                );
+                            }
+
+                            // Remove DOM element if it exists
+                            if (
+                                originalRedditUrlWidget.element &&
+                                originalRedditUrlWidget.element.parentNode
+                            ) {
+                                originalRedditUrlWidget.element.parentNode.removeChild(
+                                    originalRedditUrlWidget.element
+                                );
+                                debugLog("[STATE] Removed Reddit URL widget DOM element");
+                            }
+
+                            // Force node to recompute size and refresh
+                            if (this.setSize) {
+                                setTimeout(() => {
+                                    this.setSize(this.computeSize());
+                                }, 10);
+                            }
+
+                            debugLog(
+                                "[STATE] Completely removed Reddit URL widget for randomize from subreddit mode"
+                            );
+                        } else {
+                            debugLog(
+                                "[DEBUG] Reddit URL widget not found for hiding in randomize from subreddit mode"
+                            );
+                        }
+
+                        // Hide other widgets
+                        if (originalMediaPathWidget) {
+                            originalMediaPathWidget.type = "hidden";
+                            originalMediaPathWidget.computeSize = () => [0, -4];
+                        }
                         if (originalUploadedImageWidget) {
                             originalUploadedImageWidget.type = "hidden";
                             originalUploadedImageWidget.computeSize = () => [0, -4];
@@ -843,6 +1009,47 @@ app.registerExtension({
                         } else {
                             debugLog(
                                 "[DEBUG] Reddit URL widget not found for showing in Reddit Post mode"
+                            );
+                        }
+
+                        // Completely remove Subreddit URL widget from DOM for Reddit Post mode
+                        if (originalSubredditUrlWidget) {
+                            // Store widget for potential restoration
+                            this._hiddenSubredditWidget = originalSubredditUrlWidget;
+
+                            // Completely remove the widget from the widgets array
+                            const widgetIndex = this.widgets.indexOf(originalSubredditUrlWidget);
+                            if (widgetIndex > -1) {
+                                this.widgets.splice(widgetIndex, 1);
+                                debugLog(
+                                    "[STATE] Completely removed Subreddit URL widget from widgets array"
+                                );
+                            }
+
+                            // Remove DOM element if it exists
+                            if (
+                                originalSubredditUrlWidget.element &&
+                                originalSubredditUrlWidget.element.parentNode
+                            ) {
+                                originalSubredditUrlWidget.element.parentNode.removeChild(
+                                    originalSubredditUrlWidget.element
+                                );
+                                debugLog("[STATE] Removed Subreddit URL widget DOM element");
+                            }
+
+                            // Force node to recompute size and refresh
+                            if (this.setSize) {
+                                setTimeout(() => {
+                                    this.setSize(this.computeSize());
+                                }, 10);
+                            }
+
+                            debugLog(
+                                "[STATE] Completely removed Subreddit URL widget for Reddit Post mode"
+                            );
+                        } else {
+                            debugLog(
+                                "[DEBUG] Subreddit URL widget not found for hiding in Reddit Post mode"
                             );
                         }
 
@@ -912,6 +1119,40 @@ app.registerExtension({
                         } else {
                             debugLog(
                                 "[DEBUG] Reddit URL widget not found for hiding in upload mode"
+                            );
+                        }
+
+                        // Completely remove Subreddit URL widget from DOM for upload mode
+                        if (originalSubredditUrlWidget) {
+                            // Store widget for potential restoration
+                            this._hiddenSubredditWidget = originalSubredditUrlWidget;
+
+                            // Completely remove the widget from the widgets array
+                            const widgetIndex = this.widgets.indexOf(originalSubredditUrlWidget);
+                            if (widgetIndex > -1) {
+                                this.widgets.splice(widgetIndex, 1);
+                                debugLog(
+                                    "[STATE] Completely removed Subreddit URL widget from widgets array"
+                                );
+                            }
+
+                            // Remove DOM element if it exists
+                            if (
+                                originalSubredditUrlWidget.element &&
+                                originalSubredditUrlWidget.element.parentNode
+                            ) {
+                                originalSubredditUrlWidget.element.parentNode.removeChild(
+                                    originalSubredditUrlWidget.element
+                                );
+                                debugLog("[STATE] Removed Subreddit URL widget DOM element");
+                            }
+
+                            debugLog(
+                                "[STATE] Completely removed Subreddit URL widget for upload mode"
+                            );
+                        } else {
+                            debugLog(
+                                "[DEBUG] Subreddit URL widget not found for hiding in upload mode"
                             );
                         }
 
