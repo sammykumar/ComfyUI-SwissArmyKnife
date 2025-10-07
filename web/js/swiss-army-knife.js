@@ -1300,12 +1300,18 @@ app.registerExtension({
                 const redditUrlValue = redditUrlWidget?.value || "";
                 debugLog("[DEBUG] reddit_url widget value:", redditUrlValue);
 
+                // Find the subreddit_url widget for persistence
+                const subredditUrlWidget = this.widgets.find((w) => w.name === "subreddit_url");
+                const subredditUrlValue = subredditUrlWidget?.value || "";
+                debugLog("[DEBUG] subreddit_url widget value:", subredditUrlValue);
+
                 // Save current widget state for persistence
                 o.widgets_values = o.widgets_values || [];
                 o.ui_state = {
                     media_source: this.mediaSourceWidget?.value || "Upload Media",
                     media_type: this.mediaTypeWidget?.value || "image",
                     reddit_url: redditUrlValue,
+                    subreddit_url: subredditUrlValue,
                     // Add uploaded file persistence
                     uploaded_file_info: {
                         image: {
@@ -1363,9 +1369,10 @@ app.registerExtension({
                         this.mediaTypeWidget.value = o.ui_state.media_type;
                     }
 
-                    // Store upload file info and reddit_url for later restoration (after updateMediaWidgets clears state)
+                    // Store upload file info and reddit_url/subreddit_url for later restoration (after updateMediaWidgets clears state)
                     this._pendingFileRestore = o.ui_state.uploaded_file_info;
                     this._pendingRedditUrlRestore = o.ui_state.reddit_url;
+                    this._pendingSubredditUrlRestore = o.ui_state.subreddit_url;
                     debugLog(
                         "[DEBUG] Stored _pendingFileRestore:",
                         JSON.stringify(this._pendingFileRestore, null, 2)
@@ -1388,6 +1395,10 @@ app.registerExtension({
                                 "[DEBUG] _pendingRedditUrlRestore:",
                                 this._pendingRedditUrlRestore
                             );
+                            debugLog(
+                                "[DEBUG] _pendingSubredditUrlRestore:",
+                                this._pendingSubredditUrlRestore
+                            );
 
                             // Restore reddit_url first if available
                             if (this._pendingRedditUrlRestore !== undefined) {
@@ -1405,6 +1416,26 @@ app.registerExtension({
                                 }
                                 // Clean up
                                 delete this._pendingRedditUrlRestore;
+                            }
+
+                            // Restore subreddit_url if available
+                            if (this._pendingSubredditUrlRestore !== undefined) {
+                                const subredditUrlWidget = this.widgets.find(
+                                    (w) => w.name === "subreddit_url"
+                                );
+                                if (subredditUrlWidget) {
+                                    subredditUrlWidget.value = this._pendingSubredditUrlRestore;
+                                    debugLog(
+                                        "[CONFIGURE] Restored subreddit_url to:",
+                                        this._pendingSubredditUrlRestore
+                                    );
+                                } else {
+                                    debugLog(
+                                        "[DEBUG] Subreddit URL widget not found for restoration"
+                                    );
+                                }
+                                // Clean up
+                                delete this._pendingSubredditUrlRestore;
                             }
 
                             if (this._pendingFileRestore) {
