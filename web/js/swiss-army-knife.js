@@ -422,10 +422,10 @@ app.registerExtension({
                     if (!this._cp_leftColumn || !this._cp_rightColumn || !data) return;
 
                     // Helper function to format field display
-                    const formatField = (emoji, label, value) => {
+                    const formatField = (emoji, label, value, skipTruncate = false) => {
                         let valueStr = String(value);
-                        // Truncate very long values
-                        if (valueStr.length > 500) {
+                        // Truncate very long values unless skipTruncate is true
+                        if (!skipTruncate && valueStr.length > 500) {
                             valueStr = valueStr.substring(0, 500) + "... (truncated)";
                         }
                         return `${emoji} ${label}:\n${valueStr}\n\n`;
@@ -460,9 +460,8 @@ app.registerExtension({
                                 { key: "width", emoji: "📐", label: "Width" },
                             ];
 
-                            // Right column: description, final_string
+                            // Right column: final_string only (no truncation)
                             const rightFields = [
-                                { key: "description", emoji: "�", label: "Description" },
                                 { key: "final_string", emoji: "✨", label: "Final String" },
                             ];
 
@@ -475,11 +474,16 @@ app.registerExtension({
                                 }
                             }
 
-                            // Populate right column
+                            // Populate right column (without truncation)
                             for (const field of rightFields) {
                                 if (parsedData.hasOwnProperty(field.key)) {
                                     rightLines.push(
-                                        formatField(field.emoji, field.label, parsedData[field.key])
+                                        formatField(
+                                            field.emoji,
+                                            field.label,
+                                            parsedData[field.key],
+                                            true
+                                        )
                                     );
                                 }
                             }
