@@ -9,6 +9,8 @@ import os
 import subprocess
 import time
 import json
+import random
+import re
 from urllib.parse import urlparse
 from html import unescape
 
@@ -272,6 +274,111 @@ class MediaDescribe:
 
         except Exception as e:
             raise ValueError(f"Failed to extract RedGifs video: {str(e)}")
+
+    def _get_random_subreddit_post(self, subreddit_url, seed, media_type="image"):
+        """
+        Get a random post from a subreddit
+
+        Args:
+            subreddit_url: Subreddit URL (e.g., https://www.reddit.com/r/pics/ or just r/pics)
+            seed: Seed for randomization
+            media_type: Type of media to filter for ("image" or "video")
+
+        Returns:
+            str: Random post URL from the subreddit
+        """
+        try:
+            # Clean up subreddit URL
+            subreddit_url = subreddit_url.strip()
+            
+            # Extract subreddit name from various formats
+            if 'reddit.com/r/' in subreddit_url:
+                subreddit_name = subreddit_url.split('reddit.com/r/')[1].split('/')[0]
+            elif subreddit_url.startswith('r/'):
+                subreddit_name = subreddit_url[2:].split('/')[0]
+            else:
+                subreddit_name = subreddit_url.split('/')[0]
+            
+            # Build subreddit JSON API URL (hot posts)
+            json_url = f'https://www.reddit.com/r/{subreddit_name}/hot.json?limit=100'
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            print(f"Fetching posts from r/{subreddit_name}...")
+            response = requests.get(json_url, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if 'data' not in data or 'children' not in data['data']:
+                raise ValueError(f"Invalid subreddit data received from r/{subreddit_name}")
+            
+            posts = data['data']['children']
+            
+            if not posts:
+                raise ValueError(f"No posts found in r/{subreddit_name}")
+            
+            # Filter posts that have media (images or videos) based on media_type preference
+            media_posts = []
+            for post in posts:
+                post_data = post['data']
+                url = post_data.get('url', '')
+                
+                # Determine if post is image or video
+                is_image = (
+                    url.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')) or
+                    'i.redd.it' in url or
+                    (post_data.get('media_metadata') is not None and 
+                     any(m.get('e') == 'Image' for m in post_data.get('media_metadata', {}).values()))
+                )
+                
+                is_video = (
+                    url.endswith(('.mp4', '.webm', '.mov')) or
+                    'v.redd.it' in url or
+                    'redgifs.com' in url or
+                    'gfycat.com' in url or
+                    (post_data.get('media_metadata') is not None and 
+                     any(m.get('e') == 'AnimatedImage' or m.get('e') == 'Video' for m in post_data.get('media_metadata', {}).values()))
+                )
+                
+                # Add post if it matches the desired media type
+                if media_type == "image" and is_image:
+                    media_posts.append(post_data)
+                elif media_type == "video" and is_video:
+                    media_posts.append(post_data)
+            
+            if not media_posts:
+                raise ValueError(f"No {media_type} posts found in r/{subreddit_name}. Try a different subreddit or media type.")
+            
+            print(f"Found {len(media_posts)} {media_type} posts in r/{subreddit_name}")
+            
+            # Randomly select a post using the seed
+            random.seed(seed)
+            selected_post = random.choice(media_posts)
+            random.seed(None)
+            
+            # Build post URL
+            post_permalink = selected_post.get('permalink', '')
+            if post_permalink:
+                post_url = f"https://www.reddit.com{post_permalink}"
+            else:
+                # Fallback to constructing URL from post ID
+                post_id = selected_post.get('id', '')
+                post_url = f"https://www.reddit.com/r/{subreddit_name}/comments/{post_id}/"
+            
+            print(f"Selected random post: {selected_post.get('title', 'Unknown')}")
+            print(f"Post URL: {post_url}")
+            
+            return post_url
+            
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Failed to fetch subreddit posts: Network error - {str(e)}")
+        except (KeyError, IndexError, TypeError) as e:
+            raise Exception(f"Failed to parse subreddit data: Invalid format - {str(e)}")
+        except Exception as e:
+            raise Exception(f"Subreddit randomization failed: {str(e)}")
 
     def _download_reddit_media(self, reddit_url):
         """
@@ -1257,9 +1364,9 @@ Generate descriptions that adhere to the following structured layers and constra
         """
         return {
             "required": {
-                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit Post"], {
+                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit Post", "Randomize from Subreddit"], {
                     "default": "Upload Media",
-                    "tooltip": "Choose whether to upload media, randomize from a directory path, or download from a Reddit post"
+                    "tooltip": "Choose whether to upload media, randomize from a directory path, download from a Reddit post, or randomize from a subreddit"
                 }),
                 "media_type": (["image", "video"], {
                     "default": "image",
@@ -1269,7 +1376,7 @@ Generate descriptions that adhere to the following structured layers and constra
                     "default": 0,
                     "min": 0,
                     "max": 0xFFFFFFFFFFFFFFFF,
-                    "tooltip": "Seed for randomization when using 'Randomize Media from Path'. Use different seeds to force re-execution."
+                    "tooltip": "Seed for randomization when using 'Randomize Media from Path' or 'Randomize from Subreddit'. Use different seeds to force re-execution."
                 }),
             },
             "optional": {
@@ -1308,6 +1415,11 @@ Generate descriptions that adhere to the following structured layers and constra
                     "default": "",
                     "tooltip": "Reddit post URL (used when media_source is Reddit Post)"
                 }),
+                "subreddit_url": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Subreddit URL or name (e.g., 'r/pics' or 'https://www.reddit.com/r/pics/') - used when media_source is Randomize from Subreddit"
+                }),
             }
         }
 
@@ -1316,21 +1428,22 @@ Generate descriptions that adhere to the following structured layers and constra
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def describe_media(self, media_source, media_type, seed, gemini_options=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0, reddit_url=""):
+    def describe_media(self, media_source, media_type, seed, gemini_options=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0, reddit_url="", subreddit_url=""):
         """
         Process media (image or video) and analyze with Gemini
 
         Args:
-            media_source: Source of media ("Upload Media", "Randomize Media from Path", or "Reddit Post")
+            media_source: Source of media ("Upload Media", "Randomize Media from Path", "Reddit Post", or "Randomize from Subreddit")
             media_type: Type of media ("image" or "video")
-            seed: Seed for randomization when using 'Randomize Media from Path'. Use different seeds to force re-execution.
+            seed: Seed for randomization when using 'Randomize Media from Path' or 'Randomize from Subreddit'. Use different seeds to force re-execution.
             gemini_options: Configuration options from Gemini Util - Options node (optional)
             media_path: Directory path to randomly select media from, including subdirectories (optional)
             uploaded_image_file: Path to uploaded image file (optional)
             uploaded_video_file: Path to uploaded video file (optional)
             frame_rate: Frame rate for temporary video (legacy parameter, not used)
             max_duration: Maximum duration in seconds (0 = use full video, only applies to videos)
-            reddit_url: Reddit post URL (used when media_source is Reddit post)
+            reddit_url: Reddit post URL (used when media_source is Reddit Post)
+            subreddit_url: Subreddit URL or name (used when media_source is Randomize from Subreddit)
         """
         # Initialize variables that might be needed in exception handler
         selected_media_path = None
@@ -1464,6 +1577,41 @@ Directory scan results:
                 if media_type == "video" and file_size_mb > 30 and max_duration <= 0:
                     max_duration = 10.0  # Limit to 10 seconds for large Reddit videos
                     print(f"Large Reddit video detected ({file_size_mb:.1f} MB). Auto-limiting to {max_duration}s to prevent API errors.")
+            elif media_source == "Randomize from Subreddit":
+                # Randomize from Subreddit mode
+                if not subreddit_url or not subreddit_url.strip():
+                    raise ValueError("Subreddit URL is required when media_source is 'Randomize from Subreddit'")
+                
+                # Get a random post from the subreddit (filtered by media_type)
+                random_post_url = self._get_random_subreddit_post(subreddit_url, seed, media_type)
+                
+                # Download media from the randomly selected post
+                downloaded_path, detected_media_type, reddit_media_info = self._download_reddit_media(random_post_url)
+                selected_media_path = downloaded_path
+                
+                # Override media_type if detected type is different (but warn user)
+                if detected_media_type != media_type:
+                    print(f"Warning: Media type mismatch. Expected '{media_type}' but detected '{detected_media_type}' from subreddit post. Using detected type.")
+                    media_type = detected_media_type
+                
+                # Create media info text
+                file_size_mb = reddit_media_info.get('file_size', 0) / 1024 / 1024
+                emoji = "📷" if media_type == "image" else "📹"
+                
+                # Extract subreddit name for display
+                if 'reddit.com/r/' in subreddit_url:
+                    display_subreddit = subreddit_url.split('reddit.com/r/')[1].split('/')[0]
+                elif subreddit_url.startswith('r/'):
+                    display_subreddit = subreddit_url[2:].split('/')[0]
+                else:
+                    display_subreddit = subreddit_url.split('/')[0]
+                
+                media_info_text = f"{emoji} {media_type.title()} Processing Info (Random from r/{display_subreddit}):\n• Title: {reddit_media_info.get('title', 'Unknown')}\n• Post URL: {random_post_url}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {reddit_media_info.get('content_type', 'Unknown')}"
+                
+                # For subreddit videos, automatically limit duration if file is large and no duration limit is set
+                if media_type == "video" and file_size_mb > 30 and max_duration <= 0:
+                    max_duration = 10.0  # Limit to 10 seconds for large subreddit videos
+                    print(f"Large subreddit video detected ({file_size_mb:.1f} MB). Auto-limiting to {max_duration}s to prevent API errors.")
             else:
                 # Upload Media mode
                 if media_type == "image":
