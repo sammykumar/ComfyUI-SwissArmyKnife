@@ -5,6 +5,31 @@ from pathlib import Path
 from PIL import Image
 from torchvision.transforms import ToPILImage
 import folder_paths
+from contextlib import contextmanager
+
+@contextmanager
+def _local_torch_backend():
+    if not torch.cuda.is_available():
+        yield
+        return
+    
+    old_bench = torch.backends.cudnn.benchmark
+    old_tf32_matmul = getattr(torch.backends.cuda, "matmul", None)
+    old_tf32_matmul_flag = getattr(old_tf32_matmul, "allow_tf32", None) if old_tf32_matmul else None
+    old_tf32_flag = getattr(torch.backends.cuda, "allow_tf32", None)
+    try:
+        torch.backends.cudnn.benchmark = True
+        if old_tf32_matmul is not None:
+            old_tf32_matmul.allow_tf32 = True
+        if old_tf32_flag is not None:
+            torch.backends.cuda.allow_tf32 = True
+        yield
+    finally:
+        torch.backends.cudnn.benchmark = old_bench
+        if old_tf32_matmul is not None and old_tf32_matmul_flag is not None:
+            old_tf32_matmul.allow_tf32 = old_tf32_matmul_flag
+        if old_tf32_flag is not None:
+            torch.backends.cuda.allow_tf32 = old_tf32_flag
 
 # Load configuration from JSON file
 with open(Path(__file__).parent / "jc_data.json", "r", encoding="utf-8") as f:
@@ -69,14 +94,18 @@ class JC_GGUF_Models:
         )
         
         # Initialize Llama model
-        self.llm = Llama(
-            model_path=str(model_path),
-            chat_handler=self.chat_handler,
-            n_ctx=n_ctx,
-            n_gpu_layers=n_gpu_layers,
-            verbose=verbose,
-            logits_all=True,
-        )
+        if torch.cuda.is_available() and "PYTORCH_CUDA_ALLOC_CONF" not in os.environ:
+            os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
+        
+        with _local_torch_backend():
+            self.llm = Llama(
+                model_path=str(model_path),
+                chat_handler=self.chat_handler,
+                n_ctx=n_ctx,
+                n_gpu_layers=n_gpu_layers,
+                verbose=verbose,
+                logits_all=True,
+            )
 
     def generate(self, image: Image.Image, system: str, prompt: str, max_tokens: int, temperature: float, top_p: float, top_k: int) -> str:
         # Ensure image is in RGB mode
@@ -96,15 +125,52 @@ class JC_GGUF_Models:
         ]
         
         # Generate response
-        response = self.llm.create_chat_completion(
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            top_k=None if top_k == 0 else top_k,
-        )
+        with _local_torch_backend():
+            response = self.llm.create_chat_completion(
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=None if top_k == 0 else top_k,
+                stop=[
+                    "<|eot_id|>", "</s>",
+                    "<|start_header_id|>assistant<|end_header_id|>",
+                    "<|start_header_id|>user<|end_header_id|>",
+                    "ASSISTANT:", "Assistant:",
+                    "USER:", "User:",
+                    "### Assistant:", "### Human:",
+                    "HUMAN:", "Human:"
+                ],
+                stream=False,
+                repeat_penalty=1.1,
+                mirostat_mode=0
+            )
         
-        return response["choices"][0]["message"]["content"].strip()
+        text = response["choices"][0]["message"]["content"] or ""
+        
+        # Clean up any leaked role markers
+        banned_markers = (
+            "<|start_header_id|>assistant<|end_header_id|>",
+            "<|start_header_id|>user<|end_header_id|>",
+            "ASSISTANT:", "Assistant:",
+            "USER:", "User:",
+            "### Assistant:", "### Human:",
+            "HUMAN:", "Human:"
+        )
+        first_hit = len(text)
+        for m in banned_markers:
+            pos = text.find(m)
+            if pos != -1 and pos < first_hit:
+                first_hit = pos
+        if first_hit != len(text):
+            text = text[:first_hit].rstrip()
+        
+        # Clean up end-of-turn tokens
+        for cut in ("<|eot_id|>", "</s>"):
+            if cut in text:
+                text = text.split(cut, 1)[0].rstrip()
+        
+        return text.strip()
 
 class JC_GGUF:
     @classmethod

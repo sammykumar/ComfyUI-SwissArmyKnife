@@ -9,6 +9,7 @@ This module provides AI-powered image captioning functionality using LLaVA visio
 - **Memory Management**: Configurable memory modes for different VRAM capacities
 - **Batch Processing**: Tools for processing multiple images efficiently
 - **Customizable Options**: Extra options for enhanced descriptions and character naming
+- **Performance Optimizations**: Scoped PyTorch backend settings and improved stop token handling (PR #22)
 
 ## Node Types
 
@@ -134,6 +135,23 @@ Model settings, caption types, and other configurations are stored in `jc_data.j
 - Enable "Keep in Memory" for faster repeated processing
 - Use appropriate quantization levels for your hardware
 - Consider batch processing for multiple images
+- GGUF improvements: Enhanced stop token handling prevents double responses and role marker leakage
+- Scoped backend settings: PyTorch optimizations are now locally scoped to prevent global slowdowns
+
+## Recent Improvements (PR #22)
+
+### Performance Optimizations
+
+- **Scoped PyTorch Backend Settings**: TF32 and cuDNN optimizations are now locally scoped to prevent global first-run slowdowns in other ComfyUI nodes
+- **Improved Stop Tokens**: Switched to Llama-3 End-of-Turn tokens (`<|eot_id|>`) and enhanced role marker detection
+- **Response Cleaning**: Added automatic cleanup of leaked role markers and double responses
+
+### Technical Details
+
+- PyTorch backend settings (cuDNN benchmark, TF32) are applied only during model operations
+- Enhanced stop token list includes Llama-3 format tokens and common role markers
+- Automatic text cleaning removes any stray "ASSISTANT:" headers or incomplete responses
+- CUDA memory allocation configuration is conditionally set to prevent conflicts
 
 ## License
 
