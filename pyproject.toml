@@ -4,23 +4,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ComfyUI-SwissArmyKnife"
-version = "2.4.1"
+version = "2.4.2"
 description = "A collection of custom nodes for ComfyUI"
 authors = [
   {name = "Sam Kumar", email = "sam@skproductions.llc"}
 ]
 readme = "README.md"
-license = "MIT"
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
-classifiers = []
-dependencies = [
-    "google-genai",
-    "httpx",
-    "opencv-python",
-    "pillow",
-    "requests",
-    "aiohttp>=3.8.0",
+classifiers = [
+    "Operating System :: OS Independent",
+    "Environment :: GPU :: NVIDIA CUDA",
+    "Environment :: GPU :: AMD ROCm",
+    "Environment :: GPU :: Apple Metal",
 ]
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 
 
@@ -44,10 +45,7 @@ Documentation = "https://github.com/sammykumar/ComfyUI-SwissArmyKnife/wiki"
 
 [tool.comfy]
 PublisherId = "lambo-sam"
-DisplayName = "ComfyUI-SwissArmyKnife"
-Icon = ""
-Tags = []
-Repository = "https://github.com/sammykumar/ComfyUI-SwissArmyKnife"
+DisplayName = "Swiss Army Knife"
 includes = ["dist/"]
 
 [tool.setuptools]
