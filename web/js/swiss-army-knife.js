@@ -6,7 +6,7 @@ const EXTENSION_VERSION = "1.4.0"; // Should match pyproject.toml version
 const LOAD_TIMESTAMP = new Date().toISOString();
 
 // DEBUG mode - will be loaded from server config
-let DEBUG_ENABLED = false;
+let DEBUG_ENABLED = true; // TEMPORARY: Force enable for debugging
 
 // Conditional logging wrapper
 const debugLog = (...args) => {
@@ -447,7 +447,7 @@ app.registerExtension({
 
                             debugLog("[ControlPanel] Parsed JSON data:", parsedData);
 
-                            // Left column: media_info, gemini_status, processed_media_path, height, width
+                            // Left column: media_info, gemini_status (with prompts), processed_media_path, height, width
                             const leftFields = [
                                 { key: "media_info", emoji: "📊", label: "Media Info" },
                                 { key: "gemini_status", emoji: "🔄", label: "Gemini Status" },
@@ -468,8 +468,31 @@ app.registerExtension({
                             // Populate left column
                             for (const field of leftFields) {
                                 if (parsedData.hasOwnProperty(field.key)) {
+                                    let fieldValue = parsedData[field.key];
+                                    let skipTruncate = false;
+
+                                    // For gemini_status, append prompts if available
+                                    if (field.key === "gemini_status") {
+                                        if (parsedData.system_prompt || parsedData.user_prompt) {
+                                            fieldValue +=
+                                                "\n\n📝 System Prompt:\n" +
+                                                (parsedData.system_prompt || "N/A");
+                                            fieldValue +=
+                                                "\n\n💬 User Prompt:\n" +
+                                                (parsedData.user_prompt || "N/A");
+
+                                            // Don't truncate when prompts are included (they can be long)
+                                            skipTruncate = true;
+                                        }
+                                    }
+
                                     leftLines.push(
-                                        formatField(field.emoji, field.label, parsedData[field.key])
+                                        formatField(
+                                            field.emoji,
+                                            field.label,
+                                            fieldValue,
+                                            skipTruncate
+                                        )
                                     );
                                 }
                             }
@@ -1585,10 +1608,10 @@ app.registerExtension({
                     let width = null;
 
                     // Try to extract from different possible message structures
-                    // Structure 1: message is an array of outputs [description, media_info, status, path, final_string, height, width]
-                    if (Array.isArray(message) && message.length >= 7) {
-                        height = message[5]; // Index 5 is height
-                        width = message[6]; // Index 6 is width
+                    // Structure 1: message is an array of outputs [processed_media_path, final_string, all_media_describe_data, height, width]
+                    if (Array.isArray(message) && message.length >= 5) {
+                        height = message[3]; // Index 3 is height
+                        width = message[4]; // Index 4 is width
                         debugLog(
                             "[MediaDescribe] Found dimensions in array format:",
                             height,
@@ -1608,9 +1631,9 @@ app.registerExtension({
                     // Structure 3: Check if message has output property
                     else if (message.output) {
                         debugLog("[MediaDescribe] Checking message.output");
-                        if (Array.isArray(message.output) && message.output.length >= 7) {
-                            height = message.output[5];
-                            width = message.output[6];
+                        if (Array.isArray(message.output) && message.output.length >= 5) {
+                            height = message.output[3];
+                            width = message.output[4];
                             debugLog(
                                 "[MediaDescribe] Found dimensions in message.output array:",
                                 height,
@@ -1633,6 +1656,44 @@ app.registerExtension({
 
                     // Use the helper function to update the display
                     this.updateDimensionsDisplay(height, width);
+
+                    // Extract and display paragraph outputs from all_media_describe_data
+                    let allDataJson = null;
+
+                    // all_media_describe_data is now at index 2 (order: processed_media_path, final_string, all_media_describe_data, height, width)
+                    if (Array.isArray(message) && message.length >= 3) {
+                        allDataJson = message[2]; // Index 2 is all_media_describe_data
+                        debugLog("[MediaDescribe] Found all_media_describe_data in array format");
+                    } else if (message.all_media_describe_data) {
+                        allDataJson = Array.isArray(message.all_media_describe_data)
+                            ? message.all_media_describe_data[0]
+                            : message.all_media_describe_data;
+                        debugLog(
+                            "[MediaDescribe] Found all_media_describe_data in message properties"
+                        );
+                    } else if (message.output && message.output.all_media_describe_data) {
+                        allDataJson = Array.isArray(message.output.all_media_describe_data)
+                            ? message.output.all_media_describe_data[0]
+                            : message.output.all_media_describe_data;
+                        debugLog("[MediaDescribe] Found all_media_describe_data in message.output");
+                    }
+
+                    // Parse and display paragraphs (data available in all_media_describe_data output)
+                    if (allDataJson) {
+                        try {
+                            const data =
+                                typeof allDataJson === "string"
+                                    ? JSON.parse(allDataJson)
+                                    : allDataJson;
+                            if (data && typeof data === "object") {
+                                debugLog("[MediaDescribe] Parsed paragraph data:", data);
+                                // Paragraph data is available via all_media_describe_data output
+                                // Use Media Describe - Prompt Breakdown node for detailed display
+                            }
+                        } catch (e) {
+                            debugLog("[MediaDescribe] Error parsing all_media_describe_data:", e);
+                        }
+                    }
                 }
 
                 return result;
@@ -1923,6 +1984,178 @@ app.registerExtension({
                 fileInput.click();
             };
         }
+
+        // Handle MediaDescribePromptBreakdown node
+        else if (nodeData.name === "MediaDescribePromptBreakdown") {
+            debugLog("Registering MediaDescribePromptBreakdown node");
+
+            // On resize, keep DOM width sensible
+            const onResize = nodeType.prototype.onResize;
+            nodeType.prototype.onResize = function (size) {
+                const result = onResize?.call(this, size);
+                if (this._breakdown_dom) {
+                    this._breakdown_dom.style.width = this.size[0] - 20 + "px";
+                }
+                return result;
+            };
+
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Create a DOM widget for custom display (no text field)
+                if (!this._breakdown_dom) {
+                    const dom = document.createElement("div");
+                    dom.style.fontFamily =
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontSize = "13px";
+                    dom.style.lineHeight = "1.5";
+                    dom.style.overflow = "auto";
+                    dom.style.maxHeight = "100%";
+                    dom.style.padding = "12px";
+                    dom.style.borderRadius = "6px";
+                    dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
+                    dom.style.border = "1px solid var(--border-color, #333)";
+                    dom.style.color = "var(--fg-color, #d4d4d4)";
+                    dom.style.whiteSpace = "pre-wrap";
+                    dom.style.wordBreak = "break-word";
+                    dom.textContent = "Waiting for data...";
+
+                    // Add a DOM widget
+                    const widget = this.addDOMWidget(
+                        "MediaDescribePromptBreakdown",
+                        "breakdown_display",
+                        dom,
+                        {
+                            serialize: false, // Don't store in workflow JSON
+                            hideOnZoom: false,
+                        }
+                    );
+
+                    // Store references
+                    this._breakdown_dom = dom;
+                    this._breakdown_widget = widget;
+                }
+
+                // Method to format and display breakdown
+                this.displayBreakdown = function (jsonData) {
+                    if (!this._breakdown_dom) return;
+
+                    try {
+                        const data = typeof jsonData === "string" ? JSON.parse(jsonData) : jsonData;
+
+                        debugLog("[PromptBreakdown] ===== FULL DATA DUMP =====");
+                        debugLog("[PromptBreakdown] Parsed data:", data);
+                        debugLog("[PromptBreakdown] Data keys:", Object.keys(data));
+
+                        // Log each field with its first 150 characters
+                        const fields = [
+                            "subject",
+                            "cinematic_aesthetic",
+                            "stylization_tone",
+                            "clothing",
+                            "scene",
+                            "movement",
+                        ];
+                        fields.forEach((field) => {
+                            const value = data[field];
+                            if (value) {
+                                debugLog(
+                                    `[PromptBreakdown] ${field}: "${value.substring(0, 150)}..."`
+                                );
+                            } else {
+                                debugLog(`[PromptBreakdown] ${field}: EMPTY or MISSING`);
+                            }
+                        });
+                        debugLog("[PromptBreakdown] ===== END DATA DUMP =====");
+
+                        let displayText = "";
+                        const sections = [
+                            { key: "subject", label: "🎯 SUBJECT", divider: "=" },
+                            {
+                                key: "cinematic_aesthetic",
+                                label: "🎬 CINEMATIC AESTHETIC",
+                                divider: "=",
+                            },
+                            {
+                                key: "stylization_tone",
+                                label: "🎨 STYLIZATION & TONE",
+                                divider: "=",
+                            },
+                            { key: "clothing", label: "👔 CLOTHING", divider: "=" },
+                            { key: "scene", label: "🏞️ SCENE", divider: "=" },
+                            { key: "movement", label: "🎭 MOVEMENT", divider: "=" },
+                        ];
+
+                        for (const section of sections) {
+                            if (data[section.key] && data[section.key].trim()) {
+                                const dividerLine = section.divider.repeat(50);
+                                displayText += `${dividerLine}\n`;
+                                displayText += `${section.label}\n`;
+                                displayText += `${dividerLine}\n`;
+                                displayText += `${data[section.key]}\n\n`;
+                            } else {
+                                debugLog(
+                                    `[PromptBreakdown] ⚠️ Section ${section.key} is empty or missing`
+                                );
+                            }
+                        }
+
+                        this._breakdown_dom.textContent =
+                            displayText.trim() || "No paragraph data available";
+                        this.setDirtyCanvas(true, true);
+                    } catch (e) {
+                        debugLog("[PromptBreakdown] ❌ Error parsing JSON:", e);
+                        this._breakdown_dom.textContent =
+                            "Error: Invalid JSON data\n\n" + e.message;
+                        this.setDirtyCanvas(true, true);
+                    }
+                };
+
+                return result;
+            };
+
+            // Update display when executed
+            const onExecuted = nodeType.prototype.onExecuted;
+            nodeType.prototype.onExecuted = function (message) {
+                const result = onExecuted?.apply(this, arguments);
+
+                debugLog("[PromptBreakdown] onExecuted called");
+                debugLog("[PromptBreakdown] Message:", message);
+                debugLog(
+                    "[PromptBreakdown] Message keys:",
+                    message ? Object.keys(message) : "null"
+                );
+
+                // Check for data in the UI field (standard ComfyUI pattern for display nodes)
+                if (message && message.all_media_describe_data) {
+                    const jsonData = Array.isArray(message.all_media_describe_data)
+                        ? message.all_media_describe_data[0]
+                        : message.all_media_describe_data;
+
+                    debugLog(
+                        "[PromptBreakdown] Found data in message.all_media_describe_data:",
+                        jsonData?.substring(0, 200)
+                    );
+                    this.displayBreakdown(jsonData);
+                    return result;
+                }
+
+                // Fallback: check widgets
+                const dataWidget = this.widgets?.find((w) => w.name === "all_media_describe_data");
+                if (dataWidget && dataWidget.value) {
+                    debugLog(
+                        "[PromptBreakdown] Found widget data:",
+                        dataWidget.value.substring(0, 200)
+                    );
+                    this.displayBreakdown(dataWidget.value);
+                    return result;
+                }
+
+                debugLog("[PromptBreakdown] No data found in message or widgets");
+                return result;
+            };
+        }
     },
 
     // Hook to handle workflow loading
@@ -2006,6 +2239,54 @@ app.registerExtension({
                     }
                 } else {
                     debugLog("[API] ⚠️ No height/width in output. Output structure:", output);
+                }
+            }
+            // Handle MediaDescribePromptBreakdown execution
+            else if (node && node.comfyClass === "MediaDescribePromptBreakdown") {
+                debugLog("[API] ✅ Found MediaDescribePromptBreakdown execution result");
+                debugLog("[API] Prompt Breakdown output:", output);
+
+                // The node receives all_media_describe_data via its input widget
+                // Check the widget for the data
+                const dataWidget = node.widgets?.find((w) => w.name === "all_media_describe_data");
+                if (dataWidget && dataWidget.value) {
+                    debugLog(
+                        "[API] Found all_media_describe_data in widget:",
+                        dataWidget.value.substring(0, 100)
+                    );
+                    if (node.displayBreakdown) {
+                        node.displayBreakdown(dataWidget.value);
+                    } else {
+                        debugLog("[API] WARNING: displayBreakdown method not found on node!");
+                    }
+                } else {
+                    debugLog("[API] WARNING: all_media_describe_data widget not found or empty!");
+
+                    // Fallback: try to get from connected source node
+                    if (node.inputs && node.inputs.length > 0) {
+                        const input = node.inputs[0];
+                        if (input.link !== null) {
+                            const link = app.graph.links[input.link];
+                            if (link) {
+                                const sourceNode = app.graph.getNodeById(link.origin_id);
+                                debugLog("[API] Source node:", sourceNode?.comfyClass);
+
+                                // Check if we can get the data from the source node's last execution
+                                if (sourceNode && sourceNode.comfyClass === "MediaDescribe") {
+                                    // Try to find cached output data
+                                    const sourceWidget = sourceNode.widgets?.find(
+                                        (w) => w.name === "all_media_describe_data_cache"
+                                    );
+                                    if (sourceWidget && sourceWidget.value) {
+                                        debugLog("[API] Found data from source node cache");
+                                        if (node.displayBreakdown) {
+                                            node.displayBreakdown(sourceWidget.value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             // Handle ControlPanel execution

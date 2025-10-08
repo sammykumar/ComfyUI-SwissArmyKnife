@@ -111,6 +111,97 @@ class MediaDescribe:
         else:
             return f"{n}th"
 
+    def _parse_paragraphs(self, description, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing="", override_scene="", override_movement=""):
+        """
+        Parse description into individual paragraphs and apply overrides.
+        Supports both JSON format (for video) and paragraph format (for images).
+        Returns tuple: (subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description)
+        """
+        # Initialize all paragraph variables
+        subject = ""
+        cinematic_aesthetic = ""
+        stylization_tone = ""
+        clothing = ""
+        scene = ""
+        movement = ""
+        
+        # Try to parse as JSON first (for video format)
+        try:
+            # Remove any markdown code fences if present
+            cleaned_description = description.strip()
+            if cleaned_description.startswith('```'):
+                # Remove code fences
+                lines = cleaned_description.split('\n')
+                # Find first line that's not a fence
+                start_idx = 0
+                for i, line in enumerate(lines):
+                    if line.strip().startswith('```'):
+                        start_idx = i + 1
+                    else:
+                        start_idx = i
+                        break
+                # Find last line that's not a fence
+                end_idx = len(lines)
+                for i in range(len(lines) - 1, -1, -1):
+                    if lines[i].strip().startswith('```'):
+                        end_idx = i
+                    else:
+                        break
+                cleaned_description = '\n'.join(lines[start_idx:end_idx])
+            
+            # Try to parse as JSON
+            json_data = json.loads(cleaned_description)
+            
+            # Extract fields from JSON (using exact field names from the prompt)
+            subject = json_data.get("subject", "")
+            clothing = json_data.get("clothing", "")
+            scene = json_data.get("scene", "")
+            movement = json_data.get("movement", "")
+            cinematic_aesthetic = json_data.get("cinematic_aesthetic_control", "")  # Map to cinematic_aesthetic
+            stylization_tone = json_data.get("stylization_tone", "")
+            
+        except (json.JSONDecodeError, ValueError):
+            # Fall back to paragraph parsing (for images)
+            # Split description into paragraphs (separated by blank lines)
+            paragraphs = [p.strip() for p in description.split('\n\n') if p.strip()]
+            
+            # Map paragraphs to variables (order matters based on system prompt)
+            if len(paragraphs) >= 1:
+                subject = paragraphs[0] if len(paragraphs) > 0 else ""
+            if len(paragraphs) >= 2:
+                cinematic_aesthetic = paragraphs[1] if len(paragraphs) > 1 else ""
+            if len(paragraphs) >= 3:
+                stylization_tone = paragraphs[2] if len(paragraphs) > 2 else ""
+            if len(paragraphs) >= 4:
+                clothing = paragraphs[3] if len(paragraphs) > 3 else ""
+            if len(paragraphs) >= 5:
+                scene = paragraphs[4] if len(paragraphs) > 4 else ""
+            if len(paragraphs) >= 6:
+                movement = paragraphs[5] if len(paragraphs) > 5 else ""
+        
+        # Apply overrides
+        if override_subject.strip():
+            subject = override_subject.strip()
+        if override_cinematic_aesthetic.strip():
+            cinematic_aesthetic = override_cinematic_aesthetic.strip()
+        if override_stylization_tone.strip():
+            stylization_tone = override_stylization_tone.strip()
+        if override_clothing.strip():
+            clothing = override_clothing.strip()
+        if override_scene.strip():
+            scene = override_scene.strip()
+        if override_movement.strip():
+            movement = override_movement.strip()
+        
+        # Rebuild final description from non-empty paragraphs
+        final_parts = []
+        for para in [subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement]:
+            if para:
+                final_parts.append(para)
+        final_description = "\n\n".join(final_parts)
+        
+        return (subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description)
+
     def _trim_video(self, input_path, output_path, duration):
         """
         Trim video to specified duration from the beginning using ffmpeg
@@ -682,9 +773,15 @@ class MediaDescribe:
 
         return None, None
 
-    def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text):
+    def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing=""):
         """
         Process image using logic from GeminiImageDescribe
+        
+        Args:
+            override_subject: Override text for SUBJECT paragraph
+            override_cinematic_aesthetic: Override text for CINEMATIC AESTHETIC paragraph
+            override_stylization_tone: Override text for STYLIZATION & TONE paragraph
+            override_clothing: Override text for CLOTHING paragraph
         """
         try:
             # Build system prompt based on individual options
@@ -915,20 +1012,34 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
 
                 processed_media_path = selected_media_path if selected_media_path else ""
-                final_string = f"{prefix_text}{description}" if prefix_text else description
+                
+                # Parse paragraphs and apply overrides
+                subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
+                    description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing
+                )
+                
+                final_string = f"{prefix_text}{final_description}" if prefix_text else final_description
 
                 # Create aggregated data output for Control Panel as JSON
                 all_data = json.dumps({
-                    "description": description,
+                    "description": final_description,
                     "media_info": media_info_text,
                     "gemini_status": gemini_status,
                     "processed_media_path": processed_media_path,
                     "final_string": final_string,
                     "height": output_height,
-                    "width": output_width
+                    "width": output_width,
+                    "subject": subject,
+                    "cinematic_aesthetic": cinematic_aesthetic,
+                    "stylization_tone": stylization_tone,
+                    "clothing": clothing,
+                    "scene": scene,
+                    "movement": movement,
+                    "system_prompt": system_prompt,
+                    "user_prompt": user_prompt
                 })
 
-                return (description, media_info_text, gemini_status, processed_media_path, final_string, output_height, output_width, all_data)
+                return (processed_media_path, final_string, all_data, output_height, output_width)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -989,28 +1100,50 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • Input: Image"""
 
             processed_media_path = selected_media_path if selected_media_path else ""
-            final_string = f"{prefix_text}{description}" if prefix_text else description
+            
+            # Parse paragraphs and apply overrides
+            subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
+                description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing
+            )
+            
+            final_string = f"{prefix_text}{final_description}" if prefix_text else final_description
 
             # Create aggregated data output for Control Panel as JSON
             all_data = json.dumps({
-                "description": description,
+                "description": final_description,
                 "media_info": media_info_text,
                 "gemini_status": gemini_status,
                 "processed_media_path": processed_media_path,
                 "final_string": final_string,
                 "height": output_height,
-                "width": output_width
+                "width": output_width,
+                "subject": subject,
+                "cinematic_aesthetic": cinematic_aesthetic,
+                "stylization_tone": stylization_tone,
+                "clothing": clothing,
+                "scene": scene,
+                "movement": movement,
+                "system_prompt": system_prompt,
+                "user_prompt": user_prompt
             })
 
-            return (description, media_info_text, gemini_status, processed_media_path, final_string, output_height, output_width, all_data)
+            return (processed_media_path, final_string, all_data, output_height, output_width)
 
         except Exception as e:
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Image analysis failed: {str(e)}")
 
-    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text):
+    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing="", override_scene="", override_movement=""):
         """
         Process video using logic from GeminiVideoDescribe
+        
+        Args:
+            override_subject: Override text for SUBJECT paragraph
+            override_cinematic_aesthetic: Override text for CINEMATIC AESTHETIC paragraph
+            override_stylization_tone: Override text for STYLIZATION & TONE paragraph
+            override_clothing: Override text for CLOTHING paragraph
+            override_scene: Override text for SCENE paragraph
+            override_movement: Override text for MOVEMENT paragraph
         """
         try:
             # Build system prompt based on individual options for video
@@ -1098,20 +1231,114 @@ Mood/genre descriptors (e.g., "noir-inspired silhouette," "cinematic realism," e
                 critical_note += " When stating clothing colors, only state the NEW, scene-harmonized colors (different from original); never mention the original colors."
             critical_note += " Never mention prohibited attributes, even if visible. Be completely decisive and definitive in all descriptions - eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."
 
-            # Combine all parts
-            combined_prompts = "\n".join(prompts)
+            # Build JSON field descriptions based on enabled options
+            subject_field = ""
+            clothing_field = ""
+            scene_field = ""
+            movement_field = ""
+            cinematic_field = ""
+            style_field = ""
+            
+            if describe_subject:
+                subject_field = 'Begin with a gendered noun phrase (e.g., "A woman…", "A man…").'
+                if describe_hair_style:
+                    subject_field += ' Include hairstyle and its texture or motion (no color or length).'
+                subject_field += ' Include posture and gestures as applicable. Strictly exclude any reference to ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, or makeup.'
+            else:
+                subject_field = 'Leave empty or provide minimal scene context without describing people.'
+            
+            if describe_clothing:
+                clothing_field = 'Describe all visible clothing and accessories with absolute certainty and definitiveness. Be specific: garment type, definitive color(s), material/texture, fit/silhouette, length, notable construction (seams, straps, waistbands), and condition. Include footwear if visible and describe exactly how fabrics respond to motion (stretching, swaying, tightening, wrinkling). Make decisive choices when multiple interpretations are possible; state one as fact. Do not describe text, typography, words, letters, logos, brand names, or written content on clothing or accessories. Exclude tattoos, glasses, and other prohibited attributes.'
+                if change_clothing_color:
+                    clothing_field += ' Additionally, do not repeat the original clothing colors you infer from the video. Instead, change the clothing color descriptions to NEW hues that harmonize with the scene\'s lighting and palette while being different from the original colors. Prefer complementary, analogous, or neutral tones that fit the environment; state the NEW colors decisively, and never reference the original color.'
+            else:
+                clothing_field = 'Leave empty.'
+            
+            scene_field = 'Describe the visible environment clearly and vividly.'
+            
+            if replace_action_with_twerking:
+                movement_field = 'Describe the initial pose and body position in the first frame of the video. Then append: "A woman is twerking and shaking her ass. She has a curvy body and a huge ass."'
+            else:
+                movement_field = 'Start with an overall summary tied to musical rhythm and beat structure (e.g., "The subject initiates with a hip sway on the downbeat…"). Then narrate movement chronologically using precise action verbs and transitions like "then", "as", "after", and reference timeline markers (early/mid/late beat or second). Specify which body parts move and how they articulate (e.g., "the right arm lifts upward, then sweeps outward; the torso tilts as the knees bend"), including footwork, weight shifts, and alignment with beats. Include any camera movement (e.g., "camera pans to follow the torso shift"). Avoid general labels—focus on locomotor and non-locomotor gestures, repetition, rhythm, and choreography phrasing. Always include any buttock or breast movements that you see.'
+            
+            if describe_bokeh:
+                cinematic_field = 'Cover lighting (source/direction/quality/temperature), camera details (shot type, angle/height, movement), optics (lens feel, DOF, rack focus), and exposure/render cues as applicable.'
+            else:
+                cinematic_field = 'Cover lighting (source/direction/quality/temperature), camera details (shot type, angle/height, movement), and exposure/render cues as applicable. Everything must be in sharp focus with no depth of field effects, bokeh, or blur. Do not mention optics, DOF, rack focus, or any depth-related visual effects.'
+            
+            style_field = 'Provide mood/genre descriptors (e.g., "noir-inspired silhouette", "cinematic realism", etc.).'
+            
+            # Build constraints note
+            constraints = "Never mention prohibited attributes (ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, makeup), even if visible."
+            if not describe_clothing:
+                constraints += " DO NOT describe clothing, accessories, or garments in any field."
+            if not describe_subject:
+                constraints += " DO NOT describe people, subjects, or human figures in any field."
+            if not describe_bokeh:
+                constraints += " Never mention depth of field, bokeh, blur, optics, DOF, rack focus, or any depth-related visual effects."
+            if describe_clothing and change_clothing_color:
+                constraints += " When stating clothing colors, only state the NEW, scene-harmonized colors (different from original); never mention the original colors."
+            constraints += " Be completely decisive and definitive in all descriptions—eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."
 
             system_prompt = f"""You are an expert assistant specialized in analyzing and verbalizing input videos for cinematic-quality video transformation using the Wan 2.2 + VACE workflow.
 
 DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Instead of "holding a black folder or book", write "holding a black folder". Instead of "wearing what appears to be denim", write "wearing dark blue denim jeans".
 
 Before writing, silently review all provided frames as a single clip and infer motion across time; reason stepwise over the entire sequence (start → middle → end). Do not use meta phrases (e.g., "this video shows").
-Generate descriptions that adhere to the following structured layers and constraints, formatting each as a SEPARATE PARAGRAPH in this exact order:
 
-{combined_prompts}{clothing_prompt}
+## Output format
 
-{critical_note}"""
-            user_prompt = f"Please analyze this video and provide a detailed description following the {paragraph_count}-paragraph structure outlined in the system prompt."
+Return **only** a single valid JSON object (no code fences, no extra text) with **exactly six** string fields in this exact order:
+
+1. "subject"
+2. "clothing"
+3. "scene"
+4. "movement"
+5. "cinematic_aesthetic_control"
+6. "stylization_tone"
+
+Each field's value is one fully formed paragraph (a single string) for that category. Do not include newline characters between fields; each value should be a single-paragraph string.
+
+Example (structure only):
+{{
+"subject": "…",
+"clothing": "…",
+"scene": "…",
+"movement": "…",
+"cinematic_aesthetic_control": "…",
+"stylization_tone": "…"
+}}
+
+## Content requirements by field
+
+### 1) SUBJECT → "subject"
+
+{subject_field}
+
+### 2) CLOTHING → "clothing"
+
+{clothing_field}
+
+### 3) SCENE → "scene"
+
+{scene_field}
+
+### 4) MOVEMENT → "movement"
+
+{movement_field}
+
+### 5) CINEMATIC AESTHETIC CONTROL → "cinematic_aesthetic_control"
+
+{cinematic_field}
+
+### 6) STYLIZATION & TONE → "stylization_tone"
+
+{style_field}
+
+## Global constraints
+
+{constraints}"""
+            user_prompt = "Please analyze this video and provide a detailed description in the JSON format specified in the system prompt."
 
             # Process video file
             if not selected_media_path or not os.path.exists(selected_media_path):
@@ -1256,20 +1483,34 @@ Generate descriptions that adhere to the following structured layers and constra
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
 
                 processed_media_path = selected_media_path if selected_media_path else ""
-                final_string = f"{prefix_text}{description}" if prefix_text else description
+                
+                # Parse paragraphs and apply overrides (for videos)
+                subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
+                    description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement
+                )
+                
+                final_string = f"{prefix_text}{final_description}" if prefix_text else final_description
 
                 # Create aggregated data output for Control Panel as JSON
                 all_data = json.dumps({
-                    "description": description,
+                    "description": final_description,
                     "media_info": updated_media_info,
                     "gemini_status": gemini_status,
                     "processed_media_path": processed_media_path,
                     "final_string": final_string,
                     "height": output_height,
-                    "width": output_width
+                    "width": output_width,
+                    "subject": subject,
+                    "cinematic_aesthetic": cinematic_aesthetic,
+                    "stylization_tone": stylization_tone,
+                    "clothing": clothing,
+                    "scene": scene,
+                    "movement": movement,
+                    "system_prompt": "(Cached result - prompts not available)",
+                    "user_prompt": "(Cached result - prompts not available)"
                 })
 
-                return (description, updated_media_info, gemini_status, processed_media_path, final_string, output_height, output_width, all_data)
+                return (processed_media_path, final_string, all_data, output_height, output_width)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -1328,20 +1569,33 @@ Generate descriptions that adhere to the following structured layers and constra
 • API Key: {'*' * (len(gemini_api_key) - 4) + gemini_api_key[-4:] if len(gemini_api_key) >= 4 else '****'}
 • Input: Video"""
 
-            final_string = f"{prefix_text}{description}" if prefix_text else description
+            # Parse paragraphs and apply overrides (for videos)
+            subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
+                description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement
+            )
+            
+            final_string = f"{prefix_text}{final_description}" if prefix_text else final_description
 
             # Create aggregated data output for Control Panel as JSON
             all_data = json.dumps({
-                "description": description,
+                "description": final_description,
                 "media_info": updated_media_info,
                 "gemini_status": gemini_status,
                 "processed_media_path": trimmed_video_output_path,
                 "final_string": final_string,
                 "height": output_height,
-                "width": output_width
+                "width": output_width,
+                "subject": subject,
+                "cinematic_aesthetic": cinematic_aesthetic,
+                "stylization_tone": stylization_tone,
+                "clothing": clothing,
+                "scene": scene,
+                "movement": movement,
+                "system_prompt": system_prompt,
+                "user_prompt": user_prompt
             })
 
-            return (description, updated_media_info, gemini_status, trimmed_video_output_path, final_string, output_height, output_width, all_data)
+            return (trimmed_video_output_path, final_string, all_data, output_height, output_width)
 
         except Exception as e:
             # Provide more specific error messages for common issues
@@ -1420,15 +1674,18 @@ Generate descriptions that adhere to the following structured layers and constra
                     "default": "",
                     "tooltip": "Subreddit URL or name (e.g., 'r/pics' or 'https://www.reddit.com/r/pics/') - used when media_source is Randomize from Subreddit"
                 }),
+                "overrides": ("OVERRIDES", {
+                    "tooltip": "Paragraph overrides from Media Describe - Overrides node (optional)"
+                }),
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "INT", "INT", "STRING")
-    RETURN_NAMES = ("description", "media_info", "gemini_status", "processed_media_path", "final_string", "height", "width", "all_media_describe_data")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("processed_media_path", "final_string", "all_media_describe_data", "height", "width")
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪"
 
-    def describe_media(self, media_source, media_type, seed, gemini_options=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0, reddit_url="", subreddit_url=""):
+    def describe_media(self, media_source, media_type, seed, gemini_options=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0, reddit_url="", subreddit_url="", overrides=None):
         """
         Process media (image or video) and analyze with Gemini
 
@@ -1444,6 +1701,7 @@ Generate descriptions that adhere to the following structured layers and constra
             max_duration: Maximum duration in seconds (0 = use full video, only applies to videos)
             reddit_url: Reddit post URL (used when media_source is Reddit Post)
             subreddit_url: Subreddit URL or name (used when media_source is Randomize from Subreddit)
+            overrides: Dictionary of paragraph overrides from Media Describe - Overrides node (optional)
         """
         # Initialize variables that might be needed in exception handler
         selected_media_path = None
@@ -1463,6 +1721,18 @@ Generate descriptions that adhere to the following structured layers and constra
                 "replace_action_with_twerking": False,
                 "prefix_text": ""
             }
+
+        # Handle missing overrides with defaults
+        if overrides is None:
+            overrides = {}
+        
+        # Extract override values with defaults
+        override_subject = overrides.get("override_subject", "")
+        override_cinematic_aesthetic = overrides.get("override_cinematic_aesthetic", "")
+        override_stylization_tone = overrides.get("override_stylization_tone", "")
+        override_clothing = overrides.get("override_clothing", "")
+        override_scene = overrides.get("override_scene", "")
+        override_movement = overrides.get("override_movement", "")
 
         # Extract values from options
         gemini_api_key = gemini_options["gemini_api_key"]
@@ -1641,13 +1911,15 @@ Directory scan results:
                 # Process as image - delegate to image logic
                 return self._process_image(
                     gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text,
-                    None, selected_media_path, media_info_text
+                    None, selected_media_path, media_info_text,
+                    override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing
                 )
             else:
                 # Process as video - delegate to video logic  
                 return self._process_video(
                     gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text,
-                    selected_media_path, frame_rate, max_duration, media_info_text
+                    selected_media_path, frame_rate, max_duration, media_info_text,
+                    override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement
                 )
 
         except Exception as e:
