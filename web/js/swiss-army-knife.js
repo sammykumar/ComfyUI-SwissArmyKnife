@@ -1305,6 +1305,284 @@ app.registerExtension({
                 return result;
             };
 
+            // Add clearCurrentMediaState method - helper to clear state before new upload
+            nodeType.prototype.clearCurrentMediaState = function () {
+                debugLog("[CLEAR] Clearing current media state");
+
+                // Clear video state
+                this.uploadedVideoFile = null;
+                this.uploadedVideoSubfolder = null;
+
+                // Clear image state
+                this.uploadedImageFile = null;
+                this.uploadedImageSubfolder = null;
+
+                // Clear the hidden widgets that store file paths
+                const originalUploadedImageWidget = this.widgets.find(
+                    (w) => w.name === "uploaded_image_file"
+                );
+                const originalUploadedVideoWidget = this.widgets.find(
+                    (w) => w.name === "uploaded_video_file"
+                );
+
+                if (originalUploadedImageWidget) {
+                    originalUploadedImageWidget.value = "";
+                }
+                if (originalUploadedVideoWidget) {
+                    originalUploadedVideoWidget.value = "";
+                }
+
+                if (this.imageFileWidget) {
+                    this.imageFileWidget.value = "";
+                }
+                if (this.videoFileWidget) {
+                    this.videoFileWidget.value = "";
+                }
+
+                debugLog("[CLEAR] Media state cleared");
+            };
+
+            // Add image upload handler
+            nodeType.prototype.onImageUploadButtonPressed = function () {
+                debugLog("Image upload button pressed!");
+
+                // Clear current image state before starting new upload
+                this.clearCurrentMediaState();
+
+                // Create file input element
+                const fileInput = document.createElement("input");
+                fileInput.type = "file";
+                fileInput.accept = "image/*";
+                fileInput.style.display = "none";
+
+                fileInput.onchange = async (event) => {
+                    const file = event.target.files[0];
+                    if (!file) {
+                        return;
+                    }
+
+                    // Validate file type
+                    if (!file.type.startsWith("image/")) {
+                        app.ui.dialog.show("Please select a valid image file.");
+                        return;
+                    }
+
+                    // Show loading state
+                    this.imageInfoWidget.value = "Uploading image...";
+
+                    try {
+                        // Upload the image file
+                        const formData = new FormData();
+                        formData.append("image", file);
+                        formData.append("subfolder", "swiss_army_knife_images");
+                        formData.append("type", "input");
+
+                        const uploadResponse = await fetch("/upload/image", {
+                            method: "POST",
+                            body: formData,
+                        });
+
+                        if (!uploadResponse.ok) {
+                            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+                        }
+
+                        const uploadResult = await uploadResponse.json();
+
+                        // Update the image info widget
+                        this.imageInfoWidget.value = `${file.name} (${(
+                            file.size /
+                            1024 /
+                            1024
+                        ).toFixed(2)} MB)`;
+
+                        // Store image info for processing
+                        this.uploadedImageFile = uploadResult.name;
+                        this.uploadedImageSubfolder =
+                            uploadResult.subfolder || "swiss_army_knife_images";
+
+                        // Use the original uploaded_image_file widget to store the file path
+                        const originalUploadedImageWidget = this.widgets.find(
+                            (w) => w.name === "uploaded_image_file"
+                        );
+                        if (originalUploadedImageWidget) {
+                            originalUploadedImageWidget.value = `${this.uploadedImageSubfolder}/${this.uploadedImageFile}`;
+                            debugLog(
+                                `[UPLOAD] Updated original uploaded_image_file widget: ${originalUploadedImageWidget.value}`
+                            );
+                        } else {
+                            // Fallback: create a hidden widget if the original doesn't exist
+                            if (!this.imageFileWidget) {
+                                this.imageFileWidget = this.addWidget(
+                                    "text",
+                                    "uploaded_image_file",
+                                    "",
+                                    () => {},
+                                    {}
+                                );
+                                this.imageFileWidget.serialize = true;
+                                this.imageFileWidget.type = "hidden";
+                            }
+                            this.imageFileWidget.value = `${this.uploadedImageSubfolder}/${this.uploadedImageFile}`;
+                        }
+
+                        // Show success notification
+                        app.extensionManager?.toast?.add({
+                            severity: "success",
+                            summary: "Image Upload",
+                            detail: `Successfully uploaded ${file.name}`,
+                            life: 3000,
+                        });
+
+                        debugLog("Image uploaded:", uploadResult);
+                    } catch (error) {
+                        console.error("Upload error:", error);
+
+                        // Clear everything on error
+                        this.imageInfoWidget.value = "Upload failed";
+                        this.uploadedImageFile = null;
+                        this.uploadedImageSubfolder = null;
+
+                        if (this.imageFileWidget) {
+                            this.imageFileWidget.value = "";
+                        }
+
+                        app.ui.dialog.show(`Upload failed: ${error.message}`);
+                    }
+
+                    // Clean up
+                    document.body.removeChild(fileInput);
+                };
+
+                // Trigger file selection
+                document.body.appendChild(fileInput);
+                fileInput.click();
+            };
+
+            // Add video upload handler (reuse from existing video node)
+            nodeType.prototype.onVideoUploadButtonPressed = function () {
+                debugLog("Video upload button pressed!");
+
+                // Clear current video state before starting new upload
+                this.clearCurrentMediaState();
+
+                // Create file input element
+                const fileInput = document.createElement("input");
+                fileInput.type = "file";
+                fileInput.accept = "video/*";
+                fileInput.style.display = "none";
+
+                fileInput.onchange = async (event) => {
+                    const file = event.target.files[0];
+                    if (!file) {
+                        // User cancelled, keep cleared state
+                        return;
+                    }
+
+                    // Validate file type
+                    if (!file.type.startsWith("video/")) {
+                        app.ui.dialog.show("Please select a valid video file.");
+                        return;
+                    }
+
+                    // Show loading state
+                    this.videoInfoWidget.value = "Uploading video...";
+
+                    try {
+                        // Upload the video file
+                        const formData = new FormData();
+                        formData.append("image", file);
+                        formData.append("subfolder", "swiss_army_knife_videos");
+                        formData.append("type", "input");
+
+                        const uploadResponse = await fetch("/upload/image", {
+                            method: "POST",
+                            body: formData,
+                        });
+
+                        if (!uploadResponse.ok) {
+                            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+                        }
+
+                        const uploadResult = await uploadResponse.json();
+
+                        debugLog("[DEBUG] Video upload successful, result:", uploadResult);
+
+                        // Update the video info widget
+                        this.videoInfoWidget.value = `${file.name} (${(
+                            file.size /
+                            1024 /
+                            1024
+                        ).toFixed(2)} MB)`;
+
+                        // Store video info for processing
+                        this.uploadedVideoFile = uploadResult.name;
+                        this.uploadedVideoSubfolder =
+                            uploadResult.subfolder || "swiss_army_knife_videos";
+
+                        debugLog("[DEBUG] Stored uploadedVideoFile:", this.uploadedVideoFile);
+                        debugLog(
+                            "[DEBUG] Stored uploadedVideoSubfolder:",
+                            this.uploadedVideoSubfolder
+                        );
+
+                        // Use the original uploaded_video_file widget to store the file path
+                        const originalUploadedVideoWidget = this.widgets.find(
+                            (w) => w.name === "uploaded_video_file"
+                        );
+                        if (originalUploadedVideoWidget) {
+                            originalUploadedVideoWidget.value = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
+                            debugLog(
+                                `[UPLOAD] Updated original uploaded_video_file widget: ${originalUploadedVideoWidget.value}`
+                            );
+                        } else {
+                            // Fallback: create a hidden widget if the original doesn't exist
+                            if (!this.videoFileWidget) {
+                                this.videoFileWidget = this.addWidget(
+                                    "text",
+                                    "uploaded_video_file",
+                                    "",
+                                    () => {},
+                                    {}
+                                );
+                                this.videoFileWidget.serialize = true;
+                                this.videoFileWidget.type = "hidden";
+                            }
+                            this.videoFileWidget.value = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
+                        }
+
+                        // Show success notification
+                        app.extensionManager?.toast?.add({
+                            severity: "success",
+                            summary: "Video Upload",
+                            detail: `Successfully uploaded ${file.name}`,
+                            life: 3000,
+                        });
+
+                        debugLog("Video uploaded:", uploadResult);
+                    } catch (error) {
+                        console.error("Upload error:", error);
+
+                        // Clear everything on error
+                        this.videoInfoWidget.value = "Upload failed";
+                        this.uploadedVideoFile = null;
+                        this.uploadedVideoSubfolder = null;
+
+                        if (this.videoFileWidget) {
+                            this.videoFileWidget.value = "";
+                        }
+
+                        app.ui.dialog.show(`Upload failed: ${error.message}`);
+                    }
+
+                    // Clean up
+                    document.body.removeChild(fileInput);
+                };
+
+                // Trigger file selection
+                document.body.appendChild(fileInput);
+                fileInput.click();
+            };
+
             // Add onSerialize method to save UI state
             const onSerialize = nodeType.prototype.onSerialize;
             nodeType.prototype.onSerialize = function (o) {
@@ -1726,262 +2004,6 @@ app.registerExtension({
                         this.imageFileWidget.value = "";
                     }
                 }
-            };
-
-            // Add image upload handler
-            nodeType.prototype.onImageUploadButtonPressed = function () {
-                debugLog("Image upload button pressed!");
-
-                // Clear current image state before starting new upload
-                this.clearCurrentMediaState();
-
-                // Create file input element
-                const fileInput = document.createElement("input");
-                fileInput.type = "file";
-                fileInput.accept = "image/*";
-                fileInput.style.display = "none";
-
-                fileInput.onchange = async (event) => {
-                    const file = event.target.files[0];
-                    if (!file) {
-                        return;
-                    }
-
-                    // Validate file type
-                    if (!file.type.startsWith("image/")) {
-                        app.ui.dialog.show("Please select a valid image file.");
-                        return;
-                    }
-
-                    // Show loading state
-                    this.imageInfoWidget.value = "Uploading image...";
-
-                    try {
-                        // Upload the image file
-                        const formData = new FormData();
-                        formData.append("image", file);
-                        formData.append("subfolder", "swiss_army_knife_images");
-                        formData.append("type", "input");
-
-                        const uploadResponse = await fetch("/upload/image", {
-                            method: "POST",
-                            body: formData,
-                        });
-
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-                        }
-
-                        const uploadResult = await uploadResponse.json();
-
-                        // Update the image info widget
-                        this.imageInfoWidget.value = `${file.name} (${(
-                            file.size /
-                            1024 /
-                            1024
-                        ).toFixed(2)} MB)`;
-
-                        // Store image info for processing
-                        this.uploadedImageFile = uploadResult.name;
-                        this.uploadedImageSubfolder =
-                            uploadResult.subfolder || "swiss_army_knife_images";
-
-                        // Use the original uploaded_image_file widget to store the file path
-                        const originalUploadedImageWidget = this.widgets.find(
-                            (w) => w.name === "uploaded_image_file"
-                        );
-                        if (originalUploadedImageWidget) {
-                            originalUploadedImageWidget.value = `${this.uploadedImageSubfolder}/${this.uploadedImageFile}`;
-                            debugLog(
-                                `[UPLOAD] Updated original uploaded_image_file widget: ${originalUploadedImageWidget.value}`
-                            );
-                        } else {
-                            // Fallback: create a hidden widget if the original doesn't exist
-                            if (!this.imageFileWidget) {
-                                this.imageFileWidget = this.addWidget(
-                                    "text",
-                                    "uploaded_image_file",
-                                    "",
-                                    () => {},
-                                    {}
-                                );
-                                this.imageFileWidget.serialize = true;
-                                this.imageFileWidget.type = "hidden";
-                            }
-                            this.imageFileWidget.value = `${this.uploadedImageSubfolder}/${this.uploadedImageFile}`;
-                        }
-
-                        // Show success notification
-                        app.extensionManager?.toast?.add({
-                            severity: "success",
-                            summary: "Image Upload",
-                            detail: `Successfully uploaded ${file.name}`,
-                            life: 3000,
-                        });
-
-                        debugLog("Image uploaded:", uploadResult);
-                    } catch (error) {
-                        console.error("Upload error:", error);
-
-                        // Clear everything on error
-                        this.imageInfoWidget.value = "Upload failed";
-                        this.uploadedImageFile = null;
-                        this.uploadedImageSubfolder = null;
-
-                        if (this.imageFileWidget) {
-                            this.imageFileWidget.value = "";
-                        }
-
-                        app.ui.dialog.show(`Upload failed: ${error.message}`);
-                    }
-
-                    // Clean up
-                    document.body.removeChild(fileInput);
-                };
-
-                // Trigger file selection
-                document.body.appendChild(fileInput);
-                fileInput.click();
-            };
-
-            // Add video upload handler (reuse from existing video node)
-            nodeType.prototype.onVideoUploadButtonPressed = function () {
-                debugLog("Video upload button pressed!");
-
-                // Clear current video state before starting new upload
-                this.clearCurrentMediaState();
-
-                // Create file input element
-                const fileInput = document.createElement("input");
-                fileInput.type = "file";
-                fileInput.accept = "video/*";
-                fileInput.style.display = "none";
-
-                fileInput.onchange = async (event) => {
-                    const file = event.target.files[0];
-                    if (!file) {
-                        // User cancelled, keep cleared state
-                        return;
-                    }
-
-                    // Validate file type
-                    if (!file.type.startsWith("video/")) {
-                        app.ui.dialog.show("Please select a valid video file.");
-                        return;
-                    }
-
-                    // Show loading state
-                    this.videoInfoWidget.value = "Uploading video...";
-
-                    try {
-                        // Upload the video file
-                        const formData = new FormData();
-                        formData.append("image", file);
-                        formData.append("subfolder", "swiss_army_knife_videos");
-                        formData.append("type", "input");
-
-                        const uploadResponse = await fetch("/upload/image", {
-                            method: "POST",
-                            body: formData,
-                        });
-
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-                        }
-
-                        const uploadResult = await uploadResponse.json();
-
-                        debugLog("[DEBUG] Video upload successful, result:", uploadResult);
-
-                        // Update the video info widget
-                        this.videoInfoWidget.value = `${file.name} (${(
-                            file.size /
-                            1024 /
-                            1024
-                        ).toFixed(2)} MB)`;
-
-                        // Store video info for processing
-                        this.uploadedVideoFile = uploadResult.name;
-                        this.uploadedVideoSubfolder =
-                            uploadResult.subfolder || "swiss_army_knife_videos";
-
-                        debugLog("[DEBUG] Set uploadedVideoFile to:", this.uploadedVideoFile);
-                        debugLog(
-                            "[DEBUG] Set uploadedVideoSubfolder to:",
-                            this.uploadedVideoSubfolder
-                        );
-                        debugLog("[DEBUG] Set videoInfoWidget to:", this.videoInfoWidget.value);
-
-                        // Use the original uploaded_video_file widget to store the file path
-                        const originalUploadedVideoWidget = this.widgets.find(
-                            (w) => w.name === "uploaded_video_file"
-                        );
-                        if (originalUploadedVideoWidget) {
-                            originalUploadedVideoWidget.value = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
-                            debugLog(
-                                `[UPLOAD] Updated original uploaded_video_file widget: ${originalUploadedVideoWidget.value}`
-                            );
-                        } else {
-                            debugLog(
-                                "[DEBUG] WARNING: uploaded_video_file widget not found during upload!"
-                            );
-                            // Fallback: create a hidden widget if the original doesn't exist
-                            if (!this.videoFileWidget) {
-                                this.videoFileWidget = this.addWidget(
-                                    "text",
-                                    "uploaded_video_file",
-                                    "",
-                                    () => {},
-                                    {}
-                                );
-                                this.videoFileWidget.serialize = true;
-                                this.videoFileWidget.type = "hidden";
-                                debugLog("[DEBUG] Created fallback videoFileWidget");
-                            }
-                            this.videoFileWidget.value = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
-                            debugLog(
-                                "[DEBUG] Updated fallback videoFileWidget:",
-                                this.videoFileWidget.value
-                            );
-                        }
-
-                        // Debug: Show all widget states after upload
-                        debugLog("[DEBUG] All widgets after upload:");
-                        this.widgets.forEach((w) => {
-                            debugLog(`  ${w.name}: ${w.value} (type: ${w.type})`);
-                        });
-
-                        // Show success notification
-                        app.extensionManager?.toast?.add({
-                            severity: "success",
-                            summary: "Video Upload",
-                            detail: `Successfully uploaded ${file.name}`,
-                            life: 3000,
-                        });
-
-                        debugLog("Video uploaded:", uploadResult);
-                    } catch (error) {
-                        console.error("Upload error:", error);
-
-                        // Clear everything on error
-                        this.videoInfoWidget.value = "Upload failed";
-                        this.uploadedVideoFile = null;
-                        this.uploadedVideoSubfolder = null;
-
-                        if (this.videoFileWidget) {
-                            this.videoFileWidget.value = "";
-                        }
-
-                        app.ui.dialog.show(`Upload failed: ${error.message}`);
-                    }
-
-                    // Clean up
-                    document.body.removeChild(fileInput);
-                };
-
-                // Trigger file selection
-                document.body.appendChild(fileInput);
-                fileInput.click();
             };
         }
 
