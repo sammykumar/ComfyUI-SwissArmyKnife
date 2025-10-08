@@ -1,0 +1,183 @@
+{
+    "caption_type_map": {
+        "Descriptive": [
+            "Write a descriptive caption for this image in a formal tone.",
+            "Write a descriptive caption for this image in a formal tone within {word_count} words.",
+            "Write a {length} descriptive caption for this image in a formal tone."
+        ],
+        "Descriptive (Casual)": [
+            "Write a descriptive caption for this image in a casual tone.",
+            "Write a descriptive caption for this image in a casual tone within {word_count} words.",
+            "Write a {length} descriptive caption for this image in a casual tone."
+        ],
+        "Straightforward": [
+            "Describe this image.",
+            "Describe this image within {word_count} words.",
+            "Describe this image in {length} description."
+        ],
+        "Tags": [
+            "Write a list of detailed tags for this image.",
+            "Write a list of detailed tags for this image within {word_count} words.",
+            "Write a {length} list of detailed tags for this image."
+        ],
+        "Technical": [
+            "Analyze this image from a technical perspective.",
+            "Analyze this image from a technical perspective within {word_count} words.",
+            "Write a {length} technical analysis of this image."
+        ],
+        "Artistic": [
+            "Describe the artistic elements and composition of this image.",
+            "Describe the artistic elements and composition of this image within {word_count} words.",
+            "Write a {length} description of the artistic elements and composition of this image."
+        ]
+    },
+    "extra_options": {
+        "person_focus": {
+            "description": "Add extra focus on person in the image.",
+            "default": false
+        },
+        "detailed_background": {
+            "description": "Provide detailed background description.",
+            "default": false
+        },
+        "artistic_style": {
+            "description": "Include artistic style analysis.",
+            "default": false
+        },
+        "technical_details": {
+            "description": "Include technical camera/photography details.",
+            "default": false
+        },
+        "emotional_tone": {
+            "description": "Describe the emotional tone or mood.",
+            "default": false
+        },
+        "composition_analysis": {
+            "description": "Analyze the composition and visual elements.",
+            "default": false
+        }
+    },
+    "memory_efficient_configs": {
+        "Full Precision (bf16)": {
+            "description": "Best quality, highest memory usage (~8GB VRAM)",
+            "dtype": "bfloat16"
+        },
+        "Balanced (8-bit)": {
+            "description": "Good quality, moderate memory usage (~4GB VRAM)",
+            "quantization": "8bit"
+        },
+        "Maximum Savings (4-bit)": {
+            "description": "Acceptable quality, lowest memory usage (~2GB VRAM)",
+            "quantization": "4bit"
+        }
+    },
+    "model_settings": {
+        "default_system_prompt": "You are a helpful image captioning assistant.",
+        "default_max_tokens": 512,
+        "default_temperature": 0.6,
+        "default_top_p": 0.9,
+        "default_top_k": 0,
+        "context_window": 4096,
+        "cpu_threads": 8
+    },
+    "caption_length_choices": [
+        "any",
+        "very short",
+        "short",
+        "medium",
+        "long",
+        "very long"
+    ],
+    "hf_models": {
+        "JoyCaption Beta One": {
+            "name": "fancyfeast/llama-joycaption-beta-one-hf-llava",
+            "description": "The main JoyCaption model for high-quality image captioning"
+        }
+    },
+    "gguf_models": {
+        "JoyCaption Beta One (Q2_K)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q2_K.gguf",
+            "size": "3.18GB",
+            "vram": "~4GB",
+            "quality": "Good",
+            "description": "Low VRAM option (6GB+)"
+        },
+        "JoyCaption Beta One (Q3_K_S)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q3_K_S.gguf",
+            "size": "3.66GB",
+            "vram": "~5GB",
+            "quality": "Good+",
+            "description": "Budget systems (8GB+)"
+        },
+        "JoyCaption Beta One (Q3_K_M)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q3_K_M.gguf",
+            "size": "4.02GB",
+            "vram": "~5GB",
+            "quality": "Better",
+            "description": "Balanced performance"
+        },
+        "JoyCaption Beta One (Q3_K_L)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q3_K_L.gguf",
+            "size": "4.32GB",
+            "vram": "~6GB",
+            "quality": "Better+",
+            "description": "Good quality/size ratio"
+        },
+        "JoyCaption Beta One (IQ4_XS)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.IQ4_XS.gguf",
+            "size": "4.48GB",
+            "vram": "~6GB",
+            "quality": "Very Good",
+            "description": "Recommended (8GB+)"
+        },
+        "JoyCaption Beta One (Q4_K_S)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q4_K_S.gguf",
+            "size": "4.69GB",
+            "vram": "~6GB",
+            "quality": "Very Good",
+            "description": "Quality focused"
+        },
+        "JoyCaption Beta One (Q4_K_M)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q4_K_M.gguf",
+            "size": "4.92GB",
+            "vram": "~7GB",
+            "quality": "Very Good+",
+            "description": "Balanced choice"
+        },
+        "JoyCaption Beta One (Q5_K_S)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q5_K_S.gguf",
+            "size": "5.60GB",
+            "vram": "~7GB",
+            "quality": "Excellent",
+            "description": "High quality (10GB+)"
+        },
+        "JoyCaption Beta One (Q5_K_M)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q5_K_M.gguf",
+            "size": "5.73GB",
+            "vram": "~8GB",
+            "quality": "Excellent+",
+            "description": "Premium quality"
+        },
+        "JoyCaption Beta One (Q6_K)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q6_K.gguf",
+            "size": "6.60GB",
+            "vram": "~8GB",
+            "quality": "Near Original",
+            "description": "Maximum quality (12GB+)"
+        },
+        "JoyCaption Beta One (Q8_0)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.Q8_0.gguf",
+            "size": "8.54GB",
+            "vram": "~10GB",
+            "quality": "Original-",
+            "description": "Near full precision (16GB+)"
+        },
+        "JoyCaption Beta One (F16)": {
+            "path": "mradermacher/llama-joycaption-beta-one-hf-llava-GGUF/llama-joycaption-beta-one-hf-llava.F16.gguf",
+            "size": "16.1GB",
+            "vram": "~18GB",
+            "quality": "Original",
+            "description": "Full precision (24GB+)"
+        }
+    }
+}

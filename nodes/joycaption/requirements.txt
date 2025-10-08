@@ -1,0 +1,30 @@
+# JoyCaption Requirements
+# Core dependencies for AI image captioning functionality
+
+# Essential ML/AI libraries
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.30.0
+accelerate>=0.20.0
+
+# Quantization support  
+bitsandbytes>=0.41.0
+
+# HuggingFace ecosystem
+huggingface-hub>=0.15.0
+datasets>=2.10.0
+
+# Image processing
+Pillow>=9.0.0
+
+# GGUF model support (optional but recommended for efficiency)
+llama-cpp-python>=0.2.0
+
+# Progress tracking and utilities
+tqdm>=4.60.0
+
+# JSON handling and data processing
+numpy>=1.21.0
+
+# File and path utilities (usually included with Python)
+pathlib

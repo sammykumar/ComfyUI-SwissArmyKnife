@@ -43,6 +43,15 @@ except ImportError as e:
     MEDIA_SELECTION_NODE_CLASS_MAPPINGS = {}
     MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+# Import joycaption nodes
+try:
+    from .nodes.joycaption import NODE_CLASS_MAPPINGS as JOYCAPTION_NODE_CLASS_MAPPINGS
+    from .nodes.joycaption import NODE_DISPLAY_NAME_MAPPINGS as JOYCAPTION_NODE_DISPLAY_NAME_MAPPINGS
+except ImportError as e:
+    print(f"Warning: Could not import joycaption nodes: {e}")
+    JOYCAPTION_NODE_CLASS_MAPPINGS = {}
+    JOYCAPTION_NODE_DISPLAY_NAME_MAPPINGS = {}
+
 # Register config API routes
 try:
     from .nodes.config_api import register_config_routes
@@ -68,20 +77,22 @@ def get_version():
         import time
         return str(int(time.time()))
 
-# Combine main nodes, helper nodes, control panel, lora_manager, and media_selection nodes
+# Combine main nodes, helper nodes, control panel, lora_manager, media_selection, and joycaption nodes
 NODE_CLASS_MAPPINGS = {
     **MAIN_NODE_CLASS_MAPPINGS,
     **HELPER_NODE_CLASS_MAPPINGS,
     **CONTROL_PANEL_NODE_CLASS_MAPPINGS,
     **LORA_MANAGER_NODE_CLASS_MAPPINGS,
-    **MEDIA_SELECTION_NODE_CLASS_MAPPINGS
+    **MEDIA_SELECTION_NODE_CLASS_MAPPINGS,
+    **JOYCAPTION_NODE_CLASS_MAPPINGS
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     **MAIN_NODE_DISPLAY_NAME_MAPPINGS,
     **HELPER_NODE_DISPLAY_NAME_MAPPINGS,
     **CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS,
     **LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS,
-    **MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS
+    **MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS,
+    **JOYCAPTION_NODE_DISPLAY_NAME_MAPPINGS
 }
 
 WEB_DIRECTORY = "./web"
