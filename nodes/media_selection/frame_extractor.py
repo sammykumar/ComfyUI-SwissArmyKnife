@@ -4,6 +4,7 @@ import random
 import tempfile
 import numpy as np
 from PIL import Image
+import hashlib
 
 
 class FrameExtractor:
@@ -66,8 +67,8 @@ class FrameExtractor:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
-    RETURN_NAMES = ("frame_paths", "frame_timestamps", "frame_info")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("frame_paths", "frame_timestamps", "frame_info", "frames_directory")
     FUNCTION = "extract_frames"
     CATEGORY = "Swiss Army Knife 🔪"
 
@@ -85,7 +86,7 @@ class FrameExtractor:
             output_format: Output image format (png or jpg)
 
         Returns:
-            Tuple of (frame_paths_str, frame_timestamps_str, frame_info)
+            Tuple of (frame_paths_str, frame_timestamps_str, frame_info, frames_directory)
         """
         try:
             # Validate video path
@@ -121,12 +122,12 @@ class FrameExtractor:
                 extraction_method, num_frames, start_frame, end_frame, total_frames, seed
             )
 
+            # Create named directory for frames based on video file
+            frames_dir = self._create_frames_directory(video_path)
+            
             # Extract frames
             frame_paths = []
             frame_timestamps = []
-            
-            # Create temporary directory for frames
-            temp_dir = tempfile.mkdtemp(prefix="frame_extract_")
             
             for idx, frame_idx in enumerate(frame_indices):
                 # Seek to frame
@@ -142,7 +143,7 @@ class FrameExtractor:
                 
                 # Save frame
                 frame_filename = f"frame_{idx:03d}_t{timestamp:.2f}s.{output_format}"
-                frame_path = os.path.join(temp_dir, frame_filename)
+                frame_path = os.path.join(frames_dir, frame_filename)
                 
                 # Convert BGR to RGB for PIL
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -172,14 +173,38 @@ class FrameExtractor:
             frame_info += f"• Extraction Window: {start_time:.1f}s - {end_time:.1f}s\n"
             frame_info += f"• Output Format: {output_format}\n"
             frame_info += f"• Timestamps: {', '.join([f'{ts:.2f}s' for ts in frame_timestamps])}\n"
-            frame_info += f"• Output Directory: {temp_dir}"
+            frame_info += f"• Output Directory: {frames_dir}"
 
             print(frame_info)
 
-            return (frame_paths_str, frame_timestamps_str, frame_info)
+            return (frame_paths_str, frame_timestamps_str, frame_info, frames_dir)
 
         except Exception as e:
             raise Exception(f"Frame extraction failed: {str(e)}")
+
+    def _create_frames_directory(self, video_path):
+        """
+        Create a uniquely named directory for frames based on the video file.
+        Uses video filename and a hash of the full path to ensure uniqueness.
+        """
+        # Get base temp directory
+        base_temp_dir = tempfile.gettempdir()
+        
+        # Extract video filename without extension
+        video_filename = os.path.splitext(os.path.basename(video_path))[0]
+        
+        # Create a short hash of the full video path to ensure uniqueness
+        path_hash = hashlib.md5(video_path.encode()).hexdigest()[:8]
+        
+        # Create directory name: video_filename_hash
+        dir_name = f"frames_{video_filename}_{path_hash}"
+        frames_dir = os.path.join(base_temp_dir, "comfyui_frames", dir_name)
+        
+        # Create directory if it doesn't exist
+        os.makedirs(frames_dir, exist_ok=True)
+        
+        print(f"Created frames directory: {frames_dir}")
+        return frames_dir
 
     def _calculate_frame_indices(self, method, num_frames, start_frame, end_frame, total_frames, seed):
         """Calculate which frame indices to extract based on the method."""
