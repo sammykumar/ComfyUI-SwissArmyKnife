@@ -22,6 +22,27 @@ except ImportError as e:
     LORA_MANAGER_NODE_CLASS_MAPPINGS = {}
     LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+# Import media_selection nodes
+try:
+    from .nodes.media_selection.media_selection import MediaSelection
+    from .nodes.media_selection.frame_extractor import FrameExtractor
+    from .nodes.media_selection.multi_caption_combiner import MultiCaptionCombiner
+    
+    MEDIA_SELECTION_NODE_CLASS_MAPPINGS = {
+        "MediaSelection": MediaSelection,
+        "FrameExtractor": FrameExtractor,
+        "MultiCaptionCombiner": MultiCaptionCombiner,
+    }
+    MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS = {
+        "MediaSelection": "Media Selection",
+        "FrameExtractor": "Frame Extractor",
+        "MultiCaptionCombiner": "Multi-Caption Combiner",
+    }
+except ImportError as e:
+    print(f"Warning: Could not import media_selection nodes: {e}")
+    MEDIA_SELECTION_NODE_CLASS_MAPPINGS = {}
+    MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS = {}
+
 # Register config API routes
 try:
     from .nodes.config_api import register_config_routes
@@ -47,18 +68,20 @@ def get_version():
         import time
         return str(int(time.time()))
 
-# Combine main nodes, helper nodes, control panel, and lora_manager nodes
+# Combine main nodes, helper nodes, control panel, lora_manager, and media_selection nodes
 NODE_CLASS_MAPPINGS = {
     **MAIN_NODE_CLASS_MAPPINGS,
     **HELPER_NODE_CLASS_MAPPINGS,
     **CONTROL_PANEL_NODE_CLASS_MAPPINGS,
-    **LORA_MANAGER_NODE_CLASS_MAPPINGS
+    **LORA_MANAGER_NODE_CLASS_MAPPINGS,
+    **MEDIA_SELECTION_NODE_CLASS_MAPPINGS
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     **MAIN_NODE_DISPLAY_NAME_MAPPINGS,
     **HELPER_NODE_DISPLAY_NAME_MAPPINGS,
     **CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS,
-    **LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
+    **LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS,
+    **MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS
 }
 
 WEB_DIRECTORY = "./web"

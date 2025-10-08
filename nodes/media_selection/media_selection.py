@@ -1,0 +1,363 @@
+import cv2
+import os
+import random
+import glob
+import tempfile
+import requests
+import mimetypes
+from urllib.parse import urlparse
+from html import unescape
+import subprocess
+
+
+class MediaSelection:
+    """
+    A ComfyUI custom node for selecting media from various sources without AI processing.
+    Supports uploaded media, random selection from directory, Reddit posts, and subreddit randomization.
+    """
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        """
+        Return a dictionary which contains config for all input fields.
+        """
+        return {
+            "required": {
+                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit Post", "Randomize from Subreddit"], {
+                    "default": "Upload Media",
+                    "tooltip": "Choose whether to upload media, randomize from a directory path, download from a Reddit post, or randomize from a subreddit"
+                }),
+                "media_type": (["image", "video"], {
+                    "default": "image",
+                    "tooltip": "Select the type of media to process"
+                }),
+                "seed": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 0xFFFFFFFFFFFFFFFF,
+                    "tooltip": "Seed for randomization when using 'Randomize Media from Path' or 'Randomize from Subreddit'. Use different seeds to force re-execution."
+                }),
+            },
+            "optional": {
+                "media_path": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Directory path to randomly select media from, including all subdirectories (used when media_source is Randomize Media from Path)"
+                }),
+                "uploaded_image_file": ("STRING", {
+                    "default": "",
+                    "tooltip": "Path to uploaded image file (managed by upload widget)"
+                }),
+                "uploaded_video_file": ("STRING", {
+                    "default": "",
+                    "tooltip": "Path to uploaded video file (managed by upload widget)"
+                }),
+                "reddit_url": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Reddit post URL (used when media_source is Reddit Post)"
+                }),
+                "subreddit_url": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Subreddit URL or name (e.g., 'r/pics' or 'https://www.reddit.com/r/pics/') - used when media_source is Randomize from Subreddit"
+                }),
+                "max_duration": ("FLOAT", {
+                    "default": 0.0,
+                    "min": 0.0,
+                    "max": 300.0,
+                    "step": 0.1,
+                    "tooltip": "Maximum duration in seconds for videos (0 = use full video). Video will be trimmed if longer."
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "INT", "INT", "FLOAT", "FLOAT")
+    RETURN_NAMES = ("media_path", "media_type", "media_info", "height", "width", "duration", "fps")
+    FUNCTION = "select_media"
+    CATEGORY = "Swiss Army Knife 🔪"
+
+    def select_media(self, media_source, media_type, seed, media_path="", uploaded_image_file="", uploaded_video_file="", reddit_url="", subreddit_url="", max_duration=0.0):
+        """
+        Select media from various sources and return path and metadata.
+
+        Args:
+            media_source: Source of media ("Upload Media", "Randomize Media from Path", "Reddit Post", or "Randomize from Subreddit")
+            media_type: Type of media ("image" or "video")
+            seed: Seed for randomization
+            media_path: Directory path for randomization (optional)
+            uploaded_image_file: Path to uploaded image (optional)
+            uploaded_video_file: Path to uploaded video (optional)
+            reddit_url: Reddit post URL (optional)
+            subreddit_url: Subreddit URL for randomization (optional)
+            max_duration: Maximum video duration in seconds (0 = full video)
+
+        Returns:
+            Tuple of (media_path, media_type, media_info, height, width, duration, fps)
+        """
+        selected_media_path = None
+        media_info_text = ""
+
+        try:
+            # Import helper methods from the MediaDescribe node
+            from ..media_describe.mediia_describe import MediaDescribe
+            helper = MediaDescribe()
+
+            # Handle different media sources
+            if media_source == "Randomize Media from Path":
+                selected_media_path, media_info_text = self._randomize_from_path(
+                    media_path, media_type, seed
+                )
+            elif media_source == "Reddit Post":
+                selected_media_path, media_type, media_info_text = self._download_reddit_post(
+                    reddit_url, media_type, helper
+                )
+            elif media_source == "Randomize from Subreddit":
+                selected_media_path, media_type, media_info_text = self._randomize_from_subreddit(
+                    subreddit_url, media_type, seed, helper
+                )
+            else:  # Upload Media
+                selected_media_path, media_info_text = self._upload_media(
+                    media_type, uploaded_image_file, uploaded_video_file
+                )
+
+            # Get media metadata
+            if media_type == "image":
+                height, width, duration, fps = self._get_image_metadata(selected_media_path)
+                media_info_text += f"\n• Resolution: {width}x{height}"
+            else:  # video
+                height, width, duration, fps, selected_media_path, media_info_text = self._process_video(
+                    selected_media_path, max_duration, media_info_text
+                )
+
+            return (selected_media_path, media_type, media_info_text, height, width, duration, fps)
+
+        except Exception as e:
+            raise Exception(f"Media selection failed: {str(e)}")
+
+    def _randomize_from_path(self, media_path, media_type, seed):
+        """Randomly select media from a directory path."""
+        if not media_path or not media_path.strip():
+            raise ValueError("Media path is required when using 'Randomize Media from Path'")
+
+        if not os.path.exists(media_path):
+            raise ValueError(f"Media path does not exist: {media_path}")
+
+        # Define supported file extensions
+        if media_type == "image":
+            extensions = ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.tiff", "*.webp"]
+        else:  # video
+            extensions = ["*.mp4", "*.avi", "*.mov", "*.mkv", "*.wmv", "*.flv", "*.webm"]
+
+        # Find all matching files (including subdirectories)
+        all_files = []
+        for ext in extensions:
+            all_files.extend(glob.glob(os.path.join(media_path, ext)))
+            all_files.extend(glob.glob(os.path.join(media_path, ext.upper())))
+            all_files.extend(glob.glob(os.path.join(media_path, "**", ext), recursive=True))
+            all_files.extend(glob.glob(os.path.join(media_path, "**", ext.upper()), recursive=True))
+
+        if not all_files:
+            raise ValueError(f"No {media_type} files found in path: {media_path}")
+
+        # Randomly select a file using the seed
+        random.seed(seed)
+        selected_media_path = random.choice(all_files)
+        random.seed(None)
+
+        emoji = "📷" if media_type == "image" else "📹"
+        media_info_text = f"{emoji} {media_type.title()} Processing Info (Random Selection):\n• File: {os.path.basename(selected_media_path)}\n• Source: Random from {media_path}\n• Full path: {selected_media_path}"
+
+        return selected_media_path, media_info_text
+
+    def _download_reddit_post(self, reddit_url, media_type, helper):
+        """Download media from a Reddit post."""
+        if not reddit_url or not reddit_url.strip():
+            raise ValueError("Reddit URL is required when media_source is 'Reddit Post'")
+
+        downloaded_path, detected_media_type, reddit_media_info = helper._download_reddit_media(reddit_url)
+        selected_media_path = downloaded_path
+
+        if detected_media_type != media_type:
+            print(f"Warning: Media type mismatch. Expected '{media_type}' but detected '{detected_media_type}' from Reddit post. Using detected type.")
+            media_type = detected_media_type
+
+        file_size_mb = reddit_media_info.get('file_size', 0) / 1024 / 1024
+        emoji = "📷" if media_type == "image" else "📹"
+        media_info_text = f"{emoji} {media_type.title()} Processing Info (Reddit Post):\n• Title: {reddit_media_info.get('title', 'Unknown')}\n• Source: {reddit_url}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {reddit_media_info.get('content_type', 'Unknown')}"
+
+        return selected_media_path, media_type, media_info_text
+
+    def _randomize_from_subreddit(self, subreddit_url, media_type, seed, helper):
+        """Get random media from a subreddit."""
+        if not subreddit_url or not subreddit_url.strip():
+            raise ValueError("Subreddit URL is required when media_source is 'Randomize from Subreddit'")
+
+        random_post_url = helper._get_random_subreddit_post(subreddit_url, seed, media_type)
+        downloaded_path, detected_media_type, reddit_media_info = helper._download_reddit_media(random_post_url)
+        selected_media_path = downloaded_path
+
+        if detected_media_type != media_type:
+            print(f"Warning: Media type mismatch. Expected '{media_type}' but detected '{detected_media_type}' from subreddit post. Using detected type.")
+            media_type = detected_media_type
+
+        file_size_mb = reddit_media_info.get('file_size', 0) / 1024 / 1024
+        emoji = "📷" if media_type == "image" else "📹"
+
+        # Extract subreddit name for display
+        if 'reddit.com/r/' in subreddit_url:
+            display_subreddit = subreddit_url.split('reddit.com/r/')[1].split('/')[0]
+        elif subreddit_url.startswith('r/'):
+            display_subreddit = subreddit_url[2:].split('/')[0]
+        else:
+            display_subreddit = subreddit_url.split('/')[0]
+
+        media_info_text = f"{emoji} {media_type.title()} Processing Info (Random from r/{display_subreddit}):\n• Title: {reddit_media_info.get('title', 'Unknown')}\n• Post URL: {random_post_url}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {reddit_media_info.get('content_type', 'Unknown')}"
+
+        return selected_media_path, media_type, media_info_text
+
+    def _upload_media(self, media_type, uploaded_image_file, uploaded_video_file):
+        """Handle uploaded media files."""
+        try:
+            import folder_paths
+            input_dir = folder_paths.get_input_directory()
+        except ImportError:
+            input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
+
+        if media_type == "image":
+            if not uploaded_image_file:
+                raise ValueError("Image file upload is required when media_source is 'Upload Media' and media_type is 'image'")
+            selected_media_path = os.path.join(input_dir, uploaded_image_file)
+            media_info_text = f"📷 Image Processing Info (Uploaded File):\n• File: {uploaded_image_file}"
+        else:  # video
+            if not uploaded_video_file:
+                raise ValueError("Video upload is required when media_source is 'Upload Media' and media_type is 'video'")
+            selected_media_path = os.path.join(input_dir, uploaded_video_file)
+            media_info_text = f"📹 Video Processing Info (Uploaded File):\n• File: {uploaded_video_file}"
+
+        return selected_media_path, media_info_text
+
+    def _get_image_metadata(self, image_path):
+        """Get image dimensions using OpenCV."""
+        img = cv2.imread(image_path)
+        if img is None:
+            raise ValueError(f"Failed to read image: {image_path}")
+        
+        height, width = img.shape[:2]
+        return height, width, 0.0, 0.0
+
+    def _process_video(self, video_path, max_duration, media_info_text):
+        """Process video and optionally trim it."""
+        # Get video metadata using OpenCV
+        cap = cv2.VideoCapture(video_path)
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        original_duration = frame_count / fps if fps > 0 else 0
+        cap.release()
+
+        print(f"Original video properties: {frame_count} frames, {fps:.2f} fps, {width}x{height}, {original_duration:.2f}s duration")
+
+        if original_duration <= 0:
+            raise ValueError(f"Invalid video: duration is {original_duration:.2f} seconds. The video file may be corrupted or empty.")
+        if frame_count <= 0:
+            raise ValueError(f"Invalid video: {frame_count} frames. The video file may be corrupted or empty.")
+
+        # Determine if we need to trim
+        final_video_path = video_path
+        actual_duration = original_duration
+        trimmed = False
+
+        if max_duration > 0 and max_duration < original_duration:
+            # Trim video
+            min_duration = min(1.0, original_duration)
+            actual_duration = max(min_duration, min(max_duration, original_duration))
+            
+            with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
+                trimmed_video_path = temp_file.name
+
+            print(f"Attempting to trim video from {original_duration:.2f}s to {actual_duration:.2f}s")
+            if self._trim_video(video_path, trimmed_video_path, actual_duration):
+                final_video_path = trimmed_video_path
+                trimmed = True
+                print(f"Successfully trimmed video to {trimmed_video_path}")
+            else:
+                print(f"Warning: Could not trim video. Using original video for {original_duration:.2f}s")
+                actual_duration = original_duration
+
+        # Update media info
+        trim_info = f" (trimmed: 0.0s → {actual_duration:.1f}s)" if trimmed else ""
+        media_info_text += f"\n• Original Duration: {original_duration:.2f} seconds"
+        media_info_text += f"\n• Processed Duration: {actual_duration:.2f} seconds{trim_info}"
+        media_info_text += f"\n• Frames: {frame_count}"
+        media_info_text += f"\n• Frame Rate: {fps:.2f} FPS"
+        media_info_text += f"\n• Resolution: {width}x{height}"
+
+        return height, width, actual_duration, fps, final_video_path, media_info_text
+
+    def _trim_video(self, input_path, output_path, duration):
+        """Trim video to specified duration using ffmpeg."""
+        if duration <= 0:
+            print(f"Error: Invalid duration {duration} seconds for video trimming")
+            return False
+
+        if not os.path.exists(input_path):
+            print(f"Error: Input video file does not exist: {input_path}")
+            return False
+
+        try:
+            print(f"Trimming video: {input_path} -> {output_path} (duration: {duration}s)")
+
+            cmd = [
+                'ffmpeg',
+                '-i', input_path,
+                '-t', str(duration),
+                '-c', 'copy',
+                '-avoid_negative_ts', 'make_zero',
+                '-y',
+                output_path
+            ]
+
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+            if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                print(f"Successfully trimmed video: {os.path.getsize(output_path)} bytes")
+                return True
+            else:
+                print("Warning: Trimmed file is empty, trying re-encoding")
+                raise subprocess.CalledProcessError(1, cmd, "Empty output file")
+
+        except subprocess.CalledProcessError as e:
+            print(f"FFmpeg copy error: {e.stderr}")
+            # Fallback: try with re-encoding
+            try:
+                print("Attempting video trimming with re-encoding...")
+                cmd = [
+                    'ffmpeg',
+                    '-i', input_path,
+                    '-t', str(duration),
+                    '-c:v', 'libx264',
+                    '-c:a', 'aac',
+                    '-preset', 'fast',
+                    '-y',
+                    output_path
+                ]
+                subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+                if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                    print(f"Successfully trimmed video with re-encoding: {os.path.getsize(output_path)} bytes")
+                    return True
+                else:
+                    print("Error: Re-encoded file is also empty")
+                    return False
+
+            except subprocess.CalledProcessError as e2:
+                print(f"FFmpeg re-encoding also failed: {e2.stderr}")
+                return False
+        except FileNotFoundError:
+            print("FFmpeg not found. Please install ffmpeg to use duration trimming.")
+            return False
