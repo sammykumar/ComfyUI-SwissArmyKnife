@@ -34,19 +34,20 @@ External service integrations:
 
 Reusable UI components and widgets:
 
-- Control panels and configuration interfaces
-- Dimension display widgets
-- Seed randomization widgets
-- Custom widget implementations and fixes
+- **[Control Panel](ui-widgets/CONTROL_PANEL.md)** - Dashboard widget with JSON data handling and two-column layout
+- **[Dimensions Display](ui-widgets/DIMENSIONS_DISPLAY.md)** - Automatic media dimension display with troubleshooting
+- **[Seed Widget](ui-widgets/SEED_WIDGET.md)** - Randomization seed for reproducible workflows
+- **[Widget Fixes](ui-widgets/WIDGET_FIXES.md)** - Visibility management, state persistence, and general fixes
 
 ### ✨ Features (`/features`)
 
 Feature implementations and enhancements:
 
-- Clothing color modification
+- **[JavaScript Improvements](features/JAVASCRIPT_IMPROVEMENTS.md)** - Cache busting, module fixes, and node naming updates
+- Clothing color modification and text exclusion
 - Text exclusion and filtering
 - Prompt improvements and decisiveness
-- JavaScript utilities and fixes
+- External integrations (ND Super Nodes)
 
 ### 📚 Examples (`/examples`)
 

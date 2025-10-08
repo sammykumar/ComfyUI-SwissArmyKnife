@@ -4,49 +4,46 @@ Reusable UI components and custom widgets for ComfyUI-SwissArmyKnife nodes.
 
 ## 📄 Documentation Files
 
-### Control Panels
+### Core Widgets
 
-- **[CONTROL_PANEL_IMPLEMENTATION.md](CONTROL_PANEL_IMPLEMENTATION.md)** - Main control panel implementation
-- **[CONTROL_PANEL_JSON_DATA_FIX.md](CONTROL_PANEL_JSON_DATA_FIX.md)** - JSON data handling fixes
+- **[CONTROL_PANEL.md](CONTROL_PANEL.md)** - Dashboard widget for monitoring and displaying workflow data
+- **[DIMENSIONS_DISPLAY.md](DIMENSIONS_DISPLAY.md)** - Media dimension display widget with troubleshooting
+- **[SEED_WIDGET.md](SEED_WIDGET.md)** - Randomization seed widget for reproducible workflows
+- **[WIDGET_FIXES.md](WIDGET_FIXES.md)** - General widget fixes, visibility management, and state persistence
 
-### Dimension Display
-
-- **[DIMENSIONS_DISPLAY_WIDGET.md](DIMENSIONS_DISPLAY_WIDGET.md)** - Dimension display widget implementation
-- **[DIMENSIONS_DISPLAY_TROUBLESHOOTING.md](DIMENSIONS_DISPLAY_TROUBLESHOOTING.md)** - Troubleshooting dimension display issues
-
-### Seed Widget
-
-- **[SEED_WIDGET_IMPLEMENTATION.md](SEED_WIDGET_IMPLEMENTATION.md)** - Seed randomization widget
-- **[SEED_WIDGET_RANDOMIZATION_FIX.md](SEED_WIDGET_RANDOMIZATION_FIX.md)** - Seed randomization fixes
-
-### General Widgets
-
-- **[FINAL_STRING_WIDGET_FIX.md](FINAL_STRING_WIDGET_FIX.md)** - String widget fixes
-- **[WIDGET_INVESTIGATION_AND_FIXES.md](WIDGET_INVESTIGATION_AND_FIXES.md)** - General widget investigations
-- **[WIDGET_STATE_PERSISTENCE_FIX.md](WIDGET_STATE_PERSISTENCE_FIX.md)** - Widget state persistence
-
-## 🎯 Widget Types
+## 🎯 Widget Categories
 
 ### Control Panel
 
 - Multi-option configuration interface
-- JSON data handling
+- JSON data handling and parsing
+- Two-column layout for metadata and content
 - Dynamic option visibility
-- Workflow serialization
+- Workflow serialization and execution monitoring
 
 ### Dimension Display
 
-- Width/height display
-- Aspect ratio calculation
-- Resolution presets
-- Responsive updates
+- Automatic width/height display
+- Multiple message format support
+- API event handler integration
+- Real-time updates after execution
+- Debug logging and troubleshooting
 
 ### Seed Widget
 
-- Random seed generation
-- Seed value persistence
-- Lock/unlock functionality
-- Workflow integration
+- Random seed generation with 🎲 button
+- Seed value persistence across workflows
+- Smart visibility (shows only for "Randomize from Path" mode)
+- Reproducible file selection
+- Large integer range support (0 to 2^64-1)
+
+### Widget Fixes
+
+- Visibility management and hiding mechanism
+- Final string widget update handling
+- State persistence with onSerialize/onConfigure
+- Upload widget management
+- Dynamic widget system improvements
 
 ## 🔧 Implementation Patterns
 

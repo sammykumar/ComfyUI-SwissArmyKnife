@@ -4,6 +4,10 @@ Feature implementations, enhancements, and improvements across ComfyUI-SwissArmy
 
 ## 📄 Documentation Files
 
+### JavaScript & Infrastructure
+
+- **[JAVASCRIPT_IMPROVEMENTS.md](JAVASCRIPT_IMPROVEMENTS.md)** - Cache busting, module loading fixes, and node name updates
+
 ### Content Modification
 
 - **[CHANGE_CLOTHING_COLOR_FEATURE.md](CHANGE_CLOTHING_COLOR_FEATURE.md)** - Clothing color modification feature
@@ -24,14 +28,29 @@ Feature implementations, enhancements, and improvements across ComfyUI-SwissArmy
 - **[ND_SUPER_NODES_FORK_SUMMARY.md](ND_SUPER_NODES_FORK_SUMMARY.md)** - ND Super Nodes fork integration
 - **[ND_SUPER_NODES_UPDATE_REMOVAL.md](ND_SUPER_NODES_UPDATE_REMOVAL.md)** - ND Super Nodes update removal
 
-### Infrastructure Features
+### System Features
 
 - **[ASYNC_EVENT_LOOP_FIX.md](ASYNC_EVENT_LOOP_FIX.md)** - Async event loop fixes
-- **[JAVASCRIPT_CACHE_BUSTING.md](JAVASCRIPT_CACHE_BUSTING.md)** - JavaScript cache busting
-- **[JAVASCRIPT_ERROR_FIX.md](JAVASCRIPT_ERROR_FIX.md)** - JavaScript error handling
-- **[JAVASCRIPT_NODE_NAME_UPDATE.md](JAVASCRIPT_NODE_NAME_UPDATE.md)** - Node name updates
 
 ## 🎯 Feature Categories
+
+### JavaScript & Infrastructure
+
+**Cache Management:**
+- Version-based query parameters for cache busting
+- File hash and timestamp-based alternatives
+- Development utilities and browser console commands
+- Automatic version detection and sync
+
+**Module Loading:**
+- Fixed Node.js module loading errors
+- Cleaned up web/node_modules structure
+- Proper separation of development dependencies
+
+**Node Naming:**
+- Updated GeminiUtilMediaDescribe → MediaDescribe
+- Synchronized Python and JavaScript node IDs
+- Fixed widget attachment and event handlers
 
 ### Content Processing
 
