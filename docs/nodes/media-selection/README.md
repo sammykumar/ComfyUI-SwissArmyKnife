@@ -262,7 +262,7 @@ Caption 3: She completes the turn with a graceful pose
 
 ### Frame Extraction
 
-- Frames are saved to a temporary directory (`/tmp/frame_extract_*`)
+- Frames are saved to a temporary directory within ComfyUI's temp directory (respects `--base-directory`)
 - Frames are named with format: `frame_XXX_tY.YYs.png`
 - PNG format preserves quality, JPG saves space
 - Timestamps are calculated from frame number and FPS

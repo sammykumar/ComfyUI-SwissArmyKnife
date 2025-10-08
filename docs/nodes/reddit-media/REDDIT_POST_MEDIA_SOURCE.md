@@ -136,7 +136,7 @@ New imports added to `nodes/nodes.py`:
 
 ### Temporary File Management
 
-- Media files are downloaded to temporary files using `tempfile.NamedTemporaryFile`
+- Media files are downloaded to ComfyUI's temp directory (respects `--base-directory` and `--temp-directory` flags)
 - Files are not automatically deleted (delete=False) to allow processing
 - Temporary files should be cleaned up by the system or calling code
 

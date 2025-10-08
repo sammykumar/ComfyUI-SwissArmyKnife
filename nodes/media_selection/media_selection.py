@@ -2,12 +2,12 @@ import cv2
 import os
 import random
 import glob
-import tempfile
 import requests
 import mimetypes
 from urllib.parse import urlparse
 from html import unescape
 import subprocess
+from ..utils.temp_utils import get_temp_file_path
 
 
 class MediaSelection:
@@ -277,8 +277,8 @@ class MediaSelection:
             min_duration = min(1.0, original_duration)
             actual_duration = max(min_duration, min(max_duration, original_duration))
             
-            with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
-                trimmed_video_path = temp_file.name
+            # Use ComfyUI-aware temp directory
+            trimmed_video_path = get_temp_file_path(suffix='.mp4', prefix='trimmed', subdir='videos')
 
             print(f"Attempting to trim video from {original_duration:.2f}s to {actual_duration:.2f}s")
             if self._trim_video(video_path, trimmed_video_path, actual_duration):

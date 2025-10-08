@@ -1,10 +1,10 @@
 import cv2
 import os
 import random
-import tempfile
 import numpy as np
 from PIL import Image
 import hashlib
+from ..utils.temp_utils import get_temp_subdirectory
 
 
 class FrameExtractor:
@@ -186,10 +186,8 @@ class FrameExtractor:
         """
         Create a uniquely named directory for frames based on the video file.
         Uses video filename and a hash of the full path to ensure uniqueness.
+        Uses ComfyUI's temp directory when available, respecting --base-directory.
         """
-        # Get base temp directory
-        base_temp_dir = tempfile.gettempdir()
-        
         # Extract video filename without extension
         video_filename = os.path.splitext(os.path.basename(video_path))[0]
         
@@ -198,7 +196,10 @@ class FrameExtractor:
         
         # Create directory name: video_filename_hash
         dir_name = f"frames_{video_filename}_{path_hash}"
-        frames_dir = os.path.join(base_temp_dir, "comfyui_frames", dir_name)
+        
+        # Use ComfyUI-aware temp directory
+        base_temp_dir = get_temp_subdirectory("comfyui_frames")
+        frames_dir = os.path.join(base_temp_dir, dir_name)
         
         # Create directory if it doesn't exist
         os.makedirs(frames_dir, exist_ok=True)

@@ -42,10 +42,12 @@ The Frame Extractor outputs frame paths as a comma-separated string. You'll need
 **Example output:**
 
 ```
-/tmp/frame_extract_abc123/frame_000_t0.83s.png
-/tmp/frame_extract_abc123/frame_001_t2.50s.png
-/tmp/frame_extract_abc123/frame_002_t4.17s.png
+<comfyui_temp>/comfyui_frames/frames_<video_filename>_<hash>/frame_000_t0.83s.png
+<comfyui_temp>/comfyui_frames/frames_<video_filename>_<hash>/frame_001_t2.50s.png
+<comfyui_temp>/comfyui_frames/frames_<video_filename>_<hash>/frame_002_t4.17s.png
 ```
+
+**Note**: The temp directory respects ComfyUI's `--base-directory` and `--temp-directory` flags.
 
 ### Step 4: Process Frames with JoyCaption
 

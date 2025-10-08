@@ -1,5 +1,4 @@
 import cv2
-import tempfile
 import numpy as np
 from PIL import Image
 import mimetypes
@@ -18,6 +17,7 @@ from google import genai
 from google.genai import types
 
 from ..cache import get_cache, get_file_media_identifier, get_tensor_media_identifier
+from ..utils.temp_utils import get_temp_file_path
 
 class MediaDescribe:
     """
@@ -609,10 +609,10 @@ class MediaDescribe:
             if not file_ext:
                 file_ext = '.mp4' if media_type == 'video' else '.jpg'
 
-            # Create temporary file
-            with tempfile.NamedTemporaryFile(suffix=file_ext, delete=False) as temp_file:
+            # Create temporary file using ComfyUI-aware temp directory
+            temp_path = get_temp_file_path(suffix=file_ext, prefix='reddit_media', subdir='downloads')
+            with open(temp_path, 'wb') as temp_file:
                 temp_file.write(media_response.content)
-                temp_path = temp_file.name
 
             # Create media info
             file_size = len(media_response.content)
@@ -1388,9 +1388,8 @@ Example (structure only):
 
             # Check if we need to trim the video (only duration limit)
             if max_duration > 0 and actual_duration < original_duration:
-                # Create a temporary trimmed video file
-                with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_file:
-                    trimmed_video_path = temp_file.name
+                # Create a temporary trimmed video file using ComfyUI-aware temp directory
+                trimmed_video_path = get_temp_file_path(suffix='.mp4', prefix='trimmed', subdir='videos')
 
                 # Attempt to trim the video
                 print(f"Attempting to trim video from {original_duration:.2f}s to {actual_duration:.2f}s")

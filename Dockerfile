@@ -35,7 +35,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir \
     google-genai \
     opencv-python \
-    requests
+    requests \
+    httpx
 
 # Create directories for models and custom nodes if they don't exist
 RUN mkdir -p models custom_nodes input output
@@ -51,4 +52,4 @@ RUN pip install --no-cache-dir -r custom_nodes/comfyui-manager/requirements.txt
 EXPOSE 8188
 
 # Default command (can be overridden in docker-compose.yml)
-CMD ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188", "--cpu"]
+CMD ["python", "main.py", "--listen", "0.0.0.0", "--port", "8188", "--cpu", "--base-directory", "/workspace/ComfyUI"]
