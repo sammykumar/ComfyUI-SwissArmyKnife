@@ -1985,6 +1985,242 @@ app.registerExtension({
             };
         }
 
+        // Handle MediaSelection node
+        else if (nodeData.name === "MediaSelection") {
+            debugLog("Registering MediaSelection node with dynamic media widgets");
+
+            // Add custom widget after the node is created
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Find the media_source widget
+                this.mediaSourceWidget = this.widgets.find((w) => w.name === "media_source");
+
+                // Find the media_type widget
+                this.mediaTypeWidget = this.widgets.find((w) => w.name === "media_type");
+
+                // Function to update widgets based on media_source
+                this.updateMediaWidgets = function () {
+                    const mediaSource = this.mediaSourceWidget?.value || "Upload Media";
+
+                    debugLog(`[MediaSelection] Updating widgets: mediaSource=${mediaSource}`);
+
+                    // Find the widgets we need to control
+                    const originalMediaPathWidget = this.widgets.find(
+                        (w) => w.name === "media_path"
+                    );
+                    const originalSeedWidget = this.widgets.find((w) => w.name === "seed");
+                    const originalRedditUrlWidget = this.widgets.find(
+                        (w) => w.name === "reddit_url"
+                    );
+                    const originalSubredditUrlWidget = this.widgets.find(
+                        (w) => w.name === "subreddit_url"
+                    );
+                    const originalUploadedImageWidget = this.widgets.find(
+                        (w) => w.name === "uploaded_image_file"
+                    );
+                    const originalUploadedVideoWidget = this.widgets.find(
+                        (w) => w.name === "uploaded_video_file"
+                    );
+
+                    // Manage visibility based on media_source
+                    if (mediaSource === "Randomize Media from Path") {
+                        debugLog("[MediaSelection] Showing media path widget");
+
+                        // Show media_path
+                        if (originalMediaPathWidget) {
+                            originalMediaPathWidget.type = "text";
+                            originalMediaPathWidget.computeSize =
+                                originalMediaPathWidget.constructor.prototype.computeSize;
+                        }
+
+                        // Show seed for randomization
+                        if (originalSeedWidget) {
+                            originalSeedWidget.type = "number";
+                            originalSeedWidget.computeSize =
+                                originalSeedWidget.constructor.prototype.computeSize;
+                        }
+
+                        // Hide reddit_url
+                        if (originalRedditUrlWidget) {
+                            originalRedditUrlWidget.type = "hidden";
+                            originalRedditUrlWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide subreddit_url
+                        if (originalSubredditUrlWidget) {
+                            originalSubredditUrlWidget.type = "hidden";
+                            originalSubredditUrlWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide upload widgets
+                        if (originalUploadedImageWidget) {
+                            originalUploadedImageWidget.type = "hidden";
+                            originalUploadedImageWidget.computeSize = () => [0, -4];
+                        }
+                        if (originalUploadedVideoWidget) {
+                            originalUploadedVideoWidget.type = "hidden";
+                            originalUploadedVideoWidget.computeSize = () => [0, -4];
+                        }
+                    } else if (mediaSource === "Randomize from Subreddit") {
+                        debugLog(
+                            "[MediaSelection] Randomize from Subreddit mode - showing Subreddit URL widget"
+                        );
+
+                        // Show subreddit_url
+                        if (originalSubredditUrlWidget) {
+                            originalSubredditUrlWidget.type = "text";
+                            originalSubredditUrlWidget.computeSize =
+                                originalSubredditUrlWidget.constructor.prototype.computeSize;
+                        }
+
+                        // Show seed for randomization
+                        if (originalSeedWidget) {
+                            originalSeedWidget.type = "number";
+                            originalSeedWidget.computeSize =
+                                originalSeedWidget.constructor.prototype.computeSize;
+                        }
+
+                        // Hide media_path
+                        if (originalMediaPathWidget) {
+                            originalMediaPathWidget.type = "hidden";
+                            originalMediaPathWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide reddit_url
+                        if (originalRedditUrlWidget) {
+                            originalRedditUrlWidget.type = "hidden";
+                            originalRedditUrlWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide upload widgets
+                        if (originalUploadedImageWidget) {
+                            originalUploadedImageWidget.type = "hidden";
+                            originalUploadedImageWidget.computeSize = () => [0, -4];
+                        }
+                        if (originalUploadedVideoWidget) {
+                            originalUploadedVideoWidget.type = "hidden";
+                            originalUploadedVideoWidget.computeSize = () => [0, -4];
+                        }
+                    } else if (mediaSource === "Reddit Post") {
+                        debugLog("[MediaSelection] Reddit Post mode - showing Reddit URL widget");
+
+                        // Show reddit_url
+                        if (originalRedditUrlWidget) {
+                            originalRedditUrlWidget.type = "text";
+                            originalRedditUrlWidget.computeSize =
+                                originalRedditUrlWidget.constructor.prototype.computeSize;
+                        }
+
+                        // Hide media_path
+                        if (originalMediaPathWidget) {
+                            originalMediaPathWidget.type = "hidden";
+                            originalMediaPathWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide seed (not needed for single Reddit post)
+                        if (originalSeedWidget) {
+                            originalSeedWidget.type = "hidden";
+                            originalSeedWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide subreddit_url
+                        if (originalSubredditUrlWidget) {
+                            originalSubredditUrlWidget.type = "hidden";
+                            originalSubredditUrlWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide upload widgets
+                        if (originalUploadedImageWidget) {
+                            originalUploadedImageWidget.type = "hidden";
+                            originalUploadedImageWidget.computeSize = () => [0, -4];
+                        }
+                        if (originalUploadedVideoWidget) {
+                            originalUploadedVideoWidget.type = "hidden";
+                            originalUploadedVideoWidget.computeSize = () => [0, -4];
+                        }
+                    } else {
+                        // Upload Media mode
+                        debugLog("[MediaSelection] Upload Media mode");
+
+                        // Hide media_path
+                        if (originalMediaPathWidget) {
+                            originalMediaPathWidget.type = "hidden";
+                            originalMediaPathWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide seed (not needed for upload)
+                        if (originalSeedWidget) {
+                            originalSeedWidget.type = "hidden";
+                            originalSeedWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide reddit_url
+                        if (originalRedditUrlWidget) {
+                            originalRedditUrlWidget.type = "hidden";
+                            originalRedditUrlWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide subreddit_url
+                        if (originalSubredditUrlWidget) {
+                            originalSubredditUrlWidget.type = "hidden";
+                            originalSubredditUrlWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Show upload widgets (these are managed by the upload widget system in ComfyUI)
+                        if (originalUploadedImageWidget) {
+                            originalUploadedImageWidget.type = "text";
+                            originalUploadedImageWidget.computeSize =
+                                originalUploadedImageWidget.constructor.prototype.computeSize;
+                        }
+                        if (originalUploadedVideoWidget) {
+                            originalUploadedVideoWidget.type = "text";
+                            originalUploadedVideoWidget.computeSize =
+                                originalUploadedVideoWidget.constructor.prototype.computeSize;
+                        }
+                    }
+
+                    debugLog(
+                        `[MediaSelection] Widget update complete. Total widgets: ${
+                            this.widgets?.length || 0
+                        }`
+                    );
+
+                    // Force node to recalculate size and refresh UI
+                    this.setSize(this.computeSize());
+
+                    // Additional UI refresh
+                    if (this.graph && this.graph.setDirtyCanvas) {
+                        this.graph.setDirtyCanvas(true, true);
+                    }
+
+                    // Force a render update
+                    setTimeout(() => {
+                        if (this.setDirtyCanvas) {
+                            this.setDirtyCanvas(true);
+                        }
+                        this.setSize(this.computeSize());
+                    }, 10);
+                };
+
+                // Initial setup
+                this.updateMediaWidgets();
+
+                // Hook into media_source widget changes
+                if (this.mediaSourceWidget) {
+                    const originalSourceCallback = this.mediaSourceWidget.callback;
+                    this.mediaSourceWidget.callback = (value) => {
+                        if (originalSourceCallback)
+                            originalSourceCallback.call(this.mediaSourceWidget, value);
+                        this.updateMediaWidgets();
+                    };
+                }
+
+                return result;
+            };
+        }
+
         // Handle MediaDescribePromptBreakdown node
         else if (nodeData.name === "MediaDescribePromptBreakdown") {
             debugLog("Registering MediaDescribePromptBreakdown node");
