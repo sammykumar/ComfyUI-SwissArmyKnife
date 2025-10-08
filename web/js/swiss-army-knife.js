@@ -2,16 +2,16 @@ import { app } from "../../../scripts/app.js";
 import { api } from "../../../scripts/api.js";
 
 // Version and cache busting info
-const EXTENSION_VERSION = "1.4.0"; // Should match pyproject.toml version
+const EXTENSION_VERSION = "2.5.5"; // Should match pyproject.toml version
 const LOAD_TIMESTAMP = new Date().toISOString();
 
 // DEBUG mode - will be loaded from server config
-let DEBUG_ENABLED = true; // TEMPORARY: Force enable for debugging
+let DEBUG_ENABLED = false; // Default to false, will be set by server config
 
 // Conditional logging wrapper
 const debugLog = (...args) => {
     if (DEBUG_ENABLED) {
-        console.log(...args);
+        console.log("[SwissArmyKnife]", ...args);
     }
 };
 
@@ -557,7 +557,6 @@ app.registerExtension({
             };
         }
 
-
         // Handle MediaSelection node
         else if (nodeData.name === "MediaSelection") {
             debugLog("Registering MediaSelection node with dynamic media widgets");
@@ -572,6 +571,111 @@ app.registerExtension({
 
                 // Find the media_type widget
                 this.mediaTypeWidget = this.widgets.find((w) => w.name === "media_type");
+
+                // Find the resize_mode widget
+                this.resizeModeWidget = this.widgets.find((w) => w.name === "resize_mode");
+
+                // Function to update resize widgets based on resize_mode
+                this.updateResizeWidgets = function () {
+                    const resizeMode = this.resizeModeWidget?.value || "None";
+
+                    debugLog(`[MediaSelection] ========== updateResizeWidgets CALLED ==========`);
+                    debugLog(`[MediaSelection] Current resize_mode value: "${resizeMode}"`);
+
+                    // Find the resize widgets
+                    const resizeWidthWidget = this.widgets.find((w) => w.name === "resize_width");
+                    const resizeHeightWidget = this.widgets.find((w) => w.name === "resize_height");
+
+                    debugLog(`[MediaSelection] Found resize_width widget: ${!!resizeWidthWidget}`);
+                    debugLog(
+                        `[MediaSelection] Found resize_height widget: ${!!resizeHeightWidget}`
+                    );
+
+                    if (resizeWidthWidget) {
+                        debugLog(
+                            `[MediaSelection] resize_width current type: "${resizeWidthWidget.type}", value: ${resizeWidthWidget.value}`
+                        );
+                    }
+                    if (resizeHeightWidget) {
+                        debugLog(
+                            `[MediaSelection] resize_height current type: "${resizeHeightWidget.type}", value: ${resizeHeightWidget.value}`
+                        );
+                    }
+
+                    // Show/hide based on resize_mode
+                    if (resizeMode === "Custom") {
+                        // Show width and height widgets
+                        debugLog(
+                            `[MediaSelection] MODE IS CUSTOM - Showing resize width and height widgets`
+                        );
+                        if (resizeWidthWidget) {
+                            resizeWidthWidget.type = "number";
+                            resizeWidthWidget.computeSize =
+                                resizeWidthWidget.constructor.prototype.computeSize;
+                            resizeWidthWidget.hidden = false;
+                            if (resizeWidthWidget.options) {
+                                resizeWidthWidget.options.serialize = true;
+                            }
+                            debugLog(`[MediaSelection] Set resize_width visible`);
+                        }
+                        if (resizeHeightWidget) {
+                            resizeHeightWidget.type = "number";
+                            resizeHeightWidget.computeSize =
+                                resizeHeightWidget.constructor.prototype.computeSize;
+                            resizeHeightWidget.hidden = false;
+                            if (resizeHeightWidget.options) {
+                                resizeHeightWidget.options.serialize = true;
+                            }
+                            debugLog(`[MediaSelection] Set resize_height visible`);
+                        }
+                    } else {
+                        // Hide width and height widgets for "None" and "Auto (by orientation)"
+                        debugLog(
+                            `[MediaSelection] MODE IS "${resizeMode}" - Hiding resize width and height widgets`
+                        );
+                        if (resizeWidthWidget) {
+                            resizeWidthWidget.type = "hidden";
+                            resizeWidthWidget.computeSize = () => [0, -4];
+                            resizeWidthWidget.hidden = true;
+                            if (resizeWidthWidget.options) {
+                                resizeWidthWidget.options.serialize = false;
+                            }
+                            debugLog(
+                                `[MediaSelection] Set resize_width hidden (type: ${resizeWidthWidget.type}, hidden: ${resizeWidthWidget.hidden})`
+                            );
+                        }
+                        if (resizeHeightWidget) {
+                            resizeHeightWidget.type = "hidden";
+                            resizeHeightWidget.computeSize = () => [0, -4];
+                            resizeHeightWidget.hidden = true;
+                            if (resizeHeightWidget.options) {
+                                resizeHeightWidget.options.serialize = false;
+                            }
+                            debugLog(
+                                `[MediaSelection] Set resize_height hidden (type: ${resizeHeightWidget.type}, hidden: ${resizeHeightWidget.hidden})`
+                            );
+                        }
+                    }
+
+                    debugLog(`[MediaSelection] Calling setSize to recalculate node size`);
+                    // Force node to recalculate size and refresh UI
+                    const newSize = this.computeSize();
+                    debugLog(`[MediaSelection] Computed size: [${newSize[0]}, ${newSize[1]}]`);
+                    this.setSize(newSize);
+
+                    // Additional UI refresh
+                    if (this.graph && this.graph.setDirtyCanvas) {
+                        this.graph.setDirtyCanvas(true, true);
+                        debugLog(`[MediaSelection] Called setDirtyCanvas to refresh UI`);
+                    }
+
+                    // Force canvas redraw
+                    if (this.setDirtyCanvas) {
+                        this.setDirtyCanvas(true, true);
+                    }
+
+                    debugLog(`[MediaSelection] ========== updateResizeWidgets COMPLETE ==========`);
+                };
 
                 // Function to update widgets based on media_source
                 this.updateMediaWidgets = function () {
@@ -760,6 +864,9 @@ app.registerExtension({
                         }`
                     );
 
+                    // Update resize widgets to ensure proper visibility
+                    this.updateResizeWidgets();
+
                     // Force node to recalculate size and refresh UI
                     this.setSize(this.computeSize());
 
@@ -777,19 +884,64 @@ app.registerExtension({
                     }, 10);
                 };
 
-                // Initial setup
+                // Initial setup - call updateResizeWidgets first, then updateMediaWidgets
+                // (updateMediaWidgets will call updateResizeWidgets at the end)
+                debugLog(`[MediaSelection] onNodeCreated - Running initial setup`);
+                this.updateResizeWidgets();
                 this.updateMediaWidgets();
 
                 // Hook into media_source widget changes
                 if (this.mediaSourceWidget) {
                     const originalSourceCallback = this.mediaSourceWidget.callback;
                     this.mediaSourceWidget.callback = (value) => {
+                        debugLog(`[MediaSelection] media_source changed to: "${value}"`);
                         if (originalSourceCallback)
                             originalSourceCallback.call(this.mediaSourceWidget, value);
                         this.updateMediaWidgets();
                     };
                 }
 
+                // Hook into resize_mode widget changes
+                if (this.resizeModeWidget) {
+                    const originalResizeModeCallback = this.resizeModeWidget.callback;
+                    this.resizeModeWidget.callback = (value) => {
+                        debugLog(`[MediaSelection] resize_mode changed to: "${value}"`);
+                        if (originalResizeModeCallback)
+                            originalResizeModeCallback.call(this.resizeModeWidget, value);
+                        this.updateResizeWidgets();
+                    };
+                }
+
+                debugLog(`[MediaSelection] onNodeCreated complete`);
+                return result;
+            };
+
+            // Add onConfigure to handle widget visibility when loading from a saved workflow
+            const onConfigure = nodeType.prototype.onConfigure;
+            nodeType.prototype.onConfigure = function (info) {
+                debugLog("[MediaSelection] ========== onConfigure CALLED ==========");
+                debugLog("[MediaSelection] Config info:", info);
+
+                const result = onConfigure?.call(this, info);
+
+                debugLog(
+                    "[MediaSelection] onConfigure - updating widget visibility after config load"
+                );
+
+                // Update widget visibility after configuration is loaded
+                // Use setTimeout to ensure widgets are fully restored first
+                setTimeout(() => {
+                    debugLog("[MediaSelection] onConfigure setTimeout - updating widgets now");
+                    if (this.updateResizeWidgets) {
+                        this.updateResizeWidgets();
+                    }
+                    if (this.updateMediaWidgets) {
+                        this.updateMediaWidgets();
+                    }
+                    debugLog("[MediaSelection] onConfigure setTimeout - updates complete");
+                }, 10);
+
+                debugLog("[MediaSelection] ========== onConfigure COMPLETE ==========");
                 return result;
             };
         }

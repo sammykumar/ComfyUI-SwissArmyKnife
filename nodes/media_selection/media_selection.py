@@ -7,6 +7,7 @@ import mimetypes
 from urllib.parse import urlparse
 from html import unescape
 import subprocess
+from PIL import Image
 from ..utils.temp_utils import get_temp_file_path
 
 
@@ -72,6 +73,24 @@ class MediaSelection:
                     "step": 0.1,
                     "tooltip": "Maximum duration in seconds for videos (0 = use full video). Video will be trimmed if longer."
                 }),
+                "resize_mode": (["None", "Auto (by orientation)", "Custom"], {
+                    "default": "None",
+                    "tooltip": "Resize mode: None (original size), Auto (832x480 landscape, 480x832 portrait), Custom (specify dimensions)"
+                }),
+                "resize_width": ("INT", {
+                    "default": 832,
+                    "min": 64,
+                    "max": 8192,
+                    "step": 8,
+                    "tooltip": "Target width for Custom resize mode"
+                }),
+                "resize_height": ("INT", {
+                    "default": 480,
+                    "min": 64,
+                    "max": 8192,
+                    "step": 8,
+                    "tooltip": "Target height for Custom resize mode"
+                }),
             }
         }
 
@@ -80,7 +99,7 @@ class MediaSelection:
     FUNCTION = "select_media"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
 
-    def select_media(self, media_source, media_type, seed, media_path="", uploaded_image_file="", uploaded_video_file="", reddit_url="", subreddit_url="", max_duration=0.0):
+    def select_media(self, media_source, media_type, seed, media_path="", uploaded_image_file="", uploaded_video_file="", reddit_url="", subreddit_url="", max_duration=0.0, resize_mode="None", resize_width=832, resize_height=480):
         """
         Select media from various sources and return path and metadata.
 
@@ -94,6 +113,9 @@ class MediaSelection:
             reddit_url: Reddit post URL (optional)
             subreddit_url: Subreddit URL for randomization (optional)
             max_duration: Maximum video duration in seconds (0 = full video)
+            resize_mode: Resize mode ("None", "Auto (by orientation)", or "Custom")
+            resize_width: Target width for Custom resize mode
+            resize_height: Target height for Custom resize mode
 
         Returns:
             Tuple of (media_path, media_type, media_info, height, width, duration, fps)
@@ -126,7 +148,9 @@ class MediaSelection:
 
             # Get media metadata
             if media_type == "image":
-                height, width, duration, fps = self._get_image_metadata(selected_media_path)
+                height, width, duration, fps, selected_media_path = self._process_image(
+                    selected_media_path, resize_mode, resize_width, resize_height
+                )
                 media_info_text += f"\n• Resolution: {width}x{height}"
             else:  # video
                 height, width, duration, fps, selected_media_path, media_info_text = self._process_video(
@@ -239,6 +263,101 @@ class MediaSelection:
             media_info_text = f"📹 Video Processing Info (Uploaded File):\n• File: {uploaded_video_file}"
 
         return selected_media_path, media_info_text
+
+    def _resize_image(self, pil_image, resize_mode, resize_width, resize_height):
+        """
+        Resize an image based on the specified mode.
+        
+        Args:
+            pil_image: PIL Image object to resize
+            resize_mode: "None", "Auto (by orientation)", or "Custom"
+            resize_width: Target width for Custom mode
+            resize_height: Target height for Custom mode
+            
+        Returns:
+            Resized PIL Image object or original if no resize
+        """
+        if resize_mode == "None":
+            return pil_image
+        
+        original_width, original_height = pil_image.size
+        
+        if resize_mode == "Auto (by orientation)":
+            # Determine output dimensions based on image orientation
+            # Landscape (wider): 832x480, Portrait (taller): 480x832
+            if original_width > original_height:
+                target_width = 832
+                target_height = 480
+            else:
+                target_width = 480
+                target_height = 832
+        elif resize_mode == "Custom":
+            target_width = resize_width
+            target_height = resize_height
+        else:
+            # Unknown mode, return original
+            return pil_image
+        
+        # Calculate aspect ratios
+        original_aspect = original_width / original_height
+        target_aspect = target_width / target_height
+        
+        # Resize with aspect ratio preservation, then crop to exact dimensions
+        if original_aspect > target_aspect:
+            # Original is wider, fit to height and crop width
+            new_height = target_height
+            new_width = int(new_height * original_aspect)
+        else:
+            # Original is taller, fit to width and crop height
+            new_width = target_width
+            new_height = int(new_width / original_aspect)
+        
+        # Resize with high-quality Lanczos resampling
+        resized = pil_image.resize((new_width, new_height), Image.LANCZOS)
+        
+        # Center crop to exact target dimensions
+        left = (new_width - target_width) // 2
+        top = (new_height - target_height) // 2
+        right = left + target_width
+        bottom = top + target_height
+        
+        cropped = resized.crop((left, top, right, bottom))
+        
+        print(f"Resized image from {original_width}x{original_height} to {target_width}x{target_height}")
+        return cropped
+
+    def _process_image(self, image_path, resize_mode, resize_width, resize_height):
+        """Process image and optionally resize it."""
+        # Read image with PIL for better format support
+        pil_image = Image.open(image_path)
+        
+        # Apply resizing if requested
+        if resize_mode != "None":
+            pil_image = self._resize_image(pil_image, resize_mode, resize_width, resize_height)
+            
+            # Save resized image to a temporary file
+            from ..utils.temp_utils import get_temp_file_path
+            
+            # Determine file extension
+            _, ext = os.path.splitext(image_path)
+            if not ext:
+                ext = '.png'
+            
+            resized_path = get_temp_file_path(suffix=ext, prefix='resized', subdir='images')
+            
+            # Convert RGBA to RGB if saving as JPEG
+            if ext.lower() in ['.jpg', '.jpeg'] and pil_image.mode == 'RGBA':
+                pil_image = pil_image.convert('RGB')
+            
+            # Save the resized image
+            pil_image.save(resized_path)
+            image_path = resized_path
+            print(f"Saved resized image to: {resized_path}")
+        
+        # Get dimensions from the (possibly resized) image
+        width, height = pil_image.size
+        
+        return height, width, 0.0, 0.0, image_path
 
     def _get_image_metadata(self, image_path):
         """Get image dimensions using OpenCV."""
