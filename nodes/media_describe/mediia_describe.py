@@ -1031,9 +1031,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                     "stylization_tone": stylization_tone,
                     "clothing": clothing,
                     "scene": scene,
-                    "movement": movement,
-                    "system_prompt": system_prompt,
-                    "user_prompt": user_prompt
+                    "movement": movement
                 })
 
                 return (final_string, all_data, output_height, output_width)
@@ -1116,9 +1114,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 "stylization_tone": stylization_tone,
                 "clothing": clothing,
                 "scene": scene,
-                "movement": movement,
-                "system_prompt": system_prompt,
-                "user_prompt": user_prompt
+                "movement": movement
             })
 
             return (final_string, all_data, output_height, output_width)
@@ -1495,9 +1491,7 @@ Example (structure only):
                     "stylization_tone": stylization_tone,
                     "clothing": clothing,
                     "scene": scene,
-                    "movement": movement,
-                    "system_prompt": "(Cached result - prompts not available)",
-                    "user_prompt": "(Cached result - prompts not available)"
+                    "movement": movement
                 })
 
                 return (final_string, all_data, output_height, output_width)
@@ -1579,9 +1573,7 @@ Example (structure only):
                 "stylization_tone": stylization_tone,
                 "clothing": clothing,
                 "scene": scene,
-                "movement": movement,
-                "system_prompt": system_prompt,
-                "user_prompt": user_prompt
+                "movement": movement
             })
 
             return (final_string, all_data, output_height, output_width)

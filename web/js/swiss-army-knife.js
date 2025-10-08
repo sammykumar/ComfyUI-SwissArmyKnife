@@ -469,30 +469,9 @@ app.registerExtension({
                             for (const field of leftFields) {
                                 if (parsedData.hasOwnProperty(field.key)) {
                                     let fieldValue = parsedData[field.key];
-                                    let skipTruncate = false;
-
-                                    // For gemini_status, append prompts if available
-                                    if (field.key === "gemini_status") {
-                                        if (parsedData.system_prompt || parsedData.user_prompt) {
-                                            fieldValue +=
-                                                "\n\n📝 System Prompt:\n" +
-                                                (parsedData.system_prompt || "N/A");
-                                            fieldValue +=
-                                                "\n\n💬 User Prompt:\n" +
-                                                (parsedData.user_prompt || "N/A");
-
-                                            // Don't truncate when prompts are included (they can be long)
-                                            skipTruncate = true;
-                                        }
-                                    }
 
                                     leftLines.push(
-                                        formatField(
-                                            field.emoji,
-                                            field.label,
-                                            fieldValue,
-                                            skipTruncate
-                                        )
+                                        formatField(field.emoji, field.label, fieldValue)
                                     );
                                 }
                             }
