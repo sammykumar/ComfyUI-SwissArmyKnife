@@ -38,7 +38,7 @@ class VideoPreview:
 
     RETURN_TYPES = ()  # No outputs - this is a display-only node
     FUNCTION = "preview_videos"
-    CATEGORY = "Utils"
+    CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True  # Makes this an output node that displays in the UI
 
     def preview_videos(self, reference_vid="", base_vid="", upscaled_vid=""):

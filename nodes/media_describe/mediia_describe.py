@@ -1010,8 +1010,6 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • API Key: {'*' * (len(gemini_api_key) - 4) + gemini_api_key[-4:] if len(gemini_api_key) >= 4 else '****'}
 • Input: Image
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
-
-                processed_media_path = selected_media_path if selected_media_path else ""
                 
                 # Parse paragraphs and apply overrides
                 subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
@@ -1025,7 +1023,6 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                     "description": final_description,
                     "media_info": media_info_text,
                     "gemini_status": gemini_status,
-                    "processed_media_path": processed_media_path,
                     "final_string": final_string,
                     "height": output_height,
                     "width": output_width,
@@ -1039,7 +1036,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                     "user_prompt": user_prompt
                 })
 
-                return (processed_media_path, final_string, all_data, output_height, output_width)
+                return (final_string, all_data, output_height, output_width)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -1098,8 +1095,6 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • Model Type: {model_type}
 • API Key: {'*' * (len(gemini_api_key) - 4) + gemini_api_key[-4:] if len(gemini_api_key) >= 4 else '****'}
 • Input: Image"""
-
-            processed_media_path = selected_media_path if selected_media_path else ""
             
             # Parse paragraphs and apply overrides
             subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
@@ -1113,7 +1108,6 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 "description": final_description,
                 "media_info": media_info_text,
                 "gemini_status": gemini_status,
-                "processed_media_path": processed_media_path,
                 "final_string": final_string,
                 "height": output_height,
                 "width": output_width,
@@ -1127,7 +1121,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 "user_prompt": user_prompt
             })
 
-            return (processed_media_path, final_string, all_data, output_height, output_width)
+            return (final_string, all_data, output_height, output_width)
 
         except Exception as e:
             # Re-raise the exception to stop workflow execution
@@ -1480,8 +1474,6 @@ Example (structure only):
 • API Key: {'*' * (len(gemini_api_key) - 4) + gemini_api_key[-4:] if len(gemini_api_key) >= 4 else '****'}
 • Input: Video
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
-
-                processed_media_path = selected_media_path if selected_media_path else ""
                 
                 # Parse paragraphs and apply overrides (for videos)
                 subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
@@ -1495,7 +1487,6 @@ Example (structure only):
                     "description": final_description,
                     "media_info": updated_media_info,
                     "gemini_status": gemini_status,
-                    "processed_media_path": processed_media_path,
                     "final_string": final_string,
                     "height": output_height,
                     "width": output_width,
@@ -1509,7 +1500,7 @@ Example (structure only):
                     "user_prompt": "(Cached result - prompts not available)"
                 })
 
-                return (processed_media_path, final_string, all_data, output_height, output_width)
+                return (final_string, all_data, output_height, output_width)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -1580,7 +1571,6 @@ Example (structure only):
                 "description": final_description,
                 "media_info": updated_media_info,
                 "gemini_status": gemini_status,
-                "processed_media_path": trimmed_video_output_path,
                 "final_string": final_string,
                 "height": output_height,
                 "width": output_width,
@@ -1594,7 +1584,7 @@ Example (structure only):
                 "user_prompt": user_prompt
             })
 
-            return (trimmed_video_output_path, final_string, all_data, output_height, output_width)
+            return (final_string, all_data, output_height, output_width)
 
         except Exception as e:
             # Provide more specific error messages for common issues
@@ -1613,65 +1603,18 @@ Example (structure only):
     def INPUT_TYPES(s):
         """
         Return a dictionary which contains config for all input fields.
-        Supports both image and video inputs with upload or random selection from path.
+        Takes media_processed_path from media selection node and generates description.
         """
         return {
             "required": {
-                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit Post", "Randomize from Subreddit"], {
-                    "default": "Upload Media",
-                    "tooltip": "Choose whether to upload media, randomize from a directory path, download from a Reddit post, or randomize from a subreddit"
-                }),
-                "media_type": (["image", "video"], {
-                    "default": "image",
-                    "tooltip": "Select the type of media to analyze"
-                }),
-                "seed": ("INT", {
-                    "default": 0,
-                    "min": 0,
-                    "max": 0xFFFFFFFFFFFFFFFF,
-                    "tooltip": "Seed for randomization when using 'Randomize Media from Path' or 'Randomize from Subreddit'. Use different seeds to force re-execution."
+                "media_processed_path": ("STRING", {
+                    "default": "",
+                    "tooltip": "Path to the processed media file from Media Selection node"
                 }),
             },
             "optional": {
                 "gemini_options": ("GEMINI_OPTIONS", {
                     "tooltip": "Configuration options from Gemini Util - Options node"
-                }),
-                "media_path": ("STRING", {
-                    "multiline": False,
-                    "default": "",
-                    "tooltip": "Directory path to randomly select media from, including all subdirectories (used when media_source is Randomize Media from Path)"
-                }),
-                "uploaded_image_file": ("STRING", {
-                    "default": "",
-                    "tooltip": "Path to uploaded image file (managed by upload widget)"
-                }),
-                "uploaded_video_file": ("STRING", {
-                    "default": "",
-                    "tooltip": "Path to uploaded video file (managed by upload widget)"
-                }),
-                "frame_rate": ("FLOAT", {
-                    "default": 30,
-                    "min": 1.0,
-                    "max": 60.0,
-                    "step": 0.1,
-                    "tooltip": "Frame rate for the temporary video file (used when processing VIDEO input)"
-                }),
-                "max_duration": ("FLOAT", {
-                    "default": 5.0,
-                    "min": 0.0,
-                    "max": 300.0,
-                    "step": 0.1,
-                    "tooltip": "Maximum duration in seconds (0 = use full video, only applies to videos)"
-                }),
-                "reddit_url": ("STRING", {
-                    "multiline": False,
-                    "default": "",
-                    "tooltip": "Reddit post URL (used when media_source is Reddit Post)"
-                }),
-                "subreddit_url": ("STRING", {
-                    "multiline": False,
-                    "default": "",
-                    "tooltip": "Subreddit URL or name (e.g., 'r/pics' or 'https://www.reddit.com/r/pics/') - used when media_source is Randomize from Subreddit"
                 }),
                 "overrides": ("OVERRIDES", {
                     "tooltip": "Paragraph overrides from Media Describe - Overrides node (optional)"
@@ -1679,32 +1622,26 @@ Example (structure only):
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "INT", "INT")
-    RETURN_NAMES = ("processed_media_path", "final_string", "all_media_describe_data", "height", "width")
+    RETURN_TYPES = ("STRING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("final_string", "all_media_describe_data", "height", "width")
     FUNCTION = "describe_media"
-    CATEGORY = "Swiss Army Knife 🔪"
+    CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
-    def describe_media(self, media_source, media_type, seed, gemini_options=None, media_path="", uploaded_image_file="", uploaded_video_file="", frame_rate=24.0, max_duration=0.0, reddit_url="", subreddit_url="", overrides=None):
+    def describe_media(self, media_processed_path, gemini_options=None, overrides=None):
         """
         Process media (image or video) and analyze with Gemini
 
         Args:
-            media_source: Source of media ("Upload Media", "Randomize Media from Path", "Reddit Post", or "Randomize from Subreddit")
-            media_type: Type of media ("image" or "video")
-            seed: Seed for randomization when using 'Randomize Media from Path' or 'Randomize from Subreddit'. Use different seeds to force re-execution.
+            media_processed_path: Path to the processed media file from Media Selection node
             gemini_options: Configuration options from Gemini Util - Options node (optional)
-            media_path: Directory path to randomly select media from, including subdirectories (optional)
-            uploaded_image_file: Path to uploaded image file (optional)
-            uploaded_video_file: Path to uploaded video file (optional)
-            frame_rate: Frame rate for temporary video (legacy parameter, not used)
-            max_duration: Maximum duration in seconds (0 = use full video, only applies to videos)
-            reddit_url: Reddit post URL (used when media_source is Reddit Post)
-            subreddit_url: Subreddit URL or name (used when media_source is Randomize from Subreddit)
             overrides: Dictionary of paragraph overrides from Media Describe - Overrides node (optional)
         """
-        # Initialize variables that might be needed in exception handler
-        selected_media_path = None
-        media_info_text = ""
+        # Validate media path
+        if not media_processed_path or not media_processed_path.strip():
+            raise ValueError("media_processed_path is required")
+        
+        if not os.path.exists(media_processed_path):
+            raise ValueError(f"Media file does not exist: {media_processed_path}")
 
         # Handle missing gemini_options with defaults
         if gemini_options is None:
@@ -1746,178 +1683,26 @@ Example (structure only):
         prefix_text = gemini_options["prefix_text"]
 
         try:
-            # Import required modules
-            import os
-            import random
-            import glob
+            # Determine media type from file extension
+            file_ext = os.path.splitext(media_processed_path)[1].lower()
+            video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm']
+            media_type = "video" if file_ext in video_extensions else "image"
+            
+            media_info_text = f"{'📹' if media_type == 'video' else '📷'} Media Processing Info:\n• File: {os.path.basename(media_processed_path)}\n• Type: {media_type}\n• Full path: {media_processed_path}"
 
-            # First, determine what media we're processing
-
-            if media_source == "Randomize Media from Path":
-                if not media_path or not media_path.strip():
-                    raise ValueError("Media path is required when using 'Randomize Media from Path'")
-
-                # Validate path exists
-                if not os.path.exists(media_path):
-                    current_dir = os.getcwd()
-                    parent_dir = os.path.dirname(media_path) if media_path else "N/A"
-                    parent_exists = os.path.exists(parent_dir) if parent_dir else False
-
-                    debug_info = f"""
-Path Debug Info:
-• Requested path: {media_path}
-• Current working dir: {current_dir}
-• Parent directory: {parent_dir}
-• Parent exists: {parent_exists}
-• Is absolute path: {os.path.isabs(media_path) if media_path else False}"""
-
-                    raise ValueError(f"Media path does not exist: {media_path}{debug_info}")
-
-                # Define supported file extensions
-                if media_type == "image":
-                    extensions = ["*.jpg", "*.jpeg", "*.png", "*.bmp", "*.gif", "*.tiff", "*.webp"]
-                else:  # video
-                    extensions = ["*.mp4", "*.avi", "*.mov", "*.mkv", "*.wmv", "*.flv", "*.webm"]
-
-                # Find all matching files (including subdirectories)
-                all_files = []
-                for ext in extensions:
-                    # Search in root directory
-                    all_files.extend(glob.glob(os.path.join(media_path, ext)))
-                    all_files.extend(glob.glob(os.path.join(media_path, ext.upper())))
-                    # Search in subdirectories recursively
-                    all_files.extend(glob.glob(os.path.join(media_path, "**", ext), recursive=True))
-                    all_files.extend(glob.glob(os.path.join(media_path, "**", ext.upper()), recursive=True))
-
-                if not all_files:
-                    try:
-                        dir_contents = os.listdir(media_path)
-                        total_files = len(dir_contents)
-                        sample_files = dir_contents[:5]  # Show first 5 files
-
-                        debug_info = f"""
-Directory scan results:
-• Path: {media_path}
-• Total items in directory: {total_files}
-• Sample files: {sample_files}
-• Looking for {media_type} files with extensions: {extensions}
-• Search includes subdirectories recursively"""
-
-                        raise ValueError(f"No {media_type} files found in path: {media_path}{debug_info}")
-                    except PermissionError:
-                        raise ValueError(f"Permission denied accessing path: {media_path}")
-                    except Exception as scan_error:
-                        raise ValueError(f"Error scanning path {media_path}: {str(scan_error)}")
-
-                # Randomly select a file using the seed for reproducible selection
-                # When seed changes, a different file may be selected, forcing re-execution
-                random.seed(seed)
-                selected_media_path = random.choice(all_files)
-
-                # Reset random state to avoid affecting other operations
-                random.seed(None)
-
-                if media_type == "image":
-                    # For random image, we'll read it as PIL and convert to bytes
-                    media_info_text = f"📷 Image Processing Info (Random Selection):\n• File: {os.path.basename(selected_media_path)}\n• Source: Random from {media_path} (including subdirectories)\n• Full path: {selected_media_path}"
-                else:
-                    # For random video, set up for video processing
-                    media_info_text = f"📹 Video Processing Info (Random Selection):\n• File: {os.path.basename(selected_media_path)}\n• Source: Random from {media_path} (including subdirectories)\n• Full path: {selected_media_path}"
-            elif media_source == "Reddit Post":
-                # Reddit Post mode
-                if not reddit_url or not reddit_url.strip():
-                    raise ValueError("Reddit URL is required when media_source is 'Reddit Post'")
-
-                # Download media from Reddit post
-                downloaded_path, detected_media_type, reddit_media_info = self._download_reddit_media(reddit_url)
-                selected_media_path = downloaded_path
-
-                # Override media_type if detected type is different (but warn user)
-                if detected_media_type != media_type:
-                    print(f"Warning: Media type mismatch. Expected '{media_type}' but detected '{detected_media_type}' from Reddit post. Using detected type.")
-                    media_type = detected_media_type
-
-                # Create media info text
-                file_size_mb = reddit_media_info.get('file_size', 0) / 1024 / 1024
-                emoji = "📷" if media_type == "image" else "📹"
-                media_info_text = f"{emoji} {media_type.title()} Processing Info (Reddit Post):\n• Title: {reddit_media_info.get('title', 'Unknown')}\n• Source: {reddit_url}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {reddit_media_info.get('content_type', 'Unknown')}"
-
-                # For Reddit videos, automatically limit duration if file is large and no duration limit is set
-                if media_type == "video" and file_size_mb > 30 and max_duration <= 0:
-                    max_duration = 10.0  # Limit to 10 seconds for large Reddit videos
-                    print(f"Large Reddit video detected ({file_size_mb:.1f} MB). Auto-limiting to {max_duration}s to prevent API errors.")
-            elif media_source == "Randomize from Subreddit":
-                # Randomize from Subreddit mode
-                if not subreddit_url or not subreddit_url.strip():
-                    raise ValueError("Subreddit URL is required when media_source is 'Randomize from Subreddit'")
-                
-                # Get a random post from the subreddit (filtered by media_type)
-                random_post_url = self._get_random_subreddit_post(subreddit_url, seed, media_type)
-                
-                # Download media from the randomly selected post
-                downloaded_path, detected_media_type, reddit_media_info = self._download_reddit_media(random_post_url)
-                selected_media_path = downloaded_path
-                
-                # Override media_type if detected type is different (but warn user)
-                if detected_media_type != media_type:
-                    print(f"Warning: Media type mismatch. Expected '{media_type}' but detected '{detected_media_type}' from subreddit post. Using detected type.")
-                    media_type = detected_media_type
-                
-                # Create media info text
-                file_size_mb = reddit_media_info.get('file_size', 0) / 1024 / 1024
-                emoji = "📷" if media_type == "image" else "📹"
-                
-                # Extract subreddit name for display
-                if 'reddit.com/r/' in subreddit_url:
-                    display_subreddit = subreddit_url.split('reddit.com/r/')[1].split('/')[0]
-                elif subreddit_url.startswith('r/'):
-                    display_subreddit = subreddit_url[2:].split('/')[0]
-                else:
-                    display_subreddit = subreddit_url.split('/')[0]
-                
-                media_info_text = f"{emoji} {media_type.title()} Processing Info (Random from r/{display_subreddit}):\n• Title: {reddit_media_info.get('title', 'Unknown')}\n• Post URL: {random_post_url}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {reddit_media_info.get('content_type', 'Unknown')}"
-                
-                # For subreddit videos, automatically limit duration if file is large and no duration limit is set
-                if media_type == "video" and file_size_mb > 30 and max_duration <= 0:
-                    max_duration = 10.0  # Limit to 10 seconds for large subreddit videos
-                    print(f"Large subreddit video detected ({file_size_mb:.1f} MB). Auto-limiting to {max_duration}s to prevent API errors.")
-            else:
-                # Upload Media mode
-                if media_type == "image":
-                    if not uploaded_image_file:
-                        raise ValueError("Image file upload is required when media_source is 'Upload Media' and media_type is 'image'")
-                    # Use uploaded image file
-                    try:
-                        import folder_paths
-                        input_dir = folder_paths.get_input_directory()
-                    except ImportError:
-                        input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
-                    selected_media_path = os.path.join(input_dir, uploaded_image_file)
-                    media_info_text = f"📷 Image Processing Info (Uploaded File):\n• File: {uploaded_image_file}"
-                else:  # video
-                    if not uploaded_video_file:
-                        raise ValueError("Video upload is required when media_source is 'Upload Media' and media_type is 'video'")
-                    try:
-                        import folder_paths
-                        input_dir = folder_paths.get_input_directory()
-                    except ImportError:
-                        input_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "input")
-                    selected_media_path = os.path.join(input_dir, uploaded_video_file)
-                    media_info_text = f"📹 Video Processing Info (Uploaded File):\n• File: {uploaded_video_file}"
-
-            # Now process the media based on type
+            # Process based on media type
             if media_type == "image":
                 # Process as image - delegate to image logic
                 return self._process_image(
                     gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text,
-                    None, selected_media_path, media_info_text,
+                    None, media_processed_path, media_info_text,
                     override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing
                 )
             else:
                 # Process as video - delegate to video logic  
                 return self._process_video(
                     gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text,
-                    selected_media_path, frame_rate, max_duration, media_info_text,
+                    media_processed_path, 30.0, 0.0, media_info_text,
                     override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement
                 )
 

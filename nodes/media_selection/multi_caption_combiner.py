@@ -60,7 +60,7 @@ class MultiCaptionCombiner:
     RETURN_TYPES = ("STRING", "STRING")
     RETURN_NAMES = ("combined_caption", "gemini_status")
     FUNCTION = "combine_captions"
-    CATEGORY = "Swiss Army Knife 🔪"
+    CATEGORY = "Swiss Army Knife 🔪/Utils"
 
     def combine_captions(self, captions, gemini_api_key, gemini_model, combination_style, timestamps="", custom_prompt="", output_format="Paragraph"):
         """

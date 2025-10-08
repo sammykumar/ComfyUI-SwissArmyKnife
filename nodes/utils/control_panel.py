@@ -29,7 +29,7 @@ class ControlPanel:
 
     RETURN_TYPES = ()  # No outputs - this is a display-only node
     FUNCTION = "display_info"
-    CATEGORY = "Utils"
+    CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True  # Makes this an output node that displays in the UI
 
     def display_info(self, **kwargs):

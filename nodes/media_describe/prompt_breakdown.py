@@ -27,7 +27,7 @@ class MediaDescribePromptBreakdown:
     RETURN_TYPES = ()
     OUTPUT_NODE = True
     FUNCTION = "display_breakdown"
-    CATEGORY = "Swiss Army Knife 🔪"
+    CATEGORY = "Swiss Army Knife 🔪/Media Caption"
     
     def display_breakdown(self, all_media_describe_data):
         """

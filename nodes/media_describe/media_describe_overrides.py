@@ -59,7 +59,7 @@ class MediaDescribeOverrides:
     RETURN_TYPES = ("OVERRIDES",)
     RETURN_NAMES = ("overrides",)
     FUNCTION = "create_overrides"
-    CATEGORY = "Swiss Army Knife 🔪"
+    CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
     def create_overrides(self, override_subject="", override_cinematic_aesthetic="", 
                         override_stylization_tone="", override_clothing="", 

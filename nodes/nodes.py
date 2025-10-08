@@ -83,7 +83,7 @@ class FilenameGenerator:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("filename",)
     FUNCTION = "generate_filename"
-    CATEGORY = "Swiss Army Knife 🔪"
+    CATEGORY = "Swiss Army Knife 🔪/Utils"
 
     def generate_filename(self, scheduler, shift, total_steps, shift_step, high_cfg, low_cfg, base_filename, subdirectory_prefix, add_date_subdirectory):
         """
@@ -195,7 +195,7 @@ class LoRAInfoExtractor:
     RETURN_TYPES = ("STRING", "STRING", "WANVIDLORA")
     RETURN_NAMES = ("lora_json", "lora_info", "lora_passthrough")
     FUNCTION = "extract_lora_info"
-    CATEGORY = "Swiss Army Knife 🔪"
+    CATEGORY = "Swiss Army Knife 🔪/Utils"
 
     def extract_lora_info(self, lora: Any, civitai_api_key: str = "", fallback_name: str = "", use_civitai_api: bool = True, wan_model_type: str = "high"):
         """Extract LoRA stack metadata and return JSON plus human readable summary."""
@@ -581,7 +581,7 @@ class VideoMetadataNode:
     RETURN_TYPES = ("VHS_FILENAMES",)
     RETURN_NAMES = ("Filenames",)
     FUNCTION = "add_metadata"
-    CATEGORY = "Swiss Army Knife 🔪"
+    CATEGORY = "Swiss Army Knife 🔪/Utils"
 
     def add_metadata(self, filenames, artist="", comment="", lora_json="", overwrite_original="No"):
         """

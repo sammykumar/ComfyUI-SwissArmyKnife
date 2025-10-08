@@ -26,7 +26,7 @@ class ShowText:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("text",)
     FUNCTION = "show_text"
-    CATEGORY = "Utils"
+    CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True  # This makes it an output node that shows in the UI
 
     def show_text(self, text):

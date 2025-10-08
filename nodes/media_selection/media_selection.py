@@ -78,7 +78,7 @@ class MediaSelection:
     RETURN_TYPES = ("STRING", "STRING", "STRING", "INT", "INT", "FLOAT", "FLOAT")
     RETURN_NAMES = ("media_path", "media_type", "media_info", "height", "width", "duration", "fps")
     FUNCTION = "select_media"
-    CATEGORY = "Swiss Army Knife 🔪"
+    CATEGORY = "Swiss Army Knife 🔪/Utils"
 
     def select_media(self, media_source, media_type, seed, media_path="", uploaded_image_file="", uploaded_video_file="", reddit_url="", subreddit_url="", max_duration=0.0):
         """

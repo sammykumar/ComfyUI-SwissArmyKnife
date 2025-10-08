@@ -70,7 +70,7 @@ class FrameExtractor:
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("frame_paths", "frame_timestamps", "frame_info", "frames_directory")
     FUNCTION = "extract_frames"
-    CATEGORY = "Swiss Army Knife 🔪"
+    CATEGORY = "Swiss Army Knife 🔪/Utils"
 
     def extract_frames(self, video_path, num_frames, extraction_method, seed=0, start_time=0.0, end_time=0.0, output_format="png"):
         """

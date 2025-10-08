@@ -72,7 +72,7 @@ class GeminiUtilOptions:
     RETURN_TYPES = ("GEMINI_OPTIONS",)
     RETURN_NAMES = ("gemini_options",)
     FUNCTION = "create_options"
-    CATEGORY = "Swiss Army Knife 🔪"
+    CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
     def create_options(self, gemini_api_key, gemini_model, prompt_style, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text):
         """
