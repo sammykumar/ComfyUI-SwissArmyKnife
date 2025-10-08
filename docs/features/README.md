@@ -37,17 +37,20 @@ Feature implementations, enhancements, and improvements across ComfyUI-SwissArmy
 ### JavaScript & Infrastructure
 
 **Cache Management:**
+
 - Version-based query parameters for cache busting
 - File hash and timestamp-based alternatives
 - Development utilities and browser console commands
 - Automatic version detection and sync
 
 **Module Loading:**
+
 - Fixed Node.js module loading errors
 - Cleaned up web/node_modules structure
 - Proper separation of development dependencies
 
 **Node Naming:**
+
 - Updated GeminiUtilMediaDescribe → MediaDescribe
 - Synchronized Python and JavaScript node IDs
 - Fixed widget attachment and event handlers

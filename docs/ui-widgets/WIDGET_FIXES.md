@@ -74,6 +74,7 @@ this.hideOptionalInputWidgets = function () {
 #### 3. Improved Widget Management System
 
 Updated `updateMediaWidgets` function to:
+
 - Find and control the original input widgets instead of creating duplicates
 - Show/hide `media_path` widget based on `media_source` selection
 - Properly hide unused upload widgets based on `media_type` selection
@@ -81,6 +82,7 @@ Updated `updateMediaWidgets` function to:
 #### 4. Fixed Upload Functions
 
 Updated both image and video upload functions to:
+
 - Use the original `uploaded_image_file` and `uploaded_video_file` widgets
 - Fall back to creating hidden widgets only if originals don't exist
 - Properly update the original widgets with file paths
@@ -88,32 +90,38 @@ Updated both image and video upload functions to:
 #### 5. Enhanced State Management
 
 Updated `clearAllMediaState` function to:
+
 - Clear both custom widgets and original input widgets
 - Properly reset all widget values when switching modes
 
 ### Expected Behavior After Fixes
 
 **On Node Load:**
+
 - Only `media_source` and `media_type` dropdowns should be visible
 - `media_path`, `uploaded_image_file`, and `uploaded_video_file` should be hidden
 - Default configuration: "Upload Media" + "image" should show image upload widgets only
 
 **When "Upload Media" + "image" is selected:**
+
 - Image upload button and image info widget should be visible
 - Video widgets should be hidden
 - `media_path` widget should be hidden
 
 **When "Upload Media" + "video" is selected:**
+
 - Video upload button and video info widget should be visible
 - Image widgets should be hidden
 - `media_path` widget should be hidden
 
 **When "Randomize Media from Path" is selected:**
+
 - `media_path` text input should become visible
 - All upload widgets should be hidden
 - Upload file widgets should remain hidden
 
 **During File Upload:**
+
 - Uploaded file paths should be stored in the original input widgets
 - These widgets remain hidden but contain the correct data for the Python node
 
@@ -143,16 +151,19 @@ Added `onExecuted` methods to node types that:
 
 ```javascript
 // MediaDescribe onExecuted handler
-nodeType.prototype.onExecuted = function(message) {
+nodeType.prototype.onExecuted = function (message) {
     // Extract final_string from execution results
     const finalString = message.final_string || message[4]; // Try property or index
-    
+
     // Update widget value
     if (this.finalStringWidget && finalString) {
-        this.finalStringWidget.value = Array.isArray(finalString) 
-            ? finalString[0] 
+        this.finalStringWidget.value = Array.isArray(finalString)
+            ? finalString[0]
             : finalString;
-        console.log('[MediaDescribe] Updated final_string widget with:', this.finalStringWidget.value);
+        console.log(
+            '[MediaDescribe] Updated final_string widget with:',
+            this.finalStringWidget.value,
+        );
     }
 };
 ```
@@ -160,11 +171,13 @@ nodeType.prototype.onExecuted = function(message) {
 ### Before vs After
 
 **Before (Broken):**
+
 ```
 final_string widget: "Populated Prompt (Will be generated automatically)"
 ```
 
 **After (Fixed):**
+
 ```
 final_string widget: "A woman with flowing hair stands gracefully in a sunlit garden. The scene unfolds on a wooden deck overlooking rolling hills..."
 ```
@@ -232,8 +245,8 @@ nodeType.prototype.onSerialize = function (o) {
     const result = onSerialize?.apply(this, arguments);
 
     o.ui_state = {
-        media_source: this.mediaSourceWidget?.value || "Upload Media",
-        media_type: this.mediaTypeWidget?.value || "image",
+        media_source: this.mediaSourceWidget?.value || 'Upload Media',
+        media_type: this.mediaTypeWidget?.value || 'image',
     };
 
     return result;
@@ -275,9 +288,9 @@ Ensures UI state is applied when workflows are loaded from files. Provides fallb
 
 ```javascript
 app.registerExtension({
-    name: "comfyui_swissarmyknife.workflow_loader",
+    name: 'comfyui_swissarmyknife.workflow_loader',
     async loadedGraphNode(node, app) {
-        if (node.comfyClass === "MediaDescribe") {
+        if (node.comfyClass === 'MediaDescribe') {
             // Trigger widget update after workflow load
             setTimeout(() => {
                 if (node.updateMediaWidgets) {
@@ -285,26 +298,26 @@ app.registerExtension({
                 }
             }, 100);
         }
-    }
+    },
 });
 ```
 
 ### Testing Steps
 
 1. **Set up the node**:
-   - Add a MediaDescribe node to your workflow
-   - Change `media_source` to "Randomize Media from Path"
-   - Verify that the image upload widgets are hidden
+    - Add a MediaDescribe node to your workflow
+    - Change `media_source` to "Randomize Media from Path"
+    - Verify that the image upload widgets are hidden
 
 2. **Save and reload**:
-   - Save the workflow (`Ctrl+S`)
-   - Refresh the browser or reload ComfyUI
-   - Load the saved workflow
+    - Save the workflow (`Ctrl+S`)
+    - Refresh the browser or reload ComfyUI
+    - Load the saved workflow
 
 3. **Verify fix**:
-   - ✅ The `media_source` should still be "Randomize Media from Path"
-   - ✅ The image upload widgets should remain hidden
-   - ✅ Only the `media_path` text input should be visible
+    - ✅ The `media_source` should still be "Randomize Media from Path"
+    - ✅ The image upload widgets should remain hidden
+    - ✅ Only the `media_path` text input should be visible
 
 ### Benefits
 

@@ -30,11 +30,13 @@ The seed widget enables reproducible randomization for the MediaDescribe node wh
 ### UI Behavior
 
 **Upload Media Mode:**
+
 - Seed widget: **Hidden**
 - Randomize seed button: **Hidden**
 - Upload widgets: **Visible**
 
 **Randomize Media from Path Mode:**
+
 - Seed widget: **Visible** (number input, 0 to 18446744073709551615)
 - Randomize seed button: **Visible** (🎲 Randomize Seed)
 - Media path widget: **Visible**
@@ -49,6 +51,7 @@ When using "Randomize Media from Path" mode, ComfyUI's execution engine would sk
 ### The Issue
 
 **Before the fix:**
+
 - User sets `media_path` to `/path/to/media/`
 - Node executes and selects a random file
 - User clicks "Queue Prompt" again
@@ -58,6 +61,7 @@ When using "Randomize Media from Path" mode, ComfyUI's execution engine would sk
 ### The Solution
 
 **After the fix:**
+
 - User sets `media_path` to `/path/to/media/`
 - User sets `seed` to `12345`
 - Node executes and selects a random file (using seed 12345)
@@ -87,7 +91,7 @@ When using "Randomize Media from Path" mode, ComfyUI's execution engine would sk
 #### Updated Function Signature
 
 ```python
-def describe_media(self, gemini_api_key, gemini_model, model_type, description_mode, 
+def describe_media(self, gemini_api_key, gemini_model, model_type, description_mode,
                    prefix_text, media_source, media_type, seed, image=None, ...):
 ```
 
@@ -113,14 +117,14 @@ The seed widget is managed in the `updateMediaWidgets()` function:
 
 ```javascript
 // Show seed widget only for "Randomize Media from Path"
-if (mediaSource === "Randomize Media from Path") {
+if (mediaSource === 'Randomize Media from Path') {
     seedWidget.hidden = false;
     randomizeSeedButton.hidden = false;
-    console.log("[STATE] Showing seed widget for randomization");
+    console.log('[STATE] Showing seed widget for randomization');
 } else {
     seedWidget.hidden = true;
     randomizeSeedButton.hidden = true;
-    console.log("[STATE] Hiding seed widget for upload mode");
+    console.log('[STATE] Hiding seed widget for upload mode');
 }
 ```
 
@@ -176,20 +180,20 @@ The implementation includes debug logging for verification:
 1. **Set media_source** to "Randomize Media from Path"
 2. **Specify media_path** to your directory containing images/videos
 3. **Use the seed widget** to control randomization:
-   
-   **Option A - Manual Entry:**
-   - Enter any number (0 to 18,446,744,073,709,551,615)
-   - Same seed = same file selection (reproducible)
-   
-   **Option B - Automatic Randomization:**
-   - Click "🎲 Randomize Seed" button
-   - Instantly generates a random seed value
-   - Forces new file selection on next execution
+
+    **Option A - Manual Entry:**
+    - Enter any number (0 to 18,446,744,073,709,551,615)
+    - Same seed = same file selection (reproducible)
+
+    **Option B - Automatic Randomization:**
+    - Click "🎲 Randomize Seed" button
+    - Instantly generates a random seed value
+    - Forces new file selection on next execution
 
 4. **Execute workflow**:
-   - Click "Queue Prompt"
-   - Node selects a file based on seed
-   - Change seed and re-queue for different file
+    - Click "Queue Prompt"
+    - Node selects a file based on seed
+    - Change seed and re-queue for different file
 
 ### For "Upload Media" Mode
 
@@ -199,10 +203,12 @@ The implementation includes debug logging for verification:
 ### Workflow Tips
 
 **For Random Selection Every Time:**
+
 - Click "🎲 Randomize Seed" before each execution
 - Each execution will select a potentially different file
 
 **For Reproducible Workflows:**
+
 - Set a specific seed value (e.g., 42)
 - Share workflows with that seed
 - Others will get the same file selection from their directories
@@ -216,9 +222,11 @@ The implementation includes debug logging for verification:
 ComfyUI's execution engine compares all input values to determine if a node needs re-execution:
 
 **Before the seed widget:**
+
 - Only `media_path` was checked → same path = no re-execution
 
 **After the seed widget:**
+
 - Both `media_path` AND `seed` are checked → different seed = re-execution
 
 This follows the same pattern used by other ComfyUI nodes like samplers (KSampler, KSamplerAdvanced, etc.) that include seed parameters for reproducible randomization.
@@ -254,6 +262,7 @@ random.seed(None)
 ```
 
 This ensures:
+
 - Same seed + same directory = same file selection
 - Different seed + same directory = potentially different file
 - Reproducible workflows across different systems
@@ -272,17 +281,21 @@ All functionality has been verified through:
 ### Test Scenarios
 
 ✅ **Seed changes trigger re-execution**
+
 - Same media_path, different seed → node re-executes
 
 ✅ **Seed visibility toggles correctly**
+
 - "Upload Media" → seed hidden
 - "Randomize Media from Path" → seed visible
 
 ✅ **Randomize button works**
+
 - Click button → seed value changes
 - Widget callback triggers → ComfyUI recognizes change
 
 ✅ **Workflow persistence**
+
 - Save workflow with seed value
 - Load workflow → seed value restored
 
