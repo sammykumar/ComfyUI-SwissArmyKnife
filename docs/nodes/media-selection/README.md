@@ -23,14 +23,17 @@ This module provides three new ComfyUI nodes that enable advanced video processi
 - **reddit_url** (optional): Reddit post URL
 - **subreddit_url** (optional): Subreddit for randomization
 - **max_duration** (optional): Maximum video duration in seconds (0 = full video)
+- **resize_mode** (optional): Resize mode (None, Auto (by orientation), Custom)
+- **resize_width** (optional): Target width for Custom resize mode (default: 832)
+- **resize_height** (optional): Target height for Custom resize mode (default: 480)
 
 **Outputs:**
 
 - **media_path**: Absolute path to selected/downloaded media
 - **media_type**: Detected/validated media type
 - **media_info**: Formatted information about the media
-- **height**: Media height in pixels
-- **width**: Media width in pixels
+- **height**: Media height in pixels (after resizing if applicable)
+- **width**: Media width in pixels (after resizing if applicable)
 - **duration**: Duration in seconds (0 for images)
 - **fps**: Frames per second (0 for images)
 
@@ -39,6 +42,12 @@ This module provides three new ComfyUI nodes that enable advanced video processi
 - Supports all media sources from the original Media Describe node
 - Downloads and caches Reddit media
 - Trims videos to specified max_duration if needed
+- **Resizes images and videos** with three modes:
+    - **None**: Keep original dimensions
+    - **Auto (by orientation)**: Landscape → 832×480, Portrait → 480×832
+    - **Custom**: Specify exact dimensions
+- Uses high-quality resizing (Lanczos for images, libx264 for videos)
+- Center crops to exact dimensions while preserving aspect ratio
 - Returns comprehensive metadata without AI processing
 
 ---

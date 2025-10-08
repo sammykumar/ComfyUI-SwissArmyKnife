@@ -154,7 +154,7 @@ class MediaSelection:
                 media_info_text += f"\n• Resolution: {width}x{height}"
             else:  # video
                 height, width, duration, fps, selected_media_path, media_info_text = self._process_video(
-                    selected_media_path, max_duration, media_info_text
+                    selected_media_path, max_duration, media_info_text, resize_mode, resize_width, resize_height
                 )
 
             return (selected_media_path, media_type, media_info_text, height, width, duration, fps)
@@ -368,8 +368,97 @@ class MediaSelection:
         height, width = img.shape[:2]
         return height, width, 0.0, 0.0
 
-    def _process_video(self, video_path, max_duration, media_info_text):
-        """Process video and optionally trim it."""
+    def _resize_video(self, video_path, resize_mode, resize_width, resize_height, original_width, original_height):
+        """
+        Resize a video based on the specified mode using ffmpeg.
+        
+        Args:
+            video_path: Path to the video file
+            resize_mode: "None", "Auto (by orientation)", or "Custom"
+            resize_width: Target width for Custom mode
+            resize_height: Target height for Custom mode
+            original_width: Original video width
+            original_height: Original video height
+            
+        Returns:
+            Tuple of (resized_video_path, target_width, target_height) or (None, original_width, original_height) if no resize
+        """
+        if resize_mode == "None":
+            return None, original_width, original_height
+        
+        # Determine target dimensions
+        if resize_mode == "Auto (by orientation)":
+            # Landscape (wider): 832x480, Portrait (taller): 480x832
+            if original_width > original_height:
+                target_width = 832
+                target_height = 480
+            else:
+                target_width = 480
+                target_height = 832
+        elif resize_mode == "Custom":
+            target_width = resize_width
+            target_height = resize_height
+        else:
+            # Unknown mode, no resize
+            return None, original_width, original_height
+        
+        # Calculate aspect ratios for proper scaling and cropping
+        original_aspect = original_width / original_height
+        target_aspect = target_width / target_height
+        
+        # Determine scale dimensions (fit to one dimension, crop the other)
+        if original_aspect > target_aspect:
+            # Original is wider, fit to height and crop width
+            scale_height = target_height
+            scale_width = int(scale_height * original_aspect)
+        else:
+            # Original is taller, fit to width and crop height
+            scale_width = target_width
+            scale_height = int(scale_width / original_aspect)
+        
+        # Create output path
+        resized_path = get_temp_file_path(suffix='.mp4', prefix='resized', subdir='videos')
+        
+        try:
+            print(f"Resizing video from {original_width}x{original_height} to {target_width}x{target_height}")
+            
+            # Build ffmpeg command with scale and crop filters
+            # First scale to intermediate size, then crop to exact target
+            scale_filter = f"scale={scale_width}:{scale_height}"
+            crop_filter = f"crop={target_width}:{target_height}"
+            vf_filter = f"{scale_filter},{crop_filter}"
+            
+            cmd = [
+                'ffmpeg',
+                '-i', video_path,
+                '-vf', vf_filter,
+                '-c:v', 'libx264',
+                '-preset', 'fast',
+                '-crf', '23',
+                '-c:a', 'copy',  # Copy audio without re-encoding
+                '-y',
+                resized_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            
+            if os.path.exists(resized_path) and os.path.getsize(resized_path) > 0:
+                print(f"Successfully resized video to: {resized_path}")
+                return resized_path, target_width, target_height
+            else:
+                print("Warning: Resized video file is empty, using original")
+                return None, original_width, original_height
+                
+        except subprocess.CalledProcessError as e:
+            print(f"FFmpeg resize error: {e.stderr}")
+            print("Warning: Could not resize video. Using original dimensions.")
+            return None, original_width, original_height
+        except FileNotFoundError:
+            print("FFmpeg not found. Please install ffmpeg to use video resizing.")
+            return None, original_width, original_height
+
+    def _process_video(self, video_path, max_duration, media_info_text, resize_mode="None", resize_width=832, resize_height=480):
+        """Process video and optionally trim and resize it."""
         # Get video metadata using OpenCV
         cap = cv2.VideoCapture(video_path)
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -408,13 +497,25 @@ class MediaSelection:
                 print(f"Warning: Could not trim video. Using original video for {original_duration:.2f}s")
                 actual_duration = original_duration
 
+        # Apply resizing if requested
+        resized = False
+        if resize_mode != "None":
+            resized_path, width, height = self._resize_video(
+                final_video_path, resize_mode, resize_width, resize_height, width, height
+            )
+            if resized_path:
+                final_video_path = resized_path
+                resized = True
+                print(f"Video resized to {width}x{height}")
+
         # Update media info
         trim_info = f" (trimmed: 0.0s → {actual_duration:.1f}s)" if trimmed else ""
+        resize_info = f" (resized to {width}x{height})" if resized else ""
         media_info_text += f"\n• Original Duration: {original_duration:.2f} seconds"
         media_info_text += f"\n• Processed Duration: {actual_duration:.2f} seconds{trim_info}"
         media_info_text += f"\n• Frames: {frame_count}"
         media_info_text += f"\n• Frame Rate: {fps:.2f} FPS"
-        media_info_text += f"\n• Resolution: {width}x{height}"
+        media_info_text += f"\n• Resolution: {width}x{height}{resize_info}"
 
         return height, width, actual_duration, fps, final_video_path, media_info_text
 

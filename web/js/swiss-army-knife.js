@@ -2,7 +2,7 @@ import { app } from "../../../scripts/app.js";
 import { api } from "../../../scripts/api.js";
 
 // Version and cache busting info
-const EXTENSION_VERSION = "2.5.5"; // Should match pyproject.toml version
+const EXTENSION_VERSION = "2.5.6"; // Should match pyproject.toml version
 const LOAD_TIMESTAMP = new Date().toISOString();
 
 // DEBUG mode - will be loaded from server config
