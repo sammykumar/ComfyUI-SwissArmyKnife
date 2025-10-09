@@ -1125,6 +1125,7 @@ app.registerExtension({
                         // Get input values
                         const steps = this.widgets.find((w) => w.name === "steps")?.value || 20;
                         const cfg = this.widgets.find((w) => w.name === "cfg")?.value || 7.0;
+                        const seed = this.widgets.find((w) => w.name === "seed")?.value || 0;
                         const highSampler =
                             this.widgets.find((w) => w.name === "high_sampler")?.value || "";
                         const lowSampler =
@@ -1143,6 +1144,7 @@ app.registerExtension({
                         preview += "========================================\n\n";
                         preview += `📊 Steps: ${steps}\n`;
                         preview += `📊 CFG Scale: ${cfg}\n`;
+                        preview += `📊 Seed: ${seed}\n`;
                         preview += `📊 High Sampler: ${highSampler || "(not set)"}\n`;
                         preview += `📊 Low Sampler: ${lowSampler || "(not set)"}\n`;
                         preview += `📊 High LoRA: ${loraHigh || "(not set)"}\n`;
@@ -1174,6 +1176,7 @@ app.registerExtension({
                         [
                             "steps",
                             "cfg",
+                            "seed",
                             "high_sampler",
                             "low_sampler",
                             "lora_high",

@@ -36,6 +36,12 @@ class CivitMetadataHelper:
                     "step": 0.1,
                     "tooltip": "CFG Scale (Classifier Free Guidance)"
                 }),
+                "seed": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 0xffffffffffffffff,
+                    "tooltip": "Random seed for generation"
+                }),
                 "high_sampler": ("STRING", {
                     "default": "euler",
                     "tooltip": "High resolution sampler name"
@@ -71,13 +77,14 @@ class CivitMetadataHelper:
     CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True  # Makes this an output node that displays in the UI
 
-    def collect_metadata(self, steps, cfg, high_sampler, low_sampler, lora_high, lora_low, positive_prompt, negative_prompt):
+    def collect_metadata(self, steps, cfg, seed, high_sampler, low_sampler, lora_high, lora_low, positive_prompt, negative_prompt):
         """
         Collect and format metadata for CivitAI submissions.
         
         Args:
             steps: Number of sampling steps
             cfg: CFG scale value
+            seed: Random seed for generation
             high_sampler: High resolution sampler name
             low_sampler: Low resolution sampler name  
             lora_high: High resolution LoRA model name
@@ -94,6 +101,7 @@ class CivitMetadataHelper:
             "generation_parameters": {
                 "steps": steps,
                 "cfg_scale": cfg,
+                "seed": seed,
                 "samplers": {
                     "high_res": high_sampler,
                     "low_res": low_sampler
@@ -125,7 +133,7 @@ class CivitMetadataHelper:
             lora_info = f" | LoRAs: {lora_high.strip() or '(none)'}/{lora_low.strip() or '(none)'}"
         
         summary = (
-            f"Steps: {steps} | CFG: {cfg} | "
+            f"Steps: {steps} | CFG: {cfg} | Seed: {seed} | "
             f"Samplers: {high_sampler}/{low_sampler}{lora_info} | "
             f"Pos: {len(positive_prompt.strip())} chars | "
             f"Neg: {len(negative_prompt.strip())} chars"
@@ -137,6 +145,7 @@ class CivitMetadataHelper:
         print("="*60)
         print(f"📊 Steps: {steps}")
         print(f"📊 CFG Scale: {cfg}")
+        print(f"📊 Seed: {seed}")
         print(f"📊 High Sampler: {high_sampler}")
         print(f"📊 Low Sampler: {low_sampler}")
         print(f"📊 High LoRA: {lora_high.strip() or '(none)'}")
@@ -178,6 +187,7 @@ class CivitMetadataHelper:
         gen_params = metadata["generation_parameters"]
         lines.append(f"Steps: {gen_params['steps']}")
         lines.append(f"CFG Scale: {gen_params['cfg_scale']}")
+        lines.append(f"Seed: {gen_params['seed']}")
         lines.append(f"High Sampler: {gen_params['samplers']['high_res']}")
         lines.append(f"Low Sampler: {gen_params['samplers']['low_res']}")
         lines.append(f"High LoRA: {gen_params['loras']['high_res'] or '(none)'}")
