@@ -40,7 +40,8 @@ class CivitMetadataHelper:
                     "default": 0,
                     "min": 0,
                     "max": 0xffffffffffffffff,
-                    "tooltip": "Random seed for generation"
+                    "tooltip": "Random seed for generation",
+                    "control_after_generate": False
                 }),
                 "high_sampler": ("STRING", {
                     "default": "euler",
