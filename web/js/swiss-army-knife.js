@@ -1096,6 +1096,128 @@ app.registerExtension({
                 return result;
             };
         }
+
+        // Handle CivitMetadataHelper node
+        else if (nodeData.name === "CivitMetadataHelper") {
+            debugLog("Registering CivitMetadataHelper node");
+
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Add a formatted display widget for metadata preview
+                this.addWidget(
+                    "text",
+                    "metadata_preview",
+                    "🏷️ Metadata preview will appear here...",
+                    (value) => {
+                        // Read-only preview widget
+                    },
+                    {
+                        multiline: true,
+                        serialize: false, // Don't store in workflow JSON
+                    }
+                );
+
+                // Function to update the metadata preview
+                this.updateMetadataPreview = function () {
+                    try {
+                        // Get input values
+                        const steps = this.widgets.find((w) => w.name === "steps")?.value || 20;
+                        const cfg = this.widgets.find((w) => w.name === "cfg")?.value || 7.0;
+                        const highSampler =
+                            this.widgets.find((w) => w.name === "high_sampler")?.value || "";
+                        const lowSampler =
+                            this.widgets.find((w) => w.name === "low_sampler")?.value || "";
+                        const loraHigh =
+                            this.widgets.find((w) => w.name === "lora_high")?.value || "";
+                        const loraLow =
+                            this.widgets.find((w) => w.name === "lora_low")?.value || "";
+                        const positivePrompt =
+                            this.widgets.find((w) => w.name === "positive_prompt")?.value || "";
+                        const negativePrompt =
+                            this.widgets.find((w) => w.name === "negative_prompt")?.value || "";
+
+                        // Create preview text
+                        let preview = "🏷️ CIVITAI METADATA PREVIEW\n";
+                        preview += "========================================\n\n";
+                        preview += `📊 Steps: ${steps}\n`;
+                        preview += `📊 CFG Scale: ${cfg}\n`;
+                        preview += `📊 High Sampler: ${highSampler || "(not set)"}\n`;
+                        preview += `📊 Low Sampler: ${lowSampler || "(not set)"}\n`;
+                        preview += `📊 High LoRA: ${loraHigh || "(not set)"}\n`;
+                        preview += `📊 Low LoRA: ${loraLow || "(not set)"}\n\n`;
+                        preview += `📝 Positive Prompt (${positivePrompt.length} chars):\n`;
+                        preview += positivePrompt
+                            ? `${positivePrompt.substring(0, 100)}${positivePrompt.length > 100 ? "..." : ""}\n\n`
+                            : "(empty)\n\n";
+                        preview += `📝 Negative Prompt (${negativePrompt.length} chars):\n`;
+                        preview += negativePrompt
+                            ? `${negativePrompt.substring(0, 100)}${negativePrompt.length > 100 ? "..." : ""}`
+                            : "(empty)";
+
+                        // Update the preview widget
+                        const previewWidget = this.widgets.find(
+                            (w) => w.name === "metadata_preview"
+                        );
+                        if (previewWidget) {
+                            previewWidget.value = preview;
+                        }
+                    } catch (error) {
+                        debugLog("Error updating metadata preview:", error);
+                    }
+                };
+
+                // Set up listeners for input changes
+                this.widgets.forEach((widget) => {
+                    if (
+                        [
+                            "steps",
+                            "cfg",
+                            "high_sampler",
+                            "low_sampler",
+                            "lora_high",
+                            "lora_low",
+                            "positive_prompt",
+                            "negative_prompt",
+                        ].includes(widget.name)
+                    ) {
+                        const originalCallback = widget.callback;
+                        widget.callback = (value) => {
+                            if (originalCallback) originalCallback(value);
+                            this.updateMetadataPreview();
+                        };
+                    }
+                });
+
+                // Initial preview update
+                setTimeout(() => {
+                    this.updateMetadataPreview();
+                }, 100);
+
+                return result;
+            };
+
+            // Handle execution results to update the display
+            const origOnExecuted = nodeType.prototype.onExecuted;
+            nodeType.prototype.onExecuted = function (message) {
+                debugLog("[CivitMetadataHelper] onExecuted called with:", message);
+
+                if (origOnExecuted) {
+                    origOnExecuted.call(this, message);
+                }
+
+                // Update preview if we have new output
+                if (message?.output) {
+                    // The first output is the formatted metadata
+                    const formattedMetadata = message.output[0];
+                    const previewWidget = this.widgets.find((w) => w.name === "metadata_preview");
+                    if (previewWidget && formattedMetadata) {
+                        previewWidget.value = formattedMetadata;
+                    }
+                }
+            };
+        }
     },
 
     // Hook to handle workflow loading

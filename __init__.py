@@ -13,6 +13,15 @@ except ImportError as e:
     CONTROL_PANEL_NODE_CLASS_MAPPINGS = {}
     CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+# Import civit metadata helper node
+try:
+    from .nodes.utils.civit_metadata_helper import CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS
+    from .nodes.utils.civit_metadata_helper import CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS
+except ImportError as e:
+    print(f"Warning: Could not import civit metadata helper node: {e}")
+    CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS = {}
+    CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS = {}
+
 # Import lora_manager nodes
 try:
     from .nodes.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
@@ -68,11 +77,12 @@ def get_version():
         import time
         return str(int(time.time()))
 
-# Combine main nodes, helper nodes, control panel, lora_manager, and media_selection nodes
+# Combine main nodes, helper nodes, control panel, civit metadata helper, lora_manager, and media_selection nodes
 NODE_CLASS_MAPPINGS = {
     **MAIN_NODE_CLASS_MAPPINGS,
     **HELPER_NODE_CLASS_MAPPINGS,
     **CONTROL_PANEL_NODE_CLASS_MAPPINGS,
+    **CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS,
     **LORA_MANAGER_NODE_CLASS_MAPPINGS,
     **MEDIA_SELECTION_NODE_CLASS_MAPPINGS
 }
@@ -80,6 +90,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     **MAIN_NODE_DISPLAY_NAME_MAPPINGS,
     **HELPER_NODE_DISPLAY_NAME_MAPPINGS,
     **CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS,
+    **CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS,
     **LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS,
     **MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS
 }
