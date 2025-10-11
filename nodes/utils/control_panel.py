@@ -45,6 +45,11 @@ class ControlPanel:
         
         all_media_data = kwargs.get("all_media_describe_data")
         
+        # DEBUG: Print ALL kwargs to see what we're receiving
+        print(f"\n🔍 DEBUG - All kwargs received:")
+        for key, value in kwargs.items():
+            print(f"  - {key}: {type(value).__name__} = {str(value)[:200]}")
+        
         if all_media_data:
             try:
                 # Parse the JSON data
@@ -57,8 +62,18 @@ class ControlPanel:
                 print(f"\n📊 All Media Describe Data:")
                 print(json.dumps(data, indent=2))
                 
-                # Return the parsed data for the UI
-                return {"ui": {"all_media_describe_data": [all_media_data]}}
+                # DOUBLE the output - return BOTH in ui dict
+                result = {
+                    "ui": {
+                        "all_media_describe_data": [all_media_data],
+                        "all_media_describe_data_copy": [all_media_data]  # Duplicate for redundancy
+                    }
+                }
+                
+                print(f"\n🔍 DEBUG - Returning to UI:")
+                print(json.dumps(result, indent=2))
+                
+                return result
                 
             except json.JSONDecodeError as e:
                 print(f"\n❌ Error parsing JSON: {e}")

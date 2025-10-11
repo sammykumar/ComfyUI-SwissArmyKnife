@@ -390,14 +390,23 @@ class MediaDescribe:
             else:
                 subreddit_name = subreddit_url.split('/')[0]
             
-            # Build subreddit JSON API URL (hot posts)
-            json_url = f'https://www.reddit.com/r/{subreddit_name}/hot.json?limit=100'
+            # Randomize between 'hot', 'new', and 'top' sort methods using the seed
+            random.seed(seed)
+            sort_methods = ['hot', 'new', 'top']
+            selected_sort = random.choice(sort_methods)
+            
+            # Build subreddit JSON API URL with randomized sort method and larger limit
+            # Using limit=100 to get a larger pool of posts
+            if selected_sort == 'top':
+                json_url = f'https://www.reddit.com/r/{subreddit_name}/top.json?limit=100&t=week'
+            else:
+                json_url = f'https://www.reddit.com/r/{subreddit_name}/{selected_sort}.json?limit=100'
             
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
             
-            print(f"Fetching posts from r/{subreddit_name}...")
+            print(f"Fetching posts from r/{subreddit_name} (sort: {selected_sort})...")
             response = requests.get(json_url, headers=headers, timeout=30)
             response.raise_for_status()
             
@@ -443,10 +452,9 @@ class MediaDescribe:
             if not media_posts:
                 raise ValueError(f"No {media_type} posts found in r/{subreddit_name}. Try a different subreddit or media type.")
             
-            print(f"Found {len(media_posts)} {media_type} posts in r/{subreddit_name}")
+            print(f"Found {len(media_posts)} {media_type} posts in r/{subreddit_name} (sort: {selected_sort})")
             
-            # Randomly select a post using the seed
-            random.seed(seed)
+            # Randomly select a post using the seed (already seeded above)
             selected_post = random.choice(media_posts)
             random.seed(None)
             

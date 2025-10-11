@@ -378,29 +378,57 @@ app.registerExtension({
 
                 // Function to update with execution data
                 this.updateControlPanelData = function (data) {
+                    console.log("🔍 [ControlPanel DEBUG] updateControlPanelData called");
+                    console.log("🔍 [ControlPanel DEBUG] data received:", data);
+                    console.log("🔍 [ControlPanel DEBUG] data keys:", Object.keys(data || {}));
+
                     if (
                         !this._cp_leftColumn ||
                         !this._cp_middleColumn ||
                         !this._cp_rightColumn ||
                         !data
                     ) {
+                        console.log("🔍 [ControlPanel DEBUG] Missing columns or data, returning");
                         return;
                     }
 
                     debugLog("[ControlPanel] Received data:", data);
 
-                    // Extract all_media_describe_data
+                    // Extract all_media_describe_data - TRY MULTIPLE SOURCES
                     let mediaData = null;
+                    let rawData = null;
+
+                    // Try all possible locations for the data
                     if (data.all_media_describe_data) {
-                        const rawData = Array.isArray(data.all_media_describe_data)
+                        console.log("🔍 [ControlPanel DEBUG] Found data.all_media_describe_data");
+                        rawData = Array.isArray(data.all_media_describe_data)
                             ? data.all_media_describe_data[0]
                             : data.all_media_describe_data;
+                    } else if (data.all_media_describe_data_copy) {
+                        console.log(
+                            "🔍 [ControlPanel DEBUG] Found data.all_media_describe_data_copy"
+                        );
+                        rawData = Array.isArray(data.all_media_describe_data_copy)
+                            ? data.all_media_describe_data_copy[0]
+                            : data.all_media_describe_data_copy;
+                    } else {
+                        console.log(
+                            "🔍 [ControlPanel DEBUG] No all_media_describe_data found in:",
+                            Object.keys(data)
+                        );
+                    }
 
+                    console.log("🔍 [ControlPanel DEBUG] rawData:", rawData);
+                    console.log("🔍 [ControlPanel DEBUG] rawData type:", typeof rawData);
+
+                    if (rawData) {
                         try {
                             // Parse JSON if it's a string
                             mediaData = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
+                            console.log("🔍 [ControlPanel DEBUG] Parsed mediaData:", mediaData);
                             debugLog("[ControlPanel] Parsed media data:", mediaData);
                         } catch (e) {
+                            console.error("🔍 [ControlPanel DEBUG] Error parsing JSON:", e);
                             debugLog("[ControlPanel] Error parsing JSON:", e);
                             this._cp_leftColumn.textContent = "Error parsing data";
                             this._cp_middleColumn.textContent = "Error parsing data";
@@ -410,11 +438,16 @@ app.registerExtension({
                     }
 
                     if (!mediaData) {
+                        console.log(
+                            "🔍 [ControlPanel DEBUG] No mediaData, showing 'no data available'"
+                        );
                         this._cp_leftColumn.textContent = "(No data available)";
                         this._cp_middleColumn.textContent = "(No data available)";
                         this._cp_rightColumn.textContent = "(No data available)";
                         return;
                     }
+
+                    console.log("🔍 [ControlPanel DEBUG] mediaData keys:", Object.keys(mediaData));
 
                     // Helper function to format field display
                     const formatValue = (value, maxLength = 500) => {
@@ -425,20 +458,34 @@ app.registerExtension({
                         return valueStr;
                     };
 
-                    // Left column: Final Prompt
-                    if (mediaData.final_prompt) {
-                        this._cp_leftColumn.textContent = formatValue(mediaData.final_prompt, 2000);
+                    // Left column: Final String/Prompt (check both field names)
+                    const finalText =
+                        mediaData.final_string || mediaData.final_prompt || mediaData.description;
+                    if (finalText) {
+                        console.log(
+                            "🔍 [ControlPanel DEBUG] Setting final text:",
+                            finalText.substring(0, 50)
+                        );
+                        this._cp_leftColumn.textContent = formatValue(finalText, 2000);
                     } else {
-                        this._cp_leftColumn.textContent = "(No final_prompt in data)";
+                        console.log(
+                            "🔍 [ControlPanel DEBUG] No final_string/final_prompt/description in mediaData"
+                        );
+                        this._cp_leftColumn.textContent = "(No final text in data)";
                     }
 
                     // Middle column: Gemini Status
                     if (mediaData.gemini_status) {
+                        console.log(
+                            "🔍 [ControlPanel DEBUG] Setting gemini_status:",
+                            mediaData.gemini_status.substring(0, 50)
+                        );
                         this._cp_middleColumn.textContent = formatValue(
                             mediaData.gemini_status,
                             2000
                         );
                     } else {
+                        console.log("🔍 [ControlPanel DEBUG] No gemini_status in mediaData");
                         this._cp_middleColumn.textContent = "(No gemini_status in data)";
                     }
 
@@ -457,36 +504,67 @@ app.registerExtension({
                         rightLines.push(`📐 Width: ${mediaData.width}\n`);
                     }
 
-                    // Add any other fields from the data
-                    const displayedKeys = [
-                        "final_prompt",
-                        "gemini_status",
-                        "media_info",
-                        "height",
-                        "width",
-                    ];
-                    for (const [key, value] of Object.entries(mediaData)) {
-                        if (!displayedKeys.includes(key) && value !== null && value !== undefined) {
-                            rightLines.push(`• ${key}: ${formatValue(value, 200)}\n`);
-                        }
-                    }
+                    // Stop here - only show media_info, height, and width
+                    // Removed loop that displayed additional fields (subject, cinematic_aesthetic, etc.)
 
                     if (rightLines.length === 0) {
+                        console.log("🔍 [ControlPanel DEBUG] No right column data");
                         this._cp_rightColumn.textContent = "(No media info in data)";
                     } else {
+                        console.log(
+                            "🔍 [ControlPanel DEBUG] Setting right column with",
+                            rightLines.length,
+                            "lines"
+                        );
                         this._cp_rightColumn.textContent = rightLines.join("\n");
                     }
 
+                    console.log("🔍 [ControlPanel DEBUG] Display update complete");
                     debugLog("[ControlPanel] Updated display with execution data");
                 };
 
                 // Add onExecuted handler to update display with execution results
                 const originalOnExecuted = this.onExecuted;
                 this.onExecuted = function (message) {
+                    console.log("🔍 [ControlPanel DEBUG] onExecuted called");
+                    console.log("🔍 [ControlPanel DEBUG] Full message object:", message);
+                    console.log(
+                        "🔍 [ControlPanel DEBUG] message keys:",
+                        Object.keys(message || {})
+                    );
+
+                    if (message) {
+                        console.log("🔍 [ControlPanel DEBUG] message.output:", message.output);
+                        if (message.output) {
+                            console.log(
+                                "🔍 [ControlPanel DEBUG] message.output keys:",
+                                Object.keys(message.output)
+                            );
+                        }
+                    }
+
                     debugLog("[ControlPanel] onExecuted called with message:", message);
 
+                    // Try multiple data sources - data might be at root or in output
                     if (message && message.output) {
+                        console.log(
+                            "🔍 [ControlPanel DEBUG] Calling updateControlPanelData with message.output:",
+                            message.output
+                        );
                         this.updateControlPanelData(message.output);
+                    } else if (
+                        message &&
+                        (message.all_media_describe_data || message.all_media_describe_data_copy)
+                    ) {
+                        console.log(
+                            "🔍 [ControlPanel DEBUG] Calling updateControlPanelData with message (root level):",
+                            message
+                        );
+                        this.updateControlPanelData(message);
+                    } else {
+                        console.log(
+                            "🔍 [ControlPanel DEBUG] No data found in message.output or message root"
+                        );
                     }
 
                     // Call original onExecuted if it exists
