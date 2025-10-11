@@ -17,19 +17,11 @@ class ControlPanel:
     def INPUT_TYPES(cls):
         """
         Define input fields that will be displayed on the control panel.
-        Includes predefined inputs for the 3-column layout:
-        - Left: final_prompt
-        - Middle: gemini_status
-        - Right: media_info, height, width
+        Only accepts all_media_describe_data which contains all the workflow information.
         """
         return {
             "required": {},
             "optional": {
-                "final_prompt": ("STRING", {"forceInput": True}),
-                "gemini_status": ("STRING", {"forceInput": True}),
-                "media_info": ("STRING", {"forceInput": True}),
-                "height": ("INT", {"forceInput": True}),
-                "width": ("INT", {"forceInput": True}),
                 "all_media_describe_data": ("STRING", {"forceInput": True}),
             },
         }
