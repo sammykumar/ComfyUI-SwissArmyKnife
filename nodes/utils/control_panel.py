@@ -34,35 +34,42 @@ class ControlPanel:
     def display_info(self, **kwargs):
         """
         Display all the workflow information on the control panel.
-        Accepts any keyword arguments from connected inputs.
-        Logs a summary to the console and returns data for UI display.
+        Parses the all_media_describe_data JSON and returns structured data for UI display.
         """
+        import json
+        
         # Log summary to console
         print("\n" + "="*60)
         print("CONTROL PANEL - Workflow Information")
         print("="*60)
         
-        if kwargs:
-            for key, value in kwargs.items():
-                # Truncate long strings for console display
-                if isinstance(value, str) and len(value) > 200:
-                    display_value = value[:200] + "..."
+        all_media_data = kwargs.get("all_media_describe_data")
+        
+        if all_media_data:
+            try:
+                # Parse the JSON data
+                if isinstance(all_media_data, str):
+                    data = json.loads(all_media_data)
                 else:
-                    display_value = value
+                    data = all_media_data
                 
-                print(f"\n📊 {key}:\n{display_value}")
+                # Log to console
+                print(f"\n📊 All Media Describe Data:")
+                print(json.dumps(data, indent=2))
+                
+                # Return the parsed data for the UI
+                return {"ui": {"all_media_describe_data": [all_media_data]}}
+                
+            except json.JSONDecodeError as e:
+                print(f"\n❌ Error parsing JSON: {e}")
+                print(f"Raw data: {all_media_data}")
+                return {"ui": {"error": [f"Invalid JSON: {str(e)}"]}}
         else:
-            print("\n(No inputs connected)")
+            print("\n(No all_media_describe_data connected)")
         
         print("\n" + "="*60 + "\n")
         
-        # Return data in format that JavaScript can read from message.output
-        # Convert all values to lists (ComfyUI convention)
-        ui_data = {}
-        for key, value in kwargs.items():
-            ui_data[key] = [value] if not isinstance(value, list) else value
-        
-        return {"ui": ui_data if ui_data else {"status": ["No inputs connected"]}}
+        return {"ui": {"status": ["No inputs connected"]}}
 
 
 # Export node class mapping
