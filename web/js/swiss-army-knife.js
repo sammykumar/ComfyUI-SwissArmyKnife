@@ -325,7 +325,7 @@ app.registerExtension({
                 // Initialize input counter based on existing inputs
                 this._cp_inputCount = this.inputs?.length || 0;
 
-                // Create a DOM widget area with two-column layout
+                // Create a DOM widget area with three-column layout
                 if (!this._cp_dom) {
                     // Main container
                     const dom = document.createElement("div");
@@ -343,15 +343,27 @@ app.registerExtension({
                     dom.style.display = "flex";
                     dom.style.gap = "12px";
 
-                    // Left column (media_info, gemini_status, processed_media_path)
+                    // Left column (final_prompt)
                     const leftColumn = document.createElement("div");
                     leftColumn.style.flex = "1";
                     leftColumn.style.minWidth = "0"; // Allow flex to shrink below content size
                     leftColumn.style.whiteSpace = "pre-wrap";
                     leftColumn.style.wordBreak = "break-word";
                     leftColumn.style.overflow = "auto";
+                    leftColumn.style.borderRight = "1px solid var(--border-color, #333)";
+                    leftColumn.style.paddingRight = "8px";
 
-                    // Right column (description, final_string, height, width)
+                    // Middle column (gemini_status)
+                    const middleColumn = document.createElement("div");
+                    middleColumn.style.flex = "1";
+                    middleColumn.style.minWidth = "0"; // Allow flex to shrink below content size
+                    middleColumn.style.whiteSpace = "pre-wrap";
+                    middleColumn.style.wordBreak = "break-word";
+                    middleColumn.style.overflow = "auto";
+                    middleColumn.style.borderRight = "1px solid var(--border-color, #333)";
+                    middleColumn.style.paddingRight = "8px";
+
+                    // Right column (media_info, height, width)
                     const rightColumn = document.createElement("div");
                     rightColumn.style.flex = "1";
                     rightColumn.style.minWidth = "0"; // Allow flex to shrink below content size
@@ -360,6 +372,7 @@ app.registerExtension({
                     rightColumn.style.overflow = "auto";
 
                     dom.appendChild(leftColumn);
+                    dom.appendChild(middleColumn);
                     dom.appendChild(rightColumn);
 
                     // Add a DOM widget
@@ -371,13 +384,15 @@ app.registerExtension({
                     // Store references
                     this._cp_dom = dom;
                     this._cp_leftColumn = leftColumn;
+                    this._cp_middleColumn = middleColumn;
                     this._cp_rightColumn = rightColumn;
                     this._cp_widget = widget;
                 }
 
                 // Function to update summary display
                 this.updateControlPanelSummary = function () {
-                    if (!this._cp_leftColumn || !this._cp_rightColumn) return;
+                    if (!this._cp_leftColumn || !this._cp_middleColumn || !this._cp_rightColumn)
+                        return;
 
                     const lines = [];
                     const inputs = this.inputs || [];
@@ -411,15 +426,25 @@ app.registerExtension({
                         ? lines.join("\n")
                         : "No inputs yet. Right-click → ➕ Add input";
 
-                    // Display summary in left column, leave right column empty
-                    this._cp_leftColumn.textContent = summaryText;
-                    this._cp_rightColumn.textContent = "Awaiting execution...";
+                    // Display summary in left column, leave other columns empty
+                    this._cp_leftColumn.textContent =
+                        "═══ LEFT: Final Prompt ═══\n\n" + summaryText;
+                    this._cp_middleColumn.textContent =
+                        "═══ MIDDLE: Gemini Status ═══\n\nAwaiting execution...";
+                    this._cp_rightColumn.textContent =
+                        "═══ RIGHT: Media Info ═══\n\nAwaiting execution...";
                     this.setDirtyCanvas(true, true);
                 };
 
                 // Function to update with execution data
                 this.updateControlPanelData = function (data) {
-                    if (!this._cp_leftColumn || !this._cp_rightColumn || !data) return;
+                    if (
+                        !this._cp_leftColumn ||
+                        !this._cp_middleColumn ||
+                        !this._cp_rightColumn ||
+                        !data
+                    )
+                        return;
 
                     // Helper function to format field display
                     const formatField = (emoji, label, value, skipTruncate = false) => {
@@ -432,82 +457,56 @@ app.registerExtension({
                     };
 
                     const leftLines = [];
+                    const middleLines = [];
                     const rightLines = [];
 
-                    leftLines.push("═══ LEFT PANEL ═══\n\n");
-                    rightLines.push("═══ RIGHT PANEL ═══\n\n");
+                    leftLines.push("═══ LEFT: Final Prompt ═══\n\n");
+                    middleLines.push("═══ MIDDLE: Gemini Status ═══\n\n");
+                    rightLines.push("═══ RIGHT: Media Info ═══\n\n");
 
-                    // Check if we have all_media_describe_data and it's JSON
-                    if (data.all_media_describe_data) {
-                        try {
-                            const jsonValue = Array.isArray(data.all_media_describe_data)
-                                ? data.all_media_describe_data[0]
-                                : data.all_media_describe_data;
-                            const parsedData = JSON.parse(jsonValue);
-
-                            debugLog("[ControlPanel] Parsed JSON data:", parsedData);
-
-                            // Left column: media_info, gemini_status (with prompts), processed_media_path, height, width
-                            const leftFields = [
-                                { key: "media_info", emoji: "📊", label: "Media Info" },
-                                { key: "gemini_status", emoji: "🔄", label: "Gemini Status" },
-                                {
-                                    key: "processed_media_path",
-                                    emoji: "📁",
-                                    label: "Processed Media Path",
-                                },
-                                { key: "height", emoji: "📐", label: "Height" },
-                                { key: "width", emoji: "📐", label: "Width" },
-                            ];
-
-                            // Right column: final_string only (no truncation)
-                            const rightFields = [
-                                { key: "final_string", emoji: "✨", label: "Final String" },
-                            ];
-
-                            // Populate left column
-                            for (const field of leftFields) {
-                                if (parsedData.hasOwnProperty(field.key)) {
-                                    let fieldValue = parsedData[field.key];
-
-                                    leftLines.push(
-                                        formatField(field.emoji, field.label, fieldValue)
-                                    );
-                                }
-                            }
-
-                            // Populate right column (without truncation)
-                            for (const field of rightFields) {
-                                if (parsedData.hasOwnProperty(field.key)) {
-                                    rightLines.push(
-                                        formatField(
-                                            field.emoji,
-                                            field.label,
-                                            parsedData[field.key],
-                                            true
-                                        )
-                                    );
-                                }
-                            }
-                        } catch (e) {
-                            debugLog("[ControlPanel] Error parsing JSON:", e);
-                            // Fall back to displaying raw data in left column only
-                            for (const [key, value] of Object.entries(data)) {
-                                const displayValue = Array.isArray(value) ? value[0] : value;
-                                leftLines.push(formatField("📊", key, displayValue));
-                            }
-                            rightLines.push("(Error parsing data)");
-                        }
+                    // Process inputs based on their names
+                    // Left column: final_prompt
+                    if (data.final_prompt) {
+                        const value = Array.isArray(data.final_prompt)
+                            ? data.final_prompt[0]
+                            : data.final_prompt;
+                        leftLines.push(formatField("✨", "Final Prompt", value, true));
                     } else {
-                        // No all_media_describe_data, display all fields in left column
-                        for (const [key, value] of Object.entries(data)) {
-                            const displayValue = Array.isArray(value) ? value[0] : value;
-                            leftLines.push(formatField("📊", key, displayValue));
-                        }
-                        rightLines.push("(No media describe data)");
+                        leftLines.push("(No final_prompt connected)");
+                    }
+
+                    // Middle column: gemini_status
+                    if (data.gemini_status) {
+                        const value = Array.isArray(data.gemini_status)
+                            ? data.gemini_status[0]
+                            : data.gemini_status;
+                        middleLines.push(formatField("🔄", "Gemini Status", value, true));
+                    } else {
+                        middleLines.push("(No gemini_status connected)");
+                    }
+
+                    // Right column: media_info, height, width
+                    if (data.media_info) {
+                        const value = Array.isArray(data.media_info)
+                            ? data.media_info[0]
+                            : data.media_info;
+                        rightLines.push(formatField("📊", "Media Info", value));
+                    }
+                    if (data.height !== undefined) {
+                        const value = Array.isArray(data.height) ? data.height[0] : data.height;
+                        rightLines.push(formatField("📐", "Height", value));
+                    }
+                    if (data.width !== undefined) {
+                        const value = Array.isArray(data.width) ? data.width[0] : data.width;
+                        rightLines.push(formatField("�", "Width", value));
+                    }
+
+                    if (!data.media_info && data.height === undefined && data.width === undefined) {
+                        rightLines.push("(No media info connected)");
                     }
 
                     this._cp_leftColumn.textContent = leftLines.join("");
+                    this._cp_middleColumn.textContent = middleLines.join("");
                     this._cp_rightColumn.textContent = rightLines.join("");
                     debugLog("[ControlPanel] Updated display with execution data");
                 };
