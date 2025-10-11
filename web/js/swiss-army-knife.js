@@ -347,29 +347,83 @@ app.registerExtension({
                     const leftColumn = document.createElement("div");
                     leftColumn.style.flex = "1";
                     leftColumn.style.minWidth = "0"; // Allow flex to shrink below content size
-                    leftColumn.style.whiteSpace = "pre-wrap";
-                    leftColumn.style.wordBreak = "break-word";
                     leftColumn.style.overflow = "auto";
                     leftColumn.style.borderRight = "1px solid var(--border-color, #333)";
                     leftColumn.style.paddingRight = "8px";
+                    leftColumn.style.display = "flex";
+                    leftColumn.style.flexDirection = "column";
+
+                    const leftHeading = document.createElement("h3");
+                    leftHeading.textContent = "Final Prompt";
+                    leftHeading.style.margin = "0 0 8px 0";
+                    leftHeading.style.fontSize = "14px";
+                    leftHeading.style.fontWeight = "600";
+                    leftHeading.style.color = "var(--fg-color, #d4d4d4)";
+                    leftHeading.style.borderBottom = "2px solid var(--border-color, #333)";
+                    leftHeading.style.paddingBottom = "4px";
+
+                    const leftContent = document.createElement("div");
+                    leftContent.style.whiteSpace = "pre-wrap";
+                    leftContent.style.wordBreak = "break-word";
+                    leftContent.style.overflow = "auto";
+                    leftContent.style.flex = "1";
+
+                    leftColumn.appendChild(leftHeading);
+                    leftColumn.appendChild(leftContent);
 
                     // Middle column (gemini_status)
                     const middleColumn = document.createElement("div");
                     middleColumn.style.flex = "1";
                     middleColumn.style.minWidth = "0"; // Allow flex to shrink below content size
-                    middleColumn.style.whiteSpace = "pre-wrap";
-                    middleColumn.style.wordBreak = "break-word";
                     middleColumn.style.overflow = "auto";
                     middleColumn.style.borderRight = "1px solid var(--border-color, #333)";
                     middleColumn.style.paddingRight = "8px";
+                    middleColumn.style.display = "flex";
+                    middleColumn.style.flexDirection = "column";
+
+                    const middleHeading = document.createElement("h3");
+                    middleHeading.textContent = "Gemini Status";
+                    middleHeading.style.margin = "0 0 8px 0";
+                    middleHeading.style.fontSize = "14px";
+                    middleHeading.style.fontWeight = "600";
+                    middleHeading.style.color = "var(--fg-color, #d4d4d4)";
+                    middleHeading.style.borderBottom = "2px solid var(--border-color, #333)";
+                    middleHeading.style.paddingBottom = "4px";
+
+                    const middleContent = document.createElement("div");
+                    middleContent.style.whiteSpace = "pre-wrap";
+                    middleContent.style.wordBreak = "break-word";
+                    middleContent.style.overflow = "auto";
+                    middleContent.style.flex = "1";
+
+                    middleColumn.appendChild(middleHeading);
+                    middleColumn.appendChild(middleContent);
 
                     // Right column (media_info, height, width)
                     const rightColumn = document.createElement("div");
                     rightColumn.style.flex = "1";
                     rightColumn.style.minWidth = "0"; // Allow flex to shrink below content size
-                    rightColumn.style.whiteSpace = "pre-wrap";
-                    rightColumn.style.wordBreak = "break-word";
                     rightColumn.style.overflow = "auto";
+                    rightColumn.style.display = "flex";
+                    rightColumn.style.flexDirection = "column";
+
+                    const rightHeading = document.createElement("h3");
+                    rightHeading.textContent = "Media Info";
+                    rightHeading.style.margin = "0 0 8px 0";
+                    rightHeading.style.fontSize = "14px";
+                    rightHeading.style.fontWeight = "600";
+                    rightHeading.style.color = "var(--fg-color, #d4d4d4)";
+                    rightHeading.style.borderBottom = "2px solid var(--border-color, #333)";
+                    rightHeading.style.paddingBottom = "4px";
+
+                    const rightContent = document.createElement("div");
+                    rightContent.style.whiteSpace = "pre-wrap";
+                    rightContent.style.wordBreak = "break-word";
+                    rightContent.style.overflow = "auto";
+                    rightContent.style.flex = "1";
+
+                    rightColumn.appendChild(rightHeading);
+                    rightColumn.appendChild(rightContent);
 
                     dom.appendChild(leftColumn);
                     dom.appendChild(middleColumn);
@@ -381,11 +435,11 @@ app.registerExtension({
                         hideOnZoom: false,
                     });
 
-                    // Store references
+                    // Store references to content divs (not the column containers)
                     this._cp_dom = dom;
-                    this._cp_leftColumn = leftColumn;
-                    this._cp_middleColumn = middleColumn;
-                    this._cp_rightColumn = rightColumn;
+                    this._cp_leftColumn = leftContent;
+                    this._cp_middleColumn = middleContent;
+                    this._cp_rightColumn = rightContent;
                     this._cp_widget = widget;
                 }
 
@@ -427,12 +481,9 @@ app.registerExtension({
                         : "No inputs yet. Right-click → ➕ Add input";
 
                     // Display summary in left column, leave other columns empty
-                    this._cp_leftColumn.textContent =
-                        "═══ LEFT: Final Prompt ═══\n\n" + summaryText;
-                    this._cp_middleColumn.textContent =
-                        "═══ MIDDLE: Gemini Status ═══\n\nAwaiting execution...";
-                    this._cp_rightColumn.textContent =
-                        "═══ RIGHT: Media Info ═══\n\nAwaiting execution...";
+                    this._cp_leftColumn.textContent = summaryText;
+                    this._cp_middleColumn.textContent = "Awaiting execution...";
+                    this._cp_rightColumn.textContent = "Awaiting execution...";
                     this.setDirtyCanvas(true, true);
                 };
 
@@ -459,10 +510,6 @@ app.registerExtension({
                     const leftLines = [];
                     const middleLines = [];
                     const rightLines = [];
-
-                    leftLines.push("═══ LEFT: Final Prompt ═══\n\n");
-                    middleLines.push("═══ MIDDLE: Gemini Status ═══\n\n");
-                    rightLines.push("═══ RIGHT: Media Info ═══\n\n");
 
                     // Process inputs based on their names
                     // Left column: final_prompt
