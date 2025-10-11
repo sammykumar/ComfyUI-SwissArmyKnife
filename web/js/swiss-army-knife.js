@@ -238,71 +238,6 @@ app.registerExtension({
         else if (nodeData.name === "ControlPanel") {
             debugLog("Registering ControlPanel node");
 
-            // Augment prototype to add helpers and context menu
-            const onConfigure = nodeType.prototype.onConfigure;
-            nodeType.prototype.onConfigure = function (info) {
-                const result = onConfigure?.call(this, info);
-                // Ensure we have a counter for dynamic inputs
-                this._cp_inputCount = this._cp_inputCount ?? 0;
-                return result;
-            };
-
-            // Add context menu entry to add wildcard inputs
-            const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
-            nodeType.prototype.getExtraMenuOptions = function (_, options) {
-                getExtraMenuOptions?.call(this, _, options);
-                options.push(
-                    {
-                        content: "➕ Add input",
-                        callback: () => {
-                            this._cp_inputCount = (this._cp_inputCount ?? 0) + 1;
-                            const name = `in${this._cp_inputCount}`;
-                            // "*" accepts any datatype (except primitives)
-                            this.addInput(name, "*");
-                            this.setDirtyCanvas(true, true);
-                            // Update summary after adding input
-                            if (this.updateControlPanelSummary) {
-                                this.updateControlPanelSummary();
-                            }
-                        },
-                    },
-                    {
-                        content: "♻︎ Rebuild summary",
-                        callback: () => {
-                            if (this.updateControlPanelSummary) {
-                                this.updateControlPanelSummary();
-                            }
-                        },
-                    }
-                );
-            };
-
-            // When links are made/broken, refresh the DOM widget
-            const onConnectionsChange = nodeType.prototype.onConnectionsChange;
-            nodeType.prototype.onConnectionsChange = function (
-                type,
-                index,
-                connected,
-                link_info,
-                io_slot
-            ) {
-                const result = onConnectionsChange?.call(
-                    this,
-                    type,
-                    index,
-                    connected,
-                    link_info,
-                    io_slot
-                );
-                // Small debounce
-                queueMicrotask(() => {
-                    if (this.updateControlPanelSummary) {
-                        this.updateControlPanelSummary();
-                    }
-                });
-                return result;
-            };
-
             // On resize, keep DOM width sensible
             const onResize = nodeType.prototype.onResize;
             nodeType.prototype.onResize = function (size) {
@@ -317,13 +252,6 @@ app.registerExtension({
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 const result = onNodeCreated?.apply(this, arguments);
-
-                // Note: The node already has "all_media_describe_data" input from Python
-                // We don't need to add default inputs since it has a predefined input
-                // Users can still add more inputs via context menu if needed
-
-                // Initialize input counter based on existing inputs
-                this._cp_inputCount = this.inputs?.length || 0;
 
                 // Create a DOM widget area with three-column layout
                 if (!this._cp_dom) {
@@ -431,61 +359,22 @@ app.registerExtension({
 
                     // Add a DOM widget
                     const widget = this.addDOMWidget("ControlPanel", "cp_display", dom, {
-                        serialize: false, // Don't store big text in workflow JSON
+                        serialize: false,
                         hideOnZoom: false,
                     });
 
-                    // Store references to content divs (not the column containers)
+                    // Store references to content divs
                     this._cp_dom = dom;
                     this._cp_leftColumn = leftContent;
                     this._cp_middleColumn = middleContent;
                     this._cp_rightColumn = rightContent;
                     this._cp_widget = widget;
-                }
 
-                // Function to update summary display
-                this.updateControlPanelSummary = function () {
-                    if (!this._cp_leftColumn || !this._cp_middleColumn || !this._cp_rightColumn)
-                        return;
-
-                    const lines = [];
-                    const inputs = this.inputs || [];
-
-                    for (let i = 0; i < inputs.length; i++) {
-                        const slot = inputs[i];
-                        const link = this.getInputLink(i);
-
-                        if (!link) {
-                            lines.push(`${slot.name}: (not connected)`);
-                            continue;
-                        }
-
-                        // Get origin node information - with null checks
-                        const graph = this.graph || app.graph;
-                        if (!graph) {
-                            lines.push(`${slot.name}: (connected, graph not ready)`);
-                            continue;
-                        }
-
-                        const originNode = graph.getNodeById?.(link.origin_id);
-                        const originName = originNode?.title || `Node#${link.origin_id}`;
-                        const outName =
-                            originNode?.outputs?.[link.origin_slot]?.name ??
-                            `out${link.origin_slot}`;
-
-                        lines.push(`${slot.name} ⇐ ${originName}.${outName}`);
-                    }
-
-                    const summaryText = lines.length
-                        ? lines.join("\n")
-                        : "No inputs yet. Right-click → ➕ Add input";
-
-                    // Display summary in left column, leave other columns empty
-                    this._cp_leftColumn.textContent = summaryText;
+                    // Initialize with waiting message
+                    this._cp_leftColumn.textContent = "Awaiting execution...";
                     this._cp_middleColumn.textContent = "Awaiting execution...";
                     this._cp_rightColumn.textContent = "Awaiting execution...";
-                    this.setDirtyCanvas(true, true);
-                };
+                }
 
                 // Function to update with execution data
                 this.updateControlPanelData = function (data) {
@@ -494,67 +383,100 @@ app.registerExtension({
                         !this._cp_middleColumn ||
                         !this._cp_rightColumn ||
                         !data
-                    )
+                    ) {
                         return;
+                    }
+
+                    debugLog("[ControlPanel] Received data:", data);
+
+                    // Extract all_media_describe_data
+                    let mediaData = null;
+                    if (data.all_media_describe_data) {
+                        const rawData = Array.isArray(data.all_media_describe_data)
+                            ? data.all_media_describe_data[0]
+                            : data.all_media_describe_data;
+
+                        try {
+                            // Parse JSON if it's a string
+                            mediaData = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
+                            debugLog("[ControlPanel] Parsed media data:", mediaData);
+                        } catch (e) {
+                            debugLog("[ControlPanel] Error parsing JSON:", e);
+                            this._cp_leftColumn.textContent = "Error parsing data";
+                            this._cp_middleColumn.textContent = "Error parsing data";
+                            this._cp_rightColumn.textContent = "Error parsing data";
+                            return;
+                        }
+                    }
+
+                    if (!mediaData) {
+                        this._cp_leftColumn.textContent = "(No data available)";
+                        this._cp_middleColumn.textContent = "(No data available)";
+                        this._cp_rightColumn.textContent = "(No data available)";
+                        return;
+                    }
 
                     // Helper function to format field display
-                    const formatField = (emoji, label, value, skipTruncate = false) => {
+                    const formatValue = (value, maxLength = 500) => {
                         let valueStr = String(value);
-                        // Truncate very long values unless skipTruncate is true
-                        if (!skipTruncate && valueStr.length > 500) {
-                            valueStr = valueStr.substring(0, 500) + "... (truncated)";
+                        if (valueStr.length > maxLength) {
+                            valueStr = valueStr.substring(0, maxLength) + "... (truncated)";
                         }
-                        return `${emoji} ${label}:\n${valueStr}\n\n`;
+                        return valueStr;
                     };
 
-                    const leftLines = [];
-                    const middleLines = [];
+                    // Left column: Final Prompt
+                    if (mediaData.final_prompt) {
+                        this._cp_leftColumn.textContent = formatValue(mediaData.final_prompt, 2000);
+                    } else {
+                        this._cp_leftColumn.textContent = "(No final_prompt in data)";
+                    }
+
+                    // Middle column: Gemini Status
+                    if (mediaData.gemini_status) {
+                        this._cp_middleColumn.textContent = formatValue(
+                            mediaData.gemini_status,
+                            2000
+                        );
+                    } else {
+                        this._cp_middleColumn.textContent = "(No gemini_status in data)";
+                    }
+
+                    // Right column: Media Info (including height, width, other metadata)
                     const rightLines = [];
 
-                    // Process inputs based on their names
-                    // Left column: final_prompt
-                    if (data.final_prompt) {
-                        const value = Array.isArray(data.final_prompt)
-                            ? data.final_prompt[0]
-                            : data.final_prompt;
-                        leftLines.push(formatField("✨", "Final Prompt", value, true));
+                    if (mediaData.media_info) {
+                        rightLines.push(`📊 Media Info:\n${formatValue(mediaData.media_info)}\n`);
+                    }
+
+                    if (mediaData.height !== undefined) {
+                        rightLines.push(`📐 Height: ${mediaData.height}\n`);
+                    }
+
+                    if (mediaData.width !== undefined) {
+                        rightLines.push(`📐 Width: ${mediaData.width}\n`);
+                    }
+
+                    // Add any other fields from the data
+                    const displayedKeys = [
+                        "final_prompt",
+                        "gemini_status",
+                        "media_info",
+                        "height",
+                        "width",
+                    ];
+                    for (const [key, value] of Object.entries(mediaData)) {
+                        if (!displayedKeys.includes(key) && value !== null && value !== undefined) {
+                            rightLines.push(`• ${key}: ${formatValue(value, 200)}\n`);
+                        }
+                    }
+
+                    if (rightLines.length === 0) {
+                        this._cp_rightColumn.textContent = "(No media info in data)";
                     } else {
-                        leftLines.push("(No final_prompt connected)");
+                        this._cp_rightColumn.textContent = rightLines.join("\n");
                     }
 
-                    // Middle column: gemini_status
-                    if (data.gemini_status) {
-                        const value = Array.isArray(data.gemini_status)
-                            ? data.gemini_status[0]
-                            : data.gemini_status;
-                        middleLines.push(formatField("🔄", "Gemini Status", value, true));
-                    } else {
-                        middleLines.push("(No gemini_status connected)");
-                    }
-
-                    // Right column: media_info, height, width
-                    if (data.media_info) {
-                        const value = Array.isArray(data.media_info)
-                            ? data.media_info[0]
-                            : data.media_info;
-                        rightLines.push(formatField("📊", "Media Info", value));
-                    }
-                    if (data.height !== undefined) {
-                        const value = Array.isArray(data.height) ? data.height[0] : data.height;
-                        rightLines.push(formatField("📐", "Height", value));
-                    }
-                    if (data.width !== undefined) {
-                        const value = Array.isArray(data.width) ? data.width[0] : data.width;
-                        rightLines.push(formatField("�", "Width", value));
-                    }
-
-                    if (!data.media_info && data.height === undefined && data.width === undefined) {
-                        rightLines.push("(No media info connected)");
-                    }
-
-                    this._cp_leftColumn.textContent = leftLines.join("");
-                    this._cp_middleColumn.textContent = middleLines.join("");
-                    this._cp_rightColumn.textContent = rightLines.join("");
                     debugLog("[ControlPanel] Updated display with execution data");
                 };
 
@@ -570,13 +492,6 @@ app.registerExtension({
                     // Call original onExecuted if it exists
                     return originalOnExecuted?.call(this, message);
                 };
-
-                // Initial summary update - defer to ensure graph is ready
-                setTimeout(() => {
-                    if (this.updateControlPanelSummary) {
-                        this.updateControlPanelSummary();
-                    }
-                }, 100);
 
                 return result;
             };
