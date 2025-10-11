@@ -78,8 +78,14 @@ class GeminiUtilOptions:
         """
         Create an options object with all the configuration settings
         """
+        # Use environment variable if API key is placeholder or empty
+        # This handles cases where the API key was not serialized to the workflow
+        effective_api_key = gemini_api_key
+        if not gemini_api_key or gemini_api_key == "YOUR_GEMINI_API_KEY_HERE":
+            effective_api_key = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+        
         options = {
-            "gemini_api_key": gemini_api_key,
+            "gemini_api_key": effective_api_key,
             "gemini_model": gemini_model,
             "model_type": prompt_style,  # Keep internal key as model_type for backward compatibility
             "describe_clothing": describe_clothing == "Yes",
