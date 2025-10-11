@@ -1,0 +1,38 @@
+/* Swiss Army Knife - Restart Button Styling */
+
+/* Make the restart button red and prominent */
+.comfyui-menu-mobile button[data-command-id="swissarmyknife.restart"],
+.comfyui-menu button[data-command-id="swissarmyknife.restart"],
+button[data-command-id="swissarmyknife.restart"] {
+    background-color: #dc3545 !important;
+    color: white !important;
+    font-weight: bold !important;
+    border: 1px solid #c82333 !important;
+}
+
+.comfyui-menu-mobile button[data-command-id="swissarmyknife.restart"]:hover,
+.comfyui-menu button[data-command-id="swissarmyknife.restart"]:hover,
+button[data-command-id="swissarmyknife.restart"]:hover {
+    background-color: #c82333 !important;
+    border-color: #bd2130 !important;
+}
+
+.comfyui-menu-mobile button[data-command-id="swissarmyknife.restart"]:active,
+.comfyui-menu button[data-command-id="swissarmyknife.restart"]:active,
+button[data-command-id="swissarmyknife.restart"]:active {
+    background-color: #bd2130 !important;
+    border-color: #b21f2d !important;
+}
+
+/* Alternative selector patterns for different ComfyUI versions */
+[data-id="swissarmyknife.restart"],
+.comfy-menu-item[data-id="swissarmyknife.restart"] {
+    background-color: #dc3545 !important;
+    color: white !important;
+    font-weight: bold !important;
+}
+
+[data-id="swissarmyknife.restart"]:hover,
+.comfy-menu-item[data-id="swissarmyknife.restart"]:hover {
+    background-color: #c82333 !important;
+}

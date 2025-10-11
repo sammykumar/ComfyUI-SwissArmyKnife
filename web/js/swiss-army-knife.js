@@ -1497,6 +1497,126 @@ app.registerExtension({
     },
 });
 
+// Restart server button in topbar menu
+app.registerExtension({
+    name: "comfyui_swissarmyknife.restart_button",
+
+    async setup() {
+        // Inject CSS for red button styling
+        const style = document.createElement("style");
+        style.textContent = `
+            /* Swiss Army Knife - Restart Button Styling */
+            .comfyui-menu-mobile button[data-command-id="swissarmyknife.restart"],
+            .comfyui-menu button[data-command-id="swissarmyknife.restart"],
+            button[data-command-id="swissarmyknife.restart"],
+            [data-id="swissarmyknife.restart"],
+            .comfy-menu-item[data-id="swissarmyknife.restart"] {
+                background-color: #dc3545 !important;
+                color: white !important;
+                font-weight: bold !important;
+                border: 1px solid #c82333 !important;
+            }
+
+            .comfyui-menu-mobile button[data-command-id="swissarmyknife.restart"]:hover,
+            .comfyui-menu button[data-command-id="swissarmyknife.restart"]:hover,
+            button[data-command-id="swissarmyknife.restart"]:hover,
+            [data-id="swissarmyknife.restart"]:hover,
+            .comfy-menu-item[data-id="swissarmyknife.restart"]:hover {
+                background-color: #c82333 !important;
+                border-color: #bd2130 !important;
+            }
+
+            .comfyui-menu-mobile button[data-command-id="swissarmyknife.restart"]:active,
+            .comfyui-menu button[data-command-id="swissarmyknife.restart"]:active,
+            button[data-command-id="swissarmyknife.restart"]:active,
+            [data-id="swissarmyknife.restart"]:active,
+            .comfy-menu-item[data-id="swissarmyknife.restart"]:active {
+                background-color: #bd2130 !important;
+                border-color: #b21f2d !important;
+            }
+        `;
+        document.head.appendChild(style);
+
+        debugLog("Swiss Army Knife: Injected restart button styles");
+    },
+
+    // Define the restart command
+    commands: [
+        {
+            id: "swissarmyknife.restart",
+            label: "🔴 Restart ComfyUI Server",
+            function: async () => {
+                // Show confirmation dialog
+                const confirmed = confirm(
+                    "Are you sure you want to restart the ComfyUI server?\n\n" +
+                        "This will disconnect all clients and restart the server process."
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                try {
+                    console.log("Swiss Army Knife: Sending restart request...");
+
+                    // Call the restart API endpoint
+                    const response = await fetch("/swissarmyknife/restart", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Show notification
+                        if (app.extensionManager?.toast?.add) {
+                            app.extensionManager.toast.add({
+                                severity: "warn",
+                                summary: "Server Restarting",
+                                detail: "ComfyUI server is restarting...",
+                                life: 3000,
+                            });
+                        }
+
+                        console.log("Swiss Army Knife: Server restart initiated");
+
+                        // Wait a moment then try to reconnect
+                        setTimeout(() => {
+                            console.log("Swiss Army Knife: Reloading page...");
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        throw new Error(data.error || "Unknown error");
+                    }
+                } catch (error) {
+                    console.error("Swiss Army Knife: Error restarting server:", error);
+
+                    if (app.extensionManager?.toast?.add) {
+                        app.extensionManager.toast.add({
+                            severity: "error",
+                            summary: "Restart Failed",
+                            detail: `Failed to restart server: ${error.message}`,
+                            life: 5000,
+                        });
+                    } else {
+                        alert(`Failed to restart server: ${error.message}`);
+                    }
+                }
+            },
+        },
+    ],
+
+    // Add restart button to topbar menu
+    menuCommands: [
+        {
+            path: ["Swiss Army Knife"],
+            commands: ["swissarmyknife.restart"],
+        },
+    ],
+});
+
 // LoRAInfoExtractor workflow serialization extension
 // app.registerExtension({
 //     name: "comfyui_swissarmyknife.lora_info_extractor",
