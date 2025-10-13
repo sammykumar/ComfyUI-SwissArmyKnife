@@ -41,15 +41,6 @@ class GeminiUtilOptions:
                     "default": "No",
                     "tooltip": "If enabled, adjust clothing color descriptions to new colors that harmonize with the scene and differ from the original colors"
                 }),
-                "replace_action_with_twerking": (["Yes", "No"], {
-                    "default": "No",
-                    "tooltip": "Replace video movement/action description with twerking description"
-                }),
-                "prefix_text": ("STRING", {
-                    "multiline": True,
-                    "default": "",
-                    "tooltip": "Text to prepend to the generated description"
-                }),
             }
         }
 
@@ -58,7 +49,7 @@ class GeminiUtilOptions:
     FUNCTION = "create_options"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
-    def create_options(self, gemini_api_key, gemini_model, prompt_style, change_clothing_color, replace_action_with_twerking, prefix_text):
+    def create_options(self, gemini_api_key, gemini_model, prompt_style, change_clothing_color):
         """
         Create an options object with all the configuration settings
         """
@@ -77,7 +68,7 @@ class GeminiUtilOptions:
             "describe_hair_style": True,  # Always enabled now
             "describe_bokeh": True,  # Always enabled now
             "describe_subject": True,  # Always enabled now
-            "replace_action_with_twerking": replace_action_with_twerking == "Yes",
-            "prefix_text": prefix_text
+            "replace_action_with_twerking": False,  # Always disabled now
+            "prefix_text": ""  # Always empty now
         }
         return (options,)
