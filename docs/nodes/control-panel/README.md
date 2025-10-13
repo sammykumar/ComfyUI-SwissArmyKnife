@@ -1,6 +1,9 @@
 # Control Panel Node Documentation
 
 The Control Panel node is a display-only node that shows comprehensive workflow information from connected nodes.
+## 📄 Documentation
+
+- **[CONTROL_PANEL.md](CONTROL_PANEL.md)** - Complete consolidated documentation
 
 ## Documentation Files
 

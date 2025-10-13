@@ -43,49 +43,53 @@ ComfyUI-SwissArmyKnife is a ComfyUI extension that consists of two essential com
 
 ## Documentation Organization
 
-**All project documentation is organized in a hierarchical folder structure:**
+**All project documentation is organized in a streamlined folder structure:**
 
 ```
 docs/
 ├── README.md                    # Main documentation index and navigation
 ├── IMPLEMENTATION_STATUS.md     # Overall project status
-├── DOCUMENTATION_REORGANIZATION.md # Documentation structure guide
 │
-├── nodes/                       # Node-specific documentation
-│   ├── video-preview/          # Video Preview node (6 files + README)
-│   ├── video-metadata/         # Video Metadata node (4 files + README)
-│   ├── media-describe/         # Gemini AI Media Description (6 files + README)
-│   ├── lora-loader/            # LoRA Loader node (14 files + README)
-│   └── reddit-media/           # Reddit Media Extraction (6 files + README)
+├── nodes/                       # Node-specific documentation (ONE file per node)
+│   ├── video-preview/          # Video Preview node
+│   │   ├── README.md           # Quick reference
+│   │   └── VIDEO_PREVIEW.md    # Complete documentation
+│   ├── video-metadata/         # Video Metadata node
+│   │   ├── README.md           # Quick reference
+│   │   └── VIDEO_METADATA.md   # Complete documentation
+│   ├── media-describe/         # Gemini AI Media Description
+│   ├── lora-loader/            # LoRA Loader node
+│   ├── reddit-media/           # Reddit Media Extraction
+│   ├── media-selection/        # Media Selection node
+│   └── control-panel/          # Control Panel Display
 │
 ├── infrastructure/              # Infrastructure & system components
-│   ├── caching/                # Caching system (6 files + README)
-│   ├── debug/                  # Debug & logging (2 files + README)
-│   ├── docker/                 # Docker setup (2 files + README)
-│   └── build-deploy/           # Build & deployment (3 files + README)
+│   ├── caching/                # Caching system
+│   ├── debug/                  # Debug & logging
+│   ├── docker/                 # Docker setup
+│   └── build-deploy/           # Build & deployment
 │
 ├── integrations/                # External service integrations
-│   └── civitai/                # CivitAI API integration (3 files + README)
+│   └── civitai/                # CivitAI API integration
 │
-├── ui-widgets/                  # UI widget documentation (10 files + README)
-├── features/                    # Feature implementations (13 files + README)
-└── examples/                    # Example workflows (3 files + README)
+├── web-js/                      # Web JavaScript widget documentation
+└── examples/                    # Example workflows
 ```
 
 ### Documentation Rules
 
-1. **Node-specific docs** → `docs/nodes/[node-name]/`
+1. **Node-specific docs** → `docs/nodes/[node-name]/` - **ONE comprehensive file per node**
 2. **Infrastructure docs** → `docs/infrastructure/[category]/`
 3. **Integration docs** → `docs/integrations/[service]/`
-4. **Widget docs** → `docs/ui-widgets/`
-5. **Feature docs** → `docs/features/`
-6. **Examples** → `docs/examples/`
+4. **Web JavaScript widget docs** → `docs/web-js/`
+5. **Examples** → `docs/examples/`
 
 ### Finding Documentation
 
 - **Start here**: `docs/README.md` - Main index with links to all categories
 - **Category indexes**: Each folder has a `README.md` listing all files
-- **By node**: `docs/nodes/[node-name]/README.md`
+- **By node**: `docs/nodes/[node-name]/README.md` for quick reference
+- **Complete node docs**: `docs/nodes/[node-name]/[NODE_NAME].md` for comprehensive documentation
 - **By topic**: Browse appropriate category folder
 
 ## Working Effectively
@@ -166,19 +170,25 @@ python3 -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('Available nodes:
 
 ### Documentation Workflow
 
-**Documentation is now organized by category. Always place documentation in the appropriate folder:**
+**Documentation is streamlined with ONE comprehensive file per node:**
 
 ```bash
 # Documentation structure
 docs/
 ├── README.md                    # Main documentation index
 ├── IMPLEMENTATION_STATUS.md     # Overall project status
-├── nodes/                       # Node-specific documentation
-│   ├── video-preview/          # Video Preview node docs
-│   ├── video-metadata/         # Video Metadata node docs
+├── nodes/                       # Node-specific documentation (ONE file per node)
+│   ├── video-preview/
+│   │   ├── README.md           # Quick reference
+│   │   └── VIDEO_PREVIEW.md    # Complete consolidated documentation
+│   ├── video-metadata/
+│   │   ├── README.md           # Quick reference
+│   │   └── VIDEO_METADATA.md   # Complete consolidated documentation
 │   ├── media-describe/         # Gemini AI Media Description docs
 │   ├── lora-loader/            # LoRA Loader node docs
-│   └── reddit-media/           # Reddit Media Extraction docs
+│   ├── reddit-media/           # Reddit Media Extraction docs
+│   ├── media-selection/        # Media Selection node docs
+│   └── control-panel/          # Control Panel Display docs
 ├── infrastructure/              # Infrastructure components
 │   ├── caching/                # Caching system docs
 │   ├── debug/                  # Debug & logging docs
@@ -186,25 +196,24 @@ docs/
 │   └── build-deploy/           # Build & deployment docs
 ├── integrations/                # External service integrations
 │   └── civitai/                # CivitAI API integration docs
-├── ui-widgets/                  # UI widget documentation
-├── features/                    # Feature implementations
+├── web-js/                      # Web JavaScript widget documentation
 └── examples/                    # Example workflows
 ```
 
 **Adding New Documentation:**
 
 ```bash
-# For node-specific documentation
-touch docs/nodes/[node-name]/NEW_FEATURE.md
+# For new nodes - create ONE comprehensive file
+touch docs/nodes/[node-name]/[NODE_NAME].md
+
+# Update existing node documentation
+vim docs/nodes/[node-name]/[NODE_NAME].md
 
 # For infrastructure documentation
 touch docs/infrastructure/[category]/NEW_SYSTEM.md
 
-# For UI widgets
-touch docs/ui-widgets/NEW_WIDGET_IMPLEMENTATION.md
-
-# For features
-touch docs/features/NEW_FEATURE_GUIDE.md
+# For web JavaScript widgets
+touch docs/web-js/NEW_WIDGET.md
 
 # For integrations
 touch docs/integrations/[service]/NEW_INTEGRATION.md
@@ -212,23 +221,25 @@ touch docs/integrations/[service]/NEW_INTEGRATION.md
 
 **Documentation file naming convention:**
 
-- Use ALL_CAPS with underscores
-- Be descriptive: `SEED_WIDGET_IMPLEMENTATION.md`
-- Include purpose: `TROUBLESHOOTING_`, `GUIDE_`, `IMPLEMENTATION_`, `_FIX`
+- **Nodes**: Use descriptive all-caps names: `VIDEO_PREVIEW.md`, `MEDIA_DESCRIBE.md`
+- **ONE file per node**: Consolidate all information about a node into a single comprehensive file
 - Node docs go in `docs/nodes/[node-name]/`
 - Infrastructure docs go in `docs/infrastructure/[category]/`
+- Web JavaScript widget docs go in `docs/web-js/`
 
 **CRITICAL**: Whenever you implement a new feature, fix a bug, or solve a technical problem:
 
 1. Identify the correct documentation folder:
-    - Node changes → `docs/nodes/[node-name]/`
+    - Node changes → `docs/nodes/[node-name]/` - **Update the single comprehensive file**
     - System changes → `docs/infrastructure/[category]/`
-    - Widget changes → `docs/ui-widgets/`
-    - Feature additions → `docs/features/`
+    - Widget changes → `docs/web-js/`
     - Integration work → `docs/integrations/[service]/`
-2. Create documentation file with descriptive name
-3. Include implementation details, gotchas, and future considerations
-4. Update the folder's `README.md` index if needed
+2. **For nodes**: Update the existing comprehensive file or create one if it doesn't exist
+3. **For other components**: Create or update documentation with descriptive names
+4. Include implementation details, gotchas, and future considerations
+5. Update the folder's `README.md` index if needed
+6. Reference the documentation file in commit messages
+7. Cross-reference related documentation in other folders
 5. Reference the documentation file in commit messages
 6. Cross-reference related documentation in other folders
 
@@ -751,38 +762,38 @@ ls -la ../../__init__.py  # Python entry point (ACTIVE)
 ### Documentation Tasks
 
 ```bash
-# Create new feature documentation
-touch docs/nodes/[node-name]/NEW_FEATURE.md
-touch docs/features/NEW_FEATURE_IMPLEMENTATION.md
+# Update node documentation (single comprehensive file)
+vim docs/nodes/[node-name]/[NODE_NAME].md
 
-# Document a bug fix or implementation detail
-touch docs/nodes/[node-name]/BUG_NAME_FIX.md
-touch docs/infrastructure/[category]/TECHNICAL_IMPLEMENTATION_DETAILS.md
+# Create new node documentation
+touch docs/nodes/[node-name]/[NODE_NAME].md
 
-# Update existing documentation after changes
-vim docs/nodes/video-preview/EXISTING_FEATURE.md
+# Document infrastructure changes
+touch docs/infrastructure/[category]/SYSTEM_NAME.md
+
+# Document web JavaScript widget
+touch docs/web-js/WIDGET_NAME.md
 
 # Search for documentation gaps
 grep -r "TODO\|FIXME\|INCOMPLETE" docs/
 
 # Browse documentation by category
-ls -la docs/nodes/           # Node-specific docs
+ls -la docs/nodes/           # Node-specific docs (ONE file per node)
 ls -la docs/infrastructure/  # System/infrastructure docs
 ls -la docs/integrations/    # External service integrations
-ls -la docs/ui-widgets/      # UI widget documentation
-ls -la docs/features/        # Feature implementations
+ls -la docs/web-js/          # Web JavaScript widget documentation
 ls -la docs/examples/        # Example workflows
 
-# View category index
-cat docs/nodes/video-preview/README.md  # See what docs exist for Video Preview node
+# View node documentation
+cat docs/nodes/video-preview/VIDEO_PREVIEW.md     # Complete video preview docs
+cat docs/nodes/video-metadata/VIDEO_METADATA.md   # Complete video metadata docs
 
-# Common documentation file types and locations:
-# - docs/nodes/[node-name]/FEATURE_NAME.md - Node feature implementations
-# - docs/nodes/[node-name]/ISSUE_NAME_FIX.md - Node-specific bug fixes
+# Common documentation patterns:
+# - docs/nodes/[node-name]/[NODE_NAME].md - Single comprehensive node documentation
+# - docs/nodes/[node-name]/README.md - Quick reference for the node
 # - docs/infrastructure/[category]/SYSTEM_NAME.md - Infrastructure documentation
 # - docs/integrations/[service]/INTEGRATION_GUIDE.md - Integration guides
-# - docs/ui-widgets/WIDGET_IMPLEMENTATION.md - UI widget documentation
-# - docs/features/FEATURE_GUIDE.md - Cross-cutting feature documentation
+# - docs/web-js/WIDGET_NAME.md - Web JavaScript widget documentation
 # - docs/IMPLEMENTATION_STATUS.md - Overall project status (root level)
 ```
 
@@ -793,16 +804,21 @@ comfyui_swissarmyknife/
 ├── .github/workflows/react-build.yml  # CI/CD automation
 ├── __init__.py                         # Python entry point
 ├── pyproject.toml                      # Project metadata & publishing config
-├── docs/                              # ALL PROJECT DOCUMENTATION (ORGANIZED)
+├── docs/                              # ALL PROJECT DOCUMENTATION (STREAMLINED)
 │   ├── README.md                      # Main documentation index
 │   ├── IMPLEMENTATION_STATUS.md       # Overall project status
-│   ├── DOCUMENTATION_REORGANIZATION.md # Documentation structure guide
-│   ├── nodes/                         # Node-specific documentation
+│   ├── nodes/                         # Node-specific documentation (ONE file per node)
 │   │   ├── video-preview/            # Video Preview node docs
+│   │   │   ├── README.md             # Quick reference
+│   │   │   └── VIDEO_PREVIEW.md      # Complete documentation
 │   │   ├── video-metadata/           # Video Metadata node docs
+│   │   │   ├── README.md             # Quick reference
+│   │   │   └── VIDEO_METADATA.md     # Complete documentation
 │   │   ├── media-describe/           # Gemini AI Media Description docs
 │   │   ├── lora-loader/              # LoRA Loader node docs
-│   │   └── reddit-media/             # Reddit Media Extraction docs
+│   │   ├── reddit-media/             # Reddit Media Extraction docs
+│   │   ├── media-selection/          # Media Selection node docs
+│   │   └── control-panel/            # Control Panel Display docs
 │   ├── infrastructure/                # Infrastructure components
 │   │   ├── caching/                  # Caching system docs
 │   │   ├── debug/                    # Debug & logging docs
@@ -810,8 +826,7 @@ comfyui_swissarmyknife/
 │   │   └── build-deploy/             # Build & deployment docs
 │   ├── integrations/                  # External service integrations
 │   │   └── civitai/                  # CivitAI API integration docs
-│   ├── ui-widgets/                    # UI widget documentation
-│   ├── features/                      # Feature implementations
+│   ├── web-js/                        # Web JavaScript widget documentation
 │   └── examples/                      # Example workflows
 ├── nodes/nodes.py                      # Main Python custom nodes
 ├── web/js/                            # JavaScript widgets

@@ -2,20 +2,9 @@
 
 The Video Metadata node extracts, manipulates, and appends metadata to videos during processing.
 
-## 📄 Documentation Files
+## 📄 Documentation
 
-### Core Implementation
-
-- **[VIDEO_METADATA_NODE.md](VIDEO_METADATA_NODE.md)** - Main node implementation and features
-- **[VIDEO_METADATA_JSON_INTEGRATION.md](VIDEO_METADATA_JSON_INTEGRATION.md)** - JSON metadata integration
-
-### Features & Enhancements
-
-- **[UPDATE_VIDEO_METADATA_APPEND_FUNCTIONALITY.md](UPDATE_VIDEO_METADATA_APPEND_FUNCTIONALITY.md)** - Metadata append and update functionality
-
-### Integration & Compatibility
-
-- **[VHS_VIDEOCOMBINE_COMPATIBILITY_FIX.md](VHS_VIDEOCOMBINE_COMPATIBILITY_FIX.md)** - Compatibility fixes with VHS VideoCombine nodes
+- **[VIDEO_METADATA.md](VIDEO_METADATA.md)** - Complete documentation including append functionality, VHS compatibility, LoRA JSON integration, and troubleshooting
 
 ## 🎯 Quick Reference
 

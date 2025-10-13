@@ -2,22 +2,9 @@
 
 The Video Preview node displays multiple video inputs side-by-side for easy comparison during workflow execution.
 
-## 📄 Documentation Files
+## 📄 Documentation
 
-### Core Implementation
-
-- **[VIDEO_PREVIEW_NODE.md](VIDEO_PREVIEW_NODE.md)** - Main node implementation and architecture
-- **[VIDEO_PREVIEW_IMPLEMENTATION_SUMMARY.md](VIDEO_PREVIEW_IMPLEMENTATION_SUMMARY.md)** - Implementation overview and design decisions
-- **[VIDEO_PREVIEW_JS_MIGRATION.md](VIDEO_PREVIEW_JS_MIGRATION.md)** - Migration from React to plain JavaScript
-
-### Features
-
-- **[VIDEO_PREVIEW_PROGRESSIVE_LOADING.md](VIDEO_PREVIEW_PROGRESSIVE_LOADING.md)** - Progressive video loading as videos become available (not waiting for all videos to complete)
-
-### Bug Fixes & Troubleshooting
-
-- **[VIDEO_PREVIEW_TYPEERROR_FIX.md](VIDEO_PREVIEW_TYPEERROR_FIX.md)** - TypeError resolution and fixes
-- **[CLEAR_VIDEO_PREVIEW_FUNCTION_ORDER_FIX.md](CLEAR_VIDEO_PREVIEW_FUNCTION_ORDER_FIX.md)** - Function execution order fixes
+- **[VIDEO_PREVIEW.md](VIDEO_PREVIEW.md)** - Complete documentation including implementation, features, progressive loading, bug fixes, and troubleshooting
 
 ## 🎯 Quick Reference
 

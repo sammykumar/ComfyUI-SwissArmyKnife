@@ -1,6 +1,6 @@
 # ComfyUI-SwissArmyKnife Documentation
 
-Welcome to the ComfyUI-SwissArmyKnife documentation! This directory contains comprehensive documentation for all nodes, features, integrations, and infrastructure components.
+Welcome to the ComfyUI-SwissArmyKnife documentation! This directory contains comprehensive documentation for all nodes, integrations, infrastructure components, and web JavaScript widgets.
 
 ## 📁 Documentation Structure
 
@@ -9,10 +9,12 @@ Welcome to the ComfyUI-SwissArmyKnife documentation! This directory contains com
 Core custom nodes that extend ComfyUI functionality:
 
 - **[video-preview](nodes/video-preview/)** - Video preview widget for comparing multiple videos side-by-side
-- **[video-metadata](nodes/video-metadata/)** - Video metadata extraction and manipulation
+- **[video-metadata](nodes/video-metadata/)** - Video metadata extraction and manipulation with append functionality
 - **[media-describe](nodes/media-describe/)** - AI-powered media description using Gemini API
 - **[lora-loader](nodes/lora-loader/)** - Advanced LoRA loading with metadata integration
 - **[reddit-media](nodes/reddit-media/)** - Reddit and RedGifs media extraction and processing
+- **[media-selection](nodes/media-selection/)** - Media source selection and management
+- **[control-panel](nodes/control-panel/)** - Workflow information dashboard display
 
 ### 🏗️ Infrastructure (`/infrastructure`)
 
@@ -30,24 +32,14 @@ External service integrations:
 - **[civitai](integrations/civitai/)** - CivitAI API integration for model metadata
 - **[reddit](integrations/reddit/)** - Reddit API integration (see also nodes/reddit-media)
 
-### 🎨 UI Widgets (`/ui-widgets`)
+### 🌐 Web JavaScript (`/web-js`)
 
-Reusable UI components and widgets:
+Web JavaScript widgets and UI components:
 
-- **[Control Panel](ui-widgets/CONTROL_PANEL.md)** - Dashboard widget with JSON data handling and two-column layout
-- **[Dimensions Display](ui-widgets/DIMENSIONS_DISPLAY.md)** - Automatic media dimension display with troubleshooting
-- **[Seed Widget](ui-widgets/SEED_WIDGET.md)** - Randomization seed for reproducible workflows
-- **[Widget Fixes](ui-widgets/WIDGET_FIXES.md)** - Visibility management, state persistence, and general fixes
-
-### ✨ Features (`/features`)
-
-Feature implementations and enhancements:
-
-- **[JavaScript Improvements](features/JAVASCRIPT_IMPROVEMENTS.md)** - Cache busting, module fixes, and node naming updates
-- Clothing color modification and text exclusion
-- Text exclusion and filtering
-- Prompt improvements and decisiveness
-- External integrations (ND Super Nodes)
+- **[Control Panel](web-js/CONTROL_PANEL.md)** - Dashboard widget with JSON data handling and multi-column layout
+- **[Dimensions Display](web-js/DIMENSIONS_DISPLAY.md)** - Automatic media dimension display with troubleshooting
+- **[Seed Widget](web-js/SEED_WIDGET.md)** - Randomization seed for reproducible workflows
+- **[Widget Fixes](web-js/WIDGET_FIXES.md)** - Visibility management, state persistence, and general fixes
 
 ### 📚 Examples (`/examples`)
 
@@ -62,36 +54,29 @@ Example workflows and demonstrations:
 ### For Developers
 
 1. **Node Development**: See individual node documentation in `/nodes/[node-name]/`
-2. **Adding Features**: Check `/features/` for implementation patterns
-3. **Integration**: Review `/integrations/` for external API integration guides
-4. **Infrastructure**: Consult `/infrastructure/` for system-level changes
+2. **Integration**: Review `/integrations/` for external API integration guides
+3. **Infrastructure**: Consult `/infrastructure/` for system-level changes
+4. **Web Widgets**: Check `/web-js/` for JavaScript widget development
 
 ### For Users
 
 1. **Node Usage**: Each node folder contains usage guides and examples
-2. **Troubleshooting**: Look for `*_FIX.md` or `*_TROUBLESHOOTING.md` files
+2. **Troubleshooting**: Look for troubleshooting sections in node documentation
 3. **Examples**: Check `/examples/` for workflow demonstrations
 
 ## 📖 Documentation Conventions
 
-### File Naming
+### Consolidated Documentation
 
-- **Implementation Guides**: `[FEATURE]_IMPLEMENTATION.md` or `[NODE]_NODE.md`
-- **Bug Fixes**: `[ISSUE]_FIX.md`
-- **Troubleshooting**: `[FEATURE]_TROUBLESHOOTING.md`
-- **Integration Guides**: `[SERVICE]_INTEGRATION.md`
-- **API Documentation**: `[FEATURE]_API.md`
+Each node should have a single comprehensive markdown file that includes:
 
-### Document Structure
-
-Each documentation file should include:
-
-1. **Problem Statement** - What issue does this address?
-2. **Solution** - How was it solved?
-3. **Implementation Details** - Technical specifics
-4. **Usage/Testing** - How to use or test the feature
-5. **Related Files** - Links to relevant code files
-6. **Implementation Date** - When was this implemented?
+1. **Overview** - What the node does
+2. **Features** - Key capabilities
+3. **Configuration** - Input/output parameters
+4. **Usage** - How to use the node
+5. **Implementation Details** - Technical specifics
+6. **Troubleshooting** - Common issues and solutions
+7. **Related Documentation** - Links to relevant docs
 
 ## 🔍 Finding Documentation
 
@@ -102,26 +87,19 @@ Each documentation file should include:
 - **External APIs**: Look in `/integrations/`
 - **Performance**: Check `/infrastructure/caching/`
 - **Debugging**: See `/infrastructure/debug/`
-
-### By Issue Type
-
-- **Bugs/Fixes**: Search for `*_FIX.md` files
-- **New Features**: Look for `*_IMPLEMENTATION.md` files
-- **API Changes**: Check `*_INTEGRATION.md` or `*_API.md` files
-- **Performance**: See `/infrastructure/caching/` and optimization docs
+- **Web Widgets**: Review `/web-js/` for JavaScript UI components
 
 ## 📝 Contributing Documentation
 
 When adding new documentation:
 
 1. **Choose the Right Location**:
-    - Node-specific → `/nodes/[node-name]/`
-    - Infrastructure → `/infrastructure/[category]/`
-    - Integration → `/integrations/[service]/`
-    - UI widget → `/ui-widgets/`
-    - Feature → `/features/`
+   - Node-specific → `/nodes/[node-name]/`
+   - Infrastructure → `/infrastructure/[category]/`
+   - Integration → `/integrations/[service]/`
+   - Web JavaScript widget → `/web-js/`
 
-2. **Follow Naming Conventions**: Use clear, descriptive names with appropriate suffixes
+2. **One File Per Node**: Create a single comprehensive markdown file for each node
 
 3. **Update Index Files**: Add your documentation to the relevant `README.md` in the subdirectory
 
@@ -153,10 +131,10 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for overall project sta
 
 - **Regular Updates**: Documentation should be updated when code changes
 - **Version Tracking**: Include implementation dates in documentation
-- **Consolidation**: Related documents should be merged when appropriate
+- **One File Per Node**: Keep node documentation consolidated in a single file
 - **Cleanup**: Outdated documentation should be archived or removed
 
 ---
 
-**Last Updated**: October 2, 2025
-**Documentation Structure Version**: 2.0
+**Last Updated**: October 13, 2025
+**Documentation Structure Version**: 3.0

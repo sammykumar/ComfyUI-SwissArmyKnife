@@ -2,8 +2,9 @@
 
 Advanced LoRA (Low-Rank Adaptation) loader with metadata integration, CivitAI support, and enhanced UI controls.
 
-## 📄 Documentation Files
+## 📄 Documentation
 
+- **[LORA_LOADER.md](LORA_LOADER.md)** - Complete consolidated documentation
 ### Implementation Guides
 
 - **[SUPERLORA_IMPLEMENTATION_GUIDE.md](SUPERLORA_IMPLEMENTATION_GUIDE.md)** - Main SuperLoRA implementation guide

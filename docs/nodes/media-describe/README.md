@@ -2,8 +2,9 @@
 
 AI-powered media description using Google's Gemini API for analyzing images and videos.
 
-## 📄 Documentation Files
+## 📄 Documentation
 
+- **[MEDIA_DESCRIBE.md](MEDIA_DESCRIBE.md)** - Complete consolidated documentation
 ### Core Nodes
 
 - **MediaDescribe** - Main node for analyzing media with Gemini AI
