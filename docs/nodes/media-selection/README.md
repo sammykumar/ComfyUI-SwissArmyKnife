@@ -1,6 +1,9 @@
 # Media Selection & Frame Extraction Nodes - README
 
 ## Overview
+## 📄 Documentation
+
+- **[MEDIA_SELECTION.md](MEDIA_SELECTION.md)** - Complete consolidated documentation
 
 This module provides three new ComfyUI nodes that enable advanced video processing workflows by decoupling media selection, frame extraction, and caption combining from AI description generation.
 
@@ -398,8 +401,3 @@ For issues, feature requests, or questions:
 **Version:** 1.0.0  
 **Last Updated:** October 8, 2025  
 **Author:** ComfyUI Swiss Army Knife Team
-
-
----
-
-**⚠️ CONSOLIDATION IN PROGRESS**: This node's documentation is currently split across multiple files and needs to be consolidated into a single comprehensive file. Please refer to individual files for now. See [video-preview](../video-preview/VIDEO_PREVIEW.md) and [video-metadata](../video-metadata/VIDEO_METADATA.md) for examples of consolidated documentation.

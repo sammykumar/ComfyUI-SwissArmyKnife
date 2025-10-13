@@ -2,8 +2,9 @@
 
 Extract and process media from Reddit posts and RedGifs links for use in ComfyUI workflows.
 
-## 📄 Documentation Files
+## 📄 Documentation
 
+- **[REDDIT_MEDIA.md](REDDIT_MEDIA.md)** - Complete consolidated documentation
 ### Core Implementation
 
 - **[REDDIT_POST_MEDIA_SOURCE.md](REDDIT_POST_MEDIA_SOURCE.md)** - Main Reddit post media extraction implementation
@@ -80,8 +81,3 @@ Extract media from:
 **Node Type**: Media Source
 **Category**: Input/External
 **Status**: Stable
-
-
----
-
-**⚠️ CONSOLIDATION IN PROGRESS**: This node's documentation is currently split across multiple files and needs to be consolidated into a single comprehensive file. Please refer to individual files for now. See [video-preview](../video-preview/VIDEO_PREVIEW.md) and [video-metadata](../video-metadata/VIDEO_METADATA.md) for examples of consolidated documentation.
