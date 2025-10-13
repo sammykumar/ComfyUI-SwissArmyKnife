@@ -37,25 +37,9 @@ class GeminiUtilOptions:
                     "default": "Text2Image",
                     "tooltip": "Text2Image: Generates descriptive prompts for models like FLUX Dev, SDXL, etc. ImageEdit: Generates instruction prompts with words like 'change to...', 'modify this...' for image editing models like FLUX Redux/Kontext, Nano Banana, Qwen Image Edit"
                 }),
-                "describe_clothing": (["Yes", "No"], {
-                    "default": "Yes",
-                    "tooltip": "Whether to include detailed clothing and accessory descriptions"
-                }),
                 "change_clothing_color": (["Yes", "No"], {
                     "default": "No",
                     "tooltip": "If enabled, adjust clothing color descriptions to new colors that harmonize with the scene and differ from the original colors"
-                }),
-                "describe_hair_style": (["Yes", "No"], {
-                    "default": "Yes",
-                    "tooltip": "Whether to include hair style descriptions (texture and motion, but not color or length)"
-                }),
-                "describe_bokeh": (["Yes", "No"], {
-                    "default": "Yes", 
-                    "tooltip": "Whether to include depth of field effects, bokeh, and blur descriptions"
-                }),
-                "describe_subject": (["Yes", "No"], {
-                    "default": "Yes",
-                    "tooltip": "Whether to include subject/person descriptions in the first paragraph"
                 }),
                 "replace_action_with_twerking": (["Yes", "No"], {
                     "default": "No",
@@ -74,7 +58,7 @@ class GeminiUtilOptions:
     FUNCTION = "create_options"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
-    def create_options(self, gemini_api_key, gemini_model, prompt_style, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text):
+    def create_options(self, gemini_api_key, gemini_model, prompt_style, change_clothing_color, replace_action_with_twerking, prefix_text):
         """
         Create an options object with all the configuration settings
         """
@@ -88,11 +72,11 @@ class GeminiUtilOptions:
             "gemini_api_key": effective_api_key,
             "gemini_model": gemini_model,
             "model_type": prompt_style,  # Keep internal key as model_type for backward compatibility
-            "describe_clothing": describe_clothing == "Yes",
+            "describe_clothing": True,  # Always enabled now
             "change_clothing_color": change_clothing_color == "Yes",
-            "describe_hair_style": describe_hair_style == "Yes", 
-            "describe_bokeh": describe_bokeh == "Yes",
-            "describe_subject": describe_subject == "Yes",
+            "describe_hair_style": True,  # Always enabled now
+            "describe_bokeh": True,  # Always enabled now
+            "describe_subject": True,  # Always enabled now
             "replace_action_with_twerking": replace_action_with_twerking == "Yes",
             "prefix_text": prefix_text
         }

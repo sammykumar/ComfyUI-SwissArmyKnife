@@ -977,13 +977,15 @@ Describe all visible clothing and accessories with absolute certainty and defini
                 # Combine all parts
                 combined_prompts = "\n\n".join(prompts)
 
-                # Build JSON field descriptions based on enabled options
+                # Build JSON field descriptions - Always include all 6 fields in consistent order
                 json_fields = []
-                if describe_subject:
-                    json_fields.append('"subject": "Begin with a gendered noun phrase (e.g., \'A woman…\', \'A man…\'). Include posture, gestures' + (' and hairstyle with texture/motion (no color/length)' if describe_hair_style else '') + ' as applicable."')
+                json_fields.append('"subject": "Begin with a gendered noun phrase (e.g., \'A woman…\', \'A man…\'). Include posture, gestures' + (' and hairstyle with texture/motion (no color/length)' if describe_hair_style else '') + ' as applicable."')
 
-                if describe_clothing:
-                    json_fields.append('"clothing": "Describe all visible clothing/accessories with certainty. Include garment type, color(s)' + (', material, fit, and motion response. Change colors to NEW hues harmonizing with the scene (different from original).' if change_clothing_color else ', material, fit, and motion response.') + '"')
+                json_fields.append('"clothing": "Describe all visible clothing/accessories with certainty. Include garment type, color(s)' + (', material, fit, and motion response. Change colors to NEW hues harmonizing with the scene (different from original).' if change_clothing_color else ', material, fit, and motion response.') + '"')
+
+                json_fields.append('"movement": "For still images, describe implied motion, frozen action, or static pose. Examples: \'frozen mid-stride\', \'poised in stillness\', \'captured mid-gesture\'."')
+
+                json_fields.append('"scene": "Describe the environment, setting, and spatial context. Include background elements, location type, and atmospheric details."')
 
                 json_fields.append('"cinematic_aesthetic": "' + ('Lighting, camera details, optics (lens, DOF, rack focus), and exposure/render cues.' if describe_bokeh else 'Lighting, camera details, and exposure/render cues. Everything in sharp focus - no DOF, bokeh, or blur effects.') + '"')
 
@@ -999,7 +1001,14 @@ Before writing, silently review the provided media. Do not use meta phrases (e.g
 
 ## Output Format
 
-Return **only** a single valid JSON object (no code fences, no extra text) with the following structure:
+Return **only** a single valid JSON object (no code fences, no extra text) with **exactly six** string fields in this exact order:
+
+1. "subject"
+2. "clothing"
+3. "movement"
+4. "scene"
+5. "cinematic_aesthetic"
+6. "stylization_tone"
 
 {json_structure}
 
