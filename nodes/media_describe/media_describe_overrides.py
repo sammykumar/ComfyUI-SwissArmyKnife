@@ -23,6 +23,11 @@ class MediaDescribeOverrides:
         return {
             "required": {},
             "optional": {
+                "prompt_prefix": ("STRING", {
+                    "multiline": True,
+                    "default": "",
+                    "tooltip": "Text to prepend before the generated description (optional)"
+                }),
                 "override_subject": ("STRING", {
                     "multiline": True,
                     "default": "",
@@ -61,24 +66,26 @@ class MediaDescribeOverrides:
     FUNCTION = "create_overrides"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
-    def create_overrides(self, override_subject="", override_cinematic_aesthetic="", 
+    def create_overrides(self, prompt_prefix="", override_subject="", override_cinematic_aesthetic="", 
                         override_stylization_tone="", override_clothing="", 
                         override_scene="", override_movement=""):
         """
         Create an overrides dictionary from the input fields.
-        
+
         Args:
+            prompt_prefix: Text to prepend before the generated description
             override_subject: Override text for SUBJECT paragraph
             override_cinematic_aesthetic: Override text for CINEMATIC AESTHETIC paragraph
             override_stylization_tone: Override text for STYLIZATION & TONE paragraph
             override_clothing: Override text for CLOTHING paragraph
             override_scene: Override text for SCENE paragraph (video only)
             override_movement: Override text for MOVEMENT paragraph (video only)
-            
+
         Returns:
             Dictionary containing all override values
         """
         overrides = {
+            "prompt_prefix": prompt_prefix,
             "override_subject": override_subject,
             "override_cinematic_aesthetic": override_cinematic_aesthetic,
             "override_stylization_tone": override_stylization_tone,
@@ -86,10 +93,8 @@ class MediaDescribeOverrides:
             "override_scene": override_scene,
             "override_movement": override_movement
         }
-        
+
         return (overrides,)
-
-
 # Node display name mapping
 NODE_DISPLAY_NAME_MAPPINGS = {
     "MediaDescribeOverrides": "Media Describe - Overrides"

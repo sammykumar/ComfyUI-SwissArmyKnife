@@ -9,7 +9,6 @@ import subprocess
 import time
 import json
 import random
-import re
 from urllib.parse import urlparse
 from html import unescape
 
@@ -124,7 +123,7 @@ class MediaDescribe:
         clothing = ""
         scene = ""
         movement = ""
-        
+
         # Try to parse as JSON first (for video format)
         try:
             # Remove any markdown code fences if present
@@ -148,26 +147,26 @@ class MediaDescribe:
                     else:
                         break
                 cleaned_description = '\n'.join(lines[start_idx:end_idx])
-            
+
             # Try to parse as JSON
             json_data = json.loads(cleaned_description)
-            
+
             # Extract fields from JSON (supporting both video and image field names)
             subject = json_data.get("subject", "")
             clothing = json_data.get("clothing", "")
             scene = json_data.get("scene", "")
             movement = json_data.get("movement", "")
-            
+
             # Support both field name formats for cinematic aesthetic
             cinematic_aesthetic = json_data.get("cinematic_aesthetic_control", json_data.get("cinematic_aesthetic", ""))
-            
+
             stylization_tone = json_data.get("stylization_tone", "")
-            
+
         except (json.JSONDecodeError, ValueError):
             # Fall back to paragraph parsing (for images)
             # Split description into paragraphs (separated by blank lines)
             paragraphs = [p.strip() for p in description.split('\n\n') if p.strip()]
-            
+
             # Map paragraphs to variables (order matters based on system prompt)
             if len(paragraphs) >= 1:
                 subject = paragraphs[0] if len(paragraphs) > 0 else ""
@@ -181,7 +180,7 @@ class MediaDescribe:
                 scene = paragraphs[4] if len(paragraphs) > 4 else ""
             if len(paragraphs) >= 6:
                 movement = paragraphs[5] if len(paragraphs) > 5 else ""
-        
+
         # Apply overrides
         if override_subject.strip():
             subject = override_subject.strip()
@@ -195,15 +194,124 @@ class MediaDescribe:
             scene = override_scene.strip()
         if override_movement.strip():
             movement = override_movement.strip()
-        
+
         # Rebuild final description from non-empty paragraphs
         final_parts = []
         for para in [subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement]:
             if para:
                 final_parts.append(para)
         final_description = "\n\n".join(final_parts)
-        
+
         return (subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description)
+
+    def _build_final_json(self, raw_llm_json, overrides, subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement):
+        """
+        Build the final JSON output by applying overrides to the raw LLM JSON.
+        
+        Args:
+            raw_llm_json: The raw JSON string from the LLM (Gemini)
+            overrides: Dictionary of overrides from Media Describe - Overrides node
+            subject: Parsed/overridden subject paragraph
+            cinematic_aesthetic: Parsed/overridden cinematic aesthetic paragraph
+            stylization_tone: Parsed/overridden stylization tone paragraph
+            clothing: Parsed/overridden clothing paragraph
+            scene: Parsed/overridden scene paragraph
+            movement: Parsed/overridden movement paragraph
+            
+        Returns:
+            JSON string with all overrides applied
+        """
+        # Try to parse the raw LLM JSON
+        try:
+            # Clean markdown code fences if present
+            cleaned_json = raw_llm_json.strip()
+            if cleaned_json.startswith('```'):
+                lines = cleaned_json.split('\n')
+                start_idx = 0
+                for i, line in enumerate(lines):
+                    if line.strip().startswith('```'):
+                        start_idx = i + 1
+                    else:
+                        start_idx = i
+                        break
+                end_idx = len(lines)
+                for i in range(len(lines) - 1, -1, -1):
+                    if lines[i].strip().startswith('```'):
+                        end_idx = i
+                    else:
+                        break
+                cleaned_json = '\n'.join(lines[start_idx:end_idx])
+
+            # Parse the JSON
+            json_data = json.loads(cleaned_json)
+        except (json.JSONDecodeError, ValueError):
+            # If parsing fails, create a new JSON structure from the paragraphs
+            pass  # json_data not needed - we'll build from paragraphs
+
+        # Build the final JSON with overrides applied
+        final_json = {
+            "subject": subject,
+            "cinematic_aesthetic": cinematic_aesthetic,
+            "stylization_tone": stylization_tone,
+            "clothing": clothing,
+            "scene": scene,
+            "movement": movement
+        }
+
+        # Add prompt_prefix if provided
+        prompt_prefix = overrides.get("prompt_prefix", "").strip() if overrides else ""
+        if prompt_prefix:
+            final_json["prompt_prefix"] = prompt_prefix
+
+        # Remove empty fields for cleaner output
+        final_json = {k: v for k, v in final_json.items() if v}
+
+        return json.dumps(final_json, indent=2)
+
+    def _json_to_positive_prompt(self, json_string):
+        """
+        Convert positive_prompt_json to a normalized positive prompt format.
+        Each JSON key becomes its own paragraph.
+
+        Args:
+            json_string: JSON string from _build_final_json
+
+        Returns:
+            Normalized prompt string with each key as a paragraph
+        """
+        try:
+            # Parse the JSON
+            json_data = json.loads(json_string)
+
+            # Define the desired order of keys (prompt_prefix should come first if present)
+            key_order = [
+                "prompt_prefix",
+                "subject",
+                "cinematic_aesthetic",
+                "stylization_tone",
+                "clothing",
+                "scene",
+                "movement"
+            ]
+
+            # Build paragraphs in order, only including keys that exist
+            paragraphs = []
+            for key in key_order:
+                if key in json_data and json_data[key]:
+                    paragraphs.append(json_data[key])
+
+            # Add any keys not in the predefined order (for future extensibility)
+            for key, value in json_data.items():
+                if key not in key_order and value:
+                    paragraphs.append(value)
+
+            # Join with double newlines to create paragraph separation
+            return "\n\n".join(paragraphs)
+
+        except (json.JSONDecodeError, ValueError) as e:
+            # If JSON parsing fails, return the original string
+            print(f"Warning: Failed to parse JSON for positive prompt: {e}")
+            return json_string
 
     def _trim_video(self, input_path, output_path, duration):
         """
@@ -384,7 +492,7 @@ class MediaDescribe:
         try:
             # Clean up subreddit URL
             subreddit_url = subreddit_url.strip()
-            
+
             # Extract subreddit name from various formats
             if 'reddit.com/r/' in subreddit_url:
                 subreddit_name = subreddit_url.split('reddit.com/r/')[1].split('/')[0]
@@ -392,43 +500,43 @@ class MediaDescribe:
                 subreddit_name = subreddit_url[2:].split('/')[0]
             else:
                 subreddit_name = subreddit_url.split('/')[0]
-            
+
             # Randomize between 'hot', 'new', and 'top' sort methods using the seed
             random.seed(seed)
             sort_methods = ['hot', 'new', 'top']
             selected_sort = random.choice(sort_methods)
-            
+
             # Build subreddit JSON API URL with randomized sort method and larger limit
             # Using limit=100 to get a larger pool of posts
             if selected_sort == 'top':
                 json_url = f'https://www.reddit.com/r/{subreddit_name}/top.json?limit=100&t=week'
             else:
                 json_url = f'https://www.reddit.com/r/{subreddit_name}/{selected_sort}.json?limit=100'
-            
+
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
-            
+
             print(f"Fetching posts from r/{subreddit_name} (sort: {selected_sort})...")
             response = requests.get(json_url, headers=headers, timeout=30)
             response.raise_for_status()
-            
+
             data = response.json()
-            
+
             if 'data' not in data or 'children' not in data['data']:
                 raise ValueError(f"Invalid subreddit data received from r/{subreddit_name}")
-            
+
             posts = data['data']['children']
-            
+
             if not posts:
                 raise ValueError(f"No posts found in r/{subreddit_name}")
-            
+
             # Filter posts that have media (images or videos) based on media_type preference
             media_posts = []
             for post in posts:
                 post_data = post['data']
                 url = post_data.get('url', '')
-                
+
                 # Determine if post is image or video
                 is_image = (
                     url.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')) or
@@ -436,7 +544,7 @@ class MediaDescribe:
                     (post_data.get('media_metadata') is not None and 
                      any(m.get('e') == 'Image' for m in post_data.get('media_metadata', {}).values()))
                 )
-                
+
                 is_video = (
                     url.endswith(('.mp4', '.webm', '.mov')) or
                     'v.redd.it' in url or
@@ -445,22 +553,22 @@ class MediaDescribe:
                     (post_data.get('media_metadata') is not None and 
                      any(m.get('e') == 'AnimatedImage' or m.get('e') == 'Video' for m in post_data.get('media_metadata', {}).values()))
                 )
-                
+
                 # Add post if it matches the desired media type
                 if media_type == "image" and is_image:
                     media_posts.append(post_data)
                 elif media_type == "video" and is_video:
                     media_posts.append(post_data)
-            
+
             if not media_posts:
                 raise ValueError(f"No {media_type} posts found in r/{subreddit_name}. Try a different subreddit or media type.")
-            
+
             print(f"Found {len(media_posts)} {media_type} posts in r/{subreddit_name} (sort: {selected_sort})")
-            
+
             # Randomly select a post using the seed (already seeded above)
             selected_post = random.choice(media_posts)
             random.seed(None)
-            
+
             # Build post URL
             post_permalink = selected_post.get('permalink', '')
             if post_permalink:
@@ -469,12 +577,12 @@ class MediaDescribe:
                 # Fallback to constructing URL from post ID
                 post_id = selected_post.get('id', '')
                 post_url = f"https://www.reddit.com/r/{subreddit_name}/comments/{post_id}/"
-            
+
             print(f"Selected random post: {selected_post.get('title', 'Unknown')}")
             print(f"Post URL: {post_url}")
-            
+
             return post_url
-            
+
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to fetch subreddit posts: Network error - {str(e)}")
         except (KeyError, IndexError, TypeError) as e:
@@ -784,7 +892,7 @@ class MediaDescribe:
 
         return None, None
 
-    def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing=""):
+    def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing="", overrides=None):
         """
         Process image using logic from GeminiImageDescribe
         
@@ -793,6 +901,7 @@ class MediaDescribe:
             override_cinematic_aesthetic: Override text for CINEMATIC AESTHETIC paragraph
             override_stylization_tone: Override text for STYLIZATION & TONE paragraph
             override_clothing: Override text for CLOTHING paragraph
+            overrides: Full overrides dictionary for building final JSON
         """
         try:
             # Build system prompt based on individual options
@@ -872,11 +981,11 @@ Describe all visible clothing and accessories with absolute certainty and defini
                 json_fields = []
                 if describe_subject:
                     json_fields.append('"subject": "Begin with a gendered noun phrase (e.g., \'A woman…\', \'A man…\'). Include posture, gestures' + (' and hairstyle with texture/motion (no color/length)' if describe_hair_style else '') + ' as applicable."')
-                
+
                 json_fields.append('"cinematic_aesthetic": "' + ('Lighting, camera details, optics (lens, DOF, rack focus), and exposure/render cues.' if describe_bokeh else 'Lighting, camera details, and exposure/render cues. Everything in sharp focus - no DOF, bokeh, or blur effects.') + '"')
-                
+
                 json_fields.append('"stylization_tone": "Mood/genre descriptors (e.g., \'noir-inspired silhouette\', \'cinematic realism\')."')
-                
+
                 if describe_clothing:
                     json_fields.append('"clothing": "Describe all visible clothing/accessories with certainty. Include garment type, color(s)' + (', material, fit, and motion response. Change colors to NEW hues harmonizing with the scene (different from original).' if change_clothing_color else ', material, fit, and motion response.') + '"')
 
@@ -903,7 +1012,7 @@ Each field's value is one fully formed paragraph (a single string) for that cate
 ## Global Constraints
 
 {critical_note}"""
-                user_prompt = f"Please analyze this image and provide a detailed description in the JSON format specified in the system prompt."
+                user_prompt = "Please analyze this image and provide a detailed description in the JSON format specified in the system prompt."
 
             else:  # model_type == "ImageEdit"
                 # Build ImageEdit system prompt based on options
@@ -1046,20 +1155,28 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • API Key: {'*' * (len(gemini_api_key) - 4) + gemini_api_key[-4:] if len(gemini_api_key) >= 4 else '****'}
 • Input: Image
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
-                
+
                 # Parse paragraphs and apply overrides
                 subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
                     description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing
                 )
-                
-                final_string = f"{prefix_text}{final_description}" if prefix_text else final_description
+
+                # Build final JSON with overrides applied
+                if overrides is None:
+                    overrides = {}
+                positive_prompt_json = self._build_final_json(
+                    description, overrides, subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement
+                )
+
+                # Convert JSON to positive prompt format
+                positive_prompt = self._json_to_positive_prompt(positive_prompt_json)
 
                 # Create aggregated data output for Control Panel as JSON
                 all_data = json.dumps({
                     "description": final_description,
                     "media_info": media_info_text,
                     "gemini_status": gemini_status,
-                    "final_string": final_string,
+                    "positive_prompt": positive_prompt,
                     "height": output_height,
                     "width": output_width,
                     "subject": subject,
@@ -1070,7 +1187,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                     "movement": movement
                 })
 
-                return (final_string, all_data, description, output_height, output_width)
+                return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -1129,20 +1246,28 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • Model Type: {model_type}
 • API Key: {'*' * (len(gemini_api_key) - 4) + gemini_api_key[-4:] if len(gemini_api_key) >= 4 else '****'}
 • Input: Image"""
-            
+
             # Parse paragraphs and apply overrides
             subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
                 description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing
             )
-            
-            final_string = f"{prefix_text}{final_description}" if prefix_text else final_description
+
+            # Build final JSON with overrides applied
+            if overrides is None:
+                overrides = {}
+            positive_prompt_json = self._build_final_json(
+                description, overrides, subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement
+            )
+
+            # Convert JSON to positive prompt format
+            positive_prompt = self._json_to_positive_prompt(positive_prompt_json)
 
             # Create aggregated data output for Control Panel as JSON
             all_data = json.dumps({
                 "description": final_description,
                 "media_info": media_info_text,
                 "gemini_status": gemini_status,
-                "final_string": final_string,
+                "positive_prompt": positive_prompt,
                 "height": output_height,
                 "width": output_width,
                 "subject": subject,
@@ -1153,13 +1278,13 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 "movement": movement
             })
 
-            return (final_string, all_data, description, output_height, output_width)
+            return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
 
         except Exception as e:
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Image analysis failed: {str(e)}")
 
-    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing="", override_scene="", override_movement=""):
+    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing="", override_scene="", override_movement="", overrides=None):
         """
         Process video using logic from GeminiVideoDescribe
         
@@ -1170,6 +1295,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             override_clothing: Override text for CLOTHING paragraph
             override_scene: Override text for SCENE paragraph
             override_movement: Override text for MOVEMENT paragraph
+            overrides: Full overrides dictionary for building final JSON
         """
         try:
             # Build system prompt based on individual options for video
@@ -1264,7 +1390,7 @@ Mood/genre descriptors (e.g., "noir-inspired silhouette," "cinematic realism," e
             movement_field = ""
             cinematic_field = ""
             style_field = ""
-            
+
             if describe_subject:
                 subject_field = 'Begin with a gendered noun phrase (e.g., "A woman…", "A man…").'
                 if describe_hair_style:
@@ -1272,28 +1398,28 @@ Mood/genre descriptors (e.g., "noir-inspired silhouette," "cinematic realism," e
                 subject_field += ' Include posture and gestures as applicable. Strictly exclude any reference to ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, or makeup.'
             else:
                 subject_field = 'Leave empty or provide minimal scene context without describing people.'
-            
+
             if describe_clothing:
                 clothing_field = 'Describe all visible clothing and accessories with absolute certainty and definitiveness. Be specific: garment type, definitive color(s), material/texture, fit/silhouette, length, notable construction (seams, straps, waistbands), and condition. Include footwear if visible and describe exactly how fabrics respond to motion (stretching, swaying, tightening, wrinkling). Make decisive choices when multiple interpretations are possible; state one as fact. Do not describe text, typography, words, letters, logos, brand names, or written content on clothing or accessories. Exclude tattoos, glasses, and other prohibited attributes.'
                 if change_clothing_color:
                     clothing_field += ' Additionally, do not repeat the original clothing colors you infer from the video. Instead, change the clothing color descriptions to NEW hues that harmonize with the scene\'s lighting and palette while being different from the original colors. Prefer complementary, analogous, or neutral tones that fit the environment; state the NEW colors decisively, and never reference the original color.'
             else:
                 clothing_field = 'Leave empty.'
-            
+
             scene_field = 'Describe the visible environment clearly and vividly.'
-            
+
             if replace_action_with_twerking:
                 movement_field = 'Describe the initial pose and body position in the first frame of the video. Then append: "A woman is twerking and shaking her ass. She has a curvy body and a huge ass."'
             else:
                 movement_field = 'Start with an overall summary tied to musical rhythm and beat structure (e.g., "The subject initiates with a hip sway on the downbeat…"). Then narrate movement chronologically using precise action verbs and transitions like "then", "as", "after", and reference timeline markers (early/mid/late beat or second). Specify which body parts move and how they articulate (e.g., "the right arm lifts upward, then sweeps outward; the torso tilts as the knees bend"), including footwork, weight shifts, and alignment with beats. Include any camera movement (e.g., "camera pans to follow the torso shift"). Avoid general labels—focus on locomotor and non-locomotor gestures, repetition, rhythm, and choreography phrasing. Always include any buttock or breast movements that you see.'
-            
+
             if describe_bokeh:
                 cinematic_field = 'Cover lighting (source/direction/quality/temperature), camera details (shot type, angle/height, movement), optics (lens feel, DOF, rack focus), and exposure/render cues as applicable.'
             else:
                 cinematic_field = 'Cover lighting (source/direction/quality/temperature), camera details (shot type, angle/height, movement), and exposure/render cues as applicable. Everything must be in sharp focus with no depth of field effects, bokeh, or blur. Do not mention optics, DOF, rack focus, or any depth-related visual effects.'
-            
+
             style_field = 'Provide mood/genre descriptors (e.g., "noir-inspired silhouette", "cinematic realism", etc.).'
-            
+
             # Build constraints note
             constraints = "Never mention prohibited attributes (ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, makeup), even if visible."
             if not describe_clothing:
@@ -1434,7 +1560,7 @@ Example (structure only):
                 else:
                     print(f"Warning: Could not trim video. Using original video for {original_duration:.2f}s")
                     actual_duration = original_duration
-                    trimmed_video_output_path = selected_media_path
+                    # trimmed_video_output_path = selected_media_path  # Not needed - using final_video_path
 
             # Read the final video file (original or trimmed)
             with open(final_video_path, 'rb') as video_file:
@@ -1506,20 +1632,28 @@ Example (structure only):
 • API Key: {'*' * (len(gemini_api_key) - 4) + gemini_api_key[-4:] if len(gemini_api_key) >= 4 else '****'}
 • Input: Video
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
-                
+
                 # Parse paragraphs and apply overrides (for videos)
                 subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
                     description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement
                 )
-                
-                final_string = f"{prefix_text}{final_description}" if prefix_text else final_description
+
+                # Build final JSON with overrides applied
+                if overrides is None:
+                    overrides = {}
+                positive_prompt_json = self._build_final_json(
+                    description, overrides, subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement
+                )
+
+                # Convert JSON to positive prompt format
+                positive_prompt = self._json_to_positive_prompt(positive_prompt_json)
 
                 # Create aggregated data output for Control Panel as JSON
                 all_data = json.dumps({
                     "description": final_description,
                     "media_info": updated_media_info,
                     "gemini_status": gemini_status,
-                    "final_string": final_string,
+                    "positive_prompt": positive_prompt,
                     "height": output_height,
                     "width": output_width,
                     "subject": subject,
@@ -1530,7 +1664,7 @@ Example (structure only):
                     "movement": movement
                 })
 
-                return (final_string, all_data, description, output_height, output_width)
+                return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -1593,15 +1727,23 @@ Example (structure only):
             subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
                 description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement
             )
-            
-            final_string = f"{prefix_text}{final_description}" if prefix_text else final_description
+
+            # Build final JSON with overrides applied
+            if overrides is None:
+                overrides = {}
+            positive_prompt_json = self._build_final_json(
+                description, overrides, subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement
+            )
+
+            # Convert JSON to positive prompt format
+            positive_prompt = self._json_to_positive_prompt(positive_prompt_json)
 
             # Create aggregated data output for Control Panel as JSON
             all_data = json.dumps({
                 "description": final_description,
                 "media_info": updated_media_info,
                 "gemini_status": gemini_status,
-                "final_string": final_string,
+                "positive_prompt": positive_prompt,
                 "height": output_height,
                 "width": output_width,
                 "subject": subject,
@@ -1612,7 +1754,7 @@ Example (structure only):
                 "movement": movement
             })
 
-            return (final_string, all_data, description, output_height, output_width)
+            return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
 
         except Exception as e:
             # Provide more specific error messages for common issues
@@ -1650,8 +1792,8 @@ Example (structure only):
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "INT", "INT")
-    RETURN_NAMES = ("final_string", "all_media_describe_data", "raw_gemini_json", "height", "width")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("all_media_describe_data", "raw_llm_json", "positive_prompt_json", "positive_prompt", "height", "width")
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
@@ -1667,7 +1809,7 @@ Example (structure only):
         # Validate media path
         if not media_processed_path or not media_processed_path.strip():
             raise ValueError("media_processed_path is required")
-        
+
         if not os.path.exists(media_processed_path):
             raise ValueError(f"Media file does not exist: {media_processed_path}")
 
@@ -1689,7 +1831,7 @@ Example (structure only):
         # Handle missing overrides with defaults
         if overrides is None:
             overrides = {}
-        
+
         # Extract override values with defaults
         override_subject = overrides.get("override_subject", "")
         override_cinematic_aesthetic = overrides.get("override_cinematic_aesthetic", "")
@@ -1715,7 +1857,7 @@ Example (structure only):
             file_ext = os.path.splitext(media_processed_path)[1].lower()
             video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm']
             media_type = "video" if file_ext in video_extensions else "image"
-            
+
             media_info_text = f"{'📹' if media_type == 'video' else '📷'} Media Processing Info:\n• File: {os.path.basename(media_processed_path)}\n• Type: {media_type}\n• Full path: {media_processed_path}"
 
             # Process based on media type
@@ -1724,14 +1866,14 @@ Example (structure only):
                 return self._process_image(
                     gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text,
                     None, media_processed_path, media_info_text,
-                    override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing
+                    override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, overrides
                 )
             else:
                 # Process as video - delegate to video logic  
                 return self._process_video(
                     gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text,
                     media_processed_path, 30.0, 0.0, media_info_text,
-                    override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement
+                    override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement, overrides
                 )
 
         except Exception as e:

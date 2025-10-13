@@ -471,18 +471,20 @@ app.registerExtension({
                         return valueStr;
                     };
 
-                    // Left column: Final String/Prompt (check both field names)
+                    // Left column: Positive Prompt (check both field names for backwards compatibility)
                     const finalText =
-                        mediaData.final_string || mediaData.final_prompt || mediaData.description;
+                        mediaData.positive_prompt ||
+                        mediaData.final_prompt ||
+                        mediaData.description;
                     if (finalText) {
                         console.log(
-                            "🔍 [ControlPanel DEBUG] Setting final text:",
+                            "🔍 [ControlPanel DEBUG] Setting positive prompt:",
                             finalText.substring(0, 50)
                         );
                         this._cp_leftColumn.textContent = formatValue(finalText, 2000);
                     } else {
                         console.log(
-                            "🔍 [ControlPanelOverview DEBUG] No final_string/final_prompt/description in mediaData"
+                            "🔍 [ControlPanelOverview DEBUG] No positive_prompt/final_prompt/description in mediaData"
                         );
                         this._cp_leftColumn.textContent = "(No final text in data)";
                     }
