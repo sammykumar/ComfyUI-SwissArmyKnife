@@ -114,7 +114,7 @@ class MediaDescribe:
     def _parse_paragraphs(self, description, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing="", override_scene="", override_movement=""):
         """
         Parse description into individual paragraphs and apply overrides.
-        Supports both JSON format (for video) and paragraph format (for images).
+        Supports JSON format for both images and videos, with fallback to paragraph format.
         Returns tuple: (subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description)
         """
         # Initialize all paragraph variables
@@ -152,12 +152,15 @@ class MediaDescribe:
             # Try to parse as JSON
             json_data = json.loads(cleaned_description)
             
-            # Extract fields from JSON (using exact field names from the prompt)
+            # Extract fields from JSON (supporting both video and image field names)
             subject = json_data.get("subject", "")
             clothing = json_data.get("clothing", "")
             scene = json_data.get("scene", "")
             movement = json_data.get("movement", "")
-            cinematic_aesthetic = json_data.get("cinematic_aesthetic_control", "")  # Map to cinematic_aesthetic
+            
+            # Support both field name formats for cinematic aesthetic
+            cinematic_aesthetic = json_data.get("cinematic_aesthetic_control", json_data.get("cinematic_aesthetic", ""))
+            
             stylization_tone = json_data.get("stylization_tone", "")
             
         except (json.JSONDecodeError, ValueError):
@@ -865,17 +868,42 @@ Describe all visible clothing and accessories with absolute certainty and defini
                 # Combine all parts
                 combined_prompts = "\n\n".join(prompts)
 
+                # Build JSON field descriptions based on enabled options
+                json_fields = []
+                if describe_subject:
+                    json_fields.append('"subject": "Begin with a gendered noun phrase (e.g., \'A woman…\', \'A man…\'). Include posture, gestures' + (' and hairstyle with texture/motion (no color/length)' if describe_hair_style else '') + ' as applicable."')
+                
+                json_fields.append('"cinematic_aesthetic": "' + ('Lighting, camera details, optics (lens, DOF, rack focus), and exposure/render cues.' if describe_bokeh else 'Lighting, camera details, and exposure/render cues. Everything in sharp focus - no DOF, bokeh, or blur effects.') + '"')
+                
+                json_fields.append('"stylization_tone": "Mood/genre descriptors (e.g., \'noir-inspired silhouette\', \'cinematic realism\')."')
+                
+                if describe_clothing:
+                    json_fields.append('"clothing": "Describe all visible clothing/accessories with certainty. Include garment type, color(s)' + (', material, fit, and motion response. Change colors to NEW hues harmonizing with the scene (different from original).' if change_clothing_color else ', material, fit, and motion response.') + '"')
+
+                json_structure = "{\n  " + ",\n  ".join(json_fields) + "\n}"
+
                 system_prompt = f"""Generate a Wan 2.2 optimized text to image prompt. You are an expert assistant specialized in analyzing and verbalizing input media for instagram-quality posts using the Wan 2.2 Text to Image workflow.
 
 DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Instead of "holding a black folder or book", write "holding a black folder". Instead of "wearing what appears to be denim", write "wearing dark blue denim jeans".
 
 Before writing, silently review the provided media. Do not use meta phrases (e.g., "this picture shows").
-Generate descriptions that adhere to the following structured layers and constraints, formatting each as a SEPARATE PARAGRAPH in this exact order:
+
+## Output Format
+
+Return **only** a single valid JSON object (no code fences, no extra text) with the following structure:
+
+{json_structure}
+
+Each field's value is one fully formed paragraph (a single string) for that category.
+
+## Content Requirements
 
 {combined_prompts}{clothing_prompt}
 
+## Global Constraints
+
 {critical_note}"""
-                user_prompt = f"Please analyze this image and provide a detailed description following the {paragraph_count}-paragraph structure outlined in the system prompt."
+                user_prompt = f"Please analyze this image and provide a detailed description in the JSON format specified in the system prompt."
 
             else:  # model_type == "ImageEdit"
                 # Build ImageEdit system prompt based on options
@@ -1042,7 +1070,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                     "movement": movement
                 })
 
-                return (final_string, all_data, output_height, output_width)
+                return (final_string, all_data, description, output_height, output_width)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -1125,7 +1153,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 "movement": movement
             })
 
-            return (final_string, all_data, output_height, output_width)
+            return (final_string, all_data, description, output_height, output_width)
 
         except Exception as e:
             # Re-raise the exception to stop workflow execution
@@ -1502,7 +1530,7 @@ Example (structure only):
                     "movement": movement
                 })
 
-                return (final_string, all_data, output_height, output_width)
+                return (final_string, all_data, description, output_height, output_width)
 
             # Initialize the Gemini client
             client = genai.Client(api_key=gemini_api_key)
@@ -1584,7 +1612,7 @@ Example (structure only):
                 "movement": movement
             })
 
-            return (final_string, all_data, output_height, output_width)
+            return (final_string, all_data, description, output_height, output_width)
 
         except Exception as e:
             # Provide more specific error messages for common issues
@@ -1622,8 +1650,8 @@ Example (structure only):
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "INT", "INT")
-    RETURN_NAMES = ("final_string", "all_media_describe_data", "height", "width")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("final_string", "all_media_describe_data", "raw_gemini_json", "height", "width")
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 

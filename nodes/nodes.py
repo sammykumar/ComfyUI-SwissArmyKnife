@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .civitai_service import CivitAIService
 from .lora_hash_cache import get_cache as get_lora_hash_cache
-from .media_describe import GeminiUtilOptions, MediaDescribe, MediaDescribeOverrides, MediaDescribePromptBreakdown
+from .media_describe import GeminiUtilOptions, MediaDescribe, MediaDescribeOverrides
 from .utils.video_preview import VideoPreview
 
 
@@ -772,7 +772,6 @@ NODE_CLASS_MAPPINGS = {
     "MediaDescribe": MediaDescribe,
     "GeminiUtilOptions": GeminiUtilOptions,
     "MediaDescribeOverrides": MediaDescribeOverrides,
-    "MediaDescribePromptBreakdown": MediaDescribePromptBreakdown,
     "FilenameGenerator": FilenameGenerator,
     "VideoMetadataNode": VideoMetadataNode,
     "LoRAInfoExtractor": LoRAInfoExtractor,
@@ -784,7 +783,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "MediaDescribe": "Media Describe",
     "GeminiUtilOptions": "Gemini Util - Options",
     "MediaDescribeOverrides": "Media Describe - Overrides",
-    "MediaDescribePromptBreakdown": "Media Describe - Prompt Breakdown",
     "FilenameGenerator": "Filename Generator",
     "VideoMetadataNode": "Update Video Metadata",
     "LoRAInfoExtractor": "LoRA Info Extractor",

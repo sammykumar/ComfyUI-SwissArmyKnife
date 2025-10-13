@@ -101,12 +101,12 @@ class ControlPanelPromptBreakdown:
     def INPUT_TYPES(cls):
         """
         Define input fields that will be displayed on the control panel.
-        Only accepts all_media_describe_data which contains all the workflow information.
+        Accepts raw_gemini_json which contains structured JSON response from Gemini.
         """
         return {
             "required": {},
             "optional": {
-                "all_media_describe_data": ("STRING", {"forceInput": True}),
+                "raw_gemini_json": ("STRING", {"forceInput": True, "tooltip": "Raw JSON response from Gemini API"}),
             },
         }
 
@@ -117,8 +117,8 @@ class ControlPanelPromptBreakdown:
 
     def display_info(self, **kwargs):
         """
-        Display prompt breakdown organized into 5 columns.
-        Parses the all_media_describe_data JSON and extracts prompt information.
+        Display prompt breakdown organized into 6 columns.
+        Parses the raw_gemini_json structured JSON response from Gemini API.
         """
         import json
         
@@ -127,72 +127,77 @@ class ControlPanelPromptBreakdown:
         print("CONTROL PANEL - Prompt Breakdown")
         print("="*60)
         
-        all_media_data = kwargs.get("all_media_describe_data")
+        raw_gemini_json = kwargs.get("raw_gemini_json")
         
-        if all_media_data:
+        prompt_breakdown = {
+            "subject": "",
+            "cinematic_aesthetic": "",
+            "stylization_tone": "",
+            "clothing": "",
+            "scene": "",
+            "movement": ""
+        }
+        
+        # Parse raw_gemini_json
+        if raw_gemini_json:
             try:
+                print("\n🔍 Parsing raw_gemini_json (structured JSON)")
+                
                 # Parse the JSON data
-                if isinstance(all_media_data, str):
-                    data = json.loads(all_media_data)
+                if isinstance(raw_gemini_json, str):
+                    gemini_data = json.loads(raw_gemini_json)
                 else:
-                    data = all_media_data
+                    gemini_data = raw_gemini_json
                 
-                # Extract description text
-                description_text = ""
-                if isinstance(data, dict):
-                    description_text = data.get("description", "")
+                # Extract fields from JSON (supporting both video and image field names)
+                prompt_breakdown["subject"] = gemini_data.get("subject", "")
+                prompt_breakdown["clothing"] = gemini_data.get("clothing", "")
+                prompt_breakdown["scene"] = gemini_data.get("scene", "")
+                prompt_breakdown["movement"] = gemini_data.get("movement", "")
                 
-                # Split description into paragraphs (split by double newline)
-                paragraphs = [p.strip() for p in description_text.split("\n\n") if p.strip()]
+                # Support both field name formats for cinematic aesthetic
+                prompt_breakdown["cinematic_aesthetic"] = gemini_data.get(
+                    "cinematic_aesthetic_control", 
+                    gemini_data.get("cinematic_aesthetic", "")
+                )
                 
-                # Map paragraphs to categories
-                # 1st paragraph = subject
-                # 2nd paragraph = cinematic/aesthetic
-                # 3rd paragraph = stylization/tone
-                # 4th paragraph = clothing
-                # 5th paragraph = scene
-                # 6th paragraph = movement
-                prompt_breakdown = {
-                    "subject": paragraphs[0] if len(paragraphs) > 0 else "",
-                    "cinematic_aesthetic": paragraphs[1] if len(paragraphs) > 1 else "",
-                    "stylization_tone": paragraphs[2] if len(paragraphs) > 2 else "",
-                    "clothing": paragraphs[3] if len(paragraphs) > 3 else "",
-                    "scene": paragraphs[4] if len(paragraphs) > 4 else "",
-                    "movement": paragraphs[5] if len(paragraphs) > 5 else ""
-                }
+                prompt_breakdown["stylization_tone"] = gemini_data.get("stylization_tone", "")
                 
-                # Log to console
-                print(f"\n📊 Prompt Breakdown ({len(paragraphs)} paragraphs found):")
-                print(f"  Subject: {prompt_breakdown['subject'][:100]}...")
-                print(f"  Cinematic/Aesthetic: {prompt_breakdown['cinematic_aesthetic'][:100]}...")
-                print(f"  Stylization/Tone: {prompt_breakdown['stylization_tone'][:100]}...")
-                print(f"  Clothing: {prompt_breakdown['clothing'][:100]}...")
-                print(f"  Scene: {prompt_breakdown['scene'][:100]}...")
-                print(f"  Movement: {prompt_breakdown['movement'][:100]}...")
-                
-                # Return structured data for UI display in columns
-                result = {
-                    "ui": {
-                        "prompt_breakdown": [json.dumps(prompt_breakdown)],
-                        "raw_data": [all_media_data]  # Keep raw data for debugging
-                    }
-                }
-                
-                print(f"\n🔍 DEBUG - Returning to UI:")
-                print(json.dumps(result, indent=2))
-                
-                return result
+                print("✅ Successfully parsed structured JSON from Gemini")
                 
             except json.JSONDecodeError as e:
-                print(f"\n❌ Error parsing JSON: {e}")
-                print(f"Raw data: {all_media_data}")
+                print(f"\n❌ Error parsing raw_gemini_json: {e}")
+                print(f"Raw data: {raw_gemini_json}")
                 return {"ui": {"error": [f"Invalid JSON: {str(e)}"]}}
+        
+        # Log to console
+        if prompt_breakdown["subject"] or prompt_breakdown["cinematic_aesthetic"]:
+            print(f"\n📊 Prompt Breakdown:")
+            print(f"  Subject: {prompt_breakdown['subject'][:100]}...")
+            print(f"  Cinematic/Aesthetic: {prompt_breakdown['cinematic_aesthetic'][:100]}...")
+            print(f"  Stylization/Tone: {prompt_breakdown['stylization_tone'][:100]}...")
+            print(f"  Clothing: {prompt_breakdown['clothing'][:100]}...")
+            print(f"  Scene: {prompt_breakdown['scene'][:100]}...")
+            print(f"  Movement: {prompt_breakdown['movement'][:100]}...")
+            
+            # Return structured data for UI display in columns
+            result = {
+                "ui": {
+                    "prompt_breakdown": [json.dumps(prompt_breakdown)],
+                    "raw_data": [raw_gemini_json]  # Keep raw data for debugging
+                }
+            }
+            
+            print(f"\n🔍 DEBUG - Returning to UI:")
+            print(json.dumps(result, indent=2))
+            
+            return result
         else:
-            print("\n(No all_media_describe_data connected)")
+            print("\n(No valid data found in raw_gemini_json)")
         
         print("\n" + "="*60 + "\n")
         
-        return {"ui": {"status": ["No inputs connected"]}}
+        return {"ui": {"status": ["No raw_gemini_json connected"]}}
 
 
 # Export node class mapping
