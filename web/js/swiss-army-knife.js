@@ -235,8 +235,8 @@ app.registerExtension({
         }
 
         // Handle Control Panel node
-        else if (nodeData.name === "ControlPanel") {
-            debugLog("Registering ControlPanel node");
+        else if (nodeData.name === "ControlPanelOverview") {
+            debugLog("Registering ControlPanelOverview node");
 
             // On resize, keep DOM width sensible
             const onResize = nodeType.prototype.onResize;
@@ -358,7 +358,7 @@ app.registerExtension({
                     dom.appendChild(rightColumn);
 
                     // Add a DOM widget
-                    const widget = this.addDOMWidget("ControlPanel", "cp_display", dom, {
+                    const widget = this.addDOMWidget("ControlPanelOverview", "cp_display", dom, {
                         serialize: false,
                         hideOnZoom: false,
                     });
@@ -378,9 +378,12 @@ app.registerExtension({
 
                 // Function to update with execution data
                 this.updateControlPanelData = function (data) {
-                    console.log("🔍 [ControlPanel DEBUG] updateControlPanelData called");
-                    console.log("🔍 [ControlPanel DEBUG] data received:", data);
-                    console.log("🔍 [ControlPanel DEBUG] data keys:", Object.keys(data || {}));
+                    console.log("🔍 [ControlPanelOverview DEBUG] updateControlPanelData called");
+                    console.log("🔍 [ControlPanelOverview DEBUG] data received:", data);
+                    console.log(
+                        "🔍 [ControlPanelOverview DEBUG] data keys:",
+                        Object.keys(data || {})
+                    );
 
                     if (
                         !this._cp_leftColumn ||
@@ -388,11 +391,13 @@ app.registerExtension({
                         !this._cp_rightColumn ||
                         !data
                     ) {
-                        console.log("🔍 [ControlPanel DEBUG] Missing columns or data, returning");
+                        console.log(
+                            "🔍 [ControlPanelOverview DEBUG] Missing columns or data, returning"
+                        );
                         return;
                     }
 
-                    debugLog("[ControlPanel] Received data:", data);
+                    debugLog("[ControlPanelOverview] Received data:", data);
 
                     // Extract all_media_describe_data - TRY MULTIPLE SOURCES
                     let mediaData = null;
@@ -400,36 +405,41 @@ app.registerExtension({
 
                     // Try all possible locations for the data
                     if (data.all_media_describe_data) {
-                        console.log("🔍 [ControlPanel DEBUG] Found data.all_media_describe_data");
+                        console.log(
+                            "🔍 [ControlPanelOverview DEBUG] Found data.all_media_describe_data"
+                        );
                         rawData = Array.isArray(data.all_media_describe_data)
                             ? data.all_media_describe_data[0]
                             : data.all_media_describe_data;
                     } else if (data.all_media_describe_data_copy) {
                         console.log(
-                            "🔍 [ControlPanel DEBUG] Found data.all_media_describe_data_copy"
+                            "🔍 [ControlPanelOverview DEBUG] Found data.all_media_describe_data_copy"
                         );
                         rawData = Array.isArray(data.all_media_describe_data_copy)
                             ? data.all_media_describe_data_copy[0]
                             : data.all_media_describe_data_copy;
                     } else {
                         console.log(
-                            "🔍 [ControlPanel DEBUG] No all_media_describe_data found in:",
+                            "🔍 [ControlPanelOverview DEBUG] No all_media_describe_data found in:",
                             Object.keys(data)
                         );
                     }
 
-                    console.log("🔍 [ControlPanel DEBUG] rawData:", rawData);
-                    console.log("🔍 [ControlPanel DEBUG] rawData type:", typeof rawData);
+                    console.log("🔍 [ControlPanelOverview DEBUG] rawData:", rawData);
+                    console.log("🔍 [ControlPanelOverview DEBUG] rawData type:", typeof rawData);
 
                     if (rawData) {
                         try {
                             // Parse JSON if it's a string
                             mediaData = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
-                            console.log("🔍 [ControlPanel DEBUG] Parsed mediaData:", mediaData);
-                            debugLog("[ControlPanel] Parsed media data:", mediaData);
+                            console.log(
+                                "🔍 [ControlPanelOverview DEBUG] Parsed mediaData:",
+                                mediaData
+                            );
+                            debugLog("[ControlPanelOverview] Parsed media data:", mediaData);
                         } catch (e) {
-                            console.error("🔍 [ControlPanel DEBUG] Error parsing JSON:", e);
-                            debugLog("[ControlPanel] Error parsing JSON:", e);
+                            console.error("🔍 [ControlPanelOverview DEBUG] Error parsing JSON:", e);
+                            debugLog("[ControlPanelOverview] Error parsing JSON:", e);
                             this._cp_leftColumn.textContent = "Error parsing data";
                             this._cp_middleColumn.textContent = "Error parsing data";
                             this._cp_rightColumn.textContent = "Error parsing data";
@@ -439,7 +449,7 @@ app.registerExtension({
 
                     if (!mediaData) {
                         console.log(
-                            "🔍 [ControlPanel DEBUG] No mediaData, showing 'no data available'"
+                            "🔍 [ControlPanelOverview DEBUG] No mediaData, showing 'no data available'"
                         );
                         this._cp_leftColumn.textContent = "(No data available)";
                         this._cp_middleColumn.textContent = "(No data available)";
@@ -447,7 +457,10 @@ app.registerExtension({
                         return;
                     }
 
-                    console.log("🔍 [ControlPanel DEBUG] mediaData keys:", Object.keys(mediaData));
+                    console.log(
+                        "🔍 [ControlPanelOverview DEBUG] mediaData keys:",
+                        Object.keys(mediaData)
+                    );
 
                     // Helper function to format field display
                     const formatValue = (value, maxLength = 500) => {
@@ -469,7 +482,7 @@ app.registerExtension({
                         this._cp_leftColumn.textContent = formatValue(finalText, 2000);
                     } else {
                         console.log(
-                            "🔍 [ControlPanel DEBUG] No final_string/final_prompt/description in mediaData"
+                            "🔍 [ControlPanelOverview DEBUG] No final_string/final_prompt/description in mediaData"
                         );
                         this._cp_leftColumn.textContent = "(No final text in data)";
                     }
@@ -477,7 +490,7 @@ app.registerExtension({
                     // Middle column: Gemini Status
                     if (mediaData.gemini_status) {
                         console.log(
-                            "🔍 [ControlPanel DEBUG] Setting gemini_status:",
+                            "🔍 [ControlPanelOverview DEBUG] Setting gemini_status:",
                             mediaData.gemini_status.substring(0, 50)
                         );
                         this._cp_middleColumn.textContent = formatValue(
@@ -485,7 +498,9 @@ app.registerExtension({
                             2000
                         );
                     } else {
-                        console.log("🔍 [ControlPanel DEBUG] No gemini_status in mediaData");
+                        console.log(
+                            "🔍 [ControlPanelOverview DEBUG] No gemini_status in mediaData"
+                        );
                         this._cp_middleColumn.textContent = "(No gemini_status in data)";
                     }
 
@@ -508,47 +523,50 @@ app.registerExtension({
                     // Removed loop that displayed additional fields (subject, cinematic_aesthetic, etc.)
 
                     if (rightLines.length === 0) {
-                        console.log("🔍 [ControlPanel DEBUG] No right column data");
+                        console.log("🔍 [ControlPanelOverview DEBUG] No right column data");
                         this._cp_rightColumn.textContent = "(No media info in data)";
                     } else {
                         console.log(
-                            "🔍 [ControlPanel DEBUG] Setting right column with",
+                            "🔍 [ControlPanelOverview DEBUG] Setting right column with",
                             rightLines.length,
                             "lines"
                         );
                         this._cp_rightColumn.textContent = rightLines.join("\n");
                     }
 
-                    console.log("🔍 [ControlPanel DEBUG] Display update complete");
-                    debugLog("[ControlPanel] Updated display with execution data");
+                    console.log("🔍 [ControlPanelOverview DEBUG] Display update complete");
+                    debugLog("[ControlPanelOverview] Updated display with execution data");
                 };
 
                 // Add onExecuted handler to update display with execution results
                 const originalOnExecuted = this.onExecuted;
                 this.onExecuted = function (message) {
-                    console.log("🔍 [ControlPanel DEBUG] onExecuted called");
-                    console.log("🔍 [ControlPanel DEBUG] Full message object:", message);
+                    console.log("🔍 [ControlPanelOverview DEBUG] onExecuted called");
+                    console.log("🔍 [ControlPanelOverview DEBUG] Full message object:", message);
                     console.log(
-                        "🔍 [ControlPanel DEBUG] message keys:",
+                        "🔍 [ControlPanelOverview DEBUG] message keys:",
                         Object.keys(message || {})
                     );
 
                     if (message) {
-                        console.log("🔍 [ControlPanel DEBUG] message.output:", message.output);
+                        console.log(
+                            "🔍 [ControlPanelOverview DEBUG] message.output:",
+                            message.output
+                        );
                         if (message.output) {
                             console.log(
-                                "🔍 [ControlPanel DEBUG] message.output keys:",
+                                "🔍 [ControlPanelOverview DEBUG] message.output keys:",
                                 Object.keys(message.output)
                             );
                         }
                     }
 
-                    debugLog("[ControlPanel] onExecuted called with message:", message);
+                    debugLog("[ControlPanelOverview] onExecuted called with message:", message);
 
                     // Try multiple data sources - data might be at root or in output
                     if (message && message.output) {
                         console.log(
-                            "🔍 [ControlPanel DEBUG] Calling updateControlPanelData with message.output:",
+                            "🔍 [ControlPanelOverview DEBUG] Calling updateControlPanelData with message.output:",
                             message.output
                         );
                         this.updateControlPanelData(message.output);
@@ -557,17 +575,267 @@ app.registerExtension({
                         (message.all_media_describe_data || message.all_media_describe_data_copy)
                     ) {
                         console.log(
-                            "🔍 [ControlPanel DEBUG] Calling updateControlPanelData with message (root level):",
+                            "🔍 [ControlPanelOverview DEBUG] Calling updateControlPanelData with message (root level):",
                             message
                         );
                         this.updateControlPanelData(message);
                     } else {
                         console.log(
-                            "🔍 [ControlPanel DEBUG] No data found in message.output or message root"
+                            "🔍 [ControlPanelOverview DEBUG] No data found in message.output or message root"
                         );
                     }
 
                     // Call original onExecuted if it exists
+                    return originalOnExecuted?.call(this, message);
+                };
+
+                return result;
+            };
+        }
+
+        // Handle ControlPanelPromptBreakdown node
+        else if (nodeData.name === "ControlPanelPromptBreakdown") {
+            debugLog("Registering ControlPanelPromptBreakdown node");
+
+            // On resize, keep DOM width sensible
+            const onResize = nodeType.prototype.onResize;
+            nodeType.prototype.onResize = function (size) {
+                const result = onResize?.call(this, size);
+                if (this._cpb_dom) {
+                    this._cpb_dom.style.width = this.size[0] - 20 + "px";
+                }
+                return result;
+            };
+
+            // Node creation
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Create a DOM widget area with 5-column layout for prompt breakdown
+                if (!this._cpb_dom) {
+                    // Main container
+                    const dom = document.createElement("div");
+                    dom.style.fontFamily =
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontSize = "11px";
+                    dom.style.lineHeight = "1.35";
+                    dom.style.overflow = "auto";
+                    dom.style.maxHeight = "100%";
+                    dom.style.padding = "8px";
+                    dom.style.borderRadius = "6px";
+                    dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
+                    dom.style.border = "1px solid var(--border-color, #333)";
+                    dom.style.color = "var(--fg-color, #d4d4d4)";
+                    dom.style.display = "flex";
+                    dom.style.gap = "8px";
+
+                    // Helper function to create a column
+                    const createColumn = (heading) => {
+                        const column = document.createElement("div");
+                        column.style.flex = "1";
+                        column.style.minWidth = "150px";
+                        column.style.overflow = "auto";
+                        column.style.borderRight = "1px solid var(--border-color, #333)";
+                        column.style.paddingRight = "8px";
+                        column.style.display = "flex";
+                        column.style.flexDirection = "column";
+
+                        const columnHeading = document.createElement("h3");
+                        columnHeading.textContent = heading;
+                        columnHeading.style.margin = "0 0 8px 0";
+                        columnHeading.style.fontSize = "12px";
+                        columnHeading.style.fontWeight = "600";
+                        columnHeading.style.color = "var(--fg-color, #d4d4d4)";
+                        columnHeading.style.borderBottom = "2px solid var(--border-color, #333)";
+                        columnHeading.style.paddingBottom = "4px";
+
+                        const columnContent = document.createElement("div");
+                        columnContent.style.whiteSpace = "pre-wrap";
+                        columnContent.style.wordBreak = "break-word";
+                        columnContent.style.overflow = "auto";
+                        columnContent.style.flex = "1";
+                        columnContent.textContent = "Awaiting execution...";
+
+                        column.appendChild(columnHeading);
+                        column.appendChild(columnContent);
+
+                        return { column, content: columnContent };
+                    };
+
+                    // Create 5 columns
+                    const subjectCol = createColumn("Subject");
+                    const cinematicCol = createColumn("Cinematic/Aesthetic");
+                    const stylizationCol = createColumn("Stylization/Tone");
+                    const clothingCol = createColumn("Clothing");
+                    const sceneCol = createColumn("Scene");
+                    const movementCol = createColumn("Movement");
+
+                    // Remove border from last column
+                    movementCol.column.style.borderRight = "none";
+
+                    dom.appendChild(subjectCol.column);
+                    dom.appendChild(cinematicCol.column);
+                    dom.appendChild(stylizationCol.column);
+                    dom.appendChild(clothingCol.column);
+                    dom.appendChild(sceneCol.column);
+                    dom.appendChild(movementCol.column);
+
+                    // Add a DOM widget
+                    const widget = this.addDOMWidget(
+                        "ControlPanelPromptBreakdown",
+                        "cpb_display",
+                        dom,
+                        {
+                            serialize: false,
+                            hideOnZoom: false,
+                        }
+                    );
+
+                    // Store references
+                    this._cpb_dom = dom;
+                    this._cpb_subject = subjectCol.content;
+                    this._cpb_cinematic = cinematicCol.content;
+                    this._cpb_stylization = stylizationCol.content;
+                    this._cpb_clothing = clothingCol.content;
+                    this._cpb_scene = sceneCol.content;
+                    this._cpb_movement = movementCol.content;
+                    this._cpb_widget = widget;
+                }
+
+                // Function to update with execution data
+                this.updatePromptBreakdownData = function (data) {
+                    console.log(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] updatePromptBreakdownData called"
+                    );
+                    console.log("🔍 [ControlPanelPromptBreakdown DEBUG] data received:", data);
+                    console.log(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] data keys:",
+                        Object.keys(data || {})
+                    );
+
+                    debugLog("[ControlPanelPromptBreakdown] updatePromptBreakdownData called");
+                    debugLog("[ControlPanelPromptBreakdown] data received:", data);
+
+                    if (!this._cpb_subject || !data) {
+                        console.log(
+                            "[ControlPanelPromptBreakdown DEBUG] Missing columns or data, returning"
+                        );
+                        debugLog(
+                            "[ControlPanelPromptBreakdown] Missing columns or data, returning"
+                        );
+                        return;
+                    }
+
+                    // Extract prompt_breakdown data
+                    let promptBreakdown = null;
+                    let rawData = null;
+
+                    if (data.prompt_breakdown) {
+                        console.log(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.prompt_breakdown"
+                        );
+                        rawData = Array.isArray(data.prompt_breakdown)
+                            ? data.prompt_breakdown[0]
+                            : data.prompt_breakdown;
+                    }
+
+                    console.log("🔍 [ControlPanelPromptBreakdown DEBUG] rawData:", rawData);
+                    console.log(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] rawData type:",
+                        typeof rawData
+                    );
+
+                    if (rawData) {
+                        try {
+                            promptBreakdown =
+                                typeof rawData === "string" ? JSON.parse(rawData) : rawData;
+                            console.log(
+                                "🔍 [ControlPanelPromptBreakdown DEBUG] Parsed breakdown:",
+                                promptBreakdown
+                            );
+                            debugLog(
+                                "[ControlPanelPromptBreakdown] Parsed breakdown:",
+                                promptBreakdown
+                            );
+                        } catch (e) {
+                            console.error(
+                                "🔍 [ControlPanelPromptBreakdown DEBUG] Error parsing JSON:",
+                                e
+                            );
+                            debugLog("[ControlPanelPromptBreakdown] Error parsing JSON:", e);
+                            this._cpb_subject.textContent = "Error parsing data";
+                            this._cpb_cinematic.textContent = "Error parsing data";
+                            this._cpb_stylization.textContent = "Error parsing data";
+                            this._cpb_clothing.textContent = "Error parsing data";
+                            this._cpb_scene.textContent = "Error parsing data";
+                            this._cpb_movement.textContent = "Error parsing data";
+                            return;
+                        }
+                    }
+
+                    if (!promptBreakdown) {
+                        console.log(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] No promptBreakdown, showing 'no data available'"
+                        );
+                        this._cpb_subject.textContent = "(No data available)";
+                        this._cpb_cinematic.textContent = "(No data available)";
+                        this._cpb_stylization.textContent = "(No data available)";
+                        this._cpb_clothing.textContent = "(No data available)";
+                        this._cpb_scene.textContent = "(No data available)";
+                        this._cpb_movement.textContent = "(No data available)";
+                        return;
+                    }
+
+                    console.log(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] Updating columns with data"
+                    );
+
+                    // Update each column
+                    this._cpb_subject.textContent = promptBreakdown.subject || "(empty)";
+                    this._cpb_cinematic.textContent =
+                        promptBreakdown.cinematic_aesthetic || "(empty)";
+                    this._cpb_stylization.textContent =
+                        promptBreakdown.stylization_tone || "(empty)";
+                    this._cpb_clothing.textContent = promptBreakdown.clothing || "(empty)";
+                    this._cpb_scene.textContent = promptBreakdown.scene || "(empty)";
+                    this._cpb_movement.textContent = promptBreakdown.movement || "(empty)";
+
+                    console.log("🔍 [ControlPanelPromptBreakdown DEBUG] Display update complete");
+                    debugLog("[ControlPanelPromptBreakdown] Display update complete");
+                };
+
+                // Add onExecuted handler
+                const originalOnExecuted = this.onExecuted;
+                this.onExecuted = function (message) {
+                    console.log("🔍 [ControlPanelPromptBreakdown DEBUG] onExecuted called");
+                    console.log(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] Full message object:",
+                        message
+                    );
+                    console.log(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] message keys:",
+                        Object.keys(message || {})
+                    );
+
+                    debugLog("[ControlPanelPromptBreakdown] onExecuted called");
+
+                    if (message && message.output) {
+                        console.log(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Calling updatePromptBreakdownData with message.output"
+                        );
+                        this.updatePromptBreakdownData(message.output);
+                    } else if (message && message.prompt_breakdown) {
+                        console.log(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Calling updatePromptBreakdownData with message (root level)"
+                        );
+                        this.updatePromptBreakdownData(message);
+                    } else {
+                        console.log(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] No data found in message.output or message.prompt_breakdown"
+                        );
+                    }
+
                     return originalOnExecuted?.call(this, message);
                 };
 
