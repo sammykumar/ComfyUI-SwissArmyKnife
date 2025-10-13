@@ -80,3 +80,8 @@ Extract media from:
 **Node Type**: Media Source
 **Category**: Input/External
 **Status**: Stable
+
+
+---
+
+**⚠️ CONSOLIDATION IN PROGRESS**: This node's documentation is currently split across multiple files and needs to be consolidated into a single comprehensive file. Please refer to individual files for now. See [video-preview](../video-preview/VIDEO_PREVIEW.md) and [video-metadata](../video-metadata/VIDEO_METADATA.md) for examples of consolidated documentation.
