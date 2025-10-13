@@ -251,11 +251,11 @@ class MediaDescribe:
         # Build the final JSON with overrides applied
         final_json = {
             "subject": subject,
-            "cinematic_aesthetic": cinematic_aesthetic,
-            "stylization_tone": stylization_tone,
             "clothing": clothing,
+            "movement": movement,
             "scene": scene,
-            "movement": movement
+            "cinematic_aesthetic": cinematic_aesthetic,
+            "stylization_tone": stylization_tone
         }
 
         # Add prompt_prefix if provided
@@ -982,12 +982,12 @@ Describe all visible clothing and accessories with absolute certainty and defini
                 if describe_subject:
                     json_fields.append('"subject": "Begin with a gendered noun phrase (e.g., \'A woman…\', \'A man…\'). Include posture, gestures' + (' and hairstyle with texture/motion (no color/length)' if describe_hair_style else '') + ' as applicable."')
 
+                if describe_clothing:
+                    json_fields.append('"clothing": "Describe all visible clothing/accessories with certainty. Include garment type, color(s)' + (', material, fit, and motion response. Change colors to NEW hues harmonizing with the scene (different from original).' if change_clothing_color else ', material, fit, and motion response.') + '"')
+
                 json_fields.append('"cinematic_aesthetic": "' + ('Lighting, camera details, optics (lens, DOF, rack focus), and exposure/render cues.' if describe_bokeh else 'Lighting, camera details, and exposure/render cues. Everything in sharp focus - no DOF, bokeh, or blur effects.') + '"')
 
                 json_fields.append('"stylization_tone": "Mood/genre descriptors (e.g., \'noir-inspired silhouette\', \'cinematic realism\')."')
-
-                if describe_clothing:
-                    json_fields.append('"clothing": "Describe all visible clothing/accessories with certainty. Include garment type, color(s)' + (', material, fit, and motion response. Change colors to NEW hues harmonizing with the scene (different from original).' if change_clothing_color else ', material, fit, and motion response.') + '"')
 
                 json_structure = "{\n  " + ",\n  ".join(json_fields) + "\n}"
 
@@ -1180,11 +1180,11 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                     "height": output_height,
                     "width": output_width,
                     "subject": subject,
-                    "cinematic_aesthetic": cinematic_aesthetic,
-                    "stylization_tone": stylization_tone,
                     "clothing": clothing,
+                    "movement": movement,
                     "scene": scene,
-                    "movement": movement
+                    "cinematic_aesthetic": cinematic_aesthetic,
+                    "stylization_tone": stylization_tone
                 })
 
                 return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
@@ -1271,11 +1271,11 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 "height": output_height,
                 "width": output_width,
                 "subject": subject,
-                "cinematic_aesthetic": cinematic_aesthetic,
-                "stylization_tone": stylization_tone,
                 "clothing": clothing,
+                "movement": movement,
                 "scene": scene,
-                "movement": movement
+                "cinematic_aesthetic": cinematic_aesthetic,
+                "stylization_tone": stylization_tone
             })
 
             return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
@@ -1444,8 +1444,8 @@ Return **only** a single valid JSON object (no code fences, no extra text) with 
 
 1. "subject"
 2. "clothing"
-3. "scene"
-4. "movement"
+3. "movement"
+4. "scene"
 5. "cinematic_aesthetic_control"
 6. "stylization_tone"
 
@@ -1455,8 +1455,8 @@ Example (structure only):
 {{
 "subject": "…",
 "clothing": "…",
-"scene": "…",
 "movement": "…",
+"scene": "…",
 "cinematic_aesthetic_control": "…",
 "stylization_tone": "…"
 }}
@@ -1657,11 +1657,11 @@ Example (structure only):
                     "height": output_height,
                     "width": output_width,
                     "subject": subject,
-                    "cinematic_aesthetic": cinematic_aesthetic,
-                    "stylization_tone": stylization_tone,
                     "clothing": clothing,
+                    "movement": movement,
                     "scene": scene,
-                    "movement": movement
+                    "cinematic_aesthetic": cinematic_aesthetic,
+                    "stylization_tone": stylization_tone
                 })
 
                 return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
@@ -1747,11 +1747,11 @@ Example (structure only):
                 "height": output_height,
                 "width": output_width,
                 "subject": subject,
-                "cinematic_aesthetic": cinematic_aesthetic,
-                "stylization_tone": stylization_tone,
                 "clothing": clothing,
+                "movement": movement,
                 "scene": scene,
-                "movement": movement
+                "cinematic_aesthetic": cinematic_aesthetic,
+                "stylization_tone": stylization_tone
             })
 
             return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)

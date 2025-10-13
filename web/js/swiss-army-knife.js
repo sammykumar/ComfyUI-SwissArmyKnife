@@ -665,23 +665,23 @@ app.registerExtension({
                         return { column, content: columnContent };
                     };
 
-                    // Create 5 columns
+                    // Create 6 columns
                     const subjectCol = createColumn("Subject");
+                    const clothingCol = createColumn("Clothing");
+                    const movementCol = createColumn("Movement");
+                    const sceneCol = createColumn("Scene");
                     const cinematicCol = createColumn("Cinematic/Aesthetic");
                     const stylizationCol = createColumn("Stylization/Tone");
-                    const clothingCol = createColumn("Clothing");
-                    const sceneCol = createColumn("Scene");
-                    const movementCol = createColumn("Movement");
 
                     // Remove border from last column
-                    movementCol.column.style.borderRight = "none";
+                    stylizationCol.column.style.borderRight = "none";
 
                     dom.appendChild(subjectCol.column);
+                    dom.appendChild(clothingCol.column);
+                    dom.appendChild(movementCol.column);
+                    dom.appendChild(sceneCol.column);
                     dom.appendChild(cinematicCol.column);
                     dom.appendChild(stylizationCol.column);
-                    dom.appendChild(clothingCol.column);
-                    dom.appendChild(sceneCol.column);
-                    dom.appendChild(movementCol.column);
 
                     // Add a DOM widget
                     const widget = this.addDOMWidget(
@@ -697,11 +697,11 @@ app.registerExtension({
                     // Store references
                     this._cpb_dom = dom;
                     this._cpb_subject = subjectCol.content;
+                    this._cpb_clothing = clothingCol.content;
+                    this._cpb_movement = movementCol.content;
+                    this._cpb_scene = sceneCol.content;
                     this._cpb_cinematic = cinematicCol.content;
                     this._cpb_stylization = stylizationCol.content;
-                    this._cpb_clothing = clothingCol.content;
-                    this._cpb_scene = sceneCol.content;
-                    this._cpb_movement = movementCol.content;
                     this._cpb_widget = widget;
                 }
 
@@ -767,11 +767,11 @@ app.registerExtension({
                             );
                             debugLog("[ControlPanelPromptBreakdown] Error parsing JSON:", e);
                             this._cpb_subject.textContent = "Error parsing data";
+                            this._cpb_clothing.textContent = "Error parsing data";
+                            this._cpb_movement.textContent = "Error parsing data";
+                            this._cpb_scene.textContent = "Error parsing data";
                             this._cpb_cinematic.textContent = "Error parsing data";
                             this._cpb_stylization.textContent = "Error parsing data";
-                            this._cpb_clothing.textContent = "Error parsing data";
-                            this._cpb_scene.textContent = "Error parsing data";
-                            this._cpb_movement.textContent = "Error parsing data";
                             return;
                         }
                     }
@@ -781,11 +781,11 @@ app.registerExtension({
                             "🔍 [ControlPanelPromptBreakdown DEBUG] No promptBreakdown, showing 'no data available'"
                         );
                         this._cpb_subject.textContent = "(No data available)";
+                        this._cpb_clothing.textContent = "(No data available)";
+                        this._cpb_movement.textContent = "(No data available)";
+                        this._cpb_scene.textContent = "(No data available)";
                         this._cpb_cinematic.textContent = "(No data available)";
                         this._cpb_stylization.textContent = "(No data available)";
-                        this._cpb_clothing.textContent = "(No data available)";
-                        this._cpb_scene.textContent = "(No data available)";
-                        this._cpb_movement.textContent = "(No data available)";
                         return;
                     }
 
@@ -795,13 +795,13 @@ app.registerExtension({
 
                     // Update each column
                     this._cpb_subject.textContent = promptBreakdown.subject || "(empty)";
+                    this._cpb_clothing.textContent = promptBreakdown.clothing || "(empty)";
+                    this._cpb_movement.textContent = promptBreakdown.movement || "(empty)";
+                    this._cpb_scene.textContent = promptBreakdown.scene || "(empty)";
                     this._cpb_cinematic.textContent =
                         promptBreakdown.cinematic_aesthetic || "(empty)";
                     this._cpb_stylization.textContent =
                         promptBreakdown.stylization_tone || "(empty)";
-                    this._cpb_clothing.textContent = promptBreakdown.clothing || "(empty)";
-                    this._cpb_scene.textContent = promptBreakdown.scene || "(empty)";
-                    this._cpb_movement.textContent = promptBreakdown.movement || "(empty)";
 
                     console.log("🔍 [ControlPanelPromptBreakdown DEBUG] Display update complete");
                     debugLog("[ControlPanelPromptBreakdown] Display update complete");
