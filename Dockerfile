@@ -36,7 +36,8 @@ RUN pip install --no-cache-dir \
     google-genai \
     opencv-python \
     requests \
-    httpx
+    httpx \
+    openai
 
 # Create directories for models and custom nodes if they don't exist
 RUN mkdir -p models custom_nodes input output
