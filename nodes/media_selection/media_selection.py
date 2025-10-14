@@ -125,7 +125,7 @@ class MediaSelection:
 
         try:
             # Import helper methods from the MediaDescribe node
-            from ..media_describe.mediia_describe import MediaDescribe
+            from ..media_describe.media_describe import MediaDescribe
             helper = MediaDescribe()
 
             # Handle different media sources

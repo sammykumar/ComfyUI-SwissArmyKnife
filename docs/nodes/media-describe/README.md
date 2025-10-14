@@ -1,13 +1,17 @@
 # Media Describe Node Documentation
 
-AI-powered media description using Google's Gemini API for analyzing images and videos.
+AI-powered media description using Google's Gemini API and local vLLM models for analyzing images and videos.
 
 ## 📄 Documentation
 
-- **[MEDIA_DESCRIBE.md](MEDIA_DESCRIBE.md)** - Complete consolidated documentation
+- **[MEDIA_DESCRIBE.md](MEDIA_DESCRIBE.md)** - Complete consolidated documentation for Gemini-based Media Describe
+- **[JOYCAPTION_MEDIA_DESCRIBE.md](JOYCAPTION_MEDIA_DESCRIBE.md)** - Complete documentation for JoyCaption Media Describe (local vLLM)
+- **[JOYCAPTION_QUICK_REFERENCE.md](JOYCAPTION_QUICK_REFERENCE.md)** - Quick reference guide for JoyCaption node
+
 ### Core Nodes
 
-- **MediaDescribe** - Main node for analyzing media with Gemini AI
+- **MediaDescribe** - Main node for analyzing media with Gemini AI (cloud-based)
+- **JoyCaptionMediaDescribe** - Video analysis with local JoyCaption vLLM model
 - **[Media Describe - Overrides](MEDIA_DESCRIBE_OVERRIDES_NODE.md)** - Paragraph override configuration node
 - **[Media Describe - Prompt Breakdown](PROMPT_BREAKDOWN_NODE.md)** - Display node for formatted paragraph breakdown
 - **Gemini Util - Options** - Gemini API configuration node
