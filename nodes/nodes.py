@@ -9,6 +9,7 @@ from .civitai_service import CivitAIService
 from .lora_hash_cache import get_cache as get_lora_hash_cache
 from .media_describe import GeminiUtilOptions, MediaDescribe, MediaDescribeOverrides, JoyCaptionMediaDescribe
 from .utils.video_preview import VideoPreview
+from .transformers_wrapper import TransformersWrapperNode
 
 
 
@@ -776,7 +777,8 @@ NODE_CLASS_MAPPINGS = {
     "FilenameGenerator": FilenameGenerator,
     "VideoMetadataNode": VideoMetadataNode,
     "LoRAInfoExtractor": LoRAInfoExtractor,
-    "VideoPreview": VideoPreview
+    "VideoPreview": VideoPreview,
+    "TransformersWrapperNode": TransformersWrapperNode
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -788,5 +790,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "FilenameGenerator": "Filename Generator",
     "VideoMetadataNode": "Update Video Metadata",
     "LoRAInfoExtractor": "LoRA Info Extractor",
-    "VideoPreview": "🎬 Video Preview"
+    "VideoPreview": "🎬 Video Preview",
+    "TransformersWrapperNode": "🤖 Transformers VLM Wrapper"
 }
