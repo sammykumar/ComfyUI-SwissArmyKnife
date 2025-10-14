@@ -23,17 +23,17 @@ This node is based on the JoyCaption Media Describe node but adapted to work wit
 
 ### Required Inputs
 
-| Input               | Type    | Default                      | Description                                           |
-| ------------------- | ------- | ---------------------------- | ----------------------------------------------------- |
+| Input               | Type    | Default                     | Description                                           |
+| ------------------- | ------- | --------------------------- | ----------------------------------------------------- |
 | `base_url`          | STRING  | `http://192.168.50.41:1234` | LM Studio server URL                                  |
-| `model_name`        | STRING  | `qwen/qwen3-vl-30b`          | Model name loaded in LM Studio                        |
-| `video_path`        | STRING  | `""`                    | Path to video file to analyze                         |
-| `fps_sample`        | FLOAT   | `1.0`                   | Extract 1 frame every N seconds (0.1-10.0)            |
-| `max_duration`      | FLOAT   | `5.0`                   | Maximum duration in seconds to sample from (1.0-60.0) |
-| `caption_prompt`    | STRING  | (See below)             | Prompt for individual frame captions                  |
-| `max_caption_words` | INT     | `40`                    | Maximum words for final combined caption (10-200)     |
-| `temperature`       | FLOAT   | `0.5`                   | Temperature for text generation (0.0-2.0)             |
-| `verbose`           | BOOLEAN | `False`                 | Show detailed frame-by-frame captions in console      |
+| `model_name`        | STRING  | `qwen/qwen3-vl-30b`         | Model name loaded in LM Studio                        |
+| `video_path`        | STRING  | `""`                        | Path to video file to analyze                         |
+| `fps_sample`        | FLOAT   | `1.0`                       | Extract 1 frame every N seconds (0.1-10.0)            |
+| `max_duration`      | FLOAT   | `5.0`                       | Maximum duration in seconds to sample from (1.0-60.0) |
+| `caption_prompt`    | STRING  | (See below)                 | Prompt for individual frame captions                  |
+| `max_caption_words` | INT     | `40`                        | Maximum words for final combined caption (10-200)     |
+| `temperature`       | FLOAT   | `0.5`                       | Temperature for text generation (0.0-2.0)             |
+| `verbose`           | BOOLEAN | `False`                     | Show detailed frame-by-frame captions in console      |
 
 #### Default Caption Prompt
 
@@ -144,7 +144,7 @@ The temperature is reduced by 40% (`temperature * 0.6`) for more consistent outp
 1. Start LM Studio and load a vision model (e.g., `qwen/qwen3-vl-30b`)
 2. Add LLM Studio Media Describe node to workflow
 3. Configure inputs:
-    - `base_url`: `http://127.0.0.1:1234` (default LM Studio port)
+    - `base_url`: `http://192.168.50.41:1234` (LM Studio server)
     - `model_name`: Match the model loaded in LM Studio
     - `video_path`: Path to your video file
     - `fps_sample`: `1.0` (1 frame per second)
@@ -182,8 +182,8 @@ Note camera angles, lighting, and visual techniques. Maximum 50 words.
 If LM Studio is not running:
 
 ```
-❌ Failed to connect to LM Studio at http://127.0.0.1:1234
-Make sure LM Studio is running at http://127.0.0.1:1234
+❌ Failed to connect to LM Studio at http://192.168.50.41:1234
+Make sure LM Studio is running at http://192.168.50.41:1234
 ```
 
 **Solution**: Start LM Studio and ensure the model is loaded.
@@ -238,14 +238,14 @@ The node continues processing other frames and returns `"[Error: ...]"` for fail
 
 ## Comparison with JoyCaption Node
 
-| Feature            | LLM Studio              | JoyCaption              |
-| ------------------ | ----------------------- | ----------------------- |
-| **API Style**      | OpenAI-compatible       | vLLM HTTP API           |
-| **Model Loading**  | Via LM Studio UI        | Direct vLLM server      |
-| **Sleep/Wake**     | Not supported           | Supported               |
-| **Client Library** | `openai` package        | `requests`              |
-| **Default Model**  | `qwen/qwen3-vl-30b`     | JoyCaption model        |
-| **Endpoint**       | `http://127.0.0.1:1234` | `http://localhost:8023` |
+| Feature            | LLM Studio                  | JoyCaption              |
+| ------------------ | --------------------------- | ----------------------- |
+| **API Style**      | OpenAI-compatible           | vLLM HTTP API           |
+| **Model Loading**  | Via LM Studio UI            | Direct vLLM server      |
+| **Sleep/Wake**     | Not supported               | Supported               |
+| **Client Library** | `openai` package            | `requests`              |
+| **Default Model**  | `qwen/qwen3-vl-30b`         | JoyCaption model        |
+| **Endpoint**       | `http://192.168.50.41:1234` | `http://localhost:8023` |
 
 ## Troubleshooting
 

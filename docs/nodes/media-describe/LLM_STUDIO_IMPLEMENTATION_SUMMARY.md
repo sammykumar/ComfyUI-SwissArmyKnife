@@ -39,7 +39,7 @@
 
 - **Before**: Single `endpoint` parameter
 - **After**: Separate `base_url` and `model_name` parameters
-    - `base_url`: Default `http://127.0.0.1:1234`
+    - `base_url`: Default `http://192.168.50.41:1234`
     - `model_name`: Default `qwen/qwen3-vl-30b`
 
 ### 3. Node Registration
@@ -170,7 +170,7 @@ ruff check nodes/media_describe/llm_studio_describe.py
 
 1. Add "LLM Studio Media Describe" node to workflow
 2. Configure inputs:
-    - `base_url`: `http://127.0.0.1:1234`
+    - `base_url`: `http://192.168.50.41:1234`
     - `model_name`: Match model loaded in LM Studio
     - `video_path`: Path to video file
     - `fps_sample`: `1.0` (1 frame per second)

@@ -9,7 +9,7 @@
 # Category: Swiss Army Knife 🔪/Media Caption
 
 Inputs:
-  base_url: "http://127.0.0.1:1234"
+  base_url: "http://192.168.50.41:1234"
   model_name: "qwen/qwen3-vl-30b"
   video_path: "/path/to/video.mp4"
   fps_sample: 1.0
@@ -48,7 +48,7 @@ Outputs:
 - [ ] LM Studio is running
 - [ ] Vision model is loaded in LM Studio
 - [ ] Model name matches exactly
-- [ ] Base URL is correct (default: `http://127.0.0.1:1234`)
+- [ ] Base URL is correct (default: `http://192.168.50.41:1234`)
 - [ ] Video file path is valid
 
 ## Supported Models
