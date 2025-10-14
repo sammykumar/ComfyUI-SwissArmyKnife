@@ -15,6 +15,7 @@ Core custom nodes that extend ComfyUI functionality:
 - **[reddit-media](nodes/reddit-media/)** - Reddit and RedGifs media extraction and processing
 - **[media-selection](nodes/media-selection/)** - Media source selection and management
 - **[control-panel](nodes/control-panel/)** - Workflow information dashboard display
+- **[transformers-wrapper](nodes/transformers-wrapper/)** - Dynamic transformer-based VLM loading (JoyCaption, Qwen2.5/3-VL)
 
 ### 🏗️ Infrastructure (`/infrastructure`)
 
