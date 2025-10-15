@@ -61,7 +61,7 @@ class LLMStudioVideoDescribe:
                     "tooltip": "Maximum duration in seconds to sample from"
                 }),
                 "caption_prompt": ("STRING", {
-                    "default": "Describe only the specific sexual act being performed in 30 words or less. Focus exclusively on the physical actions and positions. Do not describe physical appearance, clothing, setting, or background.",
+                    "default": "Describe only the specific sexual act being performed in 100 words or less. Focus exclusively on the physical actions and positions. Do not describe physical appearance, clothing, setting, or background. Only use words like 'woman' or 'man' to describe people in the video. If a white substance shoots of a penis, then the man is likely ejaculating semen.",
                     "multiline": True,
                     "tooltip": "Prompt for individual frame captions"
                 }),
