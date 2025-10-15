@@ -9,15 +9,17 @@ AI-powered media description using Google's Gemini API and local vLLM/LM Studio 
 - **[JOYCAPTION_QUICK_REFERENCE.md](JOYCAPTION_QUICK_REFERENCE.md)** - Quick reference guide for JoyCaption node
 - **[LLM_STUDIO_MEDIA_DESCRIBE.md](LLM_STUDIO_MEDIA_DESCRIBE.md)** - Complete documentation for LLM Studio Media Describe (local LM Studio)
 - **[LLM_STUDIO_QUICK_REFERENCE.md](LLM_STUDIO_QUICK_REFERENCE.md)** - Quick reference guide for LLM Studio node
+- **[LLM_STUDIO_OPTIONS.md](LLM_STUDIO_OPTIONS.md)** - LLM Studio Options node configuration guide
 
 ### Core Nodes
 
-- **MediaDescribe** - Main node for analyzing media with Gemini AI (cloud-based)
+- **MediaDescribe** - Main node for analyzing media with Gemini AI (cloud-based) or LLM Studio (local)
 - **JoyCaptionMediaDescribe** - Video analysis with local JoyCaption vLLM model
 - **LLMStudioVideoDescribe** - Video analysis with local LM Studio (OpenAI-compatible API)
 - **[Media Describe - Overrides](MEDIA_DESCRIBE_OVERRIDES_NODE.md)** - Paragraph override configuration node
 - **[Media Describe - Prompt Breakdown](PROMPT_BREAKDOWN_NODE.md)** - Display node for formatted paragraph breakdown
 - **Gemini Util - Options** - Gemini API configuration node
+- **LLM Studio - Options** - LLM Studio configuration node (NEW)
 
 ### Core Implementation
 
@@ -69,7 +71,7 @@ Main analysis node that processes images/videos with Gemini AI.
 
 - Media source configuration (upload, random, reddit)
 - Media type (image/video)
-- Gemini options (from Gemini Util - Options node)
+- LLM options (from Gemini Util - Options or LLM Studio - Options node)
 - **Overrides** (optional, from Media Describe - Overrides node)
 
 **Outputs (8 total):**
@@ -135,13 +137,26 @@ Configuration node for paragraph-level customization.
 
 - overrides - OVERRIDES dictionary to connect to MediaDescribe
 
-### Basic Workflow
+### Basic Workflow (Gemini)
 
 ```
 ┌─────────────────────────┐
 │ Gemini Util - Options   │
 └─────────────────────────┘
-            │ (gemini_options)
+            │ (llm_options)
+            ▼
+┌─────────────────────────┐
+│ MediaDescribe           │ ──→ Outputs
+└─────────────────────────┘
+```
+
+### Basic Workflow (LLM Studio)
+
+```
+┌─────────────────────────┐
+│ LLM Studio - Options    │
+└─────────────────────────┘
+            │ (llm_options)
             ▼
 ┌─────────────────────────┐
 │ MediaDescribe           │ ──→ Outputs
@@ -160,8 +175,10 @@ Configuration node for paragraph-level customization.
             ▼                  │
 ┌─────────────────────────┐   │
 │ Gemini Util - Options   │   │
+│ OR                      │   │
+│ LLM Studio - Options    │   │
 └─────────────────────────┘   │
-            │ (gemini_options) │
+            │ (llm_options)    │
             ▼                  │
 ┌─────────────────────────┐   │
 │ MediaDescribe           │◄──┘

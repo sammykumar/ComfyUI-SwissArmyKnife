@@ -6,6 +6,7 @@ Unified debug and logging system for ComfyUI-SwissArmyKnife.
 
 - **[DEBUG_MODE_IMPLEMENTATION.md](DEBUG_MODE_IMPLEMENTATION.md)** - Debug mode implementation and usage
 - **[UNIFIED_DEBUG_SYSTEM.md](UNIFIED_DEBUG_SYSTEM.md)** - Unified debug system architecture
+- **[LLM_STUDIO_PROMPT_LOGGING.md](LLM_STUDIO_PROMPT_LOGGING.md)** - LLM Studio prompt debugging
 
 ## 🎯 Quick Reference
 
@@ -16,6 +17,7 @@ Debug mode can be enabled/disabled via:
 1. **Server Config**: `/swissarmyknife/config` endpoint
 2. **Environment Variable**: `DEBUG_ENABLED=true`
 3. **Runtime**: Toggle via API
+4. **LLM Studio**: `verbose` option in LLM Studio - Options node
 
 ### Debug Output
 
@@ -24,6 +26,7 @@ When enabled, debug output appears in:
 - Browser console (JavaScript widgets)
 - Server logs (Python nodes)
 - Network tab (API calls)
+- LLM Studio prompts (when verbose=True)
 
 ### Usage
 

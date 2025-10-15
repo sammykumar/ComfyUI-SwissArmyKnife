@@ -1778,6 +1778,330 @@ Example (structure only):
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Video analysis failed: {error_msg}")
 
+    def _process_with_llm_studio(self, media_path, media_type, llm_options, media_info_text,
+                                  override_subject, override_cinematic_aesthetic, override_stylization_tone,
+                                  override_clothing, override_scene, override_movement, overrides):
+        """
+        Process media using LLM Studio (local vision model).
+        
+        Args:
+            media_path: Path to media file
+            media_type: "image" or "video"
+            llm_options: LLM Studio configuration options
+            media_info_text: Media information string
+            override_*: Override values for each paragraph
+            overrides: Full overrides dictionary
+            
+        Returns:
+            Tuple of (all_media_describe_data, raw_llm_json, positive_prompt_json, positive_prompt, height, width)
+        """
+        from openai import OpenAI
+        import base64
+        import cv2
+        from PIL import Image as PILImage
+
+        # Extract LLM Studio options
+        base_url = llm_options.get("base_url", "http://192.168.50.41:1234")
+        model_name = llm_options.get("model_name", "qwen/qwen3-vl-30b")
+        temperature = llm_options.get("temperature", 0.5)
+        verbose = llm_options.get("verbose", False)
+        model_type = llm_options.get("model_type", "Text2Image")
+        describe_clothing = llm_options.get("describe_clothing", True)
+        change_clothing_color = llm_options.get("change_clothing_color", False)
+        describe_hair_style = llm_options.get("describe_hair_style", True)
+        describe_bokeh = llm_options.get("describe_bokeh", True)
+        describe_subject = llm_options.get("describe_subject", True)
+
+        # Initialize LLM Studio client
+        try:
+            client = OpenAI(base_url=f"{base_url}/v1", api_key="lm-studio")
+            if verbose:
+                print(f"✅ Connected to LM Studio at {base_url}")
+                print(f"📦 Using model: {model_name}")
+        except Exception as e:
+            raise Exception(f"Failed to connect to LM Studio at {base_url}: {str(e)}")
+
+        # Build system and user prompts based on model type and media type
+        if media_type == "image":
+            if model_type == "Text2Image":
+                system_prompt = """Generate a Wan 2.2 optimized text to image prompt. You are an expert assistant specialized in analyzing and verbalizing input media for instagram-quality posts using the Wan 2.2 Text to Image workflow.
+
+DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or".
+
+Return **only** a single valid JSON object (no code fences, no extra text) with **exactly six** string fields in this exact order:
+1. "subject" - Detailed description of the main subject
+2. "clothing" - Clothing and style details
+3. "movement" - Pose, gesture, or implied motion
+4. "scene" - Setting, environment, and background elements
+5. "cinematic_aesthetic" - Lighting, camera details, and rendering cues
+6. "stylization_tone" - Mood/genre descriptors
+
+Each field's value is one fully formed paragraph (a single string) for that category."""
+                user_prompt = "Please analyze this image and provide a detailed description in the JSON format specified in the system prompt."
+            else:  # ImageEdit
+                system_prompt = """You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or"."""
+                user_prompt = "Please analyze this image and generate a single-sentence Qwen-Image-Edit instruction following the guidelines in the system prompt."
+        else:  # video
+            system_prompt = """You are an expert assistant specialized in analyzing and verbalizing input videos for cinematic-quality video transformation using the Wan 2.2 + VACE workflow.
+
+DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or".
+
+Return **only** a single valid JSON object (no code fences, no extra text) with **exactly six** string fields in this exact order:
+1. "subject" - Detailed description of the main subject
+2. "clothing" - Clothing and style details
+3. "movement" - Actions, motion, and choreography across frames
+4. "scene" - Setting, environment, and background elements
+5. "cinematic_aesthetic_control" - Lighting, camera details, and rendering cues
+6. "stylization_tone" - Mood/genre descriptors
+
+Each field's value is one fully formed paragraph (a single string) for that category."""
+            user_prompt = "Please analyze this video and provide a detailed description in the JSON format specified in the system prompt."
+
+        # Log prompt construction
+        if verbose:
+            print(f"\n{'='*60}")
+            print(f"🔧 LLM Studio Prompt Construction:")
+            print(f"{'='*60}")
+            print(f"Media Type: {media_type}")
+            print(f"Model Type: {model_type}")
+            print(f"Describe Clothing: {describe_clothing}")
+            print(f"Change Clothing Color: {change_clothing_color}")
+            print(f"Describe Hair Style: {describe_hair_style}")
+            print(f"Describe Bokeh: {describe_bokeh}")
+            print(f"Describe Subject: {describe_subject}")
+            print(f"{'='*60}\n")
+
+        # Get image dimensions
+        height, width = 512, 512  # Default
+        try:
+            if media_type == "video":
+                cap = cv2.VideoCapture(media_path)
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                cap.release()
+            else:
+                img = PILImage.open(media_path)
+                width, height = img.size
+        except Exception as e:
+            print(f"Warning: Could not get media dimensions: {e}")
+
+        # Process based on media type
+        if media_type == "video":
+            # For video, extract all frames first, then send in a single request
+            fps_sample = llm_options.get("fps_sample", 1.0)
+            max_duration = llm_options.get("max_duration", 5.0)
+
+            # Extract frames from video
+            cap = cv2.VideoCapture(media_path)
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            video_fps = cap.get(cv2.CAP_PROP_FPS)
+            duration = total_frames / video_fps if video_fps > 0 else 0
+
+            sampling_duration = min(duration, max_duration)
+            num_frames_to_extract = int(sampling_duration / fps_sample)
+            if num_frames_to_extract == 0:
+                num_frames_to_extract = 1
+
+            frame_indices = [int(i * fps_sample * video_fps) for i in range(num_frames_to_extract)]
+            frame_indices = [idx for idx in frame_indices if idx < total_frames]
+
+            if verbose:
+                print(f"📹 Extracting {len(frame_indices)} frames from video...")
+
+            # Extract all frames and encode to base64
+            frame_data_list = []
+            for idx, frame_num in enumerate(frame_indices):
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
+                ret, frame = cap.read()
+
+                if ret:
+                    # Convert frame to base64
+                    _, buffer = cv2.imencode('.jpg', frame)
+                    frame_b64 = base64.b64encode(buffer).decode('utf-8')
+
+                    frame_data_list.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{frame_b64}"
+                        }
+                    })
+
+                    if verbose:
+                        print(f"✅ Extracted frame {idx + 1}/{len(frame_indices)}")
+                else:
+                    if verbose:
+                        print(f"❌ Failed to extract frame {idx + 1}")
+
+            cap.release()
+
+            if not frame_data_list:
+                combined_caption = "No frames could be extracted from video"
+            else:
+                # Build content array with text prompt followed by all frames
+                content_array = [{"type": "text", "text": user_prompt}] + frame_data_list
+
+                # Debug logging
+                if verbose:
+                    print(f"\n{'='*60}")
+                    print(f"🔍 LLM Studio Video Prompt Debug:")
+                    print(f"{'='*60}")
+                    print(f"📝 System Prompt:\n{system_prompt}")
+                    print(f"\n📝 User Prompt:\n{user_prompt}")
+                    print(f"\n📊 Sending {len(frame_data_list)} frames in single request")
+                    print(f"{'='*60}\n")
+
+                # Send all frames in a single request
+                try:
+                    response = client.chat.completions.create(
+                        model=model_name,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": system_prompt
+                            },
+                            {
+                                "role": "user",
+                                "content": content_array
+                            }
+                        ],
+                        temperature=temperature
+                        # max_tokens removed - let model generate as much as needed
+                    )
+
+                    combined_caption = response.choices[0].message.content
+
+                    if verbose:
+                        print(f"✅ Video analysis complete: {combined_caption[:150]}...")
+                except Exception as e:
+                    print(f"❌ Error processing video: {e}")
+                    combined_caption = f"[Error: {e}]"
+
+        else:
+            # For image, process directly
+            with open(media_path, "rb") as image_file:
+                image_b64 = base64.b64encode(image_file.read()).decode('utf-8')
+
+            image_data = {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{image_b64}"
+                }
+            }
+
+            # Debug logging
+            if verbose:
+                print(f"\n{'='*60}")
+                print(f"🔍 LLM Studio Image Prompt Debug:")
+                print(f"{'='*60}")
+                print(f"📝 System Prompt:\n{system_prompt}")
+                print(f"\n📝 User Prompt:\n{user_prompt}")
+                print(f"{'='*60}\n")
+
+            try:
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": system_prompt
+                        },
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": user_prompt},
+                                image_data
+                            ]
+                        }
+                    ],
+                    temperature=temperature
+                    # max_tokens removed - let model generate as much as needed
+                )
+
+                combined_caption = response.choices[0].message.content
+
+                if verbose:
+                    print(f"✅ Image caption: {combined_caption}")
+            except Exception as e:
+                raise Exception(f"LLM Studio image captioning failed: {str(e)}")
+
+        # Parse the LLM response - it should be JSON format
+        try:
+            # Try to parse as JSON first
+            if verbose:
+                print(f"\n{'='*60}")
+                print(f"🔍 Parsing LLM Response:")
+                print(f"{'='*60}")
+                print(f"Raw response:\n{combined_caption[:500]}...")
+                print(f"{'='*60}\n")
+            
+            # Clean any markdown code fences if present
+            cleaned_response = combined_caption.strip()
+            if cleaned_response.startswith('```'):
+                lines = cleaned_response.split('\n')
+                cleaned_response = '\n'.join(lines[1:-1]) if len(lines) > 2 else cleaned_response
+                cleaned_response = cleaned_response.replace('```json', '').replace('```', '').strip()
+            
+            # Parse the JSON
+            llm_json = json.loads(cleaned_response)
+            
+            # Normalize field names - videos use "cinematic_aesthetic_control", we need "cinematic_aesthetic"
+            if "cinematic_aesthetic_control" in llm_json and "cinematic_aesthetic" not in llm_json:
+                llm_json["cinematic_aesthetic"] = llm_json.pop("cinematic_aesthetic_control")
+            
+            # Ensure all required fields exist
+            required_fields = ["subject", "clothing", "movement", "scene", "cinematic_aesthetic", "stylization_tone"]
+            for field in required_fields:
+                if field not in llm_json:
+                    llm_json[field] = ""
+            
+            if verbose:
+                print(f"✅ Successfully parsed JSON response")
+                print(f"Fields found: {list(llm_json.keys())}")
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            # If JSON parsing fails, fall back to simple structure
+            if verbose:
+                print(f"⚠️ Failed to parse as JSON: {e}")
+                print(f"Creating simple structure with full response in subject field")
+            
+            llm_json = {
+                "subject": combined_caption,
+                "clothing": "",
+                "movement": "",
+                "scene": "",
+                "cinematic_aesthetic": "",
+                "stylization_tone": ""
+            }
+
+        # Apply overrides
+        if override_subject.strip():
+            llm_json["subject"] = override_subject.strip()
+        if override_clothing.strip():
+            llm_json["clothing"] = override_clothing.strip()
+        if override_movement.strip():
+            llm_json["movement"] = override_movement.strip()
+        if override_scene.strip():
+            llm_json["scene"] = override_scene.strip()
+        if override_cinematic_aesthetic.strip():
+            llm_json["cinematic_aesthetic"] = override_cinematic_aesthetic.strip()
+        if override_stylization_tone.strip():
+            llm_json["stylization_tone"] = override_stylization_tone.strip()
+
+        raw_llm_json = json.dumps(llm_json, indent=2)
+
+        # Build positive prompt from non-empty fields
+        positive_parts = []
+        for field in ["subject", "clothing", "movement", "scene", "cinematic_aesthetic", "stylization_tone"]:
+            if llm_json[field]:
+                positive_parts.append(llm_json[field])
+
+        positive_prompt = "\n\n".join(positive_parts) if positive_parts else combined_caption
+
+        # Build final output
+        all_data = f"{media_info_text}\n\n{'='*50}\nLLM Studio Description:\n{'='*50}\n{positive_prompt}"
+
+        return (all_data, raw_llm_json, raw_llm_json, positive_prompt, height, width)
+
     @classmethod
     def INPUT_TYPES(s):
         """
@@ -1792,8 +2116,8 @@ Example (structure only):
                 }),
             },
             "optional": {
-                "gemini_options": ("GEMINI_OPTIONS", {
-                    "tooltip": "Configuration options from Gemini Util - Options node"
+                "llm_studio_options": ("LLM_STUDIO_OPTIONS", {
+                    "tooltip": "Configuration options from LLM Studio - Options node"
                 }),
                 "overrides": ("OVERRIDES", {
                     "tooltip": "Paragraph overrides from Media Describe - Overrides node (optional)"
@@ -1806,13 +2130,13 @@ Example (structure only):
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
-    def describe_media(self, media_processed_path, gemini_options=None, overrides=None):
+    def describe_media(self, media_processed_path, llm_studio_options=None, overrides=None):
         """
-        Process media (image or video) and analyze with Gemini
+        Process media (image or video) and analyze with LLM Studio
 
         Args:
             media_processed_path: Path to the processed media file from Media Selection node
-            gemini_options: Configuration options from Gemini Util - Options node (optional)
+            llm_studio_options: Configuration options from LLM Studio - Options node (optional)
             overrides: Dictionary of paragraph overrides from Media Describe - Overrides node (optional)
         """
         # Validate media path
@@ -1822,19 +2146,15 @@ Example (structure only):
         if not os.path.exists(media_processed_path):
             raise ValueError(f"Media file does not exist: {media_processed_path}")
 
-        # Handle missing gemini_options with defaults
-        if gemini_options is None:
-            gemini_options = {
-                "gemini_api_key": "YOUR_GEMINI_API_KEY_HERE",
-                "gemini_model": "models/gemini-2.5-flash",
-                "model_type": "Text2Image",
-                "describe_clothing": False,
-                "change_clothing_color": False,
-                "describe_hair_style": True,
-                "describe_bokeh": True,
-                "describe_subject": True,
-                "replace_action_with_twerking": False,
-                "prefix_text": ""
+        # Handle missing llm_studio_options with defaults
+        if llm_studio_options is None:
+            llm_studio_options = {
+                "provider": "llm_studio",
+                "base_url": "http://192.168.50.41:1234",
+                "model_name": "qwen/qwen3-vl-30b",
+                "temperature": 0.5,
+                "caption_prompt": "Describe this image in detail, focusing on the subject, setting, and mood.",
+                "verbose": False
             }
 
         # Handle missing overrides with defaults
@@ -1849,18 +2169,6 @@ Example (structure only):
         override_scene = overrides.get("override_scene", "")
         override_movement = overrides.get("override_movement", "")
 
-        # Extract values from options
-        gemini_api_key = gemini_options["gemini_api_key"]
-        gemini_model = gemini_options["gemini_model"]
-        model_type = gemini_options["model_type"]
-        describe_clothing = gemini_options["describe_clothing"]
-        change_clothing_color = gemini_options.get("change_clothing_color", False)
-        describe_hair_style = gemini_options["describe_hair_style"]
-        describe_bokeh = gemini_options["describe_bokeh"]
-        describe_subject = gemini_options["describe_subject"]
-        replace_action_with_twerking = gemini_options.get("replace_action_with_twerking", False)
-        prefix_text = gemini_options["prefix_text"]
-
         try:
             # Determine media type from file extension
             file_ext = os.path.splitext(media_processed_path)[1].lower()
@@ -1869,21 +2177,12 @@ Example (structure only):
 
             media_info_text = f"{'📹' if media_type == 'video' else '📷'} Media Processing Info:\n• File: {os.path.basename(media_processed_path)}\n• Type: {media_type}\n• Full path: {media_processed_path}"
 
-            # Process based on media type
-            if media_type == "image":
-                # Process as image - delegate to image logic
-                return self._process_image(
-                    gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text,
-                    None, media_processed_path, media_info_text,
-                    override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, overrides
-                )
-            else:
-                # Process as video - delegate to video logic  
-                return self._process_video(
-                    gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text,
-                    media_processed_path, 30.0, 0.0, media_info_text,
-                    override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement, overrides
-                )
+            # Process with LLM Studio
+            return self._process_with_llm_studio(
+                media_processed_path, media_type, llm_studio_options, media_info_text,
+                override_subject, override_cinematic_aesthetic, override_stylization_tone, 
+                override_clothing, override_scene, override_movement, overrides
+            )
 
         except Exception as e:
             # Re-raise the exception to stop workflow execution

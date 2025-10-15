@@ -5710,3 +5710,261 @@ The system uses dynamic paragraph numbering based on enabled options:
 6. **Stylization & Tone** (always included)
 
 The paragraph numbers and ordinal names (First, Second, Third, etc.) are automatically calculated and inserted based on which modules are enabled.
+---
+
+# LLM Options Support
+
+**Date**: October 15, 2025  
+**Status**: Completed
+
+## Overview
+
+The `MediaDescribe` node has been enhanced to support multiple LLM providers through the renamed `llm_options` input. This allows you to use either **Gemini API** (cloud-based) or **LLM Studio** (local) for media analysis.
+
+## Key Changes
+
+### Input Parameter Renamed
+
+- **Old**: `gemini_options` (GEMINI_OPTIONS type)
+- **New**: `llm_options` (accepts both GEMINI_OPTIONS and LLM_STUDIO_OPTIONS types)
+
+### Backward Compatibility
+
+✅ **Fully backward compatible** - Existing workflows using Gemini Options continue to work without modification.
+
+## Supported LLM Providers
+
+### 1. Gemini API (Cloud-based)
+
+**Use Case**: High-quality structured output for text-to-image workflows
+
+**Setup**:
+1. Add "Gemini Util - Options" node
+2. Configure API key and model
+3. Connect to MediaDescribe `llm_options` input
+
+**Output**: Structured JSON with 6 fields (subject, clothing, movement, scene, cinematic_aesthetic, stylization_tone)
+
+**Documentation**: See existing Gemini Options documentation
+
+### 2. LLM Studio (Local)
+
+**Use Case**: Privacy-focused local processing with vision models
+
+**Setup**:
+1. Start LM Studio with a vision model (e.g., Qwen3-VL)
+2. Add "LLM Studio - Options" node
+3. Configure base URL and model name
+4. Connect to MediaDescribe `llm_options` input
+
+**Output**: Simple caption-based description
+
+**Documentation**: See [LLM_STUDIO_OPTIONS.md](LLM_STUDIO_OPTIONS.md)
+
+## How Provider Detection Works
+
+The MediaDescribe node automatically detects which provider to use based on the options object:
+
+```python
+# Detect provider from options
+provider = llm_options.get("provider", "gemini")  # Default to Gemini
+
+if provider == "llm_studio":
+    # Use LLM Studio processing
+    return self._process_with_llm_studio(...)
+else:
+    # Use Gemini processing (default)
+    return self._process_image(...) or self._process_video(...)
+```
+
+**Provider Identifiers**:
+- Gemini Options: No explicit provider field (defaults to "gemini")
+- LLM Studio Options: `"provider": "llm_studio"`
+
+## LLM Studio Processing Flow
+
+### Image Processing
+
+1. **Load Image**: Read image file and encode to base64
+2. **Call LLM Studio**: Send to local vision model with caption prompt
+3. **Generate Caption**: Receive natural language description
+4. **Format Output**: Create simplified JSON structure
+5. **Apply Overrides**: Merge any user-specified overrides
+6. **Return Results**: Same output format as Gemini mode
+
+### Video Processing
+
+1. **Extract Frames**: Sample frames based on `fps_sample` and `max_duration`
+2. **Caption Frames**: Send each frame to LLM Studio vision model
+3. **Combine Captions**: Use LLM to create coherent video description
+4. **Format Output**: Create simplified JSON structure
+5. **Apply Overrides**: Merge any user-specified overrides
+6. **Return Results**: Same output format as Gemini mode
+
+## Output Comparison
+
+### Gemini Output (Structured)
+
+```json
+{
+  "subject": "A woman with wavy brown hair in a relaxed pose",
+  "clothing": "Wearing a fitted navy blue blazer and white blouse",
+  "movement": "Standing still, poised with confident posture",
+  "scene": "Modern office setting with glass windows and natural light",
+  "cinematic_aesthetic": "Soft directional lighting from window, medium shot, shallow depth of field",
+  "stylization_tone": "Professional corporate portrait, clean and polished aesthetic"
+}
+```
+
+### LLM Studio Output (Caption-based)
+
+```json
+{
+  "subject": "The image shows a woman in business attire standing in a modern office. She has wavy brown hair and is wearing a navy blue blazer. The lighting comes from large windows creating a professional atmosphere. The composition uses a medium shot with natural depth of field.",
+  "clothing": "",
+  "movement": "",
+  "scene": "",
+  "cinematic_aesthetic": "",
+  "stylization_tone": ""
+}
+```
+
+**Key Differences**:
+- **Gemini**: Detailed structured fields, optimized for text-to-image prompts
+- **LLM Studio**: Single cohesive caption, better for general description
+
+## Use Case Recommendations
+
+### Choose Gemini When:
+
+- ✅ Need structured output for text-to-image workflows
+- ✅ Want detailed categorization (subject, clothing, scene, etc.)
+- ✅ Require high-quality API-powered analysis
+- ✅ Working with image editing models (FLUX Redux, Qwen Image Edit)
+- ✅ Need consistent, production-quality results
+
+### Choose LLM Studio When:
+
+- ✅ Privacy is a concern (local processing)
+- ✅ Want to avoid API costs
+- ✅ Have GPU for local inference
+- ✅ Need general narrative descriptions
+- ✅ Want full control over the vision model
+- ✅ Working with custom/fine-tuned models
+
+## Migration Guide
+
+### Updating Existing Workflows
+
+**No changes required!** Existing workflows continue to work:
+
+1. **Old Parameter**: `gemini_options` → **New Parameter**: `llm_options`
+2. **Connection Type**: GEMINI_OPTIONS still accepted
+3. **Processing**: Automatic fallback to Gemini mode
+
+### Adding LLM Studio Support
+
+To switch an existing workflow to LLM Studio:
+
+1. **Remove**: Gemini Util - Options node
+2. **Add**: LLM Studio - Options node
+3. **Connect**: Same connection point (`llm_options` input)
+4. **Configure**: Set base URL and model name
+5. **Run**: MediaDescribe automatically detects and uses LLM Studio
+
+## Error Handling
+
+### LLM Studio Connection Errors
+
+**Error**: "Failed to connect to LM Studio at {url}"
+
+**Solutions**:
+- Verify LM Studio is running and server started
+- Check base_url is correct (e.g., `http://localhost:1234`)
+- Ensure firewall allows connections on port 1234
+- Try pinging the LM Studio server
+
+### Model Not Found
+
+**Error**: Model-related errors
+
+**Solutions**:
+- Verify model is loaded in LM Studio
+- Check model name exactly matches (case-sensitive)
+- Reload model in LM Studio if necessary
+- Ensure model supports vision inputs
+
+## Performance Considerations
+
+### Gemini API
+- **Latency**: Network-dependent (typically 2-5 seconds)
+- **Cost**: Pay per API call
+- **Throughput**: Rate limited by API quota
+
+### LLM Studio
+- **Latency**: Hardware-dependent (GPU: 1-3 seconds, CPU: 10-30 seconds)
+- **Cost**: Free (local processing)
+- **Throughput**: Limited by local hardware capabilities
+
+## Configuration Examples
+
+### Example 1: Gemini for Text-to-Image
+
+```
+[Media Selection] → media_path
+[Gemini Options] → llm_options → [MediaDescribe] → outputs → [Image Generation]
+[Overrides] → overrides
+```
+
+**Result**: Structured prompt optimized for FLUX/SDXL
+
+### Example 2: LLM Studio for Privacy
+
+```
+[Media Selection] → media_path
+[LLM Studio Options] → llm_options → [MediaDescribe] → outputs → [Control Panel]
+[Overrides] → overrides
+```
+
+**Result**: Local private analysis with narrative description
+
+### Example 3: Mixed Workflow
+
+Use different providers for different stages:
+
+```
+# Analysis stage (privacy-focused)
+[LLM Studio Options] → llm_options → [MediaDescribe] → caption
+
+# Generation stage (quality-focused)  
+[Gemini Options] → llm_options → [MediaDescribe] → structured_prompt
+```
+
+## Future Enhancements
+
+Planned improvements:
+
+- [ ] Support for additional local LLM providers (Ollama, etc.)
+- [ ] Unified output format across providers
+- [ ] Provider-specific optimization settings
+- [ ] Automatic provider selection based on task
+- [ ] Performance metrics and comparison tools
+
+## Related Documentation
+
+- [LLM Studio Options Node](LLM_STUDIO_OPTIONS.md) - Detailed LLM Studio configuration
+- [Gemini Options](GEMINI_OPTIONS_SIMPLIFICATION.md) - Gemini configuration details
+- [Media Describe Overrides](MEDIA_DESCRIBE.md#media-describe---overrides-node-documentation) - Override specific fields
+
+## Changelog
+
+### October 15, 2025 - LLM Options Support
+
+- Renamed `gemini_options` input to `llm_options`
+- Added support for LLM_STUDIO_OPTIONS type
+- Implemented automatic provider detection
+- Added `_process_with_llm_studio()` method for local processing
+- Maintained full backward compatibility
+- Created LLM Studio Options node
+- Updated documentation with provider comparison
+

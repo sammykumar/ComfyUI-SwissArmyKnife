@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .civitai_service import CivitAIService
 from .lora_hash_cache import get_cache as get_lora_hash_cache
-from .media_describe import (GeminiUtilOptions, MediaDescribe, MediaDescribeOverrides, 
+from .media_describe import (GeminiUtilOptions, LLMStudioOptions, MediaDescribe, MediaDescribeOverrides, 
                               JoyCaptionMediaDescribe, LLMStudioVideoDescribe, LLMStudioPictureDescribe)
 from .utils.video_preview import VideoPreview
 
@@ -772,6 +772,7 @@ class VideoMetadataNode:
 NODE_CLASS_MAPPINGS = {
     "MediaDescribe": MediaDescribe,
     "GeminiUtilOptions": GeminiUtilOptions,
+    "LLMStudioOptions": LLMStudioOptions,
     "MediaDescribeOverrides": MediaDescribeOverrides,
     "JoyCaptionMediaDescribe": JoyCaptionMediaDescribe,
     "LLMStudioVideoDescribe": LLMStudioVideoDescribe,
@@ -786,6 +787,7 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "MediaDescribe": "Media Describe",
     "GeminiUtilOptions": "Gemini Util - Options",
+    "LLMStudioOptions": "LLM Studio - Options",
     "MediaDescribeOverrides": "Media Describe - Overrides",
     "JoyCaptionMediaDescribe": "JoyCaption Media Describe",
     "LLMStudioVideoDescribe": "LLM Studio Video Describe",

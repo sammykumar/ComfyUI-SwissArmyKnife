@@ -62,7 +62,7 @@ class LLMStudioVideoDescribe:
                     "tooltip": "Maximum duration in seconds to sample from"
                 }),
                 "caption_prompt": ("STRING", {
-                    "default": "Describe only the specific sexual act being performed in 100 words or less. Focus exclusively on the physical actions and positions. Do not describe physical appearance, clothing, setting, or background. Only use words like 'woman' or 'man' to describe people in the video. If a white substance shoots of a penis, then the man is likely ejaculating semen.",
+                    "default": "Describe only the specific sexual act being performed in 250 words or less. Focus exclusively on the physical actions and positions. Do not describe physical appearance, clothing, setting, or background. Only use words like 'woman' or 'man' to describe people in the video. If a white substance shoots of a penis, then the man is likely ejaculating semen. Mention where the man's penis is in relation to the woman's gentials (Vagina, anal, mouth, etc) Do not mention any watermarks.",
                     "multiline": True,
                     "tooltip": "Prompt for individual frame captions"
                 }),
@@ -160,96 +160,6 @@ class LLMStudioVideoDescribe:
             print(f"Make sure LM Studio is running at {base_url}")
             return False
 
-    def caption_frame(
-        self, 
-        image_data: dict, 
-        prompt: str, 
-        temperature: float
-    ) -> str:
-        """
-        Caption a single frame using LM Studio API.
-
-        Args:
-            image_data: Image data in base64 format
-            prompt: Prompt for captioning
-            temperature: Temperature for generation
-
-        Returns:
-            Generated caption text
-        """
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a helpful image captioner."
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            image_data
-                        ]
-                    }
-                ],
-                max_tokens=300,
-                temperature=temperature
-            )
-
-            return response.choices[0].message.content
-
-        except Exception as e:
-            print(f"❌ Error processing frame: {e}")
-            return f"[Error: {e}]"
-
-    def combine_captions(
-        self,
-        captions: List[str],
-        temperature: float
-    ) -> str:
-        """
-        Combine individual frame captions into a coherent video description.
-
-        Args:
-            captions: List of individual frame captions
-            temperature: Temperature for generation
-
-        Returns:
-            Combined caption text
-        """
-        num_frames = len(captions)
-        frame_descriptions = "\n".join([f"Frame {i+1}: {captions[i]}" for i in range(num_frames)])
-
-        summary_prompt = f"""Given these descriptions of {num_frames} frames from a video in chronological order:
-
-{frame_descriptions}
-
-Create a single, natural-flowing sentence that describes the complete video sequence. Remove redundancy and focus on progression of actions."""
-
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a helpful assistant that creates concise, natural video descriptions."
-                    },
-                    {
-                        "role": "user",
-                        "content": summary_prompt
-                    }
-                ],
-                max_tokens=100,
-                temperature=temperature * 0.6  # Lower temperature for more consistent output
-            )
-
-            return response.choices[0].message.content.strip()
-
-        except Exception as e:
-            print(f"❌ LLM summarization error: {e}")
-            return " ".join(captions)  # Fallback to simple concatenation
-
     def describe_video(
         self,
         base_url: str,
@@ -323,38 +233,48 @@ Create a single, natural-flowing sentence that describes the complete video sequ
             print(f"❌ {error_msg}")
             return (error_msg, "[]", 0)
 
-        # Caption individual frames
-        print(f"\n🤖 Captioning {len(images)} frames...")
-        captions = []
+        # Build content array with text prompt followed by all frames
+        print(f"\n🤖 Analyzing {len(images)} frames in single request...")
+        content_array = [{"type": "text", "text": caption_prompt}] + images
 
-        for i, image in enumerate(images, 1):
+        if verbose:
+            print(f"� Sending {len(images)} frames in single request")
+
+        # Send all frames in a single API request
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a helpful video analysis assistant."
+                    },
+                    {
+                        "role": "user",
+                        "content": content_array
+                    }
+                ],
+                temperature=temperature
+                # max_tokens removed - let model generate as much as needed
+            )
+
+            combined_caption = response.choices[0].message.content.strip()
+
             if verbose:
-                print(f"📸 Processing frame {i}/{len(images)}...")
+                print(f"✅ Video analysis complete: {combined_caption[:150]}...")
 
-            caption = self.caption_frame(image, caption_prompt, temperature)
-            captions.append(caption)
-
-            if verbose:
-                print(f"✅ Frame {i}: {caption[:100]}...")
-
-        # Check for errors in captions
-        if not captions or all("[Error" in c for c in captions):
-            error_msg = "Failed to caption any frames"
+        except Exception as e:
+            error_msg = f"Failed to analyze video: {e}"
             print(f"❌ {error_msg}")
-            return (error_msg, str(captions), len(images))
+            return (error_msg, "[]", len(images))
 
-        # Combine captions into final description
-        print("\n🎭 Creating refined video caption...")
-        combined_caption = self.combine_captions(captions, temperature)
-
-        print(f"\n✅ Combined caption: {combined_caption}\n")
+        print(f"\n✅ Video description: {combined_caption}\n")
 
         if verbose:
             print("="*80)
-            print("📋 INDIVIDUAL FRAME CAPTIONS")
+            print("📋 FULL VIDEO DESCRIPTION")
             print("="*80)
-            for i, caption in enumerate(captions, 1):
-                print(f"Frame {i}: {caption}")
+            print(combined_caption)
             print("="*80)
 
         # Clean up temporary files
@@ -368,8 +288,8 @@ Create a single, natural-flowing sentence that describes the complete video sequ
             print(f"⚠️ Error cleaning up temp files: {e}")
 
         # Return results
-        frame_captions_json = str(captions)
-        return (combined_caption, frame_captions_json, len(images))
+        # Note: frame_captions is now the combined description (single request approach)
+        return (combined_caption, combined_caption, len(images))
 
 
 class LLMStudioPictureDescribe:
@@ -488,8 +408,8 @@ class LLMStudioPictureDescribe:
                         ]
                     }
                 ],
-                max_tokens=500,
                 temperature=temperature
+                # max_tokens removed - let model generate as much as needed
             )
 
             return response.choices[0].message.content
