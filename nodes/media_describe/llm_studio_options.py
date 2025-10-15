@@ -34,6 +34,10 @@ class LLMStudioOptions:
                     "default": "qwen/qwen3-vl-30b",
                     "tooltip": "Model name in LM Studio (e.g. qwen/qwen3-vl-30b)"
                 }),
+                "prompt_style": (["Text2Image", "ImageEdit"], {
+                    "default": "Text2Image",
+                    "tooltip": "Text2Image: Generates descriptive prompts for models like FLUX Dev, SDXL, etc. ImageEdit: Generates instruction prompts with words like 'change to...', 'modify this...' for image editing models like FLUX Redux/Kontext, Nano Banana, Qwen Image Edit"
+                }),
                 "temperature": ("FLOAT", {
                     "default": 0.5,
                     "min": 0.0,
@@ -55,10 +59,9 @@ class LLMStudioOptions:
                     "step": 0.5,
                     "tooltip": "Maximum duration in seconds to sample from video"
                 }),
-                "caption_prompt": ("STRING", {
-                    "default": "Describe this image in detail, focusing on the subject, setting, and mood.",
-                    "multiline": True,
-                    "tooltip": "Prompt for image/frame captions"
+                "change_clothing_color": (["Yes", "No"], {
+                    "default": "No",
+                    "tooltip": "If enabled, adjust clothing color descriptions to new colors that harmonize with the scene and differ from the original colors"
                 }),
                 "verbose": ("BOOLEAN", {
                     "default": False,
@@ -72,7 +75,7 @@ class LLMStudioOptions:
     FUNCTION = "create_options"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
-    def create_options(self, base_url, model_name, temperature, fps_sample, max_duration, caption_prompt, verbose):
+    def create_options(self, base_url, model_name, prompt_style, temperature, fps_sample, max_duration, change_clothing_color, verbose):
         """
         Create an options object with all the configuration settings
         """
@@ -80,10 +83,15 @@ class LLMStudioOptions:
             "provider": "llm_studio",  # Identifier to distinguish from Gemini
             "base_url": base_url,
             "model_name": model_name,
+            "model_type": prompt_style,  # Keep internal key as model_type for consistency with Gemini
             "temperature": temperature,
             "fps_sample": fps_sample,
             "max_duration": max_duration,
-            "caption_prompt": caption_prompt,
+            "change_clothing_color": change_clothing_color == "Yes",
+            "describe_clothing": True,  # Always enabled to match Gemini
+            "describe_hair_style": True,  # Always enabled to match Gemini
+            "describe_bokeh": True,  # Always enabled to match Gemini
+            "describe_subject": True,  # Always enabled to match Gemini
             "verbose": verbose,
         }
         return (options,)
