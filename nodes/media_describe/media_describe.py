@@ -1778,6 +1778,240 @@ Example (structure only):
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Video analysis failed: {error_msg}")
 
+    def _process_with_llm_studio(self, media_path, media_type, llm_options, media_info_text,
+                                  override_subject, override_cinematic_aesthetic, override_stylization_tone,
+                                  override_clothing, override_scene, override_movement, overrides):
+        """
+        Process media using LLM Studio (local vision model).
+        
+        Args:
+            media_path: Path to media file
+            media_type: "image" or "video"
+            llm_options: LLM Studio configuration options
+            media_info_text: Media information string
+            override_*: Override values for each paragraph
+            overrides: Full overrides dictionary
+            
+        Returns:
+            Tuple of (all_media_describe_data, raw_llm_json, positive_prompt_json, positive_prompt, height, width)
+        """
+        from openai import OpenAI
+        import base64
+        import cv2
+        from PIL import Image as PILImage
+        
+        # Extract LLM Studio options
+        base_url = llm_options.get("base_url", "http://192.168.50.41:1234")
+        model_name = llm_options.get("model_name", "qwen/qwen3-vl-30b")
+        temperature = llm_options.get("temperature", 0.5)
+        caption_prompt = llm_options.get("caption_prompt", "Describe this image in detail, focusing on the subject, setting, and mood.")
+        verbose = llm_options.get("verbose", False)
+        
+        # Initialize LLM Studio client
+        try:
+            client = OpenAI(base_url=f"{base_url}/v1", api_key="lm-studio")
+            if verbose:
+                print(f"✅ Connected to LM Studio at {base_url}")
+                print(f"📦 Using model: {model_name}")
+        except Exception as e:
+            raise Exception(f"Failed to connect to LM Studio at {base_url}: {str(e)}")
+        
+        # Get image dimensions
+        height, width = 512, 512  # Default
+        try:
+            if media_type == "video":
+                cap = cv2.VideoCapture(media_path)
+                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                cap.release()
+            else:
+                img = PILImage.open(media_path)
+                width, height = img.size
+        except Exception as e:
+            print(f"Warning: Could not get media dimensions: {e}")
+        
+        # Process based on media type
+        if media_type == "video":
+            # For video, use frame extraction and captioning
+            fps_sample = llm_options.get("fps_sample", 1.0)
+            max_duration = llm_options.get("max_duration", 5.0)
+            
+            # Extract frames from video
+            cap = cv2.VideoCapture(media_path)
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            video_fps = cap.get(cv2.CAP_PROP_FPS)
+            duration = total_frames / video_fps if video_fps > 0 else 0
+            
+            sampling_duration = min(duration, max_duration)
+            num_frames_to_extract = int(sampling_duration / fps_sample)
+            if num_frames_to_extract == 0:
+                num_frames_to_extract = 1
+            
+            frame_indices = [int(i * fps_sample * video_fps) for i in range(num_frames_to_extract)]
+            frame_indices = [idx for idx in frame_indices if idx < total_frames]
+            
+            # Caption individual frames
+            captions = []
+            for idx, frame_num in enumerate(frame_indices):
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
+                ret, frame = cap.read()
+                
+                if ret:
+                    # Convert frame to base64
+                    _, buffer = cv2.imencode('.jpg', frame)
+                    frame_b64 = base64.b64encode(buffer).decode('utf-8')
+                    
+                    image_data = {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{frame_b64}"
+                        }
+                    }
+                    
+                    try:
+                        response = client.chat.completions.create(
+                            model=model_name,
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": "You are a helpful image captioner."
+                                },
+                                {
+                                    "role": "user",
+                                    "content": [
+                                        {"type": "text", "text": caption_prompt},
+                                        image_data
+                                    ]
+                                }
+                            ],
+                            max_tokens=300,
+                            temperature=temperature
+                        )
+                        
+                        caption = response.choices[0].message.content
+                        captions.append(caption)
+                        
+                        if verbose:
+                            print(f"✅ Frame {idx + 1}: {caption[:100]}...")
+                    except Exception as e:
+                        print(f"❌ Error processing frame {idx + 1}: {e}")
+                        captions.append(f"[Error: {e}]")
+            
+            cap.release()
+            
+            # Combine captions into final description
+            if captions:
+                frame_descriptions = "\n".join([f"Frame {i+1}: {captions[i]}" for i in range(len(captions))])
+                summary_prompt = f"""Given these descriptions of {len(captions)} frames from a video in chronological order:
+
+{frame_descriptions}
+
+Create a single, natural-flowing sentence that describes the complete video sequence. Remove redundancy and focus on progression of actions."""
+                
+                try:
+                    response = client.chat.completions.create(
+                        model=model_name,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": "You are a helpful assistant that creates concise, natural video descriptions."
+                            },
+                            {
+                                "role": "user",
+                                "content": summary_prompt
+                            }
+                        ],
+                        max_tokens=100,
+                        temperature=temperature * 0.6
+                    )
+                    
+                    combined_caption = response.choices[0].message.content.strip()
+                except Exception as e:
+                    print(f"❌ LLM summarization error: {e}")
+                    combined_caption = " ".join(captions)
+            else:
+                combined_caption = "No frames could be processed"
+                
+        else:
+            # For image, process directly
+            with open(media_path, "rb") as image_file:
+                image_b64 = base64.b64encode(image_file.read()).decode('utf-8')
+            
+            image_data = {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{image_b64}"
+                }
+            }
+            
+            try:
+                response = client.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are a helpful image captioner."
+                        },
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": caption_prompt},
+                                image_data
+                            ]
+                        }
+                    ],
+                    max_tokens=500,
+                    temperature=temperature
+                )
+                
+                combined_caption = response.choices[0].message.content
+                
+                if verbose:
+                    print(f"✅ Image caption: {combined_caption}")
+            except Exception as e:
+                raise Exception(f"LLM Studio image captioning failed: {str(e)}")
+        
+        # Build a simple JSON structure for LLM Studio output
+        # Since LLM Studio doesn't follow the same structured format as Gemini,
+        # we'll create a simplified structure
+        llm_json = {
+            "subject": combined_caption,
+            "clothing": "",
+            "movement": "",
+            "scene": "",
+            "cinematic_aesthetic": "",
+            "stylization_tone": ""
+        }
+        
+        # Apply overrides
+        if override_subject.strip():
+            llm_json["subject"] = override_subject.strip()
+        if override_clothing.strip():
+            llm_json["clothing"] = override_clothing.strip()
+        if override_movement.strip():
+            llm_json["movement"] = override_movement.strip()
+        if override_scene.strip():
+            llm_json["scene"] = override_scene.strip()
+        if override_cinematic_aesthetic.strip():
+            llm_json["cinematic_aesthetic"] = override_cinematic_aesthetic.strip()
+        if override_stylization_tone.strip():
+            llm_json["stylization_tone"] = override_stylization_tone.strip()
+        
+        raw_llm_json = json.dumps(llm_json, indent=2)
+        
+        # Build positive prompt from non-empty fields
+        positive_parts = []
+        for field in ["subject", "clothing", "movement", "scene", "cinematic_aesthetic", "stylization_tone"]:
+            if llm_json[field]:
+                positive_parts.append(llm_json[field])
+        
+        positive_prompt = "\n\n".join(positive_parts) if positive_parts else combined_caption
+        
+        # Build final output
+        all_data = f"{media_info_text}\n\n{'='*50}\nLLM Studio Description:\n{'='*50}\n{positive_prompt}"
+        
+        return (all_data, raw_llm_json, raw_llm_json, positive_prompt, height, width)
+
     @classmethod
     def INPUT_TYPES(s):
         """
@@ -1792,8 +2026,8 @@ Example (structure only):
                 }),
             },
             "optional": {
-                "gemini_options": ("GEMINI_OPTIONS", {
-                    "tooltip": "Configuration options from Gemini Util - Options node"
+                "llm_options": (["GEMINI_OPTIONS", "LLM_STUDIO_OPTIONS"], {
+                    "tooltip": "Configuration options from Gemini Util - Options or LLM Studio - Options node"
                 }),
                 "overrides": ("OVERRIDES", {
                     "tooltip": "Paragraph overrides from Media Describe - Overrides node (optional)"
@@ -1806,17 +2040,99 @@ Example (structure only):
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
-    def describe_media(self, media_processed_path, gemini_options=None, overrides=None):
+    def describe_media(self, media_processed_path, llm_options=None, overrides=None):
         """
-        Process media (image or video) and analyze with Gemini
+        Process media (image or video) and analyze with Gemini or LLM Studio
 
         Args:
             media_processed_path: Path to the processed media file from Media Selection node
-            gemini_options: Configuration options from Gemini Util - Options node (optional)
+            llm_options: Configuration options from Gemini Util - Options or LLM Studio - Options node (optional)
             overrides: Dictionary of paragraph overrides from Media Describe - Overrides node (optional)
         """
         # Validate media path
         if not media_processed_path or not media_processed_path.strip():
+            raise ValueError("media_processed_path is required")
+
+        if not os.path.exists(media_processed_path):
+            raise ValueError(f"Media file does not exist: {media_processed_path}")
+
+        # Handle missing llm_options with defaults (Gemini)
+        if llm_options is None:
+            llm_options = {
+                "gemini_api_key": "YOUR_GEMINI_API_KEY_HERE",
+                "gemini_model": "models/gemini-2.5-flash",
+                "model_type": "Text2Image",
+                "describe_clothing": False,
+                "change_clothing_color": False,
+                "describe_hair_style": True,
+                "describe_bokeh": True,
+                "describe_subject": True,
+                "replace_action_with_twerking": False,
+                "prefix_text": ""
+            }
+
+        # Detect which LLM provider is being used
+        provider = llm_options.get("provider", "gemini")  # Default to Gemini for backward compatibility
+
+        # Handle missing overrides with defaults
+        if overrides is None:
+            overrides = {}
+
+        # Extract override values with defaults
+        override_subject = overrides.get("override_subject", "")
+        override_cinematic_aesthetic = overrides.get("override_cinematic_aesthetic", "")
+        override_stylization_tone = overrides.get("override_stylization_tone", "")
+        override_clothing = overrides.get("override_clothing", "")
+        override_scene = overrides.get("override_scene", "")
+        override_movement = overrides.get("override_movement", "")
+
+        try:
+            # Determine media type from file extension
+            file_ext = os.path.splitext(media_processed_path)[1].lower()
+            video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm']
+            media_type = "video" if file_ext in video_extensions else "image"
+
+            media_info_text = f"{'📹' if media_type == 'video' else '📷'} Media Processing Info:\n• File: {os.path.basename(media_processed_path)}\n• Type: {media_type}\n• Full path: {media_processed_path}"
+
+            # Route to appropriate processing based on provider
+            if provider == "llm_studio":
+                return self._process_with_llm_studio(
+                    media_processed_path, media_type, llm_options, media_info_text,
+                    override_subject, override_cinematic_aesthetic, override_stylization_tone, 
+                    override_clothing, override_scene, override_movement, overrides
+                )
+            else:
+                # Extract values from Gemini options
+                gemini_api_key = llm_options["gemini_api_key"]
+                gemini_model = llm_options["gemini_model"]
+                model_type = llm_options["model_type"]
+                describe_clothing = llm_options["describe_clothing"]
+                change_clothing_color = llm_options.get("change_clothing_color", False)
+                describe_hair_style = llm_options["describe_hair_style"]
+                describe_bokeh = llm_options["describe_bokeh"]
+                describe_subject = llm_options["describe_subject"]
+                replace_action_with_twerking = llm_options.get("replace_action_with_twerking", False)
+                prefix_text = llm_options["prefix_text"]
+
+                # Process based on media type with Gemini
+                if media_type == "image":
+                    # Process as image - delegate to image logic
+                    return self._process_image(
+                        gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text,
+                        None, media_processed_path, media_info_text,
+                        override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, overrides
+                    )
+                else:
+                    # Process as video - delegate to video logic  
+                    return self._process_video(
+                        gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text,
+                        media_processed_path, 30.0, 0.0, media_info_text,
+                        override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement, overrides
+                    )
+
+        except Exception as e:
+            # Re-raise the exception to stop workflow execution
+            raise Exception(f"Media analysis failed: {str(e)}")
             raise ValueError("media_processed_path is required")
 
         if not os.path.exists(media_processed_path):
