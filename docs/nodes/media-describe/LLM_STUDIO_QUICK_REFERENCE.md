@@ -1,11 +1,11 @@
-# LLM Studio Media Describe - Quick Reference
+# LLM Studio Video Describe - Quick Reference
 
-**Quick access guide for the LLM Studio Media Describe node**
+**Quick access guide for the LLM Studio Video Describe node**
 
 ## Basic Usage
 
 ```python
-# Node: LLM Studio Media Describe
+# Node: LLM Studio Video Describe
 # Category: Swiss Army Knife 🔪/Media Caption
 
 Inputs:

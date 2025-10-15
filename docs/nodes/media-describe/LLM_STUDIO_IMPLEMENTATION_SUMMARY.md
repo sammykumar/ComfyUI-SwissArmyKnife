@@ -1,7 +1,7 @@
-# LLM Studio Media Describe - Implementation Summary
+# LLM Studio Video Describe - Implementation Summary
 
 **Date**: October 14, 2025  
-**Node**: `LLMStudioMediaDescribe`  
+**Node**: `LLMStudioVideoDescribe`  
 **Status**: ✅ Complete and Tested
 
 ## What Was Done
@@ -11,7 +11,7 @@
 **File**: `nodes/media_describe/llm_studio_describe.py`
 
 - Cloned from `joycaption_describe.py`
-- Renamed class to `LLMStudioMediaDescribe`
+- Renamed class to `LLMStudioVideoDescribe`
 - Adapted to use OpenAI client library instead of requests
 - Modified to work with LM Studio's OpenAI-compatible API
 
@@ -48,12 +48,14 @@ Updated the following files to register the new node:
 
 #### `nodes/media_describe/__init__.py`
 
+````python
+#### `nodes/media_describe/__init__.py`
 ```python
-from .llm_studio_describe import LLMStudioMediaDescribe
+from .llm_studio_describe import LLMStudioVideoDescribe
 
 __all__ = ['GeminiUtilOptions', 'MediaDescribe', 'MediaDescribeOverrides',
-           'JoyCaptionMediaDescribe', 'LLMStudioMediaDescribe']
-```
+           'JoyCaptionMediaDescribe', 'LLMStudioVideoDescribe']
+````
 
 #### `nodes/nodes.py`
 
@@ -61,21 +63,45 @@ __all__ = ['GeminiUtilOptions', 'MediaDescribe', 'MediaDescribeOverrides',
 # Import
 from .media_describe import (GeminiUtilOptions, MediaDescribe,
                               MediaDescribeOverrides, JoyCaptionMediaDescribe,
-                              LLMStudioMediaDescribe)
+                              LLMStudioVideoDescribe)
 
 # Registration
 NODE_CLASS_MAPPINGS = {
     ...
-    "LLMStudioMediaDescribe": LLMStudioMediaDescribe,
+    "LLMStudioVideoDescribe": LLMStudioVideoDescribe,
     ...
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     ...
-    "LLMStudioMediaDescribe": "LLM Studio Media Describe",
+    "LLMStudioVideoDescribe": "LLM Studio Video Describe",
     ...
 }
 ```
+
+````
+
+#### `nodes/nodes.py`
+
+```python
+# Import
+from .media_describe import (GeminiUtilOptions, MediaDescribe,
+                              MediaDescribeOverrides, JoyCaptionMediaDescribe,
+                              LLMStudioVideoDescribe)
+
+# Registration
+NODE_CLASS_MAPPINGS = {
+    ...
+    "LLMStudioVideoDescribe": LLMStudioVideoDescribe,
+    ...
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    ...
+    "LLMStudioVideoDescribe": "LLM Studio Video Describe",
+    ...
+}
+````
 
 ### 4. Dependencies
 
@@ -142,7 +168,13 @@ python3 -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_M
 
 ```
 Available nodes: ['MediaDescribe', 'GeminiUtilOptions', 'MediaDescribeOverrides',
-                  'JoyCaptionMediaDescribe', 'LLMStudioMediaDescribe',
+                  'JoyCaptionMediaDescribe', 'LLMStudioVideoDescribe',
+                  'FilenameGenerator', 'VideoMetadataNode', 'LoRAInfoExtractor', 'VideoPreview']
+```
+
+```
+Available nodes: ['MediaDescribe', 'GeminiUtilOptions', 'MediaDescribeOverrides',
+                  'JoyCaptionMediaDescribe', 'LLMStudioVideoDescribe',
                   'FilenameGenerator', 'VideoMetadataNode', 'LoRAInfoExtractor', 'VideoPreview']
 ```
 
@@ -168,7 +200,7 @@ ruff check nodes/media_describe/llm_studio_describe.py
 
 ### Basic Workflow
 
-1. Add "LLM Studio Media Describe" node to workflow
+1. Add "LLM Studio Video Describe" node to workflow
 2. Configure inputs:
     - `base_url`: `http://192.168.50.41:1234`
     - `model_name`: Match model loaded in LM Studio
@@ -266,4 +298,4 @@ Approximately 80% of the code was reused from the JoyCaption node, with modifica
 
 ## Conclusion
 
-✅ **Implementation Complete**: The LLM Studio Media Describe node is fully functional, tested, and documented. It provides an alternative to the JoyCaption node for users who prefer LM Studio's ecosystem and OpenAI-compatible API.
+✅ **Implementation Complete**: The LLM Studio Video Describe node is fully functional, tested, and documented. It provides an alternative to the JoyCaption node for users who prefer LM Studio's ecosystem and OpenAI-compatible API.

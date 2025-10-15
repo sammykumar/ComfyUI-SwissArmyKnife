@@ -1,5 +1,5 @@
 """
-LLM Studio Media Describe Node
+LLM Studio Video Describe Node
 
 This node uses LM Studio with vision-language models (like Qwen3-VL) to analyze video content.
 """
@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Tuple, List
 
 
-class LLMStudioMediaDescribe:
+class LLMStudioVideoDescribe:
     """
     A ComfyUI custom node for describing videos using LM Studio with vision-language models.
     Extracts frames from video and generates captions using models like Qwen3-VL.
@@ -383,9 +383,9 @@ Create a single, natural-flowing sentence that describes the complete video sequ
 
 # Node registration
 NODE_CLASS_MAPPINGS = {
-    "LLMStudioMediaDescribe": LLMStudioMediaDescribe
+    "LLMStudioVideoDescribe": LLMStudioVideoDescribe
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "LLMStudioMediaDescribe": "LLM Studio Media Describe"
+    "LLMStudioVideoDescribe": "LLM Studio Video Describe"
 }

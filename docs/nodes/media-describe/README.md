@@ -14,7 +14,7 @@ AI-powered media description using Google's Gemini API and local vLLM/LM Studio 
 
 - **MediaDescribe** - Main node for analyzing media with Gemini AI (cloud-based)
 - **JoyCaptionMediaDescribe** - Video analysis with local JoyCaption vLLM model
-- **LLMStudioMediaDescribe** - Video analysis with local LM Studio (OpenAI-compatible API)
+- **LLMStudioVideoDescribe** - Video analysis with local LM Studio (OpenAI-compatible API)
 - **[Media Describe - Overrides](MEDIA_DESCRIBE_OVERRIDES_NODE.md)** - Paragraph override configuration node
 - **[Media Describe - Prompt Breakdown](PROMPT_BREAKDOWN_NODE.md)** - Display node for formatted paragraph breakdown
 - **Gemini Util - Options** - Gemini API configuration node
