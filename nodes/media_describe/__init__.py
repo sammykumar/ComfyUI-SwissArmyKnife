@@ -10,7 +10,6 @@ from .gemini_util_options import GeminiUtilOptions
 from .media_describe import MediaDescribe
 from .media_describe_overrides import MediaDescribeOverrides
 from .joycaption_describe import JoyCaptionMediaDescribe
-from .llm_studio_describe import LLMStudioVideoDescribe
-from .llm_studio_picture_describe import LLMStudioPictureDescribe
+from .llm_studio_describe import LLMStudioVideoDescribe, LLMStudioPictureDescribe
 
 __all__ = ['GeminiUtilOptions', 'MediaDescribe', 'MediaDescribeOverrides', 'JoyCaptionMediaDescribe', 'LLMStudioVideoDescribe', 'LLMStudioPictureDescribe']
