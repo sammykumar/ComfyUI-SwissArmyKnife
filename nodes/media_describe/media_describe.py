@@ -972,7 +972,7 @@ Describe all visible clothing and accessories with absolute certainty and defini
                 if describe_clothing and change_clothing_color:
                     critical_note += " When stating clothing colors, only state the NEW, scene-harmonized colors (different from original); never mention the original colors."
 
-                critical_note += " Never mention prohibited attributes, even if visible. Be completely decisive and definitive in all descriptions - eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."
+                critical_note += " Never mention prohibited attributes, even if visible. Never mention watermarks, logos, branding, or any textual overlays. Be completely decisive and definitive in all descriptions - eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."
 
                 # Combine all parts
                 combined_prompts = "\n\n".join(prompts)
@@ -1051,14 +1051,14 @@ Each field's value is one fully formed paragraph (a single string) for that cate
                     if describe_clothing and change_clothing_color:
                         change_colors_clause = ", and change all clothing colors to NEW hues that harmonize with the scene while being different from the original colors (do not reuse or mention original colors; choose complementary/analogous/neutral tones and state them explicitly)"
 
-                    system_prompt = f"""You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Instead of "holding a black folder or book", write "holding a black folder".
+                    system_prompt = f"""You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Instead of "holding a black folder or book", write "holding a black folder". Never mention watermarks, logos, branding, or any textual overlays.
 
 Always begin with "Make this person…", include vivid, focused scene details (e.g. bedroom props, lights, furniture or gym bench, textured wall, window views) early to anchor the setting{"," if focus_instruction else ""} {focus_instruction}, {clothing_note}{change_colors_clause}, include clear torso and head orientation (e.g., "back facing the camera with torso turned 45° and head looking over her shoulder toward viewer"), reference cinematic aesthetic cues (lighting, framing, lens, shot type), anchor realism by stating skin shows subtle pores, light wrinkles, and realistic surface detail, end with "keep everything else unchanged," and include negative safeguards like "no distortion, no blur artifacts{focus_safeguards}.\""""
                 else:
                     # No subject description - focus on environment/scene only
                     traits_instruction = ", ".join(traits_list) if traits_list else "environment details only"
 
-                    system_prompt = f"""You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or".
+                    system_prompt = f"""You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
 
 Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or gym bench, textured wall, window views) to anchor the setting{"," if focus_instruction else ""} {focus_instruction}, do not describe people or human subjects, reference cinematic aesthetic cues (lighting, framing, lens, shot type), end with "keep everything else unchanged," and include negative safeguards like "no distortion, no blur artifacts{focus_safeguards}.\""""
 
@@ -1390,7 +1390,7 @@ Mood/genre descriptors (e.g., "noir-inspired silhouette," "cinematic realism," e
                 critical_note += " Never mention depth of field, bokeh, blur, optics, DOF, rack focus, or any depth-related visual effects."
             if describe_clothing and change_clothing_color:
                 critical_note += " When stating clothing colors, only state the NEW, scene-harmonized colors (different from original); never mention the original colors."
-            critical_note += " Never mention prohibited attributes, even if visible. Be completely decisive and definitive in all descriptions - eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."
+            critical_note += " Never mention prohibited attributes, even if visible. Never mention watermarks, logos, branding, or any textual overlays. Be completely decisive and definitive in all descriptions - eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."
 
             # Build JSON field descriptions based on enabled options
             subject_field = ""
@@ -1430,7 +1430,7 @@ Mood/genre descriptors (e.g., "noir-inspired silhouette," "cinematic realism," e
             style_field = 'Provide mood/genre descriptors (e.g., "noir-inspired silhouette", "cinematic realism", etc.).'
 
             # Build constraints note
-            constraints = "Never mention prohibited attributes (ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, makeup), even if visible."
+            constraints = "Never mention prohibited attributes (ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, makeup), even if visible. Never mention watermarks, logos, branding, or any textual overlays."
             if not describe_clothing:
                 constraints += " DO NOT describe clothing, accessories, or garments in any field."
             if not describe_subject:
@@ -1793,7 +1793,7 @@ Example (structure only):
             overrides: Full overrides dictionary
             
         Returns:
-            Tuple of (all_media_describe_data, raw_llm_json, positive_prompt_json, positive_prompt, height, width)
+            Tuple of (all_media_describe_data, raw_llm_json, positive_prompt_json, positive_prompt, prompt_request, height, width)
         """
         from openai import OpenAI
         import base64
@@ -1826,7 +1826,7 @@ Example (structure only):
             if model_type == "Text2Image":
                 system_prompt = """Generate a Wan 2.2 optimized text to image prompt. You are an expert assistant specialized in analyzing and verbalizing input media for instagram-quality posts using the Wan 2.2 Text to Image workflow.
 
-DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or".
+DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
 
 Return **only** a single valid JSON object (no code fences, no extra text) with **exactly six** string fields in this exact order:
 1. "subject" - Detailed description of the main subject
@@ -1839,12 +1839,12 @@ Return **only** a single valid JSON object (no code fences, no extra text) with 
 Each field's value is one fully formed paragraph (a single string) for that category."""
                 user_prompt = "Please analyze this image and provide a detailed description in the JSON format specified in the system prompt."
             else:  # ImageEdit
-                system_prompt = """You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or"."""
+                system_prompt = """You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays."""
                 user_prompt = "Please analyze this image and generate a single-sentence Qwen-Image-Edit instruction following the guidelines in the system prompt."
         else:  # video
             system_prompt = """You are an expert assistant specialized in analyzing and verbalizing input videos for cinematic-quality video transformation using the Wan 2.2 + VACE workflow.
 
-DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or".
+DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
 
 Return **only** a single valid JSON object (no code fences, no extra text) with **exactly six** string fields in this exact order:
 1. "subject" - Detailed description of the main subject
@@ -1856,6 +1856,13 @@ Return **only** a single valid JSON object (no code fences, no extra text) with 
 
 Each field's value is one fully formed paragraph (a single string) for that category."""
             user_prompt = "Please analyze this video and provide a detailed description in the JSON format specified in the system prompt."
+
+        # Build prompt request for debugging/transparency
+        prompt_request = f"""System Prompt:
+{system_prompt}
+
+User Prompt:
+{user_prompt}"""
 
         # Log prompt construction
         if verbose:
@@ -2100,7 +2107,7 @@ Each field's value is one fully formed paragraph (a single string) for that cate
         # Build final output
         all_data = f"{media_info_text}\n\n{'='*50}\nLLM Studio Description:\n{'='*50}\n{positive_prompt}"
 
-        return (all_data, raw_llm_json, raw_llm_json, positive_prompt, height, width)
+        return (all_data, raw_llm_json, raw_llm_json, positive_prompt, prompt_request, height, width)
 
     @classmethod
     def INPUT_TYPES(s):
@@ -2125,8 +2132,8 @@ Each field's value is one fully formed paragraph (a single string) for that cate
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "INT", "INT")
-    RETURN_NAMES = ("all_media_describe_data", "raw_llm_json", "positive_prompt_json", "positive_prompt", "height", "width")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("all_media_describe_data", "raw_llm_json", "positive_prompt_json", "positive_prompt", "prompt_request", "height", "width")
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
