@@ -37,7 +37,7 @@ loadDebugConfig();
 // Helper functions for accessing API keys from settings
 const getGeminiApiKey = () => {
     try {
-        return app.extensionManager.setting.get("swiss_army_knife.gemini.api_key") || "";
+        return app.extensionManager.setting.get("SwissArmyKnife.gemini.api_key") || "";
     } catch (error) {
         console.warn("Failed to get Gemini API key from settings:", error);
         return "";
@@ -46,7 +46,7 @@ const getGeminiApiKey = () => {
 
 const getCivitaiApiKey = () => {
     try {
-        return app.extensionManager.setting.get("swiss_army_knife.civitai.api_key") || "";
+        return app.extensionManager.setting.get("SwissArmyKnife.civitai.api_key") || "";
     } catch (error) {
         console.warn("Failed to get CivitAI API key from settings:", error);
         return "";
@@ -92,7 +92,7 @@ app.registerExtension({
             debugLog("Registering GeminiUtilOptions node");
 
             // This node no longer needs API key widgets - it uses ComfyUI settings
-            // The API key is now retrieved from settings: swiss_army_knife.gemini.api_key
+            // The API key is now retrieved from settings: SwissArmyKnife.gemini.api_key
         }
 
         // Handle FilenameGenerator node
@@ -2126,7 +2126,7 @@ app.registerExtension({
     name: "ComfyUI-SwissArmyKnife",
     settings: [
         {
-            id: "swiss_army_knife.gemini.api_key",
+            id: "SwissArmyKnife.gemini.api_key",
             name: "Gemini API Key",
             type: "text",
             defaultValue: "",
@@ -2137,7 +2137,7 @@ app.registerExtension({
             },
         },
         {
-            id: "swiss_army_knife.civitai.api_key",
+            id: "SwissArmyKnife.civitai.api_key",
             name: "Civitai API Key",
             type: "text",
             defaultValue: "",
