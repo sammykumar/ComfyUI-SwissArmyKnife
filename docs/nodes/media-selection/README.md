@@ -139,9 +139,9 @@ Output: Frames at 0.83s, 2.50s, 4.17s
 
 ## Workflow Examples
 
-### Example 1: NSFW Action Description with JoyCaption
+### Example 1: NSFW Action Description with External AI Model
 
-This workflow demonstrates how to use external captioning (JoyCaption) for specific aspects while using Gemini for others.
+This workflow demonstrates how to use external AI captioning models for specific aspects while using Gemini for others.
 
 ```
 ┌─────────────────────┐
@@ -165,8 +165,8 @@ This workflow demonstrates how to use external captioning (JoyCaption) for speci
     │ For each     │
     │ frame:       │
     │              │
-    │ JoyCaption   │ → Caption 1
-    │ GGUF         │ → Caption 2
+    │ External AI  │ → Caption 1
+    │ Model        │ → Caption 2
     │              │ → Caption 3
     └──────┬───────┘
            │ captions (3 descriptions)
@@ -190,7 +190,7 @@ This workflow demonstrates how to use external captioning (JoyCaption) for speci
            │ final_description
            ▼
       (Complete prompt with
-       JoyCaption actions +
+       External AI actions +
        Gemini aesthetics)
 ```
 
@@ -255,12 +255,12 @@ pip install -e .
 - Include **timestamps** for better temporal understanding
 - The **Custom** style lets you define your own combining logic
 
-### Connecting to JoyCaption
+### Connecting to External AI Models
 
-Since JoyCaption processes images one at a time, you'll need to:
+When using external AI captioning models that process images one at a time, you'll need to:
 
 1. Extract frames using Frame Extractor
-2. Manually process each frame through JoyCaption (or use a batch processor)
+2. Manually process each frame through your AI model (or use a batch processor)
 3. Collect the captions (comma-separated or newline-separated)
 4. Feed them to Multi-Caption Combiner
 

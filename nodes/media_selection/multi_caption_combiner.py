@@ -6,7 +6,7 @@ from google.genai import types
 class MultiCaptionCombiner:
     """
     A ComfyUI custom node for combining multiple image captions into a single cohesive description using Gemini.
-    Useful for combining frame-by-frame captions (e.g., from JoyCaption) into a unified action/movement description.
+    Useful for combining frame-by-frame captions from AI models into a unified action/movement description.
     """
 
     def __init__(self):

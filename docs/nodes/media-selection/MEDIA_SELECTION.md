@@ -134,7 +134,7 @@ The nodes are automatically registered and will appear in ComfyUI under:
 ```
 1. Media Selection → Select/download video
 2. Frame Extractor → Extract 3 frames
-3. JoyCaption (×3) → Caption each frame
+3. External AI Model (×3) → Caption each frame
 4. Multi-Caption Combiner → Combine captions
 5. Media Describe → Full description with override
 ```
@@ -177,7 +177,7 @@ gemini_model = "models/gemini-2.0-flash-exp"
 ### Production Use
 
 1. Build complete workflow (see WORKFLOW_EXAMPLE.md)
-2. Connect to JoyCaption nodes
+2. Connect to external AI model nodes
 3. Feed combined caption to Media Describe via overrides
 4. Generate final descriptions
 
@@ -208,8 +208,8 @@ gemini_model = "models/gemini-2.0-flash-exp"
 
 ## ⚠️ Known Limitations
 
-1. **JoyCaption Integration**: No automatic batch processing
-    - Users must manually process each frame through JoyCaption
+1. **External AI Model Integration**: No automatic batch processing
+    - Users must manually process each frame through external AI models
     - Future: Create batch processor utility
 
 2. **Frame Storage**: Temporary files not automatically cleaned
@@ -229,10 +229,10 @@ gemini_model = "models/gemini-2.0-flash-exp"
 All success criteria from OVERVIEW.md achieved:
 
 - ✅ User can extract 3 frames from a video
-- ✅ User can process each frame through JoyCaption
-- ✅ User can combine JoyCaption outputs via Gemini
+- ✅ User can process each frame through external AI models
+- ✅ User can combine external AI outputs via Gemini
 - ✅ User can use combined description as override in Media Describe
-- ✅ Final output includes JoyCaption actions + Gemini descriptions
+- ✅ Final output includes external AI actions + Gemini descriptions
 - ✅ Workflow is reproducible with seed control
 - ✅ Existing workflows using Media Describe continue to work
 
@@ -289,7 +289,7 @@ Enjoy your new modular media processing workflow! 🔪✨
 
 ## Overview
 
-This document outlines the design for splitting the current `Media Describe` node into more modular components to support advanced workflows with external captioning models like JoyCaption.
+This document outlines the design for splitting the current `Media Describe` node into more modular components to support advanced workflows with external AI captioning models.
 
 ## Problem Statement
 
@@ -301,18 +301,18 @@ Currently, the `Media Describe` node combines three responsibilities:
 
 This monolithic design makes it difficult to:
 
-- Use external image captioning models (like JoyCaption) for specific aspects
+- Use external image captioning models for specific aspects
 - Process individual frames differently
 - Combine multiple captioning sources
 - Have fine-grained control over the workflow
 
 ### Specific Use Case
 
-**NSFW Action Description with JoyCaption:**
+**NSFW Action Description with External AI Model:**
 
 1. Get a video clip from various sources (upload, random from folder, Reddit)
 2. Extract 3-5 representative frames from the video
-3. Send each frame individually to JoyCaption to get detailed action descriptions
+3. Send each frame individually to external AI models to get detailed action descriptions
 4. Use Gemini to combine these frame captions into one cohesive "movement/action" description
 5. Use Gemini on the full video to describe other aspects (subject, clothing, scene, aesthetic, etc.)
 6. Combine everything into the final prompt
@@ -400,7 +400,7 @@ Video (5 seconds) -> Frame Extractor (num_frames=3, method="Evenly Spaced")
 
 ### 3. Multi-Caption Combiner Node
 
-**Purpose:** Combine multiple image captions (e.g., from JoyCaption) into a single cohesive description using Gemini.
+**Purpose:** Combine multiple image captions from external AI models into a single cohesive description using Gemini.
 
 **Inputs:**
 
@@ -419,7 +419,7 @@ Video (5 seconds) -> Frame Extractor (num_frames=3, method="Evenly Spaced")
 
 **Functionality:**
 
-- Take multiple captions (e.g., from 3 frames processed by JoyCaption)
+- Take multiple captions (e.g., from 3 frames processed by external AI models)
 - Use Gemini to intelligently combine them into a cohesive description
 - Support different combination styles:
     - **Chronological Narrative**: Describe the progression from first frame to last
@@ -466,7 +466,7 @@ OR we keep the existing `Media Describe` node as-is for backward compatibility a
 
 ## Proposed Workflow
 
-### Workflow 1: NSFW Action Description with JoyCaption
+### Workflow 1: NSFW Action Description with External AI Model
 
 ```
 ┌─────────────────────┐
@@ -484,7 +484,7 @@ OR we keep the existing `Media Describe` node as-is for backward compatibility a
            │ frame_paths (3 images)
            ▼
 ┌─────────────────────┐
-│   JoyCaption GGUF   │ (process each frame)
+│   External AI Model │ (process each frame)
 │  - Frame 1 -> Cap 1 │
 │  - Frame 2 -> Cap 2 │
 │  - Frame 3 -> Cap 3 │
@@ -579,12 +579,12 @@ OR we keep the existing `Media Describe` node as-is for backward compatibility a
 
 ### 4. Data Flow Optimization
 
-**Challenge:** JoyCaption processes images one at a time, so we need to handle the list of frames.
+**Challenge:** External AI models may process images one at a time, so we need to handle the list of frames.
 
 **Solutions:**
 
-1. **Batch Processing Node** - Create a utility node that takes a list of images and processes them through JoyCaption one by one, collecting results
-2. **Manual Loop** - User creates 3 separate JoyCaption nodes (simple but tedious)
+1. **Batch Processing Node** - Create a utility node that takes a list of images and processes them through external AI models one by one, collecting results
+2. **Manual Loop** - User creates 3 separate external AI model nodes (simple but tedious)
 3. **Python Script Node** - Advanced users can write custom loops
 
 **Recommendation:** Create a "Batch Image Processor" utility node that can work with any image processing node.
@@ -633,8 +633,8 @@ nodes/
 
 ### Phase 2: Integration & Testing
 
-4. [ ] Test complete workflow with JoyCaption
-    - Validate frame extraction -> JoyCaption -> Combiner -> Media Describe pipeline
+4. [ ] Test complete workflow with external AI models
+    - Validate frame extraction -> External AI Model -> Combiner -> Media Describe pipeline
     - Test with various video sources
     - Benchmark performance
 
@@ -659,8 +659,8 @@ nodes/
 2. **Temporary File Cleanup:** Should extracted frames be automatically deleted?
     - **Answer:** Configurable option - auto-cleanup by default, but allow caching for debugging
 
-3. **JoyCaption Integration:** Should we create a JoyCaption wrapper node or rely on existing implementations?
-    - **Answer:** Use existing JoyCaption nodes, focus on compatibility
+3. **External AI Integration:** Should we create wrapper nodes for external AI models or rely on existing implementations?
+    - **Answer:** Use existing external AI model nodes, focus on compatibility
 
 4. **Media Describe Modification:** Should we modify the existing node or keep it as-is?
     - **Answer:** Keep existing node for backward compatibility, create new streamlined version if needed
@@ -675,10 +675,10 @@ nodes/
 The implementation will be considered successful when:
 
 1. ✅ User can extract 3 frames from a video
-2. ✅ User can process each frame through JoyCaption
-3. ✅ User can combine JoyCaption outputs into one action description via Gemini
+2. ✅ User can process each frame through external AI models
+3. ✅ User can combine external AI model outputs into one action description via Gemini
 4. ✅ User can use combined action description as override in Media Describe
-5. ✅ Final output includes JoyCaption-based action + Gemini-based other descriptions
+5. ✅ Final output includes external AI-based action + Gemini-based other descriptions
 6. ✅ Workflow is reproducible with seed control
 7. ✅ Existing workflows using current Media Describe node continue to work
 
@@ -688,7 +688,7 @@ The implementation will be considered successful when:
 
 ### Alternative 1: Single "Smart" Node
 
-Create one mega-node that detects when JoyCaption output is provided and automatically uses it.
+Create one mega-node that detects when external AI model output is provided and automatically uses it.
 
 **Pros:**
 
@@ -724,7 +724,6 @@ Instead of Frame Extractor, create a node that takes video and outputs multiple 
 
 - [ComfyUI Custom Node Development](https://github.com/comfyanonymous/ComfyUI)
 - [OpenCV Frame Extraction](https://docs.opencv.org/4.x/d8/dfe/classcv_1_1VideoCapture.html)
-- [JoyCaption Model](https://huggingface.co/spaces/fancyfeast/joy-caption-alpha-two)
 - [Gemini API Documentation](https://ai.google.dev/docs)
 
 ---
@@ -855,10 +854,10 @@ Media Selection → Frame Extractor
 
 Use case: Extract specific frames for analysis
 
-### Workflow 2: JoyCaption Action Description
+### Workflow 2: External AI Action Description
 
 ```
-Media Selection → Frame Extractor → JoyCaption (×3) → Multi-Caption Combiner
+Media Selection → Frame Extractor → External AI Model (×3) → Multi-Caption Combiner
 ```
 
 Use case: Detailed NSFW action descriptions
@@ -866,12 +865,12 @@ Use case: Detailed NSFW action descriptions
 ### Workflow 3: Complete Video Description
 
 ```
-Media Selection → Frame Extractor → JoyCaption (×3) → Multi-Caption Combiner
+Media Selection → Frame Extractor → External AI Model (×3) → Multi-Caption Combiner
                       ↓
                 Media Describe (with movement override)
 ```
 
-Use case: Full prompt with JoyCaption actions + Gemini aesthetics
+Use case: Full prompt with external AI actions + Gemini aesthetics
 
 ---
 
@@ -1024,7 +1023,7 @@ docs/nodes/media-selection/
    - Format: PNG
    ↓ frame_paths: "f1.png,f2.png,f3.png"
 
-3. JoyCaption (process each frame manually)
+3. External AI Model (process each frame manually)
    - Frame 1 → Caption 1
    - Frame 2 → Caption 2
    - Frame 3 → Caption 3
@@ -1040,7 +1039,7 @@ docs/nodes/media-selection/
 
 6. Media Describe
    - Uses video + overrides
-   ↓ Final description with JoyCaption actions
+   ↓ Final description with external AI actions
 ```
 
 ---
@@ -1568,14 +1567,14 @@ The implementation is complete and ready to use! The resizing will work automati
 
 ---
 
-# Example Workflow: NSFW Action Description with JoyCaption
+# Example Workflow: NSFW Action Description with External AI Model
 
-This is a step-by-step guide for creating a workflow that uses the new Media Selection nodes with JoyCaption.
+This is a step-by-step guide for creating a workflow that uses the new Media Selection nodes with external AI models.
 
 ## Workflow Diagram
 
 ```
-Media Selection → Frame Extractor → JoyCaption (×3) → Multi-Caption Combiner → Media Describe
+Media Selection → Frame Extractor → External AI Model (×3) → Multi-Caption Combiner → Media Describe
 ```
 
 ## Step-by-Step Setup
@@ -1601,7 +1600,7 @@ Media Selection → Frame Extractor → JoyCaption (×3) → Multi-Caption Combi
 
 ### Step 3: Extract Frame Paths
 
-The Frame Extractor outputs frame paths as a comma-separated string. You'll need to manually process each frame through JoyCaption.
+The Frame Extractor outputs frame paths as a comma-separated string. You'll need to manually process each frame through external AI models.
 
 **Manual Method:**
 
@@ -1619,22 +1618,22 @@ The Frame Extractor outputs frame paths as a comma-separated string. You'll need
 
 **Note**: The temp directory respects ComfyUI's `--base-directory` and `--temp-directory` flags.
 
-### Step 4: Process Frames with JoyCaption
+### Step 4: Process Frames with External AI Model
 
 For each frame:
 
-1. Add node: **JoyCaption GGUF** (add 3 nodes total, one per frame)
+1. Add node: **External AI Model** (add 3 nodes total, one per frame)
 2. Configure each node:
     - Load the frame image (you may need to manually load each extracted frame)
     - Set processing mode: "Descriptive"
     - Set caption length: "any"
-3. Note: You'll need to manually provide each frame path to JoyCaption nodes
+3. Note: You'll need to manually provide each frame path to external AI model nodes
 
 **Alternative:** If available, use a batch processing node to process all frames at once.
 
 ### Step 5: Collect Captions
 
-Collect the output from each JoyCaption node:
+Collect the output from each external AI model node:
 
 **Example captions:**
 
@@ -1696,7 +1695,7 @@ A woman in a red dress completing a turn, arms gracefully positioned, pose elega
 
 1. Execute the workflow
 2. The final output will combine:
-    - **Movement** (from JoyCaption via Multi-Caption Combiner)
+    - **Movement** (from external AI model via Multi-Caption Combiner)
     - **Subject, Clothing, Scene, Aesthetic** (from Gemini via Media Describe)
 
 ## Expected Output
@@ -1713,7 +1712,7 @@ She wears a vibrant red dress with a fitted bodice and flowing skirt...
 SCENE:
 The setting is a minimalist indoor space with soft lighting...
 
-MOVEMENT (from JoyCaption):
+MOVEMENT (from external AI model):
 The woman performs a graceful spinning dance. Initially standing with arms at her sides and body leaning slightly forward, she transitions into a mid-spin with arms extended outward for balance as her hair flows with the motion. The sequence concludes with her completing the turn in an elegant pose with arms gracefully positioned.
 
 CINEMATIC AESTHETIC:
@@ -1751,7 +1750,7 @@ Cinematic realism with an elegant, contemporary aesthetic...
 - Verify video is not corrupted
 - Try shorter duration
 
-### Issue: JoyCaption doesn't accept frames
+### Issue: External AI models may not accept frame lists
 
 - Ensure frames are saved as images (PNG/JPG)
 - Check frame paths in console output

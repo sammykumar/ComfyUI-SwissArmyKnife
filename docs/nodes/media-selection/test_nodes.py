@@ -106,7 +106,7 @@ def test_caption_combiner():
     
     node = MultiCaptionCombiner()
     
-    # Sample captions (simulating JoyCaption output)
+    # Sample captions (simulating AI model output)
     sample_captions = """A woman in a red dress stands with arms at her sides,
 A woman in a red dress spins with arms outstretched to the sides,
 A woman in a red dress completes the turn with a graceful pose"""

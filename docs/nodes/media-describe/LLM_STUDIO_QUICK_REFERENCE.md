@@ -68,14 +68,14 @@ Vision-language models that work with this node:
 | "No frames extracted"            | Verify video file is valid         |
 | "Error processing frame"         | Check model supports vision inputs |
 
-## Key Differences from JoyCaption
+## Key Features
 
-| Feature    | LLM Studio        | JoyCaption |
-| ---------- | ----------------- | ---------- |
-| API        | OpenAI-compatible | vLLM HTTP  |
-| Port       | 1234              | 8023       |
-| Sleep/Wake | ❌ No             | ✅ Yes     |
-| Client     | `openai` package  | `requests` |
+| Feature    | LLM Studio              |
+| ---------- | ----------------------- |
+| API        | OpenAI-compatible       |
+| Port       | 1234 (default)          |
+| Sleep/Wake | ❌ Not supported        |
+| Client     | `openai` Python package |
 
 ## Performance Tips
 
@@ -90,7 +90,6 @@ See [LLM_STUDIO_MEDIA_DESCRIBE.md](./LLM_STUDIO_MEDIA_DESCRIBE.md) for complete 
 
 ## Related Nodes
 
-- **JoyCaption Media Describe** - Alternative using vLLM
 - **Media Describe** - Gemini-based analysis
 - **Video Preview** - View frames and video
 

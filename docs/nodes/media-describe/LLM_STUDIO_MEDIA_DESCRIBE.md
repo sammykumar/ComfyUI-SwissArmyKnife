@@ -9,8 +9,6 @@
 
 The LLM Studio Video Describe node enables video captioning using LM Studio's OpenAI-compatible API with vision-language models like Qwen3-VL. It extracts frames from videos and generates intelligent captions using local models.
 
-This node is based on the JoyCaption Media Describe node but adapted to work with LM Studio's ecosystem instead of vLLM.
-
 ## Key Features
 
 - **LM Studio Integration**: Uses OpenAI-compatible API to connect to LM Studio
@@ -236,17 +234,6 @@ The node continues processing other frames and returns `"[Error: ...]"` for fail
 - **Medium temperature** (`0.5-0.8`): Balanced creativity and accuracy
 - **High temperature** (`0.8-2.0`): More creative, less predictable
 
-## Comparison with JoyCaption Node
-
-| Feature            | LLM Studio                  | JoyCaption              |
-| ------------------ | --------------------------- | ----------------------- |
-| **API Style**      | OpenAI-compatible           | vLLM HTTP API           |
-| **Model Loading**  | Via LM Studio UI            | Direct vLLM server      |
-| **Sleep/Wake**     | Not supported               | Supported               |
-| **Client Library** | `openai` package            | `requests`              |
-| **Default Model**  | `qwen/qwen3-vl-30b`         | JoyCaption model        |
-| **Endpoint**       | `http://192.168.50.41:1234` | `http://localhost:8023` |
-
 ## Troubleshooting
 
 ### Model Not Loaded
@@ -327,7 +314,6 @@ Files are automatically cleaned up after processing.
 
 ## Related Nodes
 
-- **JoyCaption Media Describe** - Similar functionality using vLLM
 - **Media Describe** - Gemini-based video analysis
 - **Video Preview** - Video playback and frame visualization
 - **Video Metadata** - Extract video technical metadata
@@ -343,7 +329,6 @@ Files are automatically cleaned up after processing.
 ### October 14, 2025 - Initial Release
 
 - Created LLM Studio Video Describe node
-- Adapted from JoyCaption node architecture
 - Implemented OpenAI client integration
 - Added comprehensive documentation
 - Registered node in ComfyUI system
