@@ -9,6 +9,7 @@ Reusable UI components and custom widgets for ComfyUI-SwissArmyKnife nodes.
 - **[CONTROL_PANEL.md](CONTROL_PANEL.md)** - Dashboard widget for monitoring and displaying workflow data
 - **[DIMENSIONS_DISPLAY.md](DIMENSIONS_DISPLAY.md)** - Media dimension display widget with troubleshooting
 - **[SEED_WIDGET.md](SEED_WIDGET.md)** - Randomization seed widget for reproducible workflows
+- **[UPLOAD_WIDGETS.md](UPLOAD_WIDGETS.md)** - Interactive upload buttons for media files
 - **[WIDGET_FIXES.md](WIDGET_FIXES.md)** - General widget fixes, visibility management, and state persistence
 
 ## 🎯 Widget Categories
@@ -36,6 +37,14 @@ Reusable UI components and custom widgets for ComfyUI-SwissArmyKnife nodes.
 - Smart visibility (shows only for "Randomize from Path" mode)
 - Reproducible file selection
 - Large integer range support (0 to 2^64-1)
+
+### Upload Widgets
+
+- Interactive file upload buttons for images and videos
+- ComfyUI integration with built-in upload system
+- Dynamic widget visibility based on media type
+- Click-to-upload interface with file browser
+- Real-time button updates showing selected filenames
 
 ### Widget Fixes
 

@@ -1,6 +1,7 @@
 # Media Selection & Frame Extraction Nodes - README
 
 ## Overview
+
 ## 📄 Documentation
 
 - **[MEDIA_SELECTION.md](MEDIA_SELECTION.md)** - Complete consolidated documentation
@@ -42,6 +43,9 @@ This module provides three new ComfyUI nodes that enable advanced video processi
 
 **Features:**
 
+- **Interactive Upload Widgets**: Click-to-upload buttons for images and videos when using "Upload Media" mode
+- **Dynamic UI**: Upload widgets change based on media_type selection (image/video)
+- **ComfyUI Integration**: Uses ComfyUI's built-in upload system for proper file handling
 - Supports all media sources from the original Media Describe node
 - Downloads and caches Reddit media
 - Trims videos to specified max_duration if needed

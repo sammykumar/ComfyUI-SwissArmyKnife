@@ -876,6 +876,8 @@ app.registerExtension({
         else if (nodeData.name === "MediaSelection") {
             debugLog("Registering MediaSelection node with dynamic media widgets");
 
+            // nodeType.prototype.size = [500, 500];
+
             // Add custom widget after the node is created
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
@@ -994,9 +996,45 @@ app.registerExtension({
 
                 // Function to update widgets based on media_source
                 this.updateMediaWidgets = function () {
-                    const mediaSource = this.mediaSourceWidget?.value || "Upload Media";
+                    const mediaSource = this.mediaSourceWidget?.value || "Reddit Post";
+
+                    console.log(
+                        `🔍 [MediaSelection UPLOAD DEBUG] ========== updateMediaWidgets START ==========`
+                    );
+                    console.log(`🔍 [MediaSelection UPLOAD DEBUG] mediaSource: "${mediaSource}"`);
+                    console.log(
+                        `🔍 [MediaSelection UPLOAD DEBUG] Total widgets before update: ${this.widgets?.length || 0}`
+                    );
 
                     debugLog(`[MediaSelection] Updating widgets: mediaSource=${mediaSource}`);
+
+                    // AGGRESSIVE FIX: Hide upload buttons first, before any other logic
+                    // This ensures they're hidden unless explicitly shown in Upload Media mode
+                    const preExistingImageButton = this.widgets.find(
+                        (w) => w.name === "upload_image_button"
+                    );
+                    const preExistingVideoButton = this.widgets.find(
+                        (w) => w.name === "upload_video_button"
+                    );
+
+                    console.log(
+                        `🔍 [MediaSelection UPLOAD DEBUG] PRE-CLEANUP - Found buttons: image=${!!preExistingImageButton}, video=${!!preExistingVideoButton}`
+                    );
+
+                    if (preExistingImageButton) {
+                        preExistingImageButton.type = "hidden";
+                        preExistingImageButton.computeSize = () => [0, -4];
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] 🚫 PRE-HIDDEN existing imageUploadButton`
+                        );
+                    }
+                    if (preExistingVideoButton) {
+                        preExistingVideoButton.type = "hidden";
+                        preExistingVideoButton.computeSize = () => [0, -4];
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] 🚫 PRE-HIDDEN existing videoUploadButton`
+                        );
+                    }
 
                     // Find the widgets we need to control
                     const originalMediaPathWidget = this.widgets.find(
@@ -1018,6 +1056,9 @@ app.registerExtension({
 
                     // Manage visibility based on media_source
                     if (mediaSource === "Randomize Media from Path") {
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] === RANDOMIZE MEDIA FROM PATH MODE ===`
+                        );
                         debugLog("[MediaSelection] Showing media path widget");
 
                         // Show media_path
@@ -1055,7 +1096,51 @@ app.registerExtension({
                             originalUploadedVideoWidget.type = "hidden";
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
+
+                        // Hide upload buttons
+                        const imageUploadButton = this.widgets.find(
+                            (w) => w.name === "upload_image_button"
+                        );
+                        const videoUploadButton = this.widgets.find(
+                            (w) => w.name === "upload_video_button"
+                        );
+
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] Randomize Mode - Found upload buttons:`
+                        );
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] - imageUploadButton: ${!!imageUploadButton} ${imageUploadButton ? `(type: ${imageUploadButton.type})` : ""}`
+                        );
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] - videoUploadButton: ${!!videoUploadButton} ${videoUploadButton ? `(type: ${videoUploadButton.type})` : ""}`
+                        );
+
+                        if (imageUploadButton) {
+                            imageUploadButton.type = "hidden";
+                            imageUploadButton.computeSize = () => [0, -4];
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ✅ Hidden imageUploadButton (new type: ${imageUploadButton.type})`
+                            );
+                        } else {
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ⚠️ imageUploadButton not found - not created yet`
+                            );
+                        }
+                        if (videoUploadButton) {
+                            videoUploadButton.type = "hidden";
+                            videoUploadButton.computeSize = () => [0, -4];
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ✅ Hidden videoUploadButton (new type: ${videoUploadButton.type})`
+                            );
+                        } else {
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ⚠️ videoUploadButton not found - not created yet`
+                            );
+                        }
                     } else if (mediaSource === "Randomize from Subreddit") {
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] === RANDOMIZE FROM SUBREDDIT MODE ===`
+                        );
                         debugLog(
                             "[MediaSelection] Randomize from Subreddit mode - showing Subreddit URL widget"
                         );
@@ -1095,7 +1180,51 @@ app.registerExtension({
                             originalUploadedVideoWidget.type = "hidden";
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
+
+                        // Hide upload buttons
+                        const imageUploadButton = this.widgets.find(
+                            (w) => w.name === "upload_image_button"
+                        );
+                        const videoUploadButton = this.widgets.find(
+                            (w) => w.name === "upload_video_button"
+                        );
+
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] Subreddit Mode - Found upload buttons:`
+                        );
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] - imageUploadButton: ${!!imageUploadButton} ${imageUploadButton ? `(type: ${imageUploadButton.type})` : ""}`
+                        );
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] - videoUploadButton: ${!!videoUploadButton} ${videoUploadButton ? `(type: ${videoUploadButton.type})` : ""}`
+                        );
+
+                        if (imageUploadButton) {
+                            imageUploadButton.type = "hidden";
+                            imageUploadButton.computeSize = () => [0, -4];
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ✅ Hidden imageUploadButton (new type: ${imageUploadButton.type})`
+                            );
+                        } else {
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ⚠️ imageUploadButton not found - not created yet`
+                            );
+                        }
+                        if (videoUploadButton) {
+                            videoUploadButton.type = "hidden";
+                            videoUploadButton.computeSize = () => [0, -4];
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ✅ Hidden videoUploadButton (new type: ${videoUploadButton.type})`
+                            );
+                        } else {
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ⚠️ videoUploadButton not found - not created yet`
+                            );
+                        }
                     } else if (mediaSource === "Reddit Post") {
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] === REDDIT POST MODE (DEFAULT) ===`
+                        );
                         debugLog("[MediaSelection] Reddit Post mode - showing Reddit URL widget");
 
                         // Show reddit_url
@@ -1132,9 +1261,56 @@ app.registerExtension({
                             originalUploadedVideoWidget.type = "hidden";
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
+
+                        // Hide upload buttons
+                        const imageUploadButton = this.widgets.find(
+                            (w) => w.name === "upload_image_button"
+                        );
+                        const videoUploadButton = this.widgets.find(
+                            (w) => w.name === "upload_video_button"
+                        );
+
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] Reddit Post Mode - Found upload buttons:`
+                        );
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] - imageUploadButton: ${!!imageUploadButton} ${imageUploadButton ? `(type: ${imageUploadButton.type})` : ""}`
+                        );
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] - videoUploadButton: ${!!videoUploadButton} ${videoUploadButton ? `(type: ${videoUploadButton.type})` : ""}`
+                        );
+
+                        if (imageUploadButton) {
+                            imageUploadButton.type = "hidden";
+                            imageUploadButton.computeSize = () => [0, -4];
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ✅ Hidden imageUploadButton (new type: ${imageUploadButton.type})`
+                            );
+                        } else {
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ⚠️ imageUploadButton not found - not created yet (GOOD for default)`
+                            );
+                        }
+                        if (videoUploadButton) {
+                            videoUploadButton.type = "hidden";
+                            videoUploadButton.computeSize = () => [0, -4];
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ✅ Hidden videoUploadButton (new type: ${videoUploadButton.type})`
+                            );
+                        } else {
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ⚠️ videoUploadButton not found - not created yet (GOOD for default)`
+                            );
+                        }
                     } else {
                         // Upload Media mode
-                        debugLog("[MediaSelection] Upload Media mode");
+                        console.log(`🔍 [MediaSelection UPLOAD DEBUG] === UPLOAD MEDIA MODE ===`);
+                        debugLog("[MediaSelection] Upload Media mode - setting up upload widgets");
+
+                        const mediaType = this.mediaTypeWidget?.value || "image";
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] Upload mode - mediaType: ${mediaType}`
+                        );
 
                         // Hide media_path
                         if (originalMediaPathWidget) {
@@ -1160,18 +1336,275 @@ app.registerExtension({
                             originalSubredditUrlWidget.computeSize = () => [0, -4];
                         }
 
-                        // Show upload widgets (these are managed by the upload widget system in ComfyUI)
-                        if (originalUploadedImageWidget) {
-                            originalUploadedImageWidget.type = "text";
-                            originalUploadedImageWidget.computeSize =
-                                originalUploadedImageWidget.constructor.prototype.computeSize;
-                        }
-                        if (originalUploadedVideoWidget) {
-                            originalUploadedVideoWidget.type = "text";
-                            originalUploadedVideoWidget.computeSize =
-                                originalUploadedVideoWidget.constructor.prototype.computeSize;
+                        // Show/hide upload widgets based on media_type
+                        if (mediaType === "image") {
+                            debugLog("[MediaSelection] Showing image upload widget");
+
+                            // Keep the original uploaded_image_file widget hidden for storing the file path
+                            if (originalUploadedImageWidget) {
+                                originalUploadedImageWidget.type = "hidden";
+                                originalUploadedImageWidget.computeSize = () => [0, -4];
+                            }
+
+                            // Check if we already have an upload button, if not create one
+                            let imageUploadButton = this.widgets.find(
+                                (w) => w.name === "upload_image_button"
+                            );
+
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] Image mode - imageUploadButton exists: ${!!imageUploadButton}`
+                            );
+
+                            if (!imageUploadButton) {
+                                console.log(
+                                    `🔍 [MediaSelection UPLOAD DEBUG] 🆕 Creating new imageUploadButton`
+                                );
+                                // Create a separate upload button widget
+                                imageUploadButton = this.addWidget(
+                                    "button",
+                                    "upload_image_button",
+                                    "📁 Choose Image",
+                                    () => {
+                                        const input = document.createElement("input");
+                                        input.type = "file";
+                                        input.accept = "image/*";
+                                        input.onchange = async (e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                debugLog(
+                                                    "[MediaSelection] Image file selected:",
+                                                    file.name
+                                                );
+
+                                                try {
+                                                    // Use ComfyUI's built-in upload system
+                                                    const uploadResponse =
+                                                        await api.uploadImage(file);
+                                                    debugLog(
+                                                        "[MediaSelection] Image uploaded:",
+                                                        uploadResponse
+                                                    );
+
+                                                    // Update button text to show selected file
+                                                    imageUploadButton.value = `📁 ${file.name}`;
+
+                                                    // Store the uploaded file path in the hidden text widget
+                                                    if (originalUploadedImageWidget) {
+                                                        originalUploadedImageWidget.value =
+                                                            uploadResponse.name;
+                                                    }
+
+                                                    // Mark the node as changed so ComfyUI knows to re-execute
+                                                    this.setDirtyCanvas(true);
+                                                } catch (error) {
+                                                    console.error(
+                                                        "[MediaSelection] Image upload failed:",
+                                                        error
+                                                    );
+                                                    imageUploadButton.value = "📁 Upload Failed";
+                                                }
+                                            }
+                                        };
+                                        input.click();
+                                    }
+                                );
+
+                                // Set the button properties
+                                imageUploadButton.type = "button";
+                                imageUploadButton.options = imageUploadButton.options || {};
+                                imageUploadButton.options.serialize = false; // Don't serialize the button state
+
+                                console.log(
+                                    `🔍 [MediaSelection UPLOAD DEBUG] ✅ Created imageUploadButton with type: ${imageUploadButton.type}`
+                                );
+                            } else {
+                                console.log(
+                                    `🔍 [MediaSelection UPLOAD DEBUG] ♻️ Making existing imageUploadButton visible`
+                                );
+                                // Make sure existing button is visible
+                                imageUploadButton.type = "button";
+                                imageUploadButton.computeSize =
+                                    imageUploadButton.constructor.prototype.computeSize;
+
+                                console.log(
+                                    `🔍 [MediaSelection UPLOAD DEBUG] ✅ Made existing imageUploadButton visible with type: ${imageUploadButton.type}`
+                                );
+                            }
+
+                            // Hide video upload button if it exists
+                            const videoUploadButton = this.widgets.find(
+                                (w) => w.name === "upload_video_button"
+                            );
+                            if (videoUploadButton) {
+                                videoUploadButton.type = "hidden";
+                                videoUploadButton.computeSize = () => [0, -4];
+                            }
+
+                            // Hide video upload widget
+                            if (originalUploadedVideoWidget) {
+                                originalUploadedVideoWidget.type = "hidden";
+                                originalUploadedVideoWidget.computeSize = () => [0, -4];
+                            }
+                        } else {
+                            debugLog("[MediaSelection] Showing video upload widget");
+
+                            // Keep the original uploaded_video_file widget hidden for storing the file path
+                            if (originalUploadedVideoWidget) {
+                                originalUploadedVideoWidget.type = "hidden";
+                                originalUploadedVideoWidget.computeSize = () => [0, -4];
+                            }
+
+                            // Check if we already have an upload button, if not create one
+                            let videoUploadButton = this.widgets.find(
+                                (w) => w.name === "upload_video_button"
+                            );
+                            if (!videoUploadButton) {
+                                // Create a separate upload button widget
+                                videoUploadButton = this.addWidget(
+                                    "button",
+                                    "upload_video_button",
+                                    "📹 Choose Video",
+                                    () => {
+                                        const input = document.createElement("input");
+                                        input.type = "file";
+                                        input.accept = "video/*";
+                                        input.onchange = async (e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                debugLog(
+                                                    "[MediaSelection] Video file selected:",
+                                                    file.name
+                                                );
+
+                                                try {
+                                                    // For videos, we'll use the general upload endpoint
+                                                    // since api.uploadImage is specifically for images
+                                                    const formData = new FormData();
+                                                    formData.append("image", file); // ComfyUI uses "image" param for all uploads
+                                                    formData.append("overwrite", "false");
+                                                    formData.append("type", "input");
+
+                                                    const response = await fetch("/upload/image", {
+                                                        method: "POST",
+                                                        body: formData,
+                                                    });
+
+                                                    if (!response.ok) {
+                                                        throw new Error(
+                                                            `Upload failed: ${response.status}`
+                                                        );
+                                                    }
+
+                                                    const uploadResponse = await response.json();
+                                                    debugLog(
+                                                        "[MediaSelection] Video uploaded:",
+                                                        uploadResponse
+                                                    );
+
+                                                    // Update button text to show selected file
+                                                    videoUploadButton.value = `📹 ${file.name}`;
+
+                                                    // Store the uploaded file path in the hidden text widget
+                                                    if (originalUploadedVideoWidget) {
+                                                        originalUploadedVideoWidget.value =
+                                                            uploadResponse.name;
+                                                    }
+
+                                                    // Mark the node as changed so ComfyUI knows to re-execute
+                                                    this.setDirtyCanvas(true);
+                                                } catch (error) {
+                                                    console.error(
+                                                        "[MediaSelection] Video upload failed:",
+                                                        error
+                                                    );
+                                                    videoUploadButton.value = "📹 Upload Failed";
+                                                }
+                                            }
+                                        };
+                                        input.click();
+                                    }
+                                );
+
+                                // Set the button properties
+                                videoUploadButton.type = "button";
+                                videoUploadButton.options = videoUploadButton.options || {};
+                                videoUploadButton.options.serialize = false; // Don't serialize the button state
+                            } else {
+                                // Make sure existing button is visible
+                                videoUploadButton.type = "button";
+                                videoUploadButton.computeSize =
+                                    videoUploadButton.constructor.prototype.computeSize;
+                            }
+
+                            // Hide image upload button if it exists
+                            const imageUploadButton = this.widgets.find(
+                                (w) => w.name === "upload_image_button"
+                            );
+                            if (imageUploadButton) {
+                                imageUploadButton.type = "hidden";
+                                imageUploadButton.computeSize = () => [0, -4];
+                            }
+
+                            // Hide image upload widget
+                            if (originalUploadedImageWidget) {
+                                originalUploadedImageWidget.type = "hidden";
+                                originalUploadedImageWidget.computeSize = () => [0, -4];
+                            }
                         }
                     }
+
+                    // FINAL ENFORCEMENT: Ensure upload buttons are hidden for non-upload modes
+                    if (mediaSource !== "Upload Media") {
+                        const finalImageButton = this.widgets.find(
+                            (w) => w.name === "upload_image_button"
+                        );
+                        const finalVideoButton = this.widgets.find(
+                            (w) => w.name === "upload_video_button"
+                        );
+
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] FINAL ENFORCEMENT for mode "${mediaSource}"`
+                        );
+
+                        if (finalImageButton && finalImageButton.type !== "hidden") {
+                            finalImageButton.type = "hidden";
+                            finalImageButton.computeSize = () => [0, -4];
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] 🔒 FORCE-HIDDEN imageUploadButton in final enforcement`
+                            );
+                        }
+                        if (finalVideoButton && finalVideoButton.type !== "hidden") {
+                            finalVideoButton.type = "hidden";
+                            finalVideoButton.computeSize = () => [0, -4];
+                            console.log(
+                                `🔍 [MediaSelection UPLOAD DEBUG] 🔒 FORCE-HIDDEN videoUploadButton in final enforcement`
+                            );
+                        }
+                    }
+
+                    // Final state logging
+                    const finalImageButton = this.widgets.find(
+                        (w) => w.name === "upload_image_button"
+                    );
+                    const finalVideoButton = this.widgets.find(
+                        (w) => w.name === "upload_video_button"
+                    );
+
+                    console.log(
+                        `🔍 [MediaSelection UPLOAD DEBUG] ========== FINAL STATE ==========`
+                    );
+                    console.log(
+                        `🔍 [MediaSelection UPLOAD DEBUG] Total widgets: ${this.widgets?.length || 0}`
+                    );
+                    console.log(
+                        `🔍 [MediaSelection UPLOAD DEBUG] Final imageUploadButton: ${!!finalImageButton} ${finalImageButton ? `(type: ${finalImageButton.type})` : ""}`
+                    );
+                    console.log(
+                        `🔍 [MediaSelection UPLOAD DEBUG] Final videoUploadButton: ${!!finalVideoButton} ${finalVideoButton ? `(type: ${finalVideoButton.type})` : ""}`
+                    );
+                    console.log(
+                        `🔍 [MediaSelection UPLOAD DEBUG] ========== updateMediaWidgets END ==========`
+                    );
 
                     debugLog(
                         `[MediaSelection] Widget update complete. Total widgets: ${
@@ -1201,18 +1634,47 @@ app.registerExtension({
 
                 // Initial setup - call updateResizeWidgets first, then updateMediaWidgets
                 // (updateMediaWidgets will call updateResizeWidgets at the end)
+                console.log(
+                    `🔍 [MediaSelection UPLOAD DEBUG] ========== INITIAL SETUP START ==========`
+                );
+                console.log(
+                    `🔍 [MediaSelection UPLOAD DEBUG] Default media_source: ${this.mediaSourceWidget?.value || "undefined"}`
+                );
+
                 debugLog(`[MediaSelection] onNodeCreated - Running initial setup`);
                 this.updateResizeWidgets();
                 this.updateMediaWidgets();
+
+                console.log(
+                    `🔍 [MediaSelection UPLOAD DEBUG] ========== INITIAL SETUP COMPLETE ==========`
+                );
 
                 // Hook into media_source widget changes
                 if (this.mediaSourceWidget) {
                     const originalSourceCallback = this.mediaSourceWidget.callback;
                     this.mediaSourceWidget.callback = (value) => {
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] ========== MEDIA_SOURCE CHANGED ==========`
+                        );
+                        console.log(
+                            `🔍 [MediaSelection UPLOAD DEBUG] Changed from "${this.mediaSourceWidget.value}" to "${value}"`
+                        );
+
                         debugLog(`[MediaSelection] media_source changed to: "${value}"`);
                         if (originalSourceCallback)
                             originalSourceCallback.call(this.mediaSourceWidget, value);
                         this.updateMediaWidgets();
+                    };
+                }
+
+                // Hook into media_type widget changes to update upload widgets
+                if (this.mediaTypeWidget) {
+                    const originalTypeCallback = this.mediaTypeWidget.callback;
+                    this.mediaTypeWidget.callback = (value) => {
+                        debugLog(`[MediaSelection] media_type changed to: "${value}"`);
+                        if (originalTypeCallback)
+                            originalTypeCallback.call(this.mediaTypeWidget, value);
+                        this.updateMediaWidgets(); // Update widgets when media type changes
                     };
                 }
 

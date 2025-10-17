@@ -28,7 +28,7 @@ class MediaSelection:
         return {
             "required": {
                 "media_source": (["Upload Media", "Randomize Media from Path", "Reddit Post", "Randomize from Subreddit"], {
-                    "default": "Upload Media",
+                    "default": "Reddit Post",
                     "tooltip": "Choose whether to upload media, randomize from a directory path, download from a Reddit post, or randomize from a subreddit"
                 }),
                 "media_type": (["image", "video"], {

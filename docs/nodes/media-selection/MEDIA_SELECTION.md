@@ -1185,7 +1185,7 @@ The dynamic field visibility is implemented in `/web/js/swiss-army-knife.js` usi
 
 ## Field Visibility Rules
 
-### Upload Media Mode (default)
+### Upload Media Mode
 
 **Visible fields:**
 
@@ -1219,7 +1219,7 @@ The dynamic field visibility is implemented in `/web/js/swiss-army-knife.js` usi
 - `reddit_url`
 - `subreddit_url`
 
-### Reddit Post Mode
+### Reddit Post Mode (default)
 
 **Visible fields:**
 

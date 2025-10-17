@@ -100,7 +100,7 @@ Updated `clearAllMediaState` function to:
 
 - Only `media_source` and `media_type` dropdowns should be visible
 - `media_path`, `uploaded_image_file`, and `uploaded_video_file` should be hidden
-- Default configuration: "Upload Media" + "image" should show image upload widgets only
+- Default configuration: "Reddit Post" + "image" should show reddit_url widget only
 
 **When "Upload Media" + "image" is selected:**
 
