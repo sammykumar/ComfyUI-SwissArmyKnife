@@ -2104,8 +2104,28 @@ User Prompt:
 
         positive_prompt = "\n\n".join(positive_parts) if positive_parts else combined_caption
 
-        # Build final output
-        all_data = f"{media_info_text}\n\n{'='*50}\nLLM Studio Description:\n{'='*50}\n{positive_prompt}"
+        # Create aggregated data output for Control Panel as JSON (same structure as Gemini)
+        llm_status = f"""🤖 LLM Studio Analysis Status: ✅ Complete
+• Model: {model_name}
+• Base URL: {base_url}
+• Input: {media_type.capitalize()}"""
+
+        # Build the same JSON structure as Gemini for Control Panel compatibility
+        all_data = json.dumps({
+            "description": positive_prompt,
+            "media_info": media_info_text,
+            "gemini_status": llm_status,  # Using gemini_status field name for compatibility
+            "positive_prompt": positive_prompt,
+            "final_string": positive_prompt,  # Add final_string field for Control Panel
+            "height": height,
+            "width": width,
+            "subject": llm_json.get("subject", ""),
+            "clothing": llm_json.get("clothing", ""),
+            "movement": llm_json.get("movement", ""),
+            "scene": llm_json.get("scene", ""),
+            "cinematic_aesthetic": llm_json.get("cinematic_aesthetic", ""),
+            "stylization_tone": llm_json.get("stylization_tone", "")
+        })
 
         return (all_data, raw_llm_json, raw_llm_json, positive_prompt, prompt_request, height, width)
 
