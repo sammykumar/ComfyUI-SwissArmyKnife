@@ -173,11 +173,6 @@ class LoRAInfoExtractor:
                 }),
             },
             "optional": {
-                "civitai_api_key": ("STRING", {
-                    "multiline": False,
-                    "default": os.environ.get("CIVITAI_API_KEY") or os.environ.get("CIVIT_API_KEY", "YOUR_CIVITAI_API_KEY_HERE"),
-                    "tooltip": "Override CivitAI API key (falls back to CIVITAI_API_KEY/CIVIT_API_KEY env vars)"
-                }),
                 "fallback_name": ("STRING", {
                     "default": "",
                     "tooltip": "Used when no LoRA metadata can be determined"
@@ -198,13 +193,12 @@ class LoRAInfoExtractor:
     FUNCTION = "extract_lora_info"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
 
-    def extract_lora_info(self, lora: Any, civitai_api_key: str = "", fallback_name: str = "", use_civitai_api: bool = True, wan_model_type: str = "high"):
+    def extract_lora_info(self, lora: Any, fallback_name: str = "", use_civitai_api: bool = True, wan_model_type: str = "high"):
         """Extract LoRA stack metadata and return JSON plus human readable summary."""
 
         debug_repr = repr(lora)
         print("[DEBUG] LoRAInfoExtractor.extract_lora_info called")
         print(f"  - use_civitai_api: {use_civitai_api}")
-        print(f"  - civitai_api_key provided: {bool(civitai_api_key and civitai_api_key != 'YOUR_CIVITAI_API_KEY_HERE')}")
         print(f"  - fallback_name: '{fallback_name}'")
         print(f"  - wan_model_type: '{wan_model_type}'")
         print(f"  - lora type: {type(lora)}")
@@ -213,7 +207,11 @@ class LoRAInfoExtractor:
         try:
             civitai_service = None
             if use_civitai_api:
-                effective_api_key = civitai_api_key if civitai_api_key and civitai_api_key != "YOUR_CIVITAI_API_KEY_HERE" else None
+                # Get API key from ComfyUI settings only (no environment variable fallback)
+                from .config_api import get_setting_value
+                effective_api_key = get_setting_value("swiss_army_knife.civitai.api_key")
+                
+                print(f"  - effective_api_key provided: {bool(effective_api_key)}")
                 civitai_service = CivitAIService(api_key=effective_api_key)
 
             entries = self._discover_lora_entries(lora)

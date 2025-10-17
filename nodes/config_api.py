@@ -6,15 +6,72 @@ from aiohttp import web
 import os
 
 
+# Global variable to cache API keys from frontend settings
+_cached_api_keys = {
+    "gemini_api_key": "",
+    "civitai_api_key": ""
+}
+
+
+def get_setting_value(setting_id):
+    """Get a setting value from ComfyUI's settings system"""
+    try:
+        # Check cached API keys from frontend only (no environment variable fallback)
+        global _cached_api_keys
+        if setting_id == "swiss_army_knife.gemini.api_key":
+            return _cached_api_keys.get("gemini_api_key", "")
+        elif setting_id == "swiss_army_knife.civitai.api_key":
+            return _cached_api_keys.get("civitai_api_key", "")
+            
+    except Exception as e:
+        print(f"[Swiss Army Knife] Error getting setting {setting_id}: {e}")
+    
+    return ""
+
+
 async def get_config(request):
-    """Get frontend configuration including DEBUG setting"""
+    """Get frontend configuration including DEBUG setting and API keys"""
     try:
         # Read DEBUG setting from environment
         debug = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
+        
+        # Get API keys from settings (uses cached values or environment variables)
+        gemini_api_key = get_setting_value("swiss_army_knife.gemini.api_key")
+        civitai_api_key = get_setting_value("swiss_army_knife.civitai.api_key")
 
         return web.json_response({
-            "debug": debug
+            "debug": debug,
+            "gemini_api_key": gemini_api_key,
+            "civitai_api_key": civitai_api_key
         })
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
+async def set_api_keys(request):
+    """Allow frontend to pass API keys from settings to backend"""
+    try:
+        data = await request.json()
+        gemini_key = data.get("gemini_api_key", "")
+        civitai_key = data.get("civitai_api_key", "")
+        
+        # Store API keys in a global location that can be accessed by nodes
+        global _cached_api_keys
+        _cached_api_keys = {
+            "gemini_api_key": gemini_key,
+            "civitai_api_key": civitai_key
+        }
+        
+        # Refresh the global CivitAI service to pick up the new API key
+        try:
+            from .civitai_service import refresh_civitai_service
+            refresh_civitai_service()
+        except ImportError:
+            pass  # CivitAI service not available
+        
+        print(f"[Swiss Army Knife] API keys cached: Gemini={bool(gemini_key)}, CivitAI={bool(civitai_key)}")
+        
+        return web.json_response({"success": True})
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 
@@ -22,3 +79,4 @@ async def get_config(request):
 def register_config_routes(app):
     """Register configuration API routes"""
     app.router.add_get("/swissarmyknife/config", get_config)
+    app.router.add_post("/swissarmyknife/set_api_keys", set_api_keys)

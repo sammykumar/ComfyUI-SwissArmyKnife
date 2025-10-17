@@ -6,6 +6,7 @@ options for Gemini media description nodes.
 """
 
 import os
+from ..config_api import get_setting_value
 
 
 class GeminiUtilOptions:
@@ -24,11 +25,6 @@ class GeminiUtilOptions:
         """
         return {
             "required": {
-                "gemini_api_key": ("STRING", {
-                    "multiline": False,
-                    "default": os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE"),
-                    "tooltip": "Your Gemini API key (automatically uses GEMINI_API_KEY environment variable if available)"
-                }),
                 "gemini_model": (["models/gemini-2.5-flash", "models/gemini-2.5-flash-lite", "models/gemini-2.5-pro"], {
                     "default": "models/gemini-2.5-flash",
                     "tooltip": "Select the Gemini model to use"
@@ -49,15 +45,16 @@ class GeminiUtilOptions:
     FUNCTION = "create_options"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
-    def create_options(self, gemini_api_key, gemini_model, prompt_style, change_clothing_color):
+    def create_options(self, gemini_model, prompt_style, change_clothing_color):
         """
         Create an options object with all the configuration settings
         """
-        # Use environment variable if API key is placeholder or empty
-        # This handles cases where the API key was not serialized to the workflow
-        effective_api_key = gemini_api_key
-        if not gemini_api_key or gemini_api_key == "YOUR_GEMINI_API_KEY_HERE":
-            effective_api_key = os.environ.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+        # Get API key from ComfyUI settings
+        effective_api_key = get_setting_value("swiss_army_knife.gemini.api_key")
+        
+        # Fallback to environment variable if settings not available
+        if not effective_api_key:
+            effective_api_key = os.environ.get("GEMINI_API_KEY", "")
         
         options = {
             "gemini_api_key": effective_api_key,

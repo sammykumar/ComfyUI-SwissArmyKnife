@@ -24,6 +24,7 @@ Core system components and development tools:
 - **[debug](infrastructure/debug/)** - Debug mode and logging systems
 - **[docker](infrastructure/docker/)** - Docker setup and container configuration
 - **[build-deploy](infrastructure/build-deploy/)** - Build processes and publishing workflows
+- **[SETTINGS_INTEGRATION.md](infrastructure/SETTINGS_INTEGRATION.md)** - ComfyUI settings API integration for secure API key management
 
 ### 🔌 Integrations (`/integrations`)
 
@@ -94,10 +95,10 @@ Each node should have a single comprehensive markdown file that includes:
 When adding new documentation:
 
 1. **Choose the Right Location**:
-   - Node-specific → `/nodes/[node-name]/`
-   - Infrastructure → `/infrastructure/[category]/`
-   - Integration → `/integrations/[service]/`
-   - Web JavaScript widget → `/web-js/`
+    - Node-specific → `/nodes/[node-name]/`
+    - Infrastructure → `/infrastructure/[category]/`
+    - Integration → `/integrations/[service]/`
+    - Web JavaScript widget → `/web-js/`
 
 2. **One File Per Node**: Create a single comprehensive markdown file for each node
 

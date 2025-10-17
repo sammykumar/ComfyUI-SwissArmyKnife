@@ -2,7 +2,23 @@
 
 ## ✅ COMPLETED SUCCESSFULLY
 
-### 1. Python Backend Implementation
+### 1. ComfyUI Settings Integration (v2.8.11+)
+
+- **Status**: ✅ Complete
+- **Features**:
+    - Native ComfyUI settings for API keys
+    - Automatic sync between frontend and backend
+    - Secure storage (no API keys in workflow files)
+    - Settings: `swiss_army_knife.gemini.api_key`, `swiss_army_knife.civitai.api_key`
+    - Fallback to environment variables
+- **Files Updated**:
+    - `web/js/swiss-army-knife.js` - Settings registration and sync
+    - `nodes/config_api.py` - Settings caching API
+    - `nodes/media_describe/gemini_util_options.py` - Removed API key widget
+    - `nodes/nodes.py` - LoRAInfoExtractor updated
+- **Documentation**: `docs/infrastructure/SETTINGS_INTEGRATION.md`
+
+### 2. Python Backend Implementation
 
 - **File**: `nodes/nodes.py`
 - **Status**: ✅ Working correctly

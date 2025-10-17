@@ -29,16 +29,14 @@ class CivitAIService:
 
     def __init__(self, api_key=None, *, timeout: float = 10.0):
         self.cache: Dict[str, Optional[Dict[str, Any]]] = {}
-        # Use provided API key, otherwise fallback to environment variables (try both variants)
-        self.api_key = api_key or os.environ.get("CIVITAI_API_KEY") or os.environ.get("CIVIT_API_KEY", "")
+        # Use provided API key only (no environment variable fallback)
+        self.api_key = api_key or ""
         self.timeout = timeout
         self._hash_cache = get_lora_hash_cache()
-        print("[DEBUG] CivitAI Service initialized")
-        if self.api_key:
-            print(f"[DEBUG] ✅ CivitAI API key found: {self.api_key[:8]}...{self.api_key[-4:]}")
-        else:
-            print("[DEBUG] ❌ No CivitAI API key found (neither provided nor in environment)")
-            print(f"[DEBUG] Available env vars: {[k for k in os.environ.keys() if 'CIVIT' in k.upper()]}")
+        # Only log if there's an issue with API key detection
+        if not self.api_key:
+            print("[DEBUG] ❌ No CivitAI API key found (this may be normal during startup before settings sync)")
+        # Successful API key detection is logged silently
 
     def get_model_info_by_hash(self, file_path: str) -> Optional[Dict[str, Any]]:
         """
@@ -144,7 +142,7 @@ class CivitAIService:
                 print(f"Network error fetching CivitAI data for {hash_type} hash {file_hash[:16]}...: {exc}")
                 return None
 
-        print(f"[DEBUG] CivitAI response for {hash_type} hash: {response.status_code}")
+        # Only log response status for errors or rate limiting
         if response.status_code == 429 and attempt < self.MAX_RETRIES:
             retry_after = response.headers.get("Retry-After")
             delay = min(float(retry_after) if retry_after else 1.0, 5.0)
@@ -288,5 +286,21 @@ def get_civitai_service() -> CivitAIService:
     """Get the global CivitAI service instance."""
     global _civitai_service
     if _civitai_service is None:
-        _civitai_service = CivitAIService()
+        # Get API key from settings only (no environment variable fallback)
+        api_key = None
+        try:
+            from .config_api import get_setting_value
+            api_key = get_setting_value("swiss_army_knife.civitai.api_key")
+        except ImportError:
+            # config_api not available, no API key
+            pass
+        
+        _civitai_service = CivitAIService(api_key=api_key)
     return _civitai_service
+
+
+def refresh_civitai_service():
+    """Refresh the global CivitAI service instance with updated API keys."""
+    global _civitai_service
+    _civitai_service = None  # Clear cached instance
+    return get_civitai_service()  # Create new instance with current API key

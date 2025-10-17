@@ -2,7 +2,7 @@ import { app } from "../../../scripts/app.js";
 import { api } from "../../../scripts/api.js";
 
 // Version and cache busting info
-const EXTENSION_VERSION = "2.5.6"; // Should match pyproject.toml version
+const EXTENSION_VERSION = "2.8.11"; // Should match pyproject.toml version
 const LOAD_TIMESTAMP = new Date().toISOString();
 
 // DEBUG mode - will be loaded from server config
@@ -34,6 +34,52 @@ async function loadDebugConfig() {
 // Load config immediately
 loadDebugConfig();
 
+// Helper functions for accessing API keys from settings
+const getGeminiApiKey = () => {
+    try {
+        return app.extensionManager.setting.get("swiss_army_knife.gemini.api_key") || "";
+    } catch (error) {
+        console.warn("Failed to get Gemini API key from settings:", error);
+        return "";
+    }
+};
+
+const getCivitaiApiKey = () => {
+    try {
+        return app.extensionManager.setting.get("swiss_army_knife.civitai.api_key") || "";
+    } catch (error) {
+        console.warn("Failed to get CivitAI API key from settings:", error);
+        return "";
+    }
+};
+
+// Function to sync API keys to backend
+const syncApiKeysToBackend = async () => {
+    try {
+        const geminiKey = getGeminiApiKey();
+        const civitaiKey = getCivitaiApiKey();
+
+        const response = await fetch("/swissarmyknife/set_api_keys", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                gemini_api_key: geminiKey,
+                civitai_api_key: civitaiKey,
+            }),
+        });
+
+        if (response.ok) {
+            debugLog("[Settings] API keys synced to backend successfully");
+        } else {
+            console.warn("[Settings] Failed to sync API keys to backend:", response.status);
+        }
+    } catch (error) {
+        console.warn("[Settings] Error syncing API keys to backend:", error);
+    }
+};
+
 console.log(`Loading swiss-army-knife.js extension v${EXTENSION_VERSION} at ${LOAD_TIMESTAMP}`);
 
 // Register custom widgets for Swiss Army Knife nodes
@@ -45,8 +91,8 @@ app.registerExtension({
         if (nodeData.name === "GeminiUtilOptions") {
             debugLog("Registering GeminiUtilOptions node");
 
-            // This node doesn't need special widgets - it just provides configuration
-            // The existing ComfyUI widgets are sufficient for this node
+            // This node no longer needs API key widgets - it uses ComfyUI settings
+            // The API key is now retrieved from settings: swiss_army_knife.gemini.api_key
         }
 
         // Handle FilenameGenerator node
@@ -2076,6 +2122,40 @@ app.registerExtension({
     ],
 });
 
+app.registerExtension({
+    name: "ComfyUI-SwissArmyKnife",
+    settings: [
+        {
+            id: "swiss_army_knife.gemini.api_key",
+            name: "Gemini API Key",
+            type: "text",
+            defaultValue: "",
+            tooltip: "Your Gemini API key for media description and processing",
+            onChange: (newVal, oldVal) => {
+                debugLog(`[Settings] Gemini API key changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "swiss_army_knife.civitai.api_key",
+            name: "Civitai API Key",
+            type: "text",
+            defaultValue: "",
+            tooltip: "Your CivitAI API key for LoRA metadata lookup",
+            onChange: (newVal, oldVal) => {
+                debugLog(`[Settings] CivitAI API key changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+    ],
+
+    async setup() {
+        // Initial sync of API keys to backend when extension loads
+        setTimeout(() => {
+            syncApiKeysToBackend();
+        }, 1000); // Small delay to ensure settings are loaded
+    },
+});
 // LoRAInfoExtractor workflow serialization extension
 // app.registerExtension({
 //     name: "comfyui_swissarmyknife.lora_info_extractor",
