@@ -33,15 +33,10 @@ class MediaDescribeOverrides:
                     "default": "",
                     "tooltip": "Override text for SUBJECT paragraph (if provided, uses this instead of Gemini's output for subject)"
                 }),
-                "override_cinematic_aesthetic": ("STRING", {
+                "override_visual_style": ("STRING", {
                     "multiline": True,
                     "default": "",
-                    "tooltip": "Override text for CINEMATIC AESTHETIC CONTROL paragraph (if provided, uses this instead of Gemini's output)"
-                }),
-                "override_stylization_tone": ("STRING", {
-                    "multiline": True,
-                    "default": "",
-                    "tooltip": "Override text for STYLIZATION & TONE paragraph (if provided, uses this instead of Gemini's output)"
+                    "tooltip": "Override text for VISUAL STYLE paragraph (combines cinematic/aesthetic and stylization/tone - if provided, uses this instead of Gemini's output)"
                 }),
                 "override_clothing": ("STRING", {
                     "multiline": True,
@@ -66,17 +61,15 @@ class MediaDescribeOverrides:
     FUNCTION = "create_overrides"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
-    def create_overrides(self, prompt_prefix="", override_subject="", override_cinematic_aesthetic="", 
-                        override_stylization_tone="", override_clothing="", 
-                        override_scene="", override_movement=""):
+    def create_overrides(self, prompt_prefix="", override_subject="", override_visual_style="",
+                        override_clothing="", override_scene="", override_movement=""):
         """
         Create an overrides dictionary from the input fields.
 
         Args:
             prompt_prefix: Text to prepend before the generated description
             override_subject: Override text for SUBJECT paragraph
-            override_cinematic_aesthetic: Override text for CINEMATIC AESTHETIC paragraph
-            override_stylization_tone: Override text for STYLIZATION & TONE paragraph
+            override_visual_style: Override text for VISUAL STYLE paragraph (combines cinematic/aesthetic and stylization/tone)
             override_clothing: Override text for CLOTHING paragraph
             override_scene: Override text for SCENE paragraph (video only)
             override_movement: Override text for MOVEMENT paragraph (video only)
@@ -87,8 +80,7 @@ class MediaDescribeOverrides:
         overrides = {
             "prompt_prefix": prompt_prefix,
             "override_subject": override_subject,
-            "override_cinematic_aesthetic": override_cinematic_aesthetic,
-            "override_stylization_tone": override_stylization_tone,
+            "override_visual_style": override_visual_style,
             "override_clothing": override_clothing,
             "override_scene": override_scene,
             "override_movement": override_movement

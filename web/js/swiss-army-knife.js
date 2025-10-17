@@ -665,23 +665,21 @@ app.registerExtension({
                         return { column, content: columnContent };
                     };
 
-                    // Create 6 columns
+                    // Create 5 columns
                     const subjectCol = createColumn("Subject");
                     const clothingCol = createColumn("Clothing");
                     const movementCol = createColumn("Movement");
                     const sceneCol = createColumn("Scene");
-                    const cinematicCol = createColumn("Cinematic/Aesthetic");
-                    const stylizationCol = createColumn("Stylization/Tone");
+                    const visualStyleCol = createColumn("Visual Style");
 
                     // Remove border from last column
-                    stylizationCol.column.style.borderRight = "none";
+                    visualStyleCol.column.style.borderRight = "none";
 
                     dom.appendChild(subjectCol.column);
                     dom.appendChild(clothingCol.column);
                     dom.appendChild(movementCol.column);
                     dom.appendChild(sceneCol.column);
-                    dom.appendChild(cinematicCol.column);
-                    dom.appendChild(stylizationCol.column);
+                    dom.appendChild(visualStyleCol.column);
 
                     // Add a DOM widget
                     const widget = this.addDOMWidget(
@@ -700,8 +698,7 @@ app.registerExtension({
                     this._cpb_clothing = clothingCol.content;
                     this._cpb_movement = movementCol.content;
                     this._cpb_scene = sceneCol.content;
-                    this._cpb_cinematic = cinematicCol.content;
-                    this._cpb_stylization = stylizationCol.content;
+                    this._cpb_visual_style = visualStyleCol.content;
                     this._cpb_widget = widget;
                 }
 
@@ -733,6 +730,7 @@ app.registerExtension({
                     let promptBreakdown = null;
                     let rawData = null;
 
+                    // First try prompt_breakdown field (legacy)
                     if (data.prompt_breakdown) {
                         console.log(
                             "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.prompt_breakdown"
@@ -740,6 +738,24 @@ app.registerExtension({
                         rawData = Array.isArray(data.prompt_breakdown)
                             ? data.prompt_breakdown[0]
                             : data.prompt_breakdown;
+                    }
+                    // Then try all_media_describe_data (current format from MediaDescribe node)
+                    else if (data.all_media_describe_data) {
+                        console.log(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.all_media_describe_data"
+                        );
+                        rawData = Array.isArray(data.all_media_describe_data)
+                            ? data.all_media_describe_data[0]
+                            : data.all_media_describe_data;
+                    }
+                    // Finally try all_media_describe_data_copy (backup)
+                    else if (data.all_media_describe_data_copy) {
+                        console.log(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.all_media_describe_data_copy"
+                        );
+                        rawData = Array.isArray(data.all_media_describe_data_copy)
+                            ? data.all_media_describe_data_copy[0]
+                            : data.all_media_describe_data_copy;
                     }
 
                     console.log("🔍 [ControlPanelPromptBreakdown DEBUG] rawData:", rawData);
@@ -770,8 +786,7 @@ app.registerExtension({
                             this._cpb_clothing.textContent = "Error parsing data";
                             this._cpb_movement.textContent = "Error parsing data";
                             this._cpb_scene.textContent = "Error parsing data";
-                            this._cpb_cinematic.textContent = "Error parsing data";
-                            this._cpb_stylization.textContent = "Error parsing data";
+                            this._cpb_visual_style.textContent = "Error parsing data";
                             return;
                         }
                     }
@@ -784,8 +799,7 @@ app.registerExtension({
                         this._cpb_clothing.textContent = "(No data available)";
                         this._cpb_movement.textContent = "(No data available)";
                         this._cpb_scene.textContent = "(No data available)";
-                        this._cpb_cinematic.textContent = "(No data available)";
-                        this._cpb_stylization.textContent = "(No data available)";
+                        this._cpb_visual_style.textContent = "(No data available)";
                         return;
                     }
 
@@ -798,10 +812,15 @@ app.registerExtension({
                     this._cpb_clothing.textContent = promptBreakdown.clothing || "(empty)";
                     this._cpb_movement.textContent = promptBreakdown.movement || "(empty)";
                     this._cpb_scene.textContent = promptBreakdown.scene || "(empty)";
-                    this._cpb_cinematic.textContent =
-                        promptBreakdown.cinematic_aesthetic || "(empty)";
-                    this._cpb_stylization.textContent =
-                        promptBreakdown.stylization_tone || "(empty)";
+                    this._cpb_visual_style.textContent =
+                        promptBreakdown.visual_style ||
+                        // Fallback: combine old fields for backward compatibility
+                        (
+                            (promptBreakdown.cinematic_aesthetic || "") +
+                            " " +
+                            (promptBreakdown.stylization_tone || "")
+                        ).trim() ||
+                        "(empty)";
 
                     console.log("🔍 [ControlPanelPromptBreakdown DEBUG] Display update complete");
                     debugLog("[ControlPanelPromptBreakdown] Display update complete");
@@ -832,9 +851,17 @@ app.registerExtension({
                             "🔍 [ControlPanelPromptBreakdown DEBUG] Calling updatePromptBreakdownData with message (root level)"
                         );
                         this.updatePromptBreakdownData(message);
+                    } else if (
+                        message &&
+                        (message.all_media_describe_data || message.all_media_describe_data_copy)
+                    ) {
+                        console.log(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Calling updatePromptBreakdownData with all_media_describe_data"
+                        );
+                        this.updatePromptBreakdownData(message);
                     } else {
                         console.log(
-                            "🔍 [ControlPanelPromptBreakdown DEBUG] No data found in message.output or message.prompt_breakdown"
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] No data found in message.output, message.prompt_breakdown, or all_media_describe_data"
                         );
                     }
 

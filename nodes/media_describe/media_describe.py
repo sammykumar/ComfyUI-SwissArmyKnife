@@ -110,16 +110,15 @@ class MediaDescribe:
         else:
             return f"{n}th"
 
-    def _parse_paragraphs(self, description, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing="", override_scene="", override_movement=""):
+    def _parse_paragraphs(self, description, override_subject="", override_visual_style="", override_clothing="", override_scene="", override_movement=""):
         """
         Parse description into individual paragraphs and apply overrides.
         Supports JSON format for both images and videos, with fallback to paragraph format.
-        Returns tuple: (subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description)
+        Returns tuple: (subject, visual_style, clothing, scene, movement, final_description)
         """
         # Initialize all paragraph variables
         subject = ""
-        cinematic_aesthetic = ""
-        stylization_tone = ""
+        visual_style = ""
         clothing = ""
         scene = ""
         movement = ""
@@ -157,10 +156,23 @@ class MediaDescribe:
             scene = json_data.get("scene", "")
             movement = json_data.get("movement", "")
 
-            # Support both field name formats for cinematic aesthetic
-            cinematic_aesthetic = json_data.get("cinematic_aesthetic_control", json_data.get("cinematic_aesthetic", ""))
-
-            stylization_tone = json_data.get("stylization_tone", "")
+            # Combine cinematic aesthetic and stylization tone into visual style
+            # Support both old field names and new visual_style field
+            cinematic_part = json_data.get("cinematic_aesthetic_control", json_data.get("cinematic_aesthetic", ""))
+            stylization_part = json_data.get("stylization_tone", "")
+            visual_style_direct = json_data.get("visual_style", "")
+            
+            # Prefer direct visual_style field, fallback to combining old fields
+            if visual_style_direct:
+                visual_style = visual_style_direct
+            else:
+                # Combine old fields into visual_style
+                combined_parts = []
+                if cinematic_part:
+                    combined_parts.append(cinematic_part)
+                if stylization_part:
+                    combined_parts.append(stylization_part)
+                visual_style = " ".join(combined_parts)
 
         except (json.JSONDecodeError, ValueError):
             # Fall back to paragraph parsing (for images)
@@ -168,12 +180,19 @@ class MediaDescribe:
             paragraphs = [p.strip() for p in description.split('\n\n') if p.strip()]
 
             # Map paragraphs to variables (order matters based on system prompt)
+            # Now combining paragraphs 1 and 2 (cinematic_aesthetic + stylization_tone) into visual_style
             if len(paragraphs) >= 1:
                 subject = paragraphs[0] if len(paragraphs) > 0 else ""
+            
+            # Combine paragraphs 1 and 2 into visual_style
+            visual_style_parts = []
             if len(paragraphs) >= 2:
-                cinematic_aesthetic = paragraphs[1] if len(paragraphs) > 1 else ""
+                visual_style_parts.append(paragraphs[1])
             if len(paragraphs) >= 3:
-                stylization_tone = paragraphs[2] if len(paragraphs) > 2 else ""
+                visual_style_parts.append(paragraphs[2])
+            visual_style = " ".join(visual_style_parts)
+            
+            # Shift remaining paragraphs
             if len(paragraphs) >= 4:
                 clothing = paragraphs[3] if len(paragraphs) > 3 else ""
             if len(paragraphs) >= 5:
@@ -184,10 +203,8 @@ class MediaDescribe:
         # Apply overrides
         if override_subject.strip():
             subject = override_subject.strip()
-        if override_cinematic_aesthetic.strip():
-            cinematic_aesthetic = override_cinematic_aesthetic.strip()
-        if override_stylization_tone.strip():
-            stylization_tone = override_stylization_tone.strip()
+        if override_visual_style.strip():
+            visual_style = override_visual_style.strip()
         if override_clothing.strip():
             clothing = override_clothing.strip()
         if override_scene.strip():
@@ -197,14 +214,14 @@ class MediaDescribe:
 
         # Rebuild final description from non-empty paragraphs
         final_parts = []
-        for para in [subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement]:
+        for para in [subject, visual_style, clothing, scene, movement]:
             if para:
                 final_parts.append(para)
         final_description = "\n\n".join(final_parts)
 
-        return (subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description)
+        return (subject, visual_style, clothing, scene, movement, final_description)
 
-    def _build_final_json(self, raw_llm_json, overrides, subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement):
+    def _build_final_json(self, raw_llm_json, overrides, subject, visual_style, clothing, scene, movement):
         """
         Build the final JSON output by applying overrides to the raw LLM JSON.
         
@@ -212,8 +229,7 @@ class MediaDescribe:
             raw_llm_json: The raw JSON string from the LLM (Gemini)
             overrides: Dictionary of overrides from Media Describe - Overrides node
             subject: Parsed/overridden subject paragraph
-            cinematic_aesthetic: Parsed/overridden cinematic aesthetic paragraph
-            stylization_tone: Parsed/overridden stylization tone paragraph
+            visual_style: Parsed/overridden visual style paragraph (combining cinematic/aesthetic and stylization/tone)
             clothing: Parsed/overridden clothing paragraph
             scene: Parsed/overridden scene paragraph
             movement: Parsed/overridden movement paragraph
@@ -254,8 +270,7 @@ class MediaDescribe:
             "clothing": clothing,
             "movement": movement,
             "scene": scene,
-            "cinematic_aesthetic": cinematic_aesthetic,
-            "stylization_tone": stylization_tone
+            "visual_style": visual_style
         }
 
         # Add prompt_prefix if provided
@@ -287,8 +302,7 @@ class MediaDescribe:
             key_order = [
                 "prompt_prefix",
                 "subject",
-                "cinematic_aesthetic",
-                "stylization_tone",
+                "visual_style",
                 "clothing",
                 "scene",
                 "movement"
@@ -300,9 +314,22 @@ class MediaDescribe:
                 if key in json_data and json_data[key]:
                     paragraphs.append(json_data[key])
 
+            # Handle legacy fields - if cinematic_aesthetic and stylization_tone exist separately,
+            # combine them for backward compatibility
+            if "cinematic_aesthetic" in json_data or "stylization_tone" in json_data:
+                legacy_visual_style = []
+                if json_data.get("cinematic_aesthetic"):
+                    legacy_visual_style.append(json_data["cinematic_aesthetic"])
+                if json_data.get("stylization_tone"):
+                    legacy_visual_style.append(json_data["stylization_tone"])
+                if legacy_visual_style and "visual_style" not in json_data:
+                    # Insert legacy combined visual style in the appropriate position
+                    visual_style_position = next((i for i, p in enumerate(paragraphs) if "subject" in json_data and json_data["subject"] == p), -1) + 1
+                    paragraphs.insert(visual_style_position, " ".join(legacy_visual_style))
+
             # Add any keys not in the predefined order (for future extensibility)
             for key, value in json_data.items():
-                if key not in key_order and value:
+                if key not in key_order and key not in ["cinematic_aesthetic", "stylization_tone"] and value:
                     paragraphs.append(value)
 
             # Join with double newlines to create paragraph separation
@@ -892,14 +919,13 @@ class MediaDescribe:
 
         return None, None
 
-    def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing="", overrides=None):
+    def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text, override_subject="", override_visual_style="", override_clothing="", overrides=None):
         """
         Process image using logic from GeminiImageDescribe
         
         Args:
             override_subject: Override text for SUBJECT paragraph
-            override_cinematic_aesthetic: Override text for CINEMATIC AESTHETIC paragraph
-            override_stylization_tone: Override text for STYLIZATION & TONE paragraph
+            override_visual_style: Override text for VISUAL STYLE paragraph (combining cinematic/aesthetic and stylization/tone)
             override_clothing: Override text for CLOTHING paragraph
             overrides: Full overrides dictionary for building final JSON
         """
@@ -1166,15 +1192,15 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
 
                 # Parse paragraphs and apply overrides
-                subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
-                    description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing
+                subject, visual_style, clothing, scene, movement, final_description = self._parse_paragraphs(
+                    description, override_subject, override_visual_style, override_clothing
                 )
 
                 # Build final JSON with overrides applied
                 if overrides is None:
                     overrides = {}
                 positive_prompt_json = self._build_final_json(
-                    description, overrides, subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement
+                    description, overrides, subject, visual_style, clothing, scene, movement
                 )
 
                 # Convert JSON to positive prompt format
@@ -1192,8 +1218,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                     "clothing": clothing,
                     "movement": movement,
                     "scene": scene,
-                    "cinematic_aesthetic": cinematic_aesthetic,
-                    "stylization_tone": stylization_tone
+                    "visual_style": visual_style
                 })
 
                 return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
@@ -1257,15 +1282,15 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
 • Input: Image"""
 
             # Parse paragraphs and apply overrides
-            subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
-                description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing
+            subject, visual_style, clothing, scene, movement, final_description = self._parse_paragraphs(
+                description, override_subject, override_visual_style, override_clothing
             )
 
             # Build final JSON with overrides applied
             if overrides is None:
                 overrides = {}
             positive_prompt_json = self._build_final_json(
-                description, overrides, subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement
+                description, overrides, subject, visual_style, clothing, scene, movement
             )
 
             # Convert JSON to positive prompt format
@@ -1283,8 +1308,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
                 "clothing": clothing,
                 "movement": movement,
                 "scene": scene,
-                "cinematic_aesthetic": cinematic_aesthetic,
-                "stylization_tone": stylization_tone
+                "visual_style": visual_style
             })
 
             return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
@@ -1293,14 +1317,13 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Image analysis failed: {str(e)}")
 
-    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text, override_subject="", override_cinematic_aesthetic="", override_stylization_tone="", override_clothing="", override_scene="", override_movement="", overrides=None):
+    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text, override_subject="", override_visual_style="", override_clothing="", override_scene="", override_movement="", overrides=None):
         """
         Process video using logic from GeminiVideoDescribe
         
         Args:
             override_subject: Override text for SUBJECT paragraph
-            override_cinematic_aesthetic: Override text for CINEMATIC AESTHETIC paragraph
-            override_stylization_tone: Override text for STYLIZATION & TONE paragraph
+            override_visual_style: Override text for VISUAL STYLE paragraph (combining cinematic/aesthetic and stylization/tone)
             override_clothing: Override text for CLOTHING paragraph
             override_scene: Override text for SCENE paragraph
             override_movement: Override text for MOVEMENT paragraph
@@ -1643,15 +1666,15 @@ Example (structure only):
 • Cache: HIT at {cached_result.get('human_timestamp', 'unknown time')}"""
 
                 # Parse paragraphs and apply overrides (for videos)
-                subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
-                    description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement
+                subject, visual_style, clothing, scene, movement, final_description = self._parse_paragraphs(
+                    description, override_subject, override_visual_style, override_clothing, override_scene, override_movement
                 )
 
                 # Build final JSON with overrides applied
                 if overrides is None:
                     overrides = {}
                 positive_prompt_json = self._build_final_json(
-                    description, overrides, subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement
+                    description, overrides, subject, visual_style, clothing, scene, movement
                 )
 
                 # Convert JSON to positive prompt format
@@ -1669,8 +1692,7 @@ Example (structure only):
                     "clothing": clothing,
                     "movement": movement,
                     "scene": scene,
-                    "cinematic_aesthetic": cinematic_aesthetic,
-                    "stylization_tone": stylization_tone
+                    "visual_style": visual_style
                 })
 
                 return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
@@ -1733,15 +1755,15 @@ Example (structure only):
 • Input: Video"""
 
             # Parse paragraphs and apply overrides (for videos)
-            subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = self._parse_paragraphs(
-                description, override_subject, override_cinematic_aesthetic, override_stylization_tone, override_clothing, override_scene, override_movement
+            subject, visual_style, clothing, scene, movement, final_description = self._parse_paragraphs(
+                description, override_subject, override_visual_style, override_clothing, override_scene, override_movement
             )
 
             # Build final JSON with overrides applied
             if overrides is None:
                 overrides = {}
             positive_prompt_json = self._build_final_json(
-                description, overrides, subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement
+                description, overrides, subject, visual_style, clothing, scene, movement
             )
 
             # Convert JSON to positive prompt format
@@ -1759,8 +1781,7 @@ Example (structure only):
                 "clothing": clothing,
                 "movement": movement,
                 "scene": scene,
-                "cinematic_aesthetic": cinematic_aesthetic,
-                "stylization_tone": stylization_tone
+                "visual_style": visual_style
             })
 
             return (all_data, description, positive_prompt_json, positive_prompt, output_height, output_width)
@@ -1779,8 +1800,8 @@ Example (structure only):
             raise Exception(f"Video analysis failed: {error_msg}")
 
     def _process_with_llm_studio(self, media_path, media_type, llm_options, media_info_text,
-                                  override_subject, override_cinematic_aesthetic, override_stylization_tone,
-                                  override_clothing, override_scene, override_movement, overrides):
+                                  override_subject, override_visual_style, override_clothing, 
+                                  override_scene, override_movement, overrides):
         """
         Process media using LLM Studio (local vision model).
         
@@ -1828,13 +1849,12 @@ Example (structure only):
 
 DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
 
-Return **only** a single valid JSON object (no code fences, no extra text) with **exactly six** string fields in this exact order:
+Return **only** a single valid JSON object (no code fences, no extra text) with **exactly five** string fields in this exact order:
 1. "subject" - Detailed description of the main subject
 2. "clothing" - Clothing and style details
 3. "movement" - Pose, gesture, or implied motion
 4. "scene" - Setting, environment, and background elements
-5. "cinematic_aesthetic" - Lighting, camera details, and rendering cues
-6. "stylization_tone" - Mood/genre descriptors
+5. "visual_style" - Combined lighting, camera details, rendering cues, mood/genre descriptors, and overall aesthetic direction
 
 Each field's value is one fully formed paragraph (a single string) for that category."""
                 user_prompt = "Please analyze this image and provide a detailed description in the JSON format specified in the system prompt."
@@ -1846,13 +1866,12 @@ Each field's value is one fully formed paragraph (a single string) for that cate
 
 DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
 
-Return **only** a single valid JSON object (no code fences, no extra text) with **exactly six** string fields in this exact order:
+Return **only** a single valid JSON object (no code fences, no extra text) with **exactly five** string fields in this exact order:
 1. "subject" - Detailed description of the main subject
 2. "clothing" - Clothing and style details
 3. "movement" - Actions, motion, and choreography across frames
 4. "scene" - Setting, environment, and background elements
-5. "cinematic_aesthetic_control" - Lighting, camera details, and rendering cues
-6. "stylization_tone" - Mood/genre descriptors
+5. "visual_style" - Combined lighting, camera details, rendering cues, mood/genre descriptors, and overall aesthetic direction
 
 Each field's value is one fully formed paragraph (a single string) for that category."""
             user_prompt = "Please analyze this video and provide a detailed description in the JSON format specified in the system prompt."
@@ -2076,8 +2095,7 @@ User Prompt:
                 "clothing": "",
                 "movement": "",
                 "scene": "",
-                "cinematic_aesthetic": "",
-                "stylization_tone": ""
+                "visual_style": ""
             }
 
         # Apply overrides
@@ -2089,16 +2107,14 @@ User Prompt:
             llm_json["movement"] = override_movement.strip()
         if override_scene.strip():
             llm_json["scene"] = override_scene.strip()
-        if override_cinematic_aesthetic.strip():
-            llm_json["cinematic_aesthetic"] = override_cinematic_aesthetic.strip()
-        if override_stylization_tone.strip():
-            llm_json["stylization_tone"] = override_stylization_tone.strip()
+        if override_visual_style.strip():
+            llm_json["visual_style"] = override_visual_style.strip()
 
         raw_llm_json = json.dumps(llm_json, indent=2)
 
         # Build positive prompt from non-empty fields
         positive_parts = []
-        for field in ["subject", "clothing", "movement", "scene", "cinematic_aesthetic", "stylization_tone"]:
+        for field in ["subject", "clothing", "movement", "scene", "visual_style"]:
             if llm_json[field]:
                 positive_parts.append(llm_json[field])
 
@@ -2123,8 +2139,7 @@ User Prompt:
             "clothing": llm_json.get("clothing", ""),
             "movement": llm_json.get("movement", ""),
             "scene": llm_json.get("scene", ""),
-            "cinematic_aesthetic": llm_json.get("cinematic_aesthetic", ""),
-            "stylization_tone": llm_json.get("stylization_tone", "")
+            "visual_style": llm_json.get("visual_style", "")
         })
 
         return (all_data, raw_llm_json, raw_llm_json, positive_prompt, prompt_request, height, width)
@@ -2190,8 +2205,7 @@ User Prompt:
 
         # Extract override values with defaults
         override_subject = overrides.get("override_subject", "")
-        override_cinematic_aesthetic = overrides.get("override_cinematic_aesthetic", "")
-        override_stylization_tone = overrides.get("override_stylization_tone", "")
+        override_visual_style = overrides.get("override_visual_style", "")
         override_clothing = overrides.get("override_clothing", "")
         override_scene = overrides.get("override_scene", "")
         override_movement = overrides.get("override_movement", "")
@@ -2207,8 +2221,8 @@ User Prompt:
             # Process with LLM Studio
             return self._process_with_llm_studio(
                 media_processed_path, media_type, llm_studio_options, media_info_text,
-                override_subject, override_cinematic_aesthetic, override_stylization_tone, 
-                override_clothing, override_scene, override_movement, overrides
+                override_subject, override_visual_style, override_clothing, 
+                override_scene, override_movement, overrides
             )
 
         except Exception as e:

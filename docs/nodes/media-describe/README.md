@@ -10,6 +10,7 @@ AI-powered media description using Google's Gemini API and local vLLM/LM Studio 
 - **[LLM_STUDIO_MEDIA_DESCRIBE.md](LLM_STUDIO_MEDIA_DESCRIBE.md)** - Complete documentation for LLM Studio Media Describe (local LM Studio)
 - **[LLM_STUDIO_QUICK_REFERENCE.md](LLM_STUDIO_QUICK_REFERENCE.md)** - Quick reference guide for LLM Studio node
 - **[LLM_STUDIO_OPTIONS.md](LLM_STUDIO_OPTIONS.md)** - LLM Studio Options node configuration guide
+- **[VISUAL_STYLE_UPDATE.md](VISUAL_STYLE_UPDATE.md)** - ✨ **NEW**: Combined "Cinematic/Aesthetic" and "Stylization/Tone" into unified "Visual Style" (Dec 2024)
 
 ### Core Nodes
 

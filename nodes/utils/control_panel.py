@@ -90,8 +90,8 @@ class ControlPanelOverview:
 class ControlPanelPromptBreakdown:
     """
     A control panel node that displays prompt breakdown across 5 columns.
-    Extracts and organizes prompt data into: subject, cinematic/aesthetic, 
-    stylization/tone, clothing, scene, and movement categories.
+    Extracts and organizes prompt data into: subject, clothing, movement, 
+    scene, and visual_style categories (unified from cinematic/aesthetic and stylization/tone).
     """
 
     def __init__(self):
@@ -135,8 +135,7 @@ class ControlPanelPromptBreakdown:
             "clothing": "",
             "movement": "",
             "scene": "",
-            "cinematic_aesthetic": "",
-            "stylization_tone": ""
+            "visual_style": ""
         }
 
         # Parse JSON input
@@ -156,13 +155,15 @@ class ControlPanelPromptBreakdown:
                 prompt_breakdown["movement"] = gemini_data.get("movement", "")
                 prompt_breakdown["scene"] = gemini_data.get("scene", "")
 
-                # Support both field name formats for cinematic aesthetic
-                prompt_breakdown["cinematic_aesthetic"] = gemini_data.get(
-                    "cinematic_aesthetic_control", 
-                    gemini_data.get("cinematic_aesthetic", "")
+                # Extract the unified visual_style field (supports legacy field names for backward compatibility)
+                prompt_breakdown["visual_style"] = gemini_data.get(
+                    "visual_style", 
+                    gemini_data.get("cinematic_aesthetic_control", 
+                        gemini_data.get("cinematic_aesthetic", 
+                            gemini_data.get("stylization_tone", "")
+                        )
+                    )
                 )
-
-                prompt_breakdown["stylization_tone"] = gemini_data.get("stylization_tone", "")
 
                 print("✅ Successfully parsed structured JSON from Gemini")
 
@@ -172,14 +173,13 @@ class ControlPanelPromptBreakdown:
                 return {"ui": {"error": [f"Invalid JSON: {str(e)}"]}}
 
         # Log to console
-        if prompt_breakdown["subject"] or prompt_breakdown["cinematic_aesthetic"]:
+        if prompt_breakdown["subject"] or prompt_breakdown["visual_style"]:
             print("\n📊 Prompt Breakdown:")
             print(f"  Subject: {prompt_breakdown['subject'][:100]}...")
             print(f"  Clothing: {prompt_breakdown['clothing'][:100]}...")
             print(f"  Movement: {prompt_breakdown['movement'][:100]}...")
             print(f"  Scene: {prompt_breakdown['scene'][:100]}...")
-            print(f"  Cinematic/Aesthetic: {prompt_breakdown['cinematic_aesthetic'][:100]}...")
-            print(f"  Stylization/Tone: {prompt_breakdown['stylization_tone'][:100]}...")
+            print(f"  Visual Style: {prompt_breakdown['visual_style'][:100]}...")
 
             # Return structured data for UI display in columns
             result = {
