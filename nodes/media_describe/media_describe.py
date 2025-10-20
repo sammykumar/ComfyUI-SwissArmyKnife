@@ -1366,7 +1366,7 @@ Describe all visible clothing and accessories with absolute certainty and defini
             # Scene paragraph
             scene_prompt = f"""
 {paragraph_num}. SCENE ({self._ordinal(paragraph_num)} Paragraph)
-Describe the visible environment clearly and vividly."""
+Describe the visible environment in rich detail. Include specific colors and textures of walls, floors, and surfaces (e.g., 'matte beige walls with subtle texture', 'polished concrete floor with light reflections'). Describe spatial layout, room type, and architectural features. Note any reflections, shadows, light patterns, or atmospheric effects. Include background elements, props, furniture, and their materials. Describe environmental lighting conditions and how they affect surfaces. Be specific about what you see rather than generic descriptions."""
             prompts.append(scene_prompt)
             paragraph_num += 1
 
@@ -1442,7 +1442,7 @@ Mood/genre descriptors (e.g., "noir-inspired silhouette," "cinematic realism," e
             else:
                 clothing_field = 'Leave empty.'
 
-            scene_field = 'Describe the visible environment clearly and vividly.'
+            scene_field = 'Describe the visible environment in rich detail. Include specific colors and textures of walls, floors, and surfaces (e.g., "matte beige walls with subtle texture", "polished concrete floor with light reflections"). Describe spatial layout, room type, and architectural features. Note any reflections, shadows, light patterns, or atmospheric effects. Include background elements, props, furniture, and their materials. Describe environmental lighting conditions and how they affect surfaces. Be specific about what you see rather than generic descriptions.'
 
             if replace_action_with_twerking:
                 movement_field = 'Describe the initial pose and body position in the first frame of the video. Then append: "A woman is twerking and shaking her ass. She has a curvy body and a huge ass."'

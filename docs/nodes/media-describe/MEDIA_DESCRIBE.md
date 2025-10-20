@@ -5644,8 +5644,17 @@ Describe all visible clothing and accessories with absolute certainty and defini
 
 ```
 SCENE ({Ordinal} Paragraph)
-Describe the visible environment clearly and vividly.
+Describe the visible environment in rich detail. Include specific colors and textures of walls, floors, and surfaces (e.g., 'matte beige walls with subtle texture', 'polished concrete floor with light reflections'). Describe spatial layout, room type, and architectural features. Note any reflections, shadows, light patterns, or atmospheric effects. Include background elements, props, furniture, and their materials. Describe environmental lighting conditions and how they affect surfaces. Be specific about what you see rather than generic descriptions.
 ```
+
+**Key Features:**
+
+-   **Surface details**: Colors and textures of walls, floors, and other surfaces
+-   **Material specificity**: Describe materials (e.g., concrete, wood, fabric, metal)
+-   **Reflections and lighting effects**: Note how light interacts with surfaces
+-   **Spatial layout**: Room type, architectural features, and spatial relationships
+-   **Props and furniture**: Background elements and their materials
+-   **Atmospheric effects**: Shadows, light patterns, environmental mood
 
 ### Movement Module (Videos Only)
 
@@ -6145,6 +6154,143 @@ This change affects:
 -   Video processing in LLM Studio mode (uses same prompt structure)
 -   JSON field descriptions in system prompts
 -   Control Panel display of movement field
+
+---
+
+# Scene Paragraph Enhancement - Environmental Detail
+
+**Date**: October 20, 2025  
+**Status**: Completed
+
+## Overview
+
+The Scene paragraph prompt for video analysis has been enhanced to generate more detailed environmental descriptions. The updated prompt guides the LLM to provide rich, specific details about colors, textures, materials, reflections, and spatial relationships in the scene.
+
+## Key Changes
+
+### Enhanced Scene Description Requirements
+
+Previously, the scene prompt was simple: "Describe the visible environment clearly and vividly." The new prompt provides specific categories of detail to include:
+
+### New Capabilities
+
+1. **Surface Details**: Specific colors and textures of walls, floors, and surfaces
+2. **Material Specificity**: Describe materials (concrete, wood, fabric, metal, glass, etc.)
+3. **Reflections and Lighting Effects**: How light interacts with surfaces
+4. **Spatial Layout**: Room type, architectural features, spatial relationships
+5. **Props and Furniture**: Background elements and their materials
+6. **Atmospheric Effects**: Shadows, light patterns, environmental mood
+7. **Concrete Examples**: Provides examples like "matte beige walls with subtle texture" or "polished concrete floor with light reflections"
+
+### Enhanced Prompt Text
+
+The new scene prompt includes:
+
+```
+Describe the visible environment in rich detail. Include specific colors and textures of
+walls, floors, and surfaces (e.g., 'matte beige walls with subtle texture', 'polished
+concrete floor with light reflections'). Describe spatial layout, room type, and
+architectural features. Note any reflections, shadows, light patterns, or atmospheric
+effects. Include background elements, props, furniture, and their materials. Describe
+environmental lighting conditions and how they affect surfaces. Be specific about what
+you see rather than generic descriptions.
+```
+
+## Code Changes
+
+### Location
+
+`nodes/media_describe/media_describe.py` - `_process_video()` method
+
+### Modified Sections
+
+1. **Scene Prompt (lines ~1367-1371)**: Updated the scene_prompt generation to include detailed environmental description requirements
+2. **Scene Field Description (lines ~1443)**: Updated the scene_field JSON field description with the same enhanced language
+
+Both the paragraph prompt and the JSON field description now use the enhanced environmental detail language.
+
+## Benefits
+
+### Richer Environmental Context
+
+-   More detailed descriptions of physical spaces
+-   Better understanding of lighting and material interactions
+-   Enhanced spatial awareness and layout information
+
+### Improved Generation Quality
+
+-   More accurate scene reconstruction in video generation
+-   Better coherence between environment and other elements (subject, movement)
+-   Richer training data for video models
+
+### Specific Visual Details
+
+-   Color information for all surfaces (walls, floors, ceilings)
+-   Texture descriptions (smooth, rough, matte, glossy, textured)
+-   Material identification (concrete, wood, fabric, metal, glass)
+-   Light interactions (reflections, shadows, light patterns)
+
+### Architectural Context
+
+-   Room type identification (bedroom, studio, gym, outdoor space)
+-   Architectural features (windows, doors, columns, ceiling type)
+-   Spatial relationships (foreground/background, depth, layout)
+
+## Usage
+
+No changes to node inputs or outputs. The enhanced prompt works automatically when processing video content:
+
+```
+[Media Selection] → media_path → [MediaDescribe] → scene
+```
+
+The scene output will now:
+
+-   Provide specific color information for surfaces
+-   Describe textures and materials in detail
+-   Note reflections and light interactions
+-   Include spatial and architectural context
+-   List props, furniture, and their materials
+-   Describe atmospheric and lighting effects
+
+## Example Comparisons
+
+### Before (Generic)
+
+```
+"The scene shows an indoor room with good lighting."
+```
+
+### After (Detailed)
+
+```
+"The scene features a modern bedroom with matte beige walls exhibiting subtle texture
+variations. The polished concrete floor reflects soft overhead lighting, creating gentle
+highlights across its surface. A large window on the left wall casts natural daylight that
+interacts with artificial ambient lighting. Background includes a dark wooden nightstand
+with a brushed metal lamp, and white cotton bedding with visible fabric texture. The ceiling
+shows recessed lighting fixtures creating even illumination with minimal shadows."
+```
+
+## Related Components
+
+This change affects:
+
+-   Video processing in Gemini mode (`_process_video`)
+-   Video processing in LLM Studio mode (uses same prompt structure)
+-   JSON field descriptions in system prompts
+-   Control Panel display of scene field
+
+## Testing Recommendations
+
+When testing this enhancement:
+
+1. **Indoor Scenes**: Verify detailed wall, floor, and ceiling descriptions with colors and textures
+2. **Outdoor Scenes**: Verify ground surfaces, sky, natural elements are described in detail
+3. **Reflective Surfaces**: Check that mirrors, glass, polished floors show reflection descriptions
+4. **Props and Furniture**: Verify background elements are described with materials and colors
+5. **Lighting Effects**: Check that light patterns, shadows, and atmospheric effects are noted
+6. **Spatial Layout**: Verify room type and architectural features are identified
 
 ## Changelog
 
