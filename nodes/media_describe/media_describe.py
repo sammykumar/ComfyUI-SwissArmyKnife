@@ -1849,35 +1849,127 @@ Example (structure only):
         # Build system and user prompts based on model type and media type
         if media_type == "image":
             if model_type == "Text2Image":
-                system_prompt = """Generate a Wan 2.2 optimized text to image prompt. You are an expert assistant specialized in analyzing and verbalizing input media for instagram-quality posts using the Wan 2.2 Text to Image workflow.
+                # Build detailed image prompt matching Gemini implementation
+                subject_field = 'Begin with a gendered noun phrase (e.g., "A woman…", "A man…").'
+                if describe_hair_style:
+                    subject_field += ' Include hairstyle and its texture or motion (no color or length).'
+                subject_field += ' Include posture and gestures as applicable. Strictly exclude any reference to ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, or makeup.'
+                
+                clothing_field = 'Describe all visible clothing and accessories with absolute certainty and definitiveness. Be specific: garment type, definitive color(s), material/texture, fit/silhouette, length, notable construction (seams, straps, waistbands), and condition. Include footwear if visible and describe exactly how fabrics appear (texture, drape, fit). Make decisive choices when multiple interpretations are possible; state one as fact. Do not describe text, typography, words, letters, logos, brand names, or written content on clothing or accessories. Exclude tattoos, glasses, and other prohibited attributes.'
+                if change_clothing_color:
+                    clothing_field += ' Additionally, do not repeat the original clothing colors you infer from the image. Instead, change the clothing color descriptions to NEW hues that harmonize with the scene\'s lighting and palette while being different from the original colors. Prefer complementary, analogous, or neutral tones that fit the environment; state the NEW colors decisively, and never reference the original color.'
+                
+                scene_field = 'Describe the visible environment in rich detail. Include specific colors and textures of walls, floors, and surfaces (e.g., "matte beige walls with subtle texture", "polished concrete floor with light reflections"). Describe spatial layout, room type, and architectural features. Note any reflections, shadows, light patterns, or atmospheric effects. Include background elements, props, furniture, and their materials. Describe environmental lighting conditions and how they affect surfaces. Be specific about what you see rather than generic descriptions.'
+                
+                movement_field = 'For still images, describe implied motion, frozen action, or static pose. Examples: "frozen mid-stride", "poised in stillness", "captured mid-gesture". If the pose suggests movement or action, describe it.'
+                
+                if describe_bokeh:
+                    cinematic_field = 'Cover lighting (source/direction/quality/temperature), camera details (shot type, angle/height, movement), optics (lens feel, DOF, rack focus), and exposure/render cues as applicable.'
+                else:
+                    cinematic_field = 'Cover lighting (source/direction/quality/temperature), camera details (shot type, angle/height, movement), and exposure/render cues as applicable. Everything must be in sharp focus with no depth of field effects, bokeh, or blur. Do not mention optics, DOF, rack focus, or any depth-related visual effects.'
+                
+                style_field = 'Provide mood/genre descriptors (e.g., "noir-inspired silhouette", "cinematic realism", etc.).'
+                
+                system_prompt = f"""Generate a Wan 2.2 optimized text to image prompt. You are an expert assistant specialized in analyzing and verbalizing input media for instagram-quality posts using the Wan 2.2 Text to Image workflow.
 
 DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
 
-Return **only** a single valid JSON object (no code fences, no extra text) with **exactly five** string fields in this exact order:
-1. "subject" - Detailed description of the main subject
-2. "clothing" - Clothing and style details
-3. "movement" - Pose, gesture, or implied motion
-4. "scene" - Setting, environment, and background elements
-5. "visual_style" - Combined lighting, camera details, rendering cues, mood/genre descriptors, and overall aesthetic direction
+Return **only** a single valid JSON object (no code fences, no extra text) with **exactly six** string fields in this exact order:
 
-Each field's value is one fully formed paragraph (a single string) for that category."""
+1. "subject"
+2. "clothing"
+3. "movement"
+4. "scene"
+5. "cinematic_aesthetic"
+6. "stylization_tone"
+
+Each field's value is one fully formed paragraph (a single string) for that category.
+
+## Content requirements by field
+
+### 1) SUBJECT → "subject"
+{subject_field}
+
+### 2) CLOTHING → "clothing"
+{clothing_field}
+
+### 3) MOVEMENT → "movement"
+{movement_field}
+
+### 4) SCENE → "scene"
+{scene_field}
+
+### 5) CINEMATIC AESTHETIC → "cinematic_aesthetic"
+{cinematic_field}
+
+### 6) STYLIZATION & TONE → "stylization_tone"
+{style_field}
+
+## Global constraints
+Never mention prohibited attributes (ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, makeup), even if visible. Never mention watermarks, logos, branding, or any textual overlays. Be completely decisive and definitive in all descriptions—eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."""
                 user_prompt = "Please analyze this image and provide a detailed description in the JSON format specified in the system prompt."
             else:  # ImageEdit
                 system_prompt = """You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays."""
                 user_prompt = "Please analyze this image and generate a single-sentence Qwen-Image-Edit instruction following the guidelines in the system prompt."
         else:  # video
-            system_prompt = """You are an expert assistant specialized in analyzing and verbalizing input videos for cinematic-quality video transformation using the Wan 2.2 + VACE workflow.
+            # Build detailed video prompt matching Gemini implementation
+            subject_field = 'Begin with a gendered noun phrase (e.g., "A woman…", "A man…").'
+            if describe_hair_style:
+                subject_field += ' Include hairstyle and its texture or motion (no color or length).'
+            subject_field += ' Include posture and gestures as applicable. Strictly exclude any reference to ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, or makeup.'
+            
+            clothing_field = 'Describe all visible clothing and accessories with absolute certainty and definitiveness. Be specific: garment type, definitive color(s), material/texture, fit/silhouette, length, notable construction (seams, straps, waistbands), and condition. Include footwear if visible and describe exactly how fabrics respond to motion (stretching, swaying, tightening, wrinkling). Make decisive choices when multiple interpretations are possible; state one as fact. Do not describe text, typography, words, letters, logos, brand names, or written content on clothing or accessories. Exclude tattoos, glasses, and other prohibited attributes.'
+            if change_clothing_color:
+                clothing_field += ' Additionally, do not repeat the original clothing colors you infer from the video. Instead, change the clothing color descriptions to NEW hues that harmonize with the scene\'s lighting and palette while being different from the original colors. Prefer complementary, analogous, or neutral tones that fit the environment; state the NEW colors decisively, and never reference the original color.'
+            
+            scene_field = 'Describe the visible environment in rich detail. Include specific colors and textures of walls, floors, and surfaces (e.g., "matte beige walls with subtle texture", "polished concrete floor with light reflections"). Describe spatial layout, room type, and architectural features. Note any reflections, shadows, light patterns, or atmospheric effects. Include background elements, props, furniture, and their materials. Describe environmental lighting conditions and how they affect surfaces. Be specific about what you see rather than generic descriptions.'
+            
+            movement_field = 'Describe body-part–specific movement detailing what body parts are visible and what actions they are performing. Focus on physical actions and positions. Use only generic terms like "woman" or "man" to describe people. Start with an overall summary tied to musical rhythm and beat structure (e.g., "The subject initiates with a hip sway on the downbeat…"). Then narrate movement chronologically using precise action verbs and transitions like "then", "as", "after", and reference timeline markers (early/mid/late beat or second). Specify which body parts move and how they articulate (e.g., "the right arm lifts upward, then sweeps outward; the torso tilts as the knees bend"), including footwork, weight shifts, and alignment with beats. Describe what body parts are doing to themselves or to another person. Explicitly identify if genitals are visible (vagina/pussy, penis/dick, or both) and their state or positioning. If sexual activity is present, identify the sex position if obvious (e.g., missionary, doggy style, cowgirl, reverse cowgirl, etc.) and describe the specific act being performed, focusing exclusively on physical actions and positions - mention where body parts are positioned in relation to each other (e.g., penis penetrating vagina, penis in mouth, etc.). If a white substance shoots from a penis, describe it as the man ejaculating semen. Include any camera movement (e.g., "camera pans to follow the torso shift"). Avoid general labels—focus on locomotor and non-locomotor gestures, repetition, rhythm, and choreography phrasing. Always include any buttock or breast movements visible. Do not describe physical appearance, clothing, setting, or background in this paragraph. Do not mention watermarks.'
+            
+            if describe_bokeh:
+                cinematic_field = 'Cover lighting (source/direction/quality/temperature), camera details (shot type, angle/height, movement), optics (lens feel, DOF, rack focus), and exposure/render cues as applicable.'
+            else:
+                cinematic_field = 'Cover lighting (source/direction/quality/temperature), camera details (shot type, angle/height, movement), and exposure/render cues as applicable. Everything must be in sharp focus with no depth of field effects, bokeh, or blur. Do not mention optics, DOF, rack focus, or any depth-related visual effects.'
+            
+            style_field = 'Provide mood/genre descriptors (e.g., "noir-inspired silhouette", "cinematic realism", etc.).'
+            
+            system_prompt = f"""You are an expert assistant specialized in analyzing and verbalizing input videos for cinematic-quality video transformation using the Wan 2.2 + VACE workflow.
 
 DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
 
-Return **only** a single valid JSON object (no code fences, no extra text) with **exactly five** string fields in this exact order:
-1. "subject" - Detailed description of the main subject
-2. "clothing" - Clothing and style details
-3. "movement" - Actions, motion, and choreography across frames
-4. "scene" - Setting, environment, and background elements
-5. "visual_style" - Combined lighting, camera details, rendering cues, mood/genre descriptors, and overall aesthetic direction
+Return **only** a single valid JSON object (no code fences, no extra text) with **exactly six** string fields in this exact order:
 
-Each field's value is one fully formed paragraph (a single string) for that category."""
+1. "subject"
+2. "clothing"
+3. "movement"
+4. "scene"
+5. "cinematic_aesthetic_control"
+6. "stylization_tone"
+
+Each field's value is one fully formed paragraph (a single string) for that category.
+
+## Content requirements by field
+
+### 1) SUBJECT → "subject"
+{subject_field}
+
+### 2) CLOTHING → "clothing"
+{clothing_field}
+
+### 3) SCENE → "scene"
+{scene_field}
+
+### 4) MOVEMENT → "movement"
+{movement_field}
+
+### 5) CINEMATIC AESTHETIC CONTROL → "cinematic_aesthetic_control"
+{cinematic_field}
+
+### 6) STYLIZATION & TONE → "stylization_tone"
+{style_field}
+
+## Global constraints
+Never mention prohibited attributes (ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, makeup), even if visible. Never mention watermarks, logos, branding, or any textual overlays. Be completely decisive and definitive in all descriptions—eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."""
             user_prompt = "Please analyze this video and provide a detailed description in the JSON format specified in the system prompt."
 
         # Build prompt request for debugging/transparency
@@ -2112,14 +2204,33 @@ User Prompt:
         if override_scene.strip():
             llm_json["scene"] = override_scene.strip()
         if override_visual_style.strip():
+            # Apply visual_style override to both cinematic and style fields
+            # Combine cinematic_aesthetic and stylization_tone into visual_style
+            cinematic_part = llm_json.get("cinematic_aesthetic", "")
+            stylization_part = llm_json.get("stylization_tone", "")
+            visual_style_parts = []
+            if cinematic_part:
+                visual_style_parts.append(cinematic_part)
+            if stylization_part:
+                visual_style_parts.append(stylization_part)
             llm_json["visual_style"] = override_visual_style.strip()
+        else:
+            # Combine cinematic_aesthetic and stylization_tone into visual_style if not overridden
+            cinematic_part = llm_json.get("cinematic_aesthetic", "")
+            stylization_part = llm_json.get("stylization_tone", "")
+            visual_style_parts = []
+            if cinematic_part:
+                visual_style_parts.append(cinematic_part)
+            if stylization_part:
+                visual_style_parts.append(stylization_part)
+            llm_json["visual_style"] = " ".join(visual_style_parts)
 
         raw_llm_json = json.dumps(llm_json, indent=2)
 
         # Build positive prompt from non-empty fields
         positive_parts = []
         for field in ["subject", "clothing", "movement", "scene", "visual_style"]:
-            if llm_json[field]:
+            if llm_json.get(field):
                 positive_parts.append(llm_json[field])
 
         positive_prompt = "\n\n".join(positive_parts) if positive_parts else combined_caption

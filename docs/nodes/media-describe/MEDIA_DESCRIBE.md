@@ -6301,6 +6301,16 @@ When testing this enhancement:
 
 ## Changelog
 
+### October 20, 2025 - LLM Studio Enhanced Prompts
+
+-   **Unified prompt system**: LLM Studio now uses the same enhanced prompts as Gemini
+-   **Movement enhancements**: LLM Studio videos now include genital visibility and sex position identification
+-   **Scene enhancements**: LLM Studio now includes detailed environmental descriptions (colors, textures, reflections)
+-   **Configuration-based prompts**: LLM Studio now respects describe_clothing, describe_subject, describe_bokeh, etc. options
+-   **6-field JSON output**: LLM Studio now outputs 6 fields (subject, clothing, movement, scene, cinematic_aesthetic/cinematic_aesthetic_control, stylization_tone) instead of 5
+-   **Field name normalization**: Automatic conversion between cinematic_aesthetic_control (video) and cinematic_aesthetic (image)
+-   **Visual style combination**: Automatically combines cinematic_aesthetic and stylization_tone into visual_style field for backward compatibility
+
 ### October 15, 2025 - LLM Options Support
 
 -   Renamed `gemini_options` input to `llm_options`
