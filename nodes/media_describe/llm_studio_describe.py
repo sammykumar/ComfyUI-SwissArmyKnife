@@ -47,12 +47,12 @@ class LLMStudioVideoDescribe:
                     "multiline": False,
                     "tooltip": "Path to video file to analyze"
                 }),
-                "fps_sample": ("FLOAT", {
-                    "default": 1.0,
+                "sample_rate": ("FLOAT", {
+                    "default": 2.0,
                     "min": 0.1,
-                    "max": 10.0,
+                    "max": 30.0,
                     "step": 0.1,
-                    "tooltip": "Extract 1 frame every N seconds"
+                    "tooltip": "Frames per second to extract (e.g., 1.0 = 1 frame/sec, 2.0 = 2 frames/sec)"
                 }),
                 "max_duration": ("FLOAT", {
                     "default": 5.0,
@@ -62,12 +62,12 @@ class LLMStudioVideoDescribe:
                     "tooltip": "Maximum duration in seconds to sample from"
                 }),
                 "caption_prompt": ("STRING", {
-                    "default": "Describe only the specific sexual act being performed in 250 words or less. Focus exclusively on the physical actions and positions. Do not describe physical appearance, clothing, setting, or background. Only use words like 'woman' or 'man' to describe people in the video. If a white substance shoots of a penis, then the man is likely ejaculating semen. Mention where the man's penis is in relation to the woman's gentials (Vagina, anal, mouth, etc) Do not mention any watermarks.",
+                    "default": "Describe the specific sexual act being performed in explicit detail. Focus ONLY on the physical actions, positions, and movements. Requirements: 1) Use only generic terms like \"woman\", \"man\", \"person\" - DO NOT describe physical appearance, body types, hair color, ethnicity, clothing, or accessories. 2) Specify exact positions and penetration details - mention if the man's penis is penetrating the woman's vagina, anus, or mouth, or if other sexual acts are occurring. 3) Describe the motion and rhythm - is it fast, slow, gentle, rough, rhythmic, etc. 4) Include key actions - such as kissing, touching, grabbing, positioning, eye contact, or reactions. 5) If visible, describe bodily fluids - if a white substance is shooting from a penis, the man is ejaculating semen; specify where it goes (on body parts, in mouth, on face, etc.). 6) Note any transitions between positions or acts during the sequence. 7) DO NOT mention watermarks, logos, backgrounds, settings, furniture, or anything not directly related to the sexual act itself. 8) IMPORTANT: Provide your response as a SINGLE CONTINUOUS PARAGRAPH with no line breaks or bullet points. Be explicit, factual, and clinical in your description.",
                     "multiline": True,
                     "tooltip": "Prompt for individual frame captions"
                 }),
                 "temperature": ("FLOAT", {
-                    "default": 0.5,
+                    "default": 0.2,
                     "min": 0.0,
                     "max": 2.0,
                     "step": 0.1,
@@ -88,7 +88,7 @@ class LLMStudioVideoDescribe:
     def extract_frames_from_video(
         self, 
         video_path: str, 
-        fps_sample: float = 1.0, 
+        sample_rate: float = 1.0, 
         max_duration: float = 5.0
     ) -> Tuple[List[Path], float]:
         """
@@ -96,7 +96,7 @@ class LLMStudioVideoDescribe:
 
         Args:
             video_path: Path to video file
-            fps_sample: Extract 1 frame every N seconds
+            sample_rate: Frames per second to extract (e.g., 1.0 = 1 fps, 2.0 = 2 fps)
             max_duration: Maximum duration in seconds to sample from
 
         Returns:
@@ -110,13 +110,19 @@ class LLMStudioVideoDescribe:
         extracted_frames = []
         temp_dir = Path(tempfile.mkdtemp())
 
-        # Calculate frames to extract based on sampling rate
+        # Calculate frames to extract based on sample rate (frames per second)
         sampling_duration = min(duration, max_duration)
-        num_frames_to_extract = int(sampling_duration / fps_sample)
+        num_frames_to_extract = int(sampling_duration * sample_rate)
         if num_frames_to_extract == 0:
             num_frames_to_extract = 1
 
-        frame_indices = [int(i * fps_sample * video_fps) for i in range(num_frames_to_extract)]
+        # Calculate interval between frames in terms of video frames
+        # sample_rate = frames per second we want
+        # video_fps = actual frames per second in video
+        # interval = video_fps / sample_rate = how many video frames to skip
+        frame_interval = video_fps / sample_rate if sample_rate > 0 else video_fps
+        
+        frame_indices = [int(i * frame_interval) for i in range(num_frames_to_extract)]
         # Make sure we don't exceed total frames
         frame_indices = [idx for idx in frame_indices if idx < total_frames]
 
@@ -165,7 +171,7 @@ class LLMStudioVideoDescribe:
         base_url: str,
         model_name: str,
         video_path: str,
-        fps_sample: float,
+        sample_rate: float,
         max_duration: float,
         caption_prompt: str,
         temperature: float,
@@ -195,7 +201,7 @@ class LLMStudioVideoDescribe:
         try:
             frame_paths, video_duration = self.extract_frames_from_video(
                 video_path, 
-                fps_sample=fps_sample,
+                sample_rate=sample_rate,
                 max_duration=max_duration
             )
 
@@ -206,7 +212,7 @@ class LLMStudioVideoDescribe:
 
             sampling_duration = min(video_duration, max_duration)
             print(f"📹 Video duration: {video_duration:.2f}s, sampling {sampling_duration:.2f}s")
-            print(f"📸 Extracted {len(frame_paths)} frames (1 frame per {fps_sample}s)")
+            print(f"📸 Extracted {len(frame_paths)} frames ({sample_rate} fps)")
 
         except Exception as e:
             error_msg = f"Error extracting frames: {e}"
@@ -329,7 +335,7 @@ class LLMStudioPictureDescribe:
                     "tooltip": "Prompt for image caption"
                 }),
                 "temperature": ("FLOAT", {
-                    "default": 0.5,
+                    "default": 0.2,
                     "min": 0.0,
                     "max": 2.0,
                     "step": 0.1,
