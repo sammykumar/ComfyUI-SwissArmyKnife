@@ -19,5 +19,10 @@
     "license": "MIT",
     "devDependencies": {
         "prettier": "^3.6.2"
+    },
+    "dependencies": {
+        "primevue": "^4.4.1",
+        "vue": "^3.5.22",
+        "vue-i18n": "^11.1.12"
     }
 }
