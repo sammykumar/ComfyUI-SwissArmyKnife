@@ -4,8 +4,7 @@
     "description": "Swiss Army Knife utility nodes for ComfyUI",
     "main": "__init__.py",
     "scripts": {
-        "build": "cd ui-react_backup/ui && npm run build",
-        "watch": "cd ui-react_backup/ui && npm run watch",
+        "build": "vite build",
         "test": "cd web/tests && npm test",
         "test:install": "cd web/tests && npm install && npm run install-browser"
     },

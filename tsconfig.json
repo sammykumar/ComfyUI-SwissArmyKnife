@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "useDefineForClassFields": true,
+        "module": "ESNext",
+        "resolveJsonModule": true,
+        "moduleResolution": "bundler", // Add this line
+        "paths": {
+            "@/*": ["./ui/*"]
+        },
+        "typeRoots": ["src/types", "node_modules/@types"]
+    },
+    "exclude": ["node_modules", "dist", "js", "web"]
+}
