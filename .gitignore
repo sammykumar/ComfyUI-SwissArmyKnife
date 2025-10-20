@@ -152,6 +152,9 @@ api_keys.txt
 cache/
 .cache/
 
+# Chrome debug profile
+.ai-image-gen/
+
 # Cache busting files
 cache_info.json
 
