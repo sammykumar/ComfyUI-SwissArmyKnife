@@ -1,9 +1,6 @@
 // @ts-expect-error - ComfyUI runtime module, provided at runtime
-import { app } from '../../../scripts/app.js';
+import { app } from '../../../../scripts/app.js';
 import { ComfyApp } from '@comfyorg/comfyui-frontend-types';
-
-// @ts-expect-error - ComfyUI runtime module, provided at runtime
-import { addWidget, ComponentWidgetImpl } from '../../../scripts/domWidget.js';
 
 import VueExampleComponent from '@/components/VueExampleComponent.vue';
 
@@ -22,29 +19,8 @@ comfyApp.registerExtension({
             experimental: true,
         },
     ],
-    getCustomWidgets(app) {
-        return {
-            CUSTOM_VUE_COMPONENT_BASIC(node) {
-                // Add custom vue component here
-
-                const inputSpec = {
-                    name: 'custom_vue_component_basic',
-                    type: 'vue-basic',
-                };
-
-                const widget = new ComponentWidgetImpl({
-                    node,
-                    name: inputSpec.name,
-                    component: VueExampleComponent,
-                    inputSpec,
-                    options: {},
-                });
-
-                addWidget(node, widget);
-
-                return { widget };
-            },
-        };
+    async setup() {
+        console.log('Swiss-Army-Knife Vue Basic Extension Loaded');
     },
     nodeCreated(node) {
         // @ts-expect-error - comfyClass is a ComfyUI-specific property added at runtime

@@ -5,6 +5,7 @@
     "main": "__init__.py",
     "scripts": {
         "build": "vite build",
+        "watch": "vite build --watch",
         "test": "cd web/tests && npm test",
         "test:install": "cd web/tests && npm install && npm run install-browser"
     },
