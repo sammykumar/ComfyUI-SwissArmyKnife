@@ -7,12 +7,12 @@ export default defineConfig({
     plugins: [vue(), vueDevTools()],
     resolve: {
         alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url)),
+            '@': fileURLToPath(new URL('./ui', import.meta.url)),
         },
     },
     build: {
         lib: {
-            entry: './src/main.js',
+            entry: './ui/main.ts',
             formats: ['es'],
             fileName: 'main',
         },

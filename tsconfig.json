@@ -4,7 +4,8 @@
         "useDefineForClassFields": true,
         "module": "ESNext",
         "resolveJsonModule": true,
-        "moduleResolution": "bundler", // Add this line
+        "moduleResolution": "bundler",
+        "baseUrl": ".",
         "paths": {
             "@/*": ["./ui/*"]
         },
