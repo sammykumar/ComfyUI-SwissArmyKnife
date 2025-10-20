@@ -1,6 +1,8 @@
+// @ts-expect-error - ComfyUI runtime module, provided at runtime
 import { app } from '../../../scripts/app.js';
 import { ComfyApp } from '@comfyorg/comfyui-frontend-types';
 
+// @ts-expect-error - ComfyUI runtime module, provided at runtime
 import { addWidget, ComponentWidgetImpl } from '../../../scripts/domWidget.js';
 
 import VueExampleComponent from '@/components/VueExampleComponent.vue';
@@ -45,6 +47,7 @@ comfyApp.registerExtension({
         };
     },
     nodeCreated(node) {
+        // @ts-expect-error - comfyClass is a ComfyUI-specific property added at runtime
         if (node.constructor.comfyClass !== 'vue-basic') return;
 
         const [oldWidth, oldHeight] = node.size;

@@ -9,7 +9,9 @@
         "paths": {
             "@/*": ["./ui/*"]
         },
-        "typeRoots": ["src/types", "node_modules/@types"]
+        "skipLibCheck": true,
+        "allowSyntheticDefaultImports": true
     },
+    "include": ["ui/**/*"],
     "exclude": ["node_modules", "dist", "js", "web"]
 }
