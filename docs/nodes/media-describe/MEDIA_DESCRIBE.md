@@ -5662,7 +5662,7 @@ Describe the visible environment in rich detail. Include specific colors and tex
 MOVEMENT ({Ordinal} Paragraph)
 Describe body-part–specific movement in 250 words or less, detailing what body parts are visible and what actions they are performing. Focus on physical actions and positions. Use only generic terms like 'woman' or 'man' to describe people. Begin with an overall summary tied to musical rhythm and beat structure (e.g., 'The subject initiates with a hip sway on the downbeat…'). Then narrate movement chronologically using precise action verbs and transitions like 'then', 'as', 'after', and reference timeline markers (early/mid/late beat or second).
 
-Specify which body parts move and how they articulate (e.g., 'the right arm lifts upward, then sweeps outward; the torso tilts as the knees bend'), including footwork, weight shifts, and alignment with beats. Describe what body parts are doing to themselves or to another person. Explicitly identify if genitals are visible (vagina/pussy, penis/dick, or both) and their state or positioning. If sexual activity is present, identify the sex position if obvious (e.g., missionary, doggy style, cowgirl, reverse cowgirl, etc.) and describe the specific act being performed, focusing exclusively on physical actions and positions - mention where body parts are positioned in relation to each other (e.g., penis penetrating vagina, penis in mouth, etc.). If a white substance shoots from a penis, describe it as the man ejaculating semen.
+Specify which body parts move and how they articulate (e.g., 'the right arm lifts upward, then sweeps outward; the torso tilts as the knees bend'), including footwork, weight shifts, and alignment with beats. Describe what body parts are doing to themselves or to another person. If sexual activity is present, describe the specific act being performed, focusing exclusively on physical actions and positions - mention where body parts are positioned in relation to each other (e.g., penis in relation to vagina, anal, mouth, etc.). If a white substance shoots from a penis, describe it as the man ejaculating semen.
 
 Include any camera movement (e.g., 'camera pans to follow the torso shift'). Avoid general labels—focus on locomotor and non-locomotor gestures, repetition, rhythm, and choreography phrasing. Always include any buttock or breast movements visible. Do not describe physical appearance, clothing, setting, or background in this paragraph. Do not mention watermarks.
 ```
@@ -5671,8 +5671,6 @@ Include any camera movement (e.g., 'camera pans to follow the torso shift'). Avo
 
 -   **Unified SFW/NSFW handling**: Single prompt handles both safe-for-work dance/choreography and explicit sexual content
 -   **Body part specificity**: Requires detailed description of which body parts are visible and what they're doing
--   **Genital visibility identification**: Explicitly identifies if genitals are visible (vagina/pussy, penis/dick, or both) and their state/positioning
--   **Sex position identification**: When sexual activity is present and position is obvious, identifies it by name (missionary, doggy style, cowgirl, reverse cowgirl, etc.)
 -   **Interpersonal actions**: Describes what body parts are doing to themselves or to another person
 -   **Explicit content support**: When sexual activity is present, describes specific acts and anatomical positioning
 -   **Generic terminology**: Uses only 'woman' or 'man' to describe people (no other identifying characteristics)
@@ -6088,15 +6086,12 @@ Both the paragraph prompt and the JSON field description now use the unified SFW
 -   More precise descriptions of physical actions
 -   Better understanding of spatial relationships
 -   Clearer distinction between self-interaction and interpersonal actions
--   **Explicit genital visibility identification**: Identifies whether genitals are visible (vagina/pussy, penis/dick, or both) and their state or positioning
 
 ### Explicit Content Handling
 
 -   Direct, clear language for sexual acts
 -   Anatomical specificity (penis, vagina, anal, mouth, etc.)
 -   Recognition of sexual context markers (ejaculation)
--   **Genital identification**: Explicitly states which genitals are visible and their positioning in relation to other body parts
--   **Sex position identification**: Identifies obvious sex positions by name (missionary, doggy style, cowgirl, reverse cowgirl, etc.) when sexual activity is present
 
 ### Maintains SFW Capabilities
 
@@ -6115,8 +6110,6 @@ No changes to node inputs or outputs. The enhanced prompt works automatically wh
 The movement output will now:
 
 -   Provide detailed body part-specific descriptions for all content types
--   Explicitly identify if genitals are visible (vagina/pussy, penis/dick, or both) and their state/positioning
--   Identify sex positions by name when sexual activity is present and position is obvious (missionary, doggy style, cowgirl, etc.)
 -   Naturally adapt language based on whether content is SFW or NSFW
 -   Maintain 250-word limit for conciseness
 -   Focus on actions and positions rather than appearance
@@ -6300,24 +6293,6 @@ When testing this enhancement:
 6. **Spatial Layout**: Verify room type and architectural features are identified
 
 ## Changelog
-
-### October 20, 2025 - LLM Studio Prompt Architecture Update
-
--   **System/User Prompt Restructure**: Reorganized LLM Studio API calls to follow `llm_studio_describe.py` pattern
--   **Simple System Prompts**: Changed to generic system prompts ("You are a helpful image analyst" / "You are a helpful video analyst")
--   **Detailed User Prompts**: Moved all detailed instructions, requirements, and constraints from system prompt to user prompt
--   **Better Model Compatibility**: This architecture matches the approach used in standalone LLM Studio nodes and may work better with certain vision models
--   **Preserved Functionality**: All prompt content and requirements remain identical, only the message role assignment changed
-
-### October 20, 2025 - LLM Studio Enhanced Prompts
-
--   **Unified prompt system**: LLM Studio now uses the same enhanced prompts as Gemini
--   **Movement enhancements**: LLM Studio videos now include genital visibility and sex position identification
--   **Scene enhancements**: LLM Studio now includes detailed environmental descriptions (colors, textures, reflections)
--   **Configuration-based prompts**: LLM Studio now respects describe_clothing, describe_subject, describe_bokeh, etc. options
--   **6-field JSON output**: LLM Studio now outputs 6 fields (subject, clothing, movement, scene, cinematic_aesthetic/cinematic_aesthetic_control, stylization_tone) instead of 5
--   **Field name normalization**: Automatic conversion between cinematic_aesthetic_control (video) and cinematic_aesthetic (image)
--   **Visual style combination**: Automatically combines cinematic_aesthetic and stylization_tone into visual_style field for backward compatibility
 
 ### October 15, 2025 - LLM Options Support
 
