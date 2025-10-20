@@ -76,20 +76,20 @@ A woman with long brown hair wearing a red dress...
 
 ### Single Connection Point
 
-- **Before**: Required 7 separate connections to see all MediaDescribe outputs
-- **After**: Just 1 connection shows everything
+-   **Before**: Required 7 separate connections to see all MediaDescribe outputs
+-   **After**: Just 1 connection shows everything
 
 ### Organized Display
 
-- Clear emoji labels for each section
-- Proper spacing and formatting
-- Easy to read and understand
+-   Clear emoji labels for each section
+-   Proper spacing and formatting
+-   Easy to read and understand
 
 ### Flexible Usage
 
-- Can still use individual outputs if needed
-- Aggregated output is an additional option, not a replacement
-- Works with any Control Panel input slot
+-   Can still use individual outputs if needed
+-   Aggregated output is an additional option, not a replacement
+-   Works with any Control Panel input slot
 
 ## Code Changes
 
@@ -128,10 +128,10 @@ return (..., all_data)
 
 All return statements in `_process_image()` and `_process_video()`:
 
-- Cached image result (line ~812)
-- Fresh image result (line ~875)
-- Cached video result (line ~1151)
-- Fresh video result (line ~1222)
+-   Cached image result (line ~812)
+-   Fresh image result (line ~875)
+-   Cached video result (line ~1151)
+-   Fresh video result (line ~1222)
 
 ## Compatibility
 
@@ -177,11 +177,13 @@ Combine aggregated and individual outputs:
 To test the new output:
 
 1. **Create Test Workflow**:
+
     - Add MediaDescribe node
     - Add Control Panel node
     - Connect `all_media_describe_data` output
 
 2. **Run Workflow**:
+
     - Upload or select media
     - Execute workflow
     - Check Control Panel display
@@ -216,8 +218,8 @@ Possible improvements:
 
 ## Related Documentation
 
-- [Control Panel Implementation](./CONTROL_PANEL_IMPLEMENTATION.md)
-- [MediaDescribe Class Documentation](../nodes/media_describe/mediia_describe.py)
+-   [Control Panel Implementation](./CONTROL_PANEL_IMPLEMENTATION.md)
+-   [MediaDescribe Class Documentation](../nodes/media_describe/mediia_describe.py)
 
 ## Conclusion
 
@@ -242,11 +244,13 @@ Renamed the Python class from `GeminiMediaDescribe` to `MediaDescribe` to better
 ### Python Code
 
 1. **Class Definition**
+
     - File: `nodes/media_describe/mediia_describe.py`
     - Changed: `class GeminiMediaDescribe:` → `class MediaDescribe:`
     - Updated class docstring to match new name
 
 2. **Module Exports**
+
     - File: `nodes/media_describe/__init__.py`
     - Export: `from .mediia_describe import MediaDescribe`
 
@@ -282,10 +286,10 @@ Renamed the Python class from `GeminiMediaDescribe` to `MediaDescribe` to better
 
 ✅ **Fully Backward Compatible**
 
-- ComfyUI node ID `GeminiUtilMediaDescribe` is unchanged
-- Display name "Gemini Util - Media Describe" is unchanged
-- All existing workflows will continue to work without modification
-- Only internal Python class name and debug logs changed
+-   ComfyUI node ID `GeminiUtilMediaDescribe` is unchanged
+-   Display name "Gemini Util - Media Describe" is unchanged
+-   All existing workflows will continue to work without modification
+-   Only internal Python class name and debug logs changed
 
 ## Testing Recommendations
 
@@ -296,10 +300,10 @@ Renamed the Python class from `GeminiMediaDescribe` to `MediaDescribe` to better
 
 ## Rationale
 
-- **Better Organization**: Separates media description logic into its own module
-- **Clearer Intent**: `MediaDescribe` better describes what the class does
-- **Consistency**: Aligns with module structure `nodes/media_describe/`
-- **No Breaking Changes**: Node ID remains the same for user workflows
+-   **Better Organization**: Separates media description logic into its own module
+-   **Clearer Intent**: `MediaDescribe` better describes what the class does
+-   **Consistency**: Aligns with module structure `nodes/media_describe/`
+-   **No Breaking Changes**: Node ID remains the same for user workflows
 
 ---
 
@@ -362,27 +366,27 @@ MediaDescribe Control Panel Widget:
 
 ### ✅ Cleaner UI
 
-- 6 fewer output sockets on MediaDescribe node
-- Less visual clutter in workflow canvas
-- Easier to identify core outputs
+-   6 fewer output sockets on MediaDescribe node
+-   Less visual clutter in workflow canvas
+-   Easier to identify core outputs
 
 ### ✅ Better Organization
 
-- All paragraph outputs grouped in one place
-- Clear visual hierarchy with emoji labels
-- Easier to read and understand
+-   All paragraph outputs grouped in one place
+-   Clear visual hierarchy with emoji labels
+-   Easier to read and understand
 
 ### ✅ Full Data Access
 
-- All paragraph data still available in `all_media_describe_data` JSON output
-- Can be parsed programmatically if needed
-- No functionality lost
+-   All paragraph data still available in `all_media_describe_data` JSON output
+-   Can be parsed programmatically if needed
+-   No functionality lost
 
 ### ✅ Improved UX
 
-- Read-only text panel prevents accidental edits
-- Monospace font for better readability
-- Automatic updates after each execution
+-   Read-only text panel prevents accidental edits
+-   Monospace font for better readability
+-   Automatic updates after each execution
 
 ## Migration Guide
 
@@ -471,7 +475,7 @@ this.paragraphControlPanel = this.addWidget(
     '📋 Paragraph Outputs',
     '',
     () => {},
-    { multiline: true },
+    { multiline: true }
 );
 this.paragraphControlPanel.serialize = false;
 this.paragraphControlPanel.inputEl.readOnly = true;
@@ -549,16 +553,16 @@ if (allDataJson) {
 
 ## Testing Checklist
 
-- [x] Python code updated (RETURN_TYPES, RETURN_NAMES, return statements)
-- [x] JavaScript widget added to MediaDescribe node
-- [x] Control panel displays after execution
-- [x] Paragraph data extracted from `all_media_describe_data`
-- [x] Override functionality still works (via Media Describe - Overrides node)
-- [x] All 6 paragraphs display correctly
-- [x] Styling (monospace, dark theme) applied
-- [x] No errors in Python code
-- [x] No errors in JavaScript code
-- [x] Documentation updated
+-   [x] Python code updated (RETURN_TYPES, RETURN_NAMES, return statements)
+-   [x] JavaScript widget added to MediaDescribe node
+-   [x] Control panel displays after execution
+-   [x] Paragraph data extracted from `all_media_describe_data`
+-   [x] Override functionality still works (via Media Describe - Overrides node)
+-   [x] All 6 paragraphs display correctly
+-   [x] Styling (monospace, dark theme) applied
+-   [x] No errors in Python code
+-   [x] No errors in JavaScript code
+-   [x] Documentation updated
 
 ## Files Modified
 
@@ -692,10 +696,10 @@ file_size = file_stats.st_size / (1024 * 1024)  # Convert to MB
 
 ### MIME Type Mapping
 
-- `.mp4` → `video/mp4` (preferred)
-- `.webm` → `video/webm`
-- `.mov` → `video/quicktime`
-- `.avi` → `video/x-msvideo`
+-   `.mp4` → `video/mp4` (preferred)
+-   `.webm` → `video/webm`
+-   `.mov` → `video/quicktime`
+-   `.avi` → `video/x-msvideo`
 
 ### Validation Flow
 
@@ -710,10 +714,10 @@ file_size = file_stats.st_size / (1024 * 1024)  # Convert to MB
 
 ### Validated Scenarios
 
-- ✅ Large Reddit videos (>50MB) now show clear error messages
-- ✅ Proper MIME type detection for different video formats
-- ✅ Informative error messages guide users to solutions
-- ✅ File size logging helps debug issues
+-   ✅ Large Reddit videos (>50MB) now show clear error messages
+-   ✅ Proper MIME type detection for different video formats
+-   ✅ Informative error messages guide users to solutions
+-   ✅ File size logging helps debug issues
 
 ### Test Cases
 
@@ -731,23 +735,23 @@ file_size = file_stats.st_size / (1024 * 1024)  # Convert to MB
 
 ## Related Files
 
-- `nodes/nodes.py`: Main implementation
-- `docs/REDDIT_POST_MEDIA_SOURCE.md`: Reddit feature documentation
-- `web/js/swiss-army-knife.js`: Frontend Reddit URL widget
+-   `nodes/nodes.py`: Main implementation
+-   `docs/REDDIT_POST_MEDIA_SOURCE.md`: Reddit feature documentation
+-   `web/js/swiss-army-knife.js`: Frontend Reddit URL widget
 
 ## Deployment Notes
 
-- No ComfyUI server restart required (Python code changes)
-- Users need to refresh browser cache if frontend changes made
-- Compatible with existing workflows
-- Backward compatible with existing media sources
+-   No ComfyUI server restart required (Python code changes)
+-   Users need to refresh browser cache if frontend changes made
+-   Compatible with existing workflows
+-   Backward compatible with existing media sources
 
 ## Performance Impact
 
-- **Minimal overhead**: File size check is very fast
-- **Better user experience**: Clear errors instead of mysterious failures
-- **Reduced API waste**: Prevents doomed API calls
-- **Faster debugging**: Detailed logging helps identify issues quickly
+-   **Minimal overhead**: File size check is very fast
+-   **Better user experience**: Clear errors instead of mysterious failures
+-   **Reduced API waste**: Prevents doomed API calls
+-   **Faster debugging**: Detailed logging helps identify issues quickly
 
 ---
 
@@ -772,6 +776,7 @@ This would cause the entire ComfyUI workflow to fail immediately without attempt
 ### Implementation Details
 
 1. **New Helper Method**: `_call_gemini_with_retry()`
+
     - Wraps all Gemini API calls with intelligent retry logic
     - Parameters:
         - `max_retries`: Default 3 attempts
@@ -779,6 +784,7 @@ This would cause the entire ComfyUI workflow to fail immediately without attempt
     - Handles both empty responses and API errors (500, 503, overload errors)
 
 2. **Retry Conditions**
+
     - Empty response from Gemini (response.text is None)
     - HTTP 500 errors (Internal Server Error)
     - HTTP 503 errors (Service Unavailable)
@@ -864,14 +870,14 @@ Potential improvements for future consideration:
 
 ## Related Files
 
-- `/nodes/media_describe/mediia_describe.py` - Main implementation
-- This documentation file
+-   `/nodes/media_describe/mediia_describe.py` - Main implementation
+-   This documentation file
 
 ## References
 
-- Original error report: Exception message "Gemini returned empty response (Candidates available: 1)"
-- Stack trace location: `utils/nodes.py` line 1207 and 1487 (note: file is actually in `nodes/media_describe/mediia_describe.py`)
-- Node type: `MediaDescribe` (formerly `GeminiUtilMediaDescribe`)
+-   Original error report: Exception message "Gemini returned empty response (Candidates available: 1)"
+-   Stack trace location: `utils/nodes.py` line 1207 and 1487 (note: file is actually in `nodes/media_describe/mediia_describe.py`)
+-   Node type: `MediaDescribe` (formerly `GeminiUtilMediaDescribe`)
 
 ---
 
@@ -887,11 +893,11 @@ Refactor `web/js/swiss-army-knife.js` (1160+ lines) into a modular structure sim
 
 **File: `web/js/swiss-army-knife.js`** (1160+ lines)
 
-- Single monolithic file handling 3 different node types
-- `GeminiUtilOptions` node (~10 lines)
-- `FilenameGenerator` node (~180 lines)
-- `GeminiUtilMediaDescribe` node (~1000+ lines)
-- Complex state management, upload handling, serialization
+-   Single monolithic file handling 3 different node types
+-   `GeminiUtilOptions` node (~10 lines)
+-   `FilenameGenerator` node (~180 lines)
+-   `GeminiUtilMediaDescribe` node (~1000+ lines)
+-   Complex state management, upload handling, serialization
 
 ## Proposed Structure
 
@@ -921,21 +927,25 @@ web/js/
     ```
 
 2. **Create extension.js (main entry point)**
+
     - Import handlers from separate files
     - Register all three node types
     - Delegate to specific handlers
 
 3. **Extract media_describe.js**
+
     - Move `GeminiUtilMediaDescribe` logic
     - Export `registerMediaDescribeNode()` function
     - Export helper functions (upload handlers, state management)
 
 4. **Extract filename_generator.js**
+
     - Move `FilenameGenerator` logic
     - Export `registerFilenameGeneratorNode()` function
     - Include filename generation logic
 
 5. **Extract options.js**
+
     - Move `GeminiUtilOptions` logic
     - Export `registerOptionsNode()` function
 
@@ -1087,6 +1097,7 @@ export function registerOptionsNode(nodeType, nodeData, app) {
     ```
 
 2. **Test each node type**
+
     - [ ] GeminiUtilMediaDescribe upload functionality
     - [ ] GeminiUtilMediaDescribe state persistence
     - [ ] GeminiUtilMediaDescribe Reddit integration
@@ -1111,10 +1122,10 @@ JavaScript widgets for Gemini AI integration in ComfyUI Swiss Army Knife.
 
 ## Files
 
-- **extension.js**: Main entry point, registers all node types
-- **media_describe.js**: Media upload and description generation (1000+ lines)
-- **filename_generator.js**: Dynamic filename generation widget (180 lines)
-- **options.js**: Configuration options widget (10 lines)
+-   **extension.js**: Main entry point, registers all node types
+-   **media_describe.js**: Media upload and description generation (1000+ lines)
+-   **filename_generator.js**: Dynamic filename generation widget (180 lines)
+-   **options.js**: Configuration options widget (10 lines)
 
 ## Node Types
 
@@ -1124,11 +1135,11 @@ Upload and describe images/videos using Gemini AI.
 
 **Features:**
 
-- Media upload (image/video)
-- Reddit post integration
-- Path-based media randomization
-- State persistence across workflow saves
-- Preview generation
+-   Media upload (image/video)
+-   Reddit post integration
+-   Path-based media randomization
+-   State persistence across workflow saves
+-   Preview generation
 
 ### FilenameGenerator
 
@@ -1136,10 +1147,10 @@ Generate structured filenames based on workflow parameters.
 
 **Features:**
 
-- Dynamic filename preview
-- Subdirectory management
-- Date-based organization
-- Parameter-based naming
+-   Dynamic filename preview
+-   Subdirectory management
+-   Date-based organization
+-   Parameter-based naming
 
 ### GeminiUtilOptions
 
@@ -1164,33 +1175,33 @@ Configure Gemini API options.
 
 ### 1. **Improved Maintainability**
 
-- Each node type in its own file
-- Clear separation of concerns
-- Easier to locate and fix bugs
+-   Each node type in its own file
+-   Clear separation of concerns
+-   Easier to locate and fix bugs
 
 ### 2. **Better Development Experience**
 
-- Work on one node without affecting others
-- Smaller files = easier to understand
-- Can test individual components
+-   Work on one node without affecting others
+-   Smaller files = easier to understand
+-   Can test individual components
 
 ### 3. **Scalability**
 
-- Easy to add new Gemini-related nodes
-- Can share common utilities
-- Follows established patterns (lora_manager)
+-   Easy to add new Gemini-related nodes
+-   Can share common utilities
+-   Follows established patterns (lora_manager)
 
 ### 4. **Performance**
 
-- Browser caching per file
-- Can lazy-load if needed in future
-- Smaller initial load if using module imports
+-   Browser caching per file
+-   Can lazy-load if needed in future
+-   Smaller initial load if using module imports
 
 ### 5. **Documentation**
 
-- README per functionality area
-- Clear file-to-node mapping
-- Examples and usage guides
+-   README per functionality area
+-   Clear file-to-node mapping
+-   Examples and usage guides
 
 ## Migration Impact
 
@@ -1234,16 +1245,19 @@ Total: Same functionality, better organized.
 ## Implementation Timeline
 
 1. **Phase 1: Structure** (30 min)
+
     - Create folder
     - Create skeleton files
 
 2. **Phase 2: Extract Code** (1-2 hours)
+
     - Move media_describe logic
     - Move filename_generator logic
     - Move options logic
     - Create main extension.js
 
 3. **Phase 3: Testing** (30 min)
+
     - Test each node type
     - Verify state persistence
     - Check upload functionality
@@ -1257,20 +1271,20 @@ Total: Same functionality, better organized.
 
 ## Success Criteria
 
-- [x] All three nodes work identically to before
-- [x] State persistence works correctly
-- [x] File uploads work correctly
-- [x] Reddit integration works correctly
-- [x] Filename preview works correctly
-- [x] No console errors
-- [x] Documentation complete
-- [x] Code follows project conventions
+-   [x] All three nodes work identically to before
+-   [x] State persistence works correctly
+-   [x] File uploads work correctly
+-   [x] Reddit integration works correctly
+-   [x] Filename preview works correctly
+-   [x] No console errors
+-   [x] Documentation complete
+-   [x] Code follows project conventions
 
 ## References
 
-- Current implementation: `web/js/swiss-army-knife.js`
-- Pattern to follow: `web/js/lora_manager/`
-- Project guidelines: `.github/copilot-instructions.md`
+-   Current implementation: `web/js/swiss-army-knife.js`
+-   Pattern to follow: `web/js/lora_manager/`
+-   Project guidelines: `.github/copilot-instructions.md`
 
 ## Conclusion
 
@@ -1299,16 +1313,16 @@ Successfully refactored the paragraph override functionality from the MediaDescr
 
 **Inputs** (all optional):
 
-- `override_subject` (STRING, multiline)
-- `override_cinematic_aesthetic` (STRING, multiline)
-- `override_stylization_tone` (STRING, multiline)
-- `override_clothing` (STRING, multiline)
-- `override_scene` (STRING, multiline)
-- `override_movement` (STRING, multiline)
+-   `override_subject` (STRING, multiline)
+-   `override_cinematic_aesthetic` (STRING, multiline)
+-   `override_stylization_tone` (STRING, multiline)
+-   `override_clothing` (STRING, multiline)
+-   `override_scene` (STRING, multiline)
+-   `override_movement` (STRING, multiline)
 
 **Output**:
 
-- `overrides` (OVERRIDES type) - Dictionary containing all override values
+-   `overrides` (OVERRIDES type) - Dictionary containing all override values
 
 **Implementation**:
 
@@ -1329,17 +1343,17 @@ class MediaDescribeOverrides:
 
 #### Removed
 
-- 6 individual override input fields from INPUT_TYPES
+-   6 individual override input fields from INPUT_TYPES
 
 #### Added
 
-- Single `overrides` input field (OVERRIDES type)
-- Logic to extract override values from dictionary
+-   Single `overrides` input field (OVERRIDES type)
+-   Logic to extract override values from dictionary
 
 #### Modified
 
-- `describe_media()` function signature: Changed from 6 individual override parameters to single `overrides` dict parameter
-- Added override extraction logic:
+-   `describe_media()` function signature: Changed from 6 individual override parameters to single `overrides` dict parameter
+-   Added override extraction logic:
 
     ```python
     if overrides is None:
@@ -1393,6 +1407,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 #### New Documentation Files
 
 1. **`MEDIA_DESCRIBE_OVERRIDES_NODE.md`**
+
     - Complete node documentation
     - Usage examples and patterns
     - Workflow diagrams
@@ -1470,43 +1485,43 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
 ### 1. **Cleaner UI**
 
-- MediaDescribe node has 7 fewer inputs
-- Override controls only visible when needed
-- Easier to navigate and configure
+-   MediaDescribe node has 7 fewer inputs
+-   Override controls only visible when needed
+-   Easier to navigate and configure
 
 ### 2. **Modularity**
 
-- Clear separation of concerns
-- Override configuration isolated from media processing
-- Easier to maintain and extend
+-   Clear separation of concerns
+-   Override configuration isolated from media processing
+-   Easier to maintain and extend
 
 ### 3. **Reusability**
 
-- One overrides node can serve multiple MediaDescribe nodes
-- Consistent override values across batch processing
-- More efficient workflow design
+-   One overrides node can serve multiple MediaDescribe nodes
+-   Consistent override values across batch processing
+-   More efficient workflow design
 
 ### 4. **Flexibility**
 
-- Mix MediaDescribe nodes with and without overrides
-- Different override configurations for different nodes
-- Optional override functionality
+-   Mix MediaDescribe nodes with and without overrides
+-   Different override configurations for different nodes
+-   Optional override functionality
 
 ### 5. **Future-Proof**
 
-- New override features added to dedicated node
-- Keeps MediaDescribe focused on core functionality
-- Easier to add override-related features
+-   New override features added to dedicated node
+-   Keeps MediaDescribe focused on core functionality
+-   Easier to add override-related features
 
 ## Backward Compatibility
 
 ✅ **100% Backward Compatible**
 
-- All existing functionality preserved
-- No changes to MediaDescribe outputs
-- No changes to core processing logic
-- Override behavior identical to previous implementation
-- Existing workflows continue to work
+-   All existing functionality preserved
+-   No changes to MediaDescribe outputs
+-   No changes to core processing logic
+-   Override behavior identical to previous implementation
+-   Existing workflows continue to work
 
 ## Workflow Patterns
 
@@ -1541,16 +1556,16 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
 ## Testing Checklist
 
-- [x] MediaDescribeOverrides node creates correct dictionary
-- [x] MediaDescribe accepts OVERRIDES type input
-- [x] Override extraction logic works correctly
-- [x] Backward compatibility maintained (overrides=None works)
-- [x] Individual paragraph outputs still work
-- [x] All 6 override fields are processed
-- [x] Empty override fields are handled correctly
-- [x] Node registration successful
-- [x] No import errors (except pre-existing folder_paths)
-- [x] Documentation complete and accurate
+-   [x] MediaDescribeOverrides node creates correct dictionary
+-   [x] MediaDescribe accepts OVERRIDES type input
+-   [x] Override extraction logic works correctly
+-   [x] Backward compatibility maintained (overrides=None works)
+-   [x] Individual paragraph outputs still work
+-   [x] All 6 override fields are processed
+-   [x] Empty override fields are handled correctly
+-   [x] Node registration successful
+-   [x] No import errors (except pre-existing folder_paths)
+-   [x] Documentation complete and accurate
 
 ## Files Changed
 
@@ -1570,39 +1585,39 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
 ### Files Unchanged (But Still Relevant)
 
-- `docs/nodes/media-describe/PARAGRAPH_OVERRIDE_FEATURE.md` - Core override logic documentation
-- `docs/nodes/media-describe/ALL_MEDIA_DESCRIBE_DATA_OUTPUT.md` - Output format documentation
-- All other existing documentation files
+-   `docs/nodes/media-describe/PARAGRAPH_OVERRIDE_FEATURE.md` - Core override logic documentation
+-   `docs/nodes/media-describe/ALL_MEDIA_DESCRIBE_DATA_OUTPUT.md` - Output format documentation
+-   All other existing documentation files
 
 ## Code Statistics
 
 ### Lines of Code
 
-- **New node**: ~94 lines
-- **MediaDescribe changes**: Net reduction of ~30 lines (removed individual inputs)
-- **Documentation**: ~742 new lines across 2 files
+-   **New node**: ~94 lines
+-   **MediaDescribe changes**: Net reduction of ~30 lines (removed individual inputs)
+-   **Documentation**: ~742 new lines across 2 files
 
 ### Node Count
 
-- **Before**: 2 nodes (MediaDescribe, GeminiUtilOptions)
-- **After**: 3 nodes (MediaDescribe, GeminiUtilOptions, MediaDescribeOverrides)
+-   **Before**: 2 nodes (MediaDescribe, GeminiUtilOptions)
+-   **After**: 3 nodes (MediaDescribe, GeminiUtilOptions, MediaDescribeOverrides)
 
 ## Next Steps (Optional Future Enhancements)
 
-- [ ] Add preset/template functionality to Overrides node
-- [ ] Create UI widget for easier override editing
-- [ ] Add validation/linting for override text
-- [ ] Create override library/collection system
-- [ ] Add override history/versioning
+-   [ ] Add preset/template functionality to Overrides node
+-   [ ] Create UI widget for easier override editing
+-   [ ] Add validation/linting for override text
+-   [ ] Create override library/collection system
+-   [ ] Add override history/versioning
 
 ## Conclusion
 
 Successfully refactored paragraph override functionality into a dedicated node, improving:
 
-- **User Experience**: Cleaner, more organized interface
-- **Code Quality**: Better separation of concerns
-- **Maintainability**: Easier to extend and modify
-- **Flexibility**: More workflow options and patterns
+-   **User Experience**: Cleaner, more organized interface
+-   **Code Quality**: Better separation of concerns
+-   **Maintainability**: Easier to extend and modify
+-   **Flexibility**: More workflow options and patterns
 
 The implementation is complete, fully tested, well-documented, and ready for production use.
 
@@ -1775,6 +1790,7 @@ all_data = json.dumps({
 Created comprehensive documentation:
 
 1. **New File**: `PARAGRAPH_OVERRIDE_FEATURE.md`
+
     - Feature overview and use cases
     - Input/output field documentation
     - Implementation details
@@ -1807,9 +1823,9 @@ ELSE:
 
 This applies independently to each paragraph, allowing:
 
-- Full override (all fields filled)
-- Partial override (some fields filled)
-- No override (all fields empty = original behavior)
+-   Full override (all fields filled)
+-   Partial override (some fields filled)
+-   No override (all fields empty = original behavior)
 
 ## Use Cases
 
@@ -1823,10 +1839,10 @@ This applies independently to each paragraph, allowing:
 
 ✅ **100% Backward Compatible**
 
-- All override fields are optional with default empty strings
-- Existing workflows work without modification
-- New outputs are additive (existing indices unchanged)
-- Default behavior (no overrides) identical to previous version
+-   All override fields are optional with default empty strings
+-   Existing workflows work without modification
+-   New outputs are additive (existing indices unchanged)
+-   Default behavior (no overrides) identical to previous version
 
 ## Testing Recommendations
 
@@ -1842,6 +1858,7 @@ This applies independently to each paragraph, allowing:
 ## Files Modified
 
 1. **`nodes/media_describe/mediia_describe.py`**
+
     - Added 6 input fields
     - Added 6 output fields
     - Added `_parse_paragraphs()` helper method
@@ -1850,6 +1867,7 @@ This applies independently to each paragraph, allowing:
     - Updated aggregated output construction
 
 2. **`docs/nodes/media-describe/PARAGRAPH_OVERRIDE_FEATURE.md`** (NEW)
+
     - Complete feature documentation
 
 3. **`docs/nodes/media-describe/README.md`**
@@ -1857,11 +1875,11 @@ This applies independently to each paragraph, allowing:
 
 ## Future Enhancements (Optional)
 
-- [ ] UI widgets for easier paragraph editing
-- [ ] Paragraph templates/presets
-- [ ] Paragraph history/versioning
-- [ ] Visual paragraph editor
-- [ ] Paragraph validation/linting
+-   [ ] UI widgets for easier paragraph editing
+-   [ ] Paragraph templates/presets
+-   [ ] Paragraph history/versioning
+-   [ ] Visual paragraph editor
+-   [ ] Paragraph validation/linting
 
 ---
 
@@ -1894,17 +1912,17 @@ The Media Describe node now returns **5 outputs** (updated from 4):
 
 The new `raw_gemini_json` output provides:
 
-- **Unprocessed response** from Gemini API
-- **JSON format** as returned by the model
-- **Before overrides** are applied
-- **Direct access** to structured Gemini output
+-   **Unprocessed response** from Gemini API
+-   **JSON format** as returned by the model
+-   **Before overrides** are applied
+-   **Direct access** to structured Gemini output
 
 This is useful for:
 
-- Debugging prompt responses
-- Custom downstream processing
-- Analyzing Gemini's raw output
-- Building custom parsing logic
+-   Debugging prompt responses
+-   Custom downstream processing
+-   Analyzing Gemini's raw output
+-   Building custom parsing logic
 
 ## Changes Made
 
@@ -1926,10 +1944,10 @@ This is useful for:
 
 #### Field Names
 
-- `subject` - Subject description (person, pose, hairstyle)
-- `cinematic_aesthetic` - Lighting, camera, and optical details
-- `stylization_tone` - Mood and genre descriptors
-- `clothing` - Clothing and accessories description
+-   `subject` - Subject description (person, pose, hairstyle)
+-   `cinematic_aesthetic` - Lighting, camera, and optical details
+-   `stylization_tone` - Mood and genre descriptors
+-   `clothing` - Clothing and accessories description
 
 ### 2. Video Prompt
 
@@ -1963,9 +1981,9 @@ This is useful for:
 
 Updated `_parse_paragraphs()` method to:
 
-- Support both `cinematic_aesthetic` (images) and `cinematic_aesthetic_control` (videos)
-- Prioritize JSON parsing over paragraph parsing
-- Maintain backward compatibility with paragraph format as fallback
+-   Support both `cinematic_aesthetic` (images) and `cinematic_aesthetic_control` (videos)
+-   Prioritize JSON parsing over paragraph parsing
+-   Maintain backward compatibility with paragraph format as fallback
 
 ## Benefits
 
@@ -2029,9 +2047,9 @@ The `Media Describe - Overrides` node provides paragraph-level override controls
 
 This node separates override configuration from the main MediaDescribe node, keeping the UI cleaner and making override functionality:
 
-- **Modular**: Can be easily added or removed from workflows
-- **Reusable**: Single overrides node can be connected to multiple MediaDescribe nodes
-- **Organized**: Override controls don't clutter the main MediaDescribe node
+-   **Modular**: Can be easily added or removed from workflows
+-   **Reusable**: Single overrides node can be connected to multiple MediaDescribe nodes
+-   **Organized**: Override controls don't clutter the main MediaDescribe node
 
 ## Inputs
 
@@ -2096,8 +2114,8 @@ Media Describe - Overrides:
 
 **Result:**
 
-- Subject paragraph uses your custom text
-- All other paragraphs generated by Gemini
+-   Subject paragraph uses your custom text
+-   All other paragraphs generated by Gemini
 
 ### Example: Consistent Style Across Multiple Images
 
@@ -2147,23 +2165,23 @@ def create_overrides(self, override_subject="", override_cinematic_aesthetic="",
 
 ### 1. Cleaner UI
 
-- MediaDescribe node is less cluttered
-- Override controls only visible when needed
+-   MediaDescribe node is less cluttered
+-   Override controls only visible when needed
 
 ### 2. Reusability
 
-- One overrides node can serve multiple MediaDescribe nodes
-- Consistent overrides across batch processing
+-   One overrides node can serve multiple MediaDescribe nodes
+-   Consistent overrides across batch processing
 
 ### 3. Modularity
 
-- Easy to add/remove override functionality
-- Optional - workflow works fine without it
+-   Easy to add/remove override functionality
+-   Optional - workflow works fine without it
 
 ### 4. Flexibility
 
-- Mix and match: some MediaDescribe nodes with overrides, some without
-- Different override configurations for different nodes
+-   Mix and match: some MediaDescribe nodes with overrides, some without
+-   Different override configurations for different nodes
 
 ## Use Cases
 
@@ -2214,27 +2232,27 @@ Media Describe - Overrides:
 
 ### Video-Specific Fields
 
-- `override_scene` and `override_movement` only apply to videos
-- For images, these fields are ignored (safe to leave with values)
-- Video workflows benefit most from movement overrides
+-   `override_scene` and `override_movement` only apply to videos
+-   For images, these fields are ignored (safe to leave with values)
+-   Video workflows benefit most from movement overrides
 
 ### Empty vs Filled
 
-- **Empty field** = Use Gemini's generated text
-- **Field with text** = Use your custom text (replaces Gemini)
-- **Field with whitespace** = Treated as empty
+-   **Empty field** = Use Gemini's generated text
+-   **Field with text** = Use your custom text (replaces Gemini)
+-   **Field with whitespace** = Treated as empty
 
 ### No Validation
 
-- Node accepts any text in override fields
-- No character limits or format requirements
-- Responsibility on user to provide good descriptions
+-   Node accepts any text in override fields
+-   No character limits or format requirements
+-   Responsibility on user to provide good descriptions
 
 ### Caching Behavior
 
-- Overrides applied AFTER cache lookup
-- Changing overrides doesn't invalidate cache
-- Gemini still generates full description (which may be cached)
+-   Overrides applied AFTER cache lookup
+-   Changing overrides doesn't invalidate cache
+-   Gemini still generates full description (which may be cached)
 
 ## Workflow Patterns
 
@@ -2266,16 +2284,16 @@ Media Describe - Overrides:
 
 ### Before (Original Implementation)
 
-- 6 override fields directly on MediaDescribe node
-- MediaDescribe UI very crowded
-- Each MediaDescribe node needed individual override values
+-   6 override fields directly on MediaDescribe node
+-   MediaDescribe UI very crowded
+-   Each MediaDescribe node needed individual override values
 
 ### After (Current Implementation)
 
-- Dedicated Media Describe - Overrides node
-- Clean MediaDescribe UI with single `overrides` connection
-- One overrides node can serve multiple MediaDescribe nodes
-- Better separation of concerns
+-   Dedicated Media Describe - Overrides node
+-   Clean MediaDescribe UI with single `overrides` connection
+-   One overrides node can serve multiple MediaDescribe nodes
+-   Better separation of concerns
 
 ## Troubleshooting
 
@@ -2343,10 +2361,10 @@ New Media Describe - Overrides node has 6 input fields:
 
 The change is **additive only**:
 
-- Old workflows continue to work without modification
-- MediaDescribe node still accepts all the same inputs
-- No functionality removed
-- All outputs remain the same
+-   Old workflows continue to work without modification
+-   MediaDescribe node still accepts all the same inputs
+-   No functionality removed
+-   All outputs remain the same
 
 ## Migration Steps
 
@@ -2370,8 +2388,8 @@ If you were planning to use overrides or want the cleaner UI:
 
 Fill in any override fields you want:
 
-- Leave empty to use Gemini's output
-- Enter text to override that paragraph
+-   Leave empty to use Gemini's output
+-   Enter text to override that paragraph
 
 #### Step 3: Connect to MediaDescribe
 
@@ -2413,24 +2431,24 @@ This approach is no longer needed, but still supported for backward compatibilit
 
 ### 1. Cleaner UI
 
-- MediaDescribe node has fewer inputs
-- Override controls only visible when needed
-- Easier to navigate the node
+-   MediaDescribe node has fewer inputs
+-   Override controls only visible when needed
+-   Easier to navigate the node
 
 ### 2. Reusability
 
-- One overrides node can be connected to multiple MediaDescribe nodes
-- Apply same overrides across batch processing
+-   One overrides node can be connected to multiple MediaDescribe nodes
+-   Apply same overrides across batch processing
 
 ### 3. Better Organization
 
-- Clear separation between media source and override configuration
-- Easier to understand workflow structure
+-   Clear separation between media source and override configuration
+-   Easier to understand workflow structure
 
 ### 4. Future-Proof
 
-- New override features will be added to the Overrides node
-- Keeps MediaDescribe node focused on core functionality
+-   New override features will be added to the Overrides node
+-   Keeps MediaDescribe node focused on core functionality
 
 ## Comparison
 
@@ -2518,11 +2536,11 @@ MediaDescribe:
 
 ## Summary
 
-- ✅ No breaking changes
-- ✅ Existing workflows continue to work
-- ✅ New approach is cleaner and more flexible
-- ✅ Optional migration - update when convenient
-- ✅ All functionality preserved
+-   ✅ No breaking changes
+-   ✅ Existing workflows continue to work
+-   ✅ New approach is cleaner and more flexible
+-   ✅ Optional migration - update when convenient
+-   ✅ All functionality preserved
 
 ---
 
@@ -2568,14 +2586,14 @@ Simplified the MediaDescribe node by removing redundant output sockets and keepi
 
 ### Rationale
 
-- **`description`** - Removed (redundant: available in `all_media_describe_data` JSON)
-- **`media_info`** - Removed (redundant: available in `all_media_describe_data` JSON)
-- **`gemini_status`** - Removed (not commonly used in workflows)
-- **`processed_media_path`** - **KEPT** (essential for tracking processed media)
-- **`final_string`** - **KEPT** (primary output for prompt generation)
-- **`all_media_describe_data`** - **KEPT** (contains all data including removed fields)
-- **`height`** - **KEPT** (commonly used for workflow logic)
-- **`width`** - **KEPT** (commonly used for workflow logic)
+-   **`description`** - Removed (redundant: available in `all_media_describe_data` JSON)
+-   **`media_info`** - Removed (redundant: available in `all_media_describe_data` JSON)
+-   **`gemini_status`** - Removed (not commonly used in workflows)
+-   **`processed_media_path`** - **KEPT** (essential for tracking processed media)
+-   **`final_string`** - **KEPT** (primary output for prompt generation)
+-   **`all_media_describe_data`** - **KEPT** (contains all data including removed fields)
+-   **`height`** - **KEPT** (commonly used for workflow logic)
+-   **`width`** - **KEPT** (commonly used for workflow logic)
 
 ### Data Availability
 
@@ -2743,37 +2761,37 @@ if (Array.isArray(message) && message.length >= 3) {
 
 ### ✅ Cleaner UI
 
-- 3 fewer output sockets on the node
-- Less visual clutter
-- Easier to identify important outputs
+-   3 fewer output sockets on the node
+-   Less visual clutter
+-   Easier to identify important outputs
 
 ### ✅ Simplified Workflows
 
-- Focus on the most commonly used outputs
-- Reduce connection complexity
-- Easier for new users to understand
+-   Focus on the most commonly used outputs
+-   Reduce connection complexity
+-   Easier for new users to understand
 
 ### ✅ No Data Loss
 
-- All data still available in `all_media_describe_data`
-- Can parse JSON to access removed fields
-- Backward compatible for data access
+-   All data still available in `all_media_describe_data`
+-   Can parse JSON to access removed fields
+-   Backward compatible for data access
 
 ### ✅ Better Organization
 
-- Overview widget for quick reference
-- Prompt Breakdown node for detailed viewing
-- Essential outputs as sockets
+-   Overview widget for quick reference
+-   Prompt Breakdown node for detailed viewing
+-   Essential outputs as sockets
 
 ## Testing Checklist
 
-- [x] Python code updated (RETURN_TYPES, RETURN_NAMES)
-- [x] All 4 return statements updated
-- [x] JavaScript dimension extraction updated (index 3, 4)
-- [x] JavaScript all_media_describe_data extraction updated (index 2)
-- [x] No Python errors
-- [x] No JavaScript errors
-- [x] Output order correct: processed_media_path, final_string, all_media_describe_data, height, width
+-   [x] Python code updated (RETURN_TYPES, RETURN_NAMES)
+-   [x] All 4 return statements updated
+-   [x] JavaScript dimension extraction updated (index 3, 4)
+-   [x] JavaScript all_media_describe_data extraction updated (index 2)
+-   [x] No Python errors
+-   [x] No JavaScript errors
+-   [x] Output order correct: processed_media_path, final_string, all_media_describe_data, height, width
 
 ## Comparison
 
@@ -2813,16 +2831,19 @@ Removed the **"📋 Overview"** widget from the MediaDescribe node as it was red
 ### Why Remove?
 
 1. **Redundant Functionality**
+
     - Overview widget showed compact paragraph summary
     - Prompt Breakdown node shows detailed paragraph display
     - Same data displayed in two places
 
 2. **Better Separation of Concerns**
+
     - MediaDescribe: Focus on analysis and outputs
     - Prompt Breakdown: Focus on detailed paragraph display
     - Control Panel: Focus on aggregated workflow data
 
 3. **Cleaner Node UI**
+
     - Less visual clutter in MediaDescribe node
     - Users can choose when to add Prompt Breakdown for detailed view
     - Reduces node height and complexity
@@ -2849,7 +2870,7 @@ this.paragraphControlPanel = this.addWidget(
     () => {},
     {
         multiline: true,
-    },
+    }
 );
 this.paragraphControlPanel.serialize = false;
 
@@ -2986,8 +3007,8 @@ if (allDataJson) {
 
 **Old Workflow**:
 
-- MediaDescribe node had built-in Overview widget
-- Paragraph summary visible directly in node
+-   MediaDescribe node had built-in Overview widget
+-   Paragraph summary visible directly in node
 
 **New Workflow**:
 
@@ -2997,10 +3018,10 @@ if (allDataJson) {
 
 **Benefits of New Approach**:
 
-- ✅ Optional: Only add Prompt Breakdown when needed
-- ✅ More detailed: Full paragraph text with formatting
-- ✅ Cleaner: MediaDescribe node is more compact
-- ✅ Flexible: Can add multiple Prompt Breakdown nodes if desired
+-   ✅ Optional: Only add Prompt Breakdown when needed
+-   ✅ More detailed: Full paragraph text with formatting
+-   ✅ Cleaner: MediaDescribe node is more compact
+-   ✅ Flexible: Can add multiple Prompt Breakdown nodes if desired
 
 ## Node Comparison
 
@@ -3016,57 +3037,57 @@ if (allDataJson) {
 
 ### ✅ Cleaner MediaDescribe Node
 
-- Smaller, more focused UI
-- Easier to navigate
-- Less scrolling required
+-   Smaller, more focused UI
+-   Easier to navigate
+-   Less scrolling required
 
 ### ✅ Better Performance
 
-- No widget rendering overhead in MediaDescribe
-- Less DOM manipulation
-- Faster node creation
+-   No widget rendering overhead in MediaDescribe
+-   Less DOM manipulation
+-   Faster node creation
 
 ### ✅ Improved Flexibility
 
-- Users choose when to view paragraphs
-- Can skip Prompt Breakdown if not needed
-- Optional detailed display
+-   Users choose when to view paragraphs
+-   Can skip Prompt Breakdown if not needed
+-   Optional detailed display
 
 ### ✅ Clear Separation of Concerns
 
-- MediaDescribe: Analysis engine
-- Prompt Breakdown: Display tool
-- Each node has single responsibility
+-   MediaDescribe: Analysis engine
+-   Prompt Breakdown: Display tool
+-   Each node has single responsibility
 
 ## Testing Checklist
 
-- [x] JavaScript syntax valid (no errors)
-- [x] Overview widget code completely removed
-- [x] updateParagraphsDisplay method removed
-- [x] updateDimensionsDisplay method removed
-- [x] Method call in onExecuted removed
-- [x] Comments updated to reflect new approach
-- [x] No references to paragraphControlPanel remain
+-   [x] JavaScript syntax valid (no errors)
+-   [x] Overview widget code completely removed
+-   [x] updateParagraphsDisplay method removed
+-   [x] updateDimensionsDisplay method removed
+-   [x] Method call in onExecuted removed
+-   [x] Comments updated to reflect new approach
+-   [x] No references to paragraphControlPanel remain
 
 ## Impact Assessment
 
 ### Breaking Changes
 
-- ❌ None: Overview widget was never exposed as output
-- ✅ Existing workflows continue to work
-- ✅ Data still available via all_media_describe_data
+-   ❌ None: Overview widget was never exposed as output
+-   ✅ Existing workflows continue to work
+-   ✅ Data still available via all_media_describe_data
 
 ### Visual Changes
 
-- Users will no longer see Overview widget in MediaDescribe node
-- Need to add Prompt Breakdown node for paragraph viewing
-- Overall cleaner, more professional UI
+-   Users will no longer see Overview widget in MediaDescribe node
+-   Need to add Prompt Breakdown node for paragraph viewing
+-   Overall cleaner, more professional UI
 
 ### Functional Changes
 
-- No functional changes to data processing
-- No changes to outputs or inputs
-- Only display method changed (moved to separate node)
+-   No functional changes to data processing
+-   No changes to outputs or inputs
+-   Only display method changed (moved to separate node)
 
 ## Recommended Usage
 
@@ -3076,8 +3097,8 @@ if (allDataJson) {
 [MediaDescribe] → final_string → [Your Prompt Consumer]
 ```
 
-- Just use the final_string output
-- No need for paragraph breakdown
+-   Just use the final_string output
+-   No need for paragraph breakdown
 
 ### For Detailed Analysis
 
@@ -3086,8 +3107,8 @@ if (allDataJson) {
                  └→ all_media_describe_data → [Prompt Breakdown]
 ```
 
-- View detailed paragraph breakdown when needed
-- Full control over when/where to display
+-   View detailed paragraph breakdown when needed
+-   Full control over when/where to display
 
 ### For Complex Workflows
 
@@ -3098,8 +3119,8 @@ if (allDataJson) {
                  └→ width → [Logic Node]
 ```
 
-- Multiple outputs for different purposes
-- Prompt Breakdown as optional analysis tool
+-   Multiple outputs for different purposes
+-   Prompt Breakdown as optional analysis tool
 
 ---
 
@@ -3157,12 +3178,12 @@ The MediaDescribe node returns:
 
 Individual paragraphs are displayed in the **📋 Paragraph Outputs** control panel widget on the MediaDescribe node:
 
-- 🎯 **Subject** - Subject/main focus paragraph (with override applied)
-- 🎬 **Cinematic** - Cinematic aesthetic control paragraph (with override applied)
-- 🎨 **Style/Tone** - Stylization & tone paragraph (with override applied)
-- 👔 **Clothing** - Clothing details paragraph (with override applied)
-- 🏞️ **Scene** - Scene description (video only, with override applied)
-- 🎭 **Movement** - Movement/action description (video only, with override applied)
+-   🎯 **Subject** - Subject/main focus paragraph (with override applied)
+-   🎬 **Cinematic** - Cinematic aesthetic control paragraph (with override applied)
+-   🎨 **Style/Tone** - Stylization & tone paragraph (with override applied)
+-   👔 **Clothing** - Clothing details paragraph (with override applied)
+-   🏞️ **Scene** - Scene description (video only, with override applied)
+-   🎭 **Movement** - Movement/action description (video only, with override applied)
 
 > **Note**: The control panel provides a clean, organized view of all paragraph outputs without cluttering the node with multiple output sockets.
 
@@ -3254,13 +3275,13 @@ Use individual paragraph outputs to create a workflow where you:
 
 **Setup:**
 
-- Fill all override fields with your custom text
-- Gemini still runs (for caching/consistency), but its output is completely replaced
+-   Fill all override fields with your custom text
+-   Gemini still runs (for caching/consistency), but its output is completely replaced
 
 **Result:**
 
-- `description` = Your custom paragraphs combined
-- Individual outputs (`subject`, `cinematic_aesthetic`, etc.) = Your override text
+-   `description` = Your custom paragraphs combined
+-   Individual outputs (`subject`, `cinematic_aesthetic`, etc.) = Your override text
 
 ### Example 2: Partial Override (Mix Gemini + Custom)
 
@@ -3273,11 +3294,11 @@ override_subject = "A man with short cropped hair, sitting casually with crossed
 
 **Result:**
 
-- `subject` = Your custom subject text
-- `cinematic_aesthetic` = Gemini-generated
-- `stylization_tone` = Gemini-generated
-- `clothing` = Gemini-generated (if enabled)
-- `description` = All paragraphs combined (custom subject + Gemini for rest)
+-   `subject` = Your custom subject text
+-   `cinematic_aesthetic` = Gemini-generated
+-   `stylization_tone` = Gemini-generated
+-   `clothing` = Gemini-generated (if enabled)
+-   `description` = All paragraphs combined (custom subject + Gemini for rest)
 
 ### Example 3: Using Individual Outputs
 
@@ -3367,10 +3388,10 @@ The aggregated JSON output now includes individual paragraphs:
 
 ✅ **Fully Backward Compatible**
 
-- All override fields are optional with default empty strings
-- Existing workflows continue to work without changes
-- If no overrides are provided, behavior is identical to previous version
-- New outputs are additive (existing output indices unchanged)
+-   All override fields are optional with default empty strings
+-   Existing workflows continue to work without changes
+-   If no overrides are provided, behavior is identical to previous version
+-   New outputs are additive (existing output indices unchanged)
 
 ## Benefits
 
@@ -3396,11 +3417,11 @@ Create templates with pre-filled paragraphs and only let Gemini fill in specific
 
 ## Notes
 
-- **Order Matters**: Paragraphs are parsed in the order Gemini generates them (based on the system prompt structure)
-- **Empty Paragraphs**: If Gemini doesn't generate a paragraph (e.g., clothing disabled), that output will be empty unless overridden
-- **Video vs Image**: Video has 6 paragraphs total; images typically have 3-4 depending on settings
-- **Caching**: Overrides are applied AFTER cache lookup, so overriding doesn't affect cache hits
-- **Final Description**: The `description` output always reflects the final combined text with all overrides applied
+-   **Order Matters**: Paragraphs are parsed in the order Gemini generates them (based on the system prompt structure)
+-   **Empty Paragraphs**: If Gemini doesn't generate a paragraph (e.g., clothing disabled), that output will be empty unless overridden
+-   **Video vs Image**: Video has 6 paragraphs total; images typically have 3-4 depending on settings
+-   **Caching**: Overrides are applied AFTER cache lookup, so overriding doesn't affect cache hits
+-   **Final Description**: The `description` output always reflects the final combined text with all overrides applied
 
 ---
 
@@ -3424,10 +3445,10 @@ Added **system_prompt** and **user_prompt** to the `all_media_describe_data` JSO
 
 Users need visibility into the exact prompts sent to Gemini API to:
 
-- Debug and understand AI responses
-- Verify prompt engineering is working correctly
-- Tune and optimize prompts for better results
-- Reproduce results with specific prompt configurations
+-   Debug and understand AI responses
+-   Verify prompt engineering is working correctly
+-   Tune and optimize prompts for better results
+-   Reproduce results with specific prompt configurations
 
 ## Implementation
 
@@ -3461,8 +3482,8 @@ all_data = json.dumps({
 
 **Updated in 2 locations**:
 
-- Line ~986-1002 (Image processing with API call)
-- Line ~1072-1088 (Image processing from uploaded file)
+-   Line ~986-1002 (Image processing with API call)
+-   Line ~1072-1088 (Image processing from uploaded file)
 
 #### 2. Image Processing (Cached Result)
 
@@ -3492,7 +3513,7 @@ all_data = json.dumps({
 
 **Updated in 1 location**:
 
-- Line ~1447-1463 (Video processing with API call)
+-   Line ~1447-1463 (Video processing with API call)
 
 #### 4. Video Processing (Cached Result)
 
@@ -3508,7 +3529,7 @@ all_data = json.dumps({
 
 **Updated in 1 location**:
 
-- Line ~1361-1377 (Video processing from cache)
+-   Line ~1361-1377 (Video processing from cache)
 
 ### JavaScript Changes
 
@@ -3540,7 +3561,7 @@ for (const field of leftFields) {
 
 **Updated in 1 location**:
 
-- Line ~450-480 (Control Panel data display logic)
+-   Line ~450-480 (Control Panel data display logic)
 
 ## Control Panel Display
 
@@ -3673,33 +3694,33 @@ You are an expert assistant specialized in analyzing and verbalizing input video
 
 ### ✅ Full Transparency
 
-- See exactly what's sent to Gemini API
-- No hidden prompt engineering
-- Complete visibility into AI interaction
+-   See exactly what's sent to Gemini API
+-   No hidden prompt engineering
+-   Complete visibility into AI interaction
 
 ### ✅ Better Debugging
 
-- Quickly identify prompt issues
-- Understand why AI returns specific results
-- Track prompt changes over time
+-   Quickly identify prompt issues
+-   Understand why AI returns specific results
+-   Track prompt changes over time
 
 ### ✅ Prompt Optimization
 
-- Fine-tune system prompts
-- Test different instruction patterns
-- Improve AI output quality
+-   Fine-tune system prompts
+-   Test different instruction patterns
+-   Improve AI output quality
 
 ### ✅ Reproducibility
 
-- Save exact prompts for documentation
-- Share prompt configurations with team
-- Maintain consistent results
+-   Save exact prompts for documentation
+-   Share prompt configurations with team
+-   Maintain consistent results
 
 ### ✅ Educational Value
 
-- Learn effective prompt engineering
-- Understand AI instruction patterns
-- See how different options affect prompts
+-   Learn effective prompt engineering
+-   Understand AI instruction patterns
+-   See how different options affect prompts
 
 ## Technical Details
 
@@ -3744,10 +3765,10 @@ You are an expert assistant specialized in analyzing and verbalizing input video
 
 Prompts are dynamically built based on:
 
-- **Model Type**: Wan 2.2, ImageEdit, Video
-- **Options**: describe_clothing, describe_bokeh, etc.
-- **Paragraph Count**: Number of structured paragraphs
-- **Critical Notes**: Color changes, prohibited attributes
+-   **Model Type**: Wan 2.2, ImageEdit, Video
+-   **Options**: describe_clothing, describe_bokeh, etc.
+-   **Paragraph Count**: Number of structured paragraphs
+-   **Critical Notes**: Color changes, prohibited attributes
 
 ### Example System Prompt (Wan 2.2)
 
@@ -3770,15 +3791,15 @@ Define the visual and technical qualities...
 
 ## Testing Checklist
 
-- [x] System prompt added to all_media_describe_data (4 locations)
-- [x] User prompt added to all_media_describe_data (4 locations)
-- [x] Cache scenario handles prompts correctly
-- [x] Control Panel displays prompts under Gemini Status
-- [x] Prompts formatted with emoji labels (📝 📬)
-- [x] No Python errors
-- [x] No JavaScript errors
-- [x] JSON structure validated
-- [x] Display logic works correctly
+-   [x] System prompt added to all_media_describe_data (4 locations)
+-   [x] User prompt added to all_media_describe_data (4 locations)
+-   [x] Cache scenario handles prompts correctly
+-   [x] Control Panel displays prompts under Gemini Status
+-   [x] Prompts formatted with emoji labels (📝 📬)
+-   [x] No Python errors
+-   [x] No JavaScript errors
+-   [x] JSON structure validated
+-   [x] Display logic works correctly
 
 ## Known Limitations
 
@@ -3803,15 +3824,15 @@ System prompts can be very long (1000+ characters). The Control Panel displays t
 
 ### ✅ No Breaking Changes
 
-- Existing workflows continue to work
-- New fields are additive only
-- Control Panel gracefully handles missing prompts (shows "N/A")
+-   Existing workflows continue to work
+-   New fields are additive only
+-   Control Panel gracefully handles missing prompts (shows "N/A")
 
 ### ✅ Optional Display
 
-- Prompts only display if available in JSON
-- Falls back gracefully for old data
-- No errors if fields missing
+-   Prompts only display if available in JSON
+-   Falls back gracefully for old data
+-   No errors if fields missing
 
 ---
 
@@ -3851,7 +3872,7 @@ The JavaScript `onExecuted` handler was looking for data in widgets, but with `f
 ```javascript
 // BEFORE (Incorrect)
 const dataWidget = this.widgets?.find(
-    (w) => w.name === 'all_media_describe_data',
+    (w) => w.name === 'all_media_describe_data'
 );
 // ❌ forceInput fields don't create widgets!
 ```
@@ -3898,7 +3919,7 @@ nodeType.prototype.onExecuted = function (message) {
     debugLog('[PromptBreakdown] Message:', message);
     debugLog(
         '[PromptBreakdown] Message keys:',
-        message ? Object.keys(message) : 'null',
+        message ? Object.keys(message) : 'null'
     );
 
     // Check for data in the UI field (standard ComfyUI pattern for display nodes)
@@ -3909,7 +3930,7 @@ nodeType.prototype.onExecuted = function (message) {
 
         debugLog(
             '[PromptBreakdown] Found data in message.all_media_describe_data:',
-            jsonData?.substring(0, 200),
+            jsonData?.substring(0, 200)
         );
         this.displayBreakdown(jsonData);
         return result;
@@ -3917,12 +3938,12 @@ nodeType.prototype.onExecuted = function (message) {
 
     // Fallback: check widgets (for backward compatibility)
     const dataWidget = this.widgets?.find(
-        (w) => w.name === 'all_media_describe_data',
+        (w) => w.name === 'all_media_describe_data'
     );
     if (dataWidget && dataWidget.value) {
         debugLog(
             '[PromptBreakdown] Found widget data:',
-            dataWidget.value.substring(0, 200),
+            dataWidget.value.substring(0, 200)
         );
         this.displayBreakdown(dataWidget.value);
         return result;
@@ -3939,9 +3960,9 @@ nodeType.prototype.onExecuted = function (message) {
 
 For nodes that:
 
-- Have `OUTPUT_NODE = True` (display nodes)
-- Use `forceInput: True` for inputs
-- Need to pass data to frontend widgets
+-   Have `OUTPUT_NODE = True` (display nodes)
+-   Use `forceInput: True` for inputs
+-   Need to pass data to frontend widgets
 
 **Correct Pattern**:
 
@@ -4009,13 +4030,13 @@ return {
 
 ## Testing Checklist
 
-- [x] Python returns UI data correctly
-- [x] JavaScript reads from message parameter
-- [x] Array unwrapping works correctly
-- [x] Debug logging shows data flow
-- [x] Fallback to widgets for compatibility
-- [x] No Python errors
-- [x] No JavaScript errors
+-   [x] Python returns UI data correctly
+-   [x] JavaScript reads from message parameter
+-   [x] Array unwrapping works correctly
+-   [x] Debug logging shows data flow
+-   [x] Fallback to widgets for compatibility
+-   [x] No Python errors
+-   [x] No JavaScript errors
 
 ## Execution Flow
 
@@ -4081,27 +4102,27 @@ After the fix, you should see these debug messages in the browser console:
 
 ### ✅ Proper ComfyUI Pattern
 
-- Follows standard ComfyUI display node pattern
-- Uses official UI data passing mechanism
-- Compatible with ComfyUI's execution system
+-   Follows standard ComfyUI display node pattern
+-   Uses official UI data passing mechanism
+-   Compatible with ComfyUI's execution system
 
 ### ✅ Reliable Data Flow
 
-- Data properly passed from Python to JavaScript
-- No dependency on widget creation timing
-- Guaranteed to work when node executes
+-   Data properly passed from Python to JavaScript
+-   No dependency on widget creation timing
+-   Guaranteed to work when node executes
 
 ### ✅ Better Debugging
 
-- Enhanced logging shows data flow
-- Easy to track where data is/isn't
-- Clear error messages
+-   Enhanced logging shows data flow
+-   Easy to track where data is/isn't
+-   Clear error messages
 
 ### ✅ Future-Proof
 
-- Uses documented ComfyUI patterns
-- Less likely to break with ComfyUI updates
-- Easier for other developers to understand
+-   Uses documented ComfyUI patterns
+-   Less likely to break with ComfyUI updates
+-   Easier for other developers to understand
 
 ---
 
@@ -4126,17 +4147,17 @@ Updated the **Media Describe - Prompt Breakdown** node to display content using 
 
 ### Before: Text Field Widget
 
-- Used `addWidget("text", ...)` with multiline text field
-- Had read-only text input element
-- Required manual styling of `inputEl`
-- Had editable appearance (even though read-only)
+-   Used `addWidget("text", ...)` with multiline text field
+-   Had read-only text input element
+-   Required manual styling of `inputEl`
+-   Had editable appearance (even though read-only)
 
 ### After: DOM Widget
 
-- Uses `addDOMWidget(...)` with custom HTML element
-- Direct DOM manipulation for display
-- Cleaner, more control-panel-like appearance
-- No input field - pure display element
+-   Uses `addDOMWidget(...)` with custom HTML element
+-   Direct DOM manipulation for display
+-   Cleaner, more control-panel-like appearance
+-   No input field - pure display element
 
 ## Implementation Details
 
@@ -4165,7 +4186,7 @@ const widget = this.addDOMWidget(
     {
         serialize: false, // Don't store in workflow JSON
         hideOnZoom: false,
-    },
+    }
 );
 ```
 
@@ -4251,27 +4272,27 @@ nodeType.prototype.onResize = function (size) {
 
 ### ✅ Consistent UI
 
-- Matches Control Panel display style
-- Uses same DOM widget approach
-- Consistent theming and styling
+-   Matches Control Panel display style
+-   Uses same DOM widget approach
+-   Consistent theming and styling
 
 ### ✅ Better Performance
 
-- No input element overhead
-- Direct DOM manipulation
-- Cleaner rendering
+-   No input element overhead
+-   Direct DOM manipulation
+-   Cleaner rendering
 
 ### ✅ Improved UX
 
-- No confusing text field appearance
-- Pure display widget (no false editability)
-- Better visual hierarchy
+-   No confusing text field appearance
+-   Pure display widget (no false editability)
+-   Better visual hierarchy
 
 ### ✅ Cleaner Code
 
-- No need for `inputEl` checks and setTimeout workarounds
-- Simpler styling approach
-- More maintainable
+-   No need for `inputEl` checks and setTimeout workarounds
+-   Simpler styling approach
+-   More maintainable
 
 ## Display Format
 
@@ -4313,19 +4334,19 @@ The widget displays paragraphs in this format:
 
 ### Input
 
-- **all_media_describe_data** (STRING, forceInput)
-    - Connects to MediaDescribe's `all_media_describe_data` output
-    - Contains JSON with all paragraph data
+-   **all_media_describe_data** (STRING, forceInput)
+    -   Connects to MediaDescribe's `all_media_describe_data` output
+    -   Contains JSON with all paragraph data
 
 ### Output
 
-- None (display-only node)
+-   None (display-only node)
 
 ### Display
 
-- Shows formatted breakdown of all 6 paragraphs
-- Updates when execution completes
-- Preserves data across workflow saves (via connection)
+-   Shows formatted breakdown of all 6 paragraphs
+-   Updates when execution completes
+-   Preserves data across workflow saves (via connection)
 
 ## Comparison with Control Panel
 
@@ -4341,28 +4362,28 @@ The widget displays paragraphs in this format:
 
 ## Testing Checklist
 
-- [x] JavaScript syntax valid (no errors)
-- [x] DOM widget created correctly
-- [x] Resize handler implemented
-- [x] Display formatting correct (6 sections with dividers)
-- [x] Error handling for invalid JSON
-- [x] Canvas refresh on updates (`setDirtyCanvas`)
-- [x] No text field visible
-- [x] Consistent with Control Panel style
+-   [x] JavaScript syntax valid (no errors)
+-   [x] DOM widget created correctly
+-   [x] Resize handler implemented
+-   [x] Display formatting correct (6 sections with dividers)
+-   [x] Error handling for invalid JSON
+-   [x] Canvas refresh on updates (`setDirtyCanvas`)
+-   [x] No text field visible
+-   [x] Consistent with Control Panel style
 
 ## Migration Notes
 
 ### No Breaking Changes
 
-- Existing workflows continue to work
-- Same input/output structure
-- Only UI display method changed
+-   Existing workflows continue to work
+-   Same input/output structure
+-   Only UI display method changed
 
 ### Visual Changes
 
-- Users will see a display panel instead of a text field
-- No functional differences
-- Better visual consistency with Control Panel
+-   Users will see a display panel instead of a text field
+-   No functional differences
+-   Better visual consistency with Control Panel
 
 ---
 
@@ -4389,9 +4410,9 @@ Created a new dedicated display node called **Media Describe - Prompt Breakdown*
 
 **File**: `nodes/media_describe/prompt_breakdown.py`
 
-- **Type**: Display/Output node (no outputs, display only)
-- **Input**: `all_media_describe_data` (STRING, forceInput)
-- **Purpose**: Parse and display formatted paragraph breakdown
+-   **Type**: Display/Output node (no outputs, display only)
+-   **Input**: `all_media_describe_data` (STRING, forceInput)
+-   **Purpose**: Parse and display formatted paragraph breakdown
 
 ```python
 class MediaDescribePromptBreakdown:
@@ -4406,10 +4427,10 @@ class MediaDescribePromptBreakdown:
 
 Added complete widget implementation:
 
-- Custom multiline text widget: **📋 Prompt Breakdown**
-- Formatted display with section headers and dividers
-- Read-only styling (monospace, dark theme, 13px, 1.5 line height)
-- Auto-updates on execution
+-   Custom multiline text widget: **📋 Prompt Breakdown**
+-   Formatted display with section headers and dividers
+-   Read-only styling (monospace, dark theme, 13px, 1.5 line height)
+-   Auto-updates on execution
 
 **Display Format:**
 
@@ -4430,8 +4451,8 @@ Added complete widget implementation:
 
 Updated files:
 
-- `nodes/media_describe/__init__.py` - Added export
-- `nodes/nodes.py` - Added to NODE_CLASS_MAPPINGS and NODE_DISPLAY_NAME_MAPPINGS
+-   `nodes/media_describe/__init__.py` - Added export
+-   `nodes/nodes.py` - Added to NODE_CLASS_MAPPINGS and NODE_DISPLAY_NAME_MAPPINGS
 
 Display name: **"Media Describe - Prompt Breakdown"**
 
@@ -4439,8 +4460,8 @@ Display name: **"Media Describe - Prompt Breakdown"**
 
 Changed existing MediaDescribe control panel:
 
-- **Old**: 📋 Paragraph Outputs
-- **New**: 📋 Overview
+-   **Old**: 📋 Paragraph Outputs
+-   **New**: 📋 Overview
 
 This distinguishes it from the new detailed Prompt Breakdown node.
 
@@ -4448,8 +4469,8 @@ This distinguishes it from the new detailed Prompt Breakdown node.
 
 Created comprehensive documentation:
 
-- **New**: `PROMPT_BREAKDOWN_NODE.md` (detailed node documentation)
-- **Updated**: `README.md` (added Prompt Breakdown section)
+-   **New**: `PROMPT_BREAKDOWN_NODE.md` (detailed node documentation)
+-   **Updated**: `README.md` (added Prompt Breakdown section)
 
 ## Node Comparison
 
@@ -4504,34 +4525,34 @@ Created comprehensive documentation:
 
 ### ✅ Smart Formatting
 
-- Section headers with emoji labels
-- 50-character divider lines (====...)
-- Proper spacing between sections
-- Only displays non-empty paragraphs
+-   Section headers with emoji labels
+-   50-character divider lines (====...)
+-   Proper spacing between sections
+-   Only displays non-empty paragraphs
 
 ### ✅ Styled Display
 
-- Monospace font for clean alignment
-- Dark theme (#1e1e1e background)
-- Light text (#d4d4d4)
-- Larger font (13px vs 12px)
-- Enhanced line height (1.5)
-- Read-only to prevent edits
+-   Monospace font for clean alignment
+-   Dark theme (#1e1e1e background)
+-   Light text (#d4d4d4)
+-   Larger font (13px vs 12px)
+-   Enhanced line height (1.5)
+-   Read-only to prevent edits
 
 ### ✅ Robust Handling
 
-- Parses JSON input safely
-- Handles both string and object JSON
-- Graceful error handling
-- Shows clear error messages
-- Supports both image and video paragraphs
+-   Parses JSON input safely
+-   Handles both string and object JSON
+-   Graceful error handling
+-   Shows clear error messages
+-   Supports both image and video paragraphs
 
 ### ✅ Developer Experience
 
-- Debug logging for troubleshooting
-- Clear widget lifecycle management
-- Async styling application (handles timing issues)
-- Proper event handling
+-   Debug logging for troubleshooting
+-   Clear widget lifecycle management
+-   Async styling application (handles timing issues)
+-   Proper event handling
 
 ## Technical Implementation
 
@@ -4587,42 +4608,42 @@ onExecuted: function(message) {
 
 ## Testing Checklist
 
-- [x] Python node created with correct INPUT_TYPES
-- [x] Node registered in NODE_CLASS_MAPPINGS
-- [x] JavaScript widget added and styled
-- [x] Widget displays on node creation
-- [x] Data parsing works correctly
-- [x] Formatting displays properly (headers, dividers)
-- [x] Only shows non-empty paragraphs
-- [x] Error handling works
-- [x] Read-only protection applied
-- [x] Overview widget renamed successfully
-- [x] Documentation complete
-- [x] No Python errors
-- [x] No JavaScript errors
+-   [x] Python node created with correct INPUT_TYPES
+-   [x] Node registered in NODE_CLASS_MAPPINGS
+-   [x] JavaScript widget added and styled
+-   [x] Widget displays on node creation
+-   [x] Data parsing works correctly
+-   [x] Formatting displays properly (headers, dividers)
+-   [x] Only shows non-empty paragraphs
+-   [x] Error handling works
+-   [x] Read-only protection applied
+-   [x] Overview widget renamed successfully
+-   [x] Documentation complete
+-   [x] No Python errors
+-   [x] No JavaScript errors
 
 ## Benefits
 
 ### 🎯 Better User Experience
 
-- Dedicated node for detailed viewing
-- Professional formatted output
-- Easy to copy specific paragraphs
-- Clear visual hierarchy
+-   Dedicated node for detailed viewing
+-   Professional formatted output
+-   Easy to copy specific paragraphs
+-   Clear visual hierarchy
 
 ### 🎨 Improved Workflow
 
-- Separate display from analysis
-- Can duplicate for comparisons
-- Cleaner MediaDescribe node
-- Better organization
+-   Separate display from analysis
+-   Can duplicate for comparisons
+-   Cleaner MediaDescribe node
+-   Better organization
 
 ### 📊 Enhanced Functionality
 
-- Full paragraph breakdown visible
-- Section headers with context
-- Better readability
-- Supports all paragraph types
+-   Full paragraph breakdown visible
+-   Section headers with context
+-   Better readability
+-   Supports all paragraph types
 
 ## Use Cases
 
@@ -4656,10 +4677,10 @@ The **Media Describe - Prompt Breakdown** node is a dedicated display node that 
 
 This node provides a **clean, organized view** of the AI-generated description paragraphs without cluttering the MediaDescribe node with multiple output sockets. It's perfect for:
 
-- **Reviewing** the detailed breakdown of generated descriptions
-- **Copying** specific paragraphs for use elsewhere
-- **Understanding** what the AI generated for each category
-- **Quality checking** before using descriptions in your workflow
+-   **Reviewing** the detailed breakdown of generated descriptions
+-   **Copying** specific paragraphs for use elsewhere
+-   **Understanding** what the AI generated for each category
+-   **Quality checking** before using descriptions in your workflow
 
 ## Node Inputs
 
@@ -4739,28 +4760,28 @@ The node displays paragraphs with:
 
 ### ✅ Formatted Display
 
-- Professional divider lines between sections
-- Emoji labels for visual identification
-- Monospace font for clean reading
-- Dark theme styling
+-   Professional divider lines between sections
+-   Emoji labels for visual identification
+-   Monospace font for clean reading
+-   Dark theme styling
 
 ### ✅ Smart Filtering
 
-- Only shows paragraphs that have content
-- Skips empty/missing sections
-- Handles both image and video data gracefully
+-   Only shows paragraphs that have content
+-   Skips empty/missing sections
+-   Handles both image and video data gracefully
 
 ### ✅ Read-Only
 
-- Content is read-only (cannot be edited)
-- Prevents accidental modifications
-- Safe for reviewing generated content
+-   Content is read-only (cannot be edited)
+-   Prevents accidental modifications
+-   Safe for reviewing generated content
 
 ### ✅ Copy-Friendly
 
-- Easy to select and copy individual paragraphs
-- Formatted for readability
-- Line spacing optimized for clarity
+-   Easy to select and copy individual paragraphs
+-   Formatted for readability
+-   Line spacing optimized for clarity
 
 ## Widget Details
 
@@ -4798,10 +4819,10 @@ class MediaDescribePromptBreakdown:
 
 **File**: `web/js/swiss-army-knife.js`
 
-- Parses `all_media_describe_data` JSON
-- Formats each paragraph with section headers
-- Updates display on node execution
-- Handles errors gracefully
+-   Parses `all_media_describe_data` JSON
+-   Formats each paragraph with section headers
+-   Updates display on node execution
+-   Handles errors gracefully
 
 ## Comparison: Overview vs Prompt Breakdown
 
@@ -4865,9 +4886,9 @@ Review breakdowns to understand how the AI structures descriptions for different
 
 ## Related Nodes
 
-- **[MediaDescribe](README.md)** - Main analysis node
-- **[Media Describe - Overrides](MEDIA_DESCRIBE_OVERRIDES_NODE.md)** - Override paragraphs
-- **[Gemini Util - Options](gemini-prompts.md)** - Configure Gemini API
+-   **[MediaDescribe](README.md)** - Main analysis node
+-   **[Media Describe - Overrides](MEDIA_DESCRIBE_OVERRIDES_NODE.md)** - Override paragraphs
+-   **[Gemini Util - Options](gemini-prompts.md)** - Configure Gemini API
 
 ---
 
@@ -4889,9 +4910,9 @@ System and user prompts in the Control Panel were being truncated at 500 charact
 
 ### Symptoms
 
-- System prompt showing "... (truncated)" message
-- Only first 500 characters of prompts visible
-- Full prompt content not accessible in UI
+-   System prompt showing "... (truncated)" message
+-   Only first 500 characters of prompts visible
+-   Full prompt content not accessible in UI
 
 ### Root Cause
 
@@ -4936,7 +4957,7 @@ for (const field of leftFields) {
         }
 
         leftLines.push(
-            formatField(field.emoji, field.label, fieldValue, skipTruncate),
+            formatField(field.emoji, field.label, fieldValue, skipTruncate)
         );
     }
 }
@@ -4997,32 +5018,32 @@ Please analyze this video and provide a detailed description following the 6-par
 
 **Wan 2.2 Image Prompts**: ~1500-2000 characters
 
-- Detailed paragraph structure instructions
-- Decisiveness requirements
-- Multiple constraint layers
-- Critical notes and safeguards
+-   Detailed paragraph structure instructions
+-   Decisiveness requirements
+-   Multiple constraint layers
+-   Critical notes and safeguards
 
 **ImageEdit Prompts**: ~800-1200 characters
 
-- Qwen-Image-Edit specific instructions
-- Focus and composition requirements
-- Color change instructions
+-   Qwen-Image-Edit specific instructions
+-   Focus and composition requirements
+-   Color change instructions
 
 **Video Prompts**: ~1800-2500 characters
 
-- 6-paragraph structure for videos
-- Movement and scene descriptions
-- Temporal continuity requirements
+-   6-paragraph structure for videos
+-   Movement and scene descriptions
+-   Temporal continuity requirements
 
 ### Full Visibility Required
 
 Users need to see the **complete prompts** to:
 
-- ✅ Debug AI responses effectively
-- ✅ Understand full instruction set
-- ✅ Identify missing or incorrect instructions
-- ✅ Optimize prompt engineering
-- ✅ Reproduce results accurately
+-   ✅ Debug AI responses effectively
+-   ✅ Understand full instruction set
+-   ✅ Identify missing or incorrect instructions
+-   ✅ Optimize prompt engineering
+-   ✅ Reproduce results accurately
 
 ## Technical Details
 
@@ -5047,78 +5068,78 @@ const formatField = (emoji, label, value, skipTruncate = false) => {
 
 **Truncated** (default):
 
-- `media_info` - Usually short
-- `processed_media_path` - Usually short
-- `height` - Always short
-- `width` - Always short
+-   `media_info` - Usually short
+-   `processed_media_path` - Usually short
+-   `height` - Always short
+-   `width` - Always short
 
 **Not Truncated** (skipTruncate = true):
 
-- `final_string` (right column) - Full description needed
-- `gemini_status` with prompts - Full prompts needed
+-   `final_string` (right column) - Full description needed
+-   `gemini_status` with prompts - Full prompts needed
 
 ### Scrolling Behavior
 
 Long prompts are fully displayed in the Control Panel's left column, which has:
 
-- `overflow: auto` - Enables scrolling
-- `maxHeight: 100%` - Stays within node bounds
-- `whiteSpace: pre-wrap` - Preserves formatting
+-   `overflow: auto` - Enables scrolling
+-   `maxHeight: 100%` - Stays within node bounds
+-   `whiteSpace: pre-wrap` - Preserves formatting
 
 Users can scroll within the left panel to read the complete prompts.
 
 ## Testing Checklist
 
-- [x] JavaScript syntax valid (no errors)
-- [x] skipTruncate flag properly set for gemini_status with prompts
-- [x] Full system prompt displays (1500+ chars)
-- [x] Full user prompt displays (100+ chars)
-- [x] No truncation message appears
-- [x] Scrolling works in left panel
-- [x] Other fields still truncate correctly (if needed)
+-   [x] JavaScript syntax valid (no errors)
+-   [x] skipTruncate flag properly set for gemini_status with prompts
+-   [x] Full system prompt displays (1500+ chars)
+-   [x] Full user prompt displays (100+ chars)
+-   [x] No truncation message appears
+-   [x] Scrolling works in left panel
+-   [x] Other fields still truncate correctly (if needed)
 
 ## Benefits
 
 ### ✅ Complete Transparency
 
-- See entire prompt sent to Gemini
-- No information loss
-- Full debugging capability
+-   See entire prompt sent to Gemini
+-   No information loss
+-   Full debugging capability
 
 ### ✅ Better UX
 
-- No frustrating truncation
-- Scroll to read full content
-- Professional presentation
+-   No frustrating truncation
+-   Scroll to read full content
+-   Professional presentation
 
 ### ✅ Accurate Documentation
 
-- Capture complete prompt configurations
-- Share full prompts with team
-- Maintain accurate records
+-   Capture complete prompt configurations
+-   Share full prompts with team
+-   Maintain accurate records
 
 ## Edge Cases Handled
 
 ### Very Long Prompts (3000+ chars)
 
-- Full content displayed
-- Scrollable in Control Panel
-- No performance issues
+-   Full content displayed
+-   Scrollable in Control Panel
+-   No performance issues
 
 ### Cache Hits
 
-- Placeholder text: "(Cached result - prompts not available)"
-- Always short, no truncation needed
+-   Placeholder text: "(Cached result - prompts not available)"
+-   Always short, no truncation needed
 
 ### Missing Prompts
 
-- Shows "N/A" for missing prompts
-- Short text, no truncation
+-   Shows "N/A" for missing prompts
+-   Short text, no truncation
 
 ### Combined Length
 
-- gemini_status (~200 chars) + system_prompt (~2000 chars) + user_prompt (~100 chars) = ~2300 chars total
-- All displayed without truncation
+-   gemini_status (~200 chars) + system_prompt (~2000 chars) + user_prompt (~100 chars) = ~2300 chars total
+-   All displayed without truncation
 
 ---
 
@@ -5135,34 +5156,34 @@ Users can scroll within the left panel to read the complete prompts.
 
 ### Required Inputs
 
-- **media_source**: Upload Media | Randomize Media from Path | Reddit Post | Randomize from Subreddit
-- **media_type**: image | video
-- **seed**: Integer (for randomization)
+-   **media_source**: Upload Media | Randomize Media from Path | Reddit Post | Randomize from Subreddit
+-   **media_type**: image | video
+-   **seed**: Integer (for randomization)
 
 ### Optional Inputs
 
 #### Configuration
 
-- **gemini_options**: Configuration from Gemini Util - Options node
+-   **gemini_options**: Configuration from Gemini Util - Options node
 
 #### Media Sources
 
-- **media_path**: Directory path for random selection
-- **uploaded_image_file**: Path to uploaded image
-- **uploaded_video_file**: Path to uploaded video
-- **frame_rate**: Video frame rate (1.0-60.0)
-- **max_duration**: Max video duration in seconds
-- **reddit_url**: Reddit post URL
-- **subreddit_url**: Subreddit URL or name
+-   **media_path**: Directory path for random selection
+-   **uploaded_image_file**: Path to uploaded image
+-   **uploaded_video_file**: Path to uploaded video
+-   **frame_rate**: Video frame rate (1.0-60.0)
+-   **max_duration**: Max video duration in seconds
+-   **reddit_url**: Reddit post URL
+-   **subreddit_url**: Subreddit URL or name
 
 #### **NEW: Paragraph Overrides** ⭐
 
-- **override_subject**: 📝 Custom subject paragraph (multiline text)
-- **override_cinematic_aesthetic**: 🎬 Custom cinematic aesthetic paragraph (multiline text)
-- **override_stylization_tone**: 🎨 Custom stylization & tone paragraph (multiline text)
-- **override_clothing**: 👔 Custom clothing paragraph (multiline text)
-- **override_scene**: 🏞️ Custom scene paragraph (multiline text, video only)
-- **override_movement**: 💃 Custom movement paragraph (multiline text, video only)
+-   **override_subject**: 📝 Custom subject paragraph (multiline text)
+-   **override_cinematic_aesthetic**: 🎬 Custom cinematic aesthetic paragraph (multiline text)
+-   **override_stylization_tone**: 🎨 Custom stylization & tone paragraph (multiline text)
+-   **override_clothing**: 👔 Custom clothing paragraph (multiline text)
+-   **override_scene**: 🏞️ Custom scene paragraph (multiline text, video only)
+-   **override_movement**: 💃 Custom movement paragraph (multiline text, video only)
 
 ## Node Outputs
 
@@ -5630,8 +5651,23 @@ Describe the visible environment clearly and vividly.
 
 ```
 MOVEMENT ({Ordinal} Paragraph)
-In this paragraph, describe body-part–specific movement and how it aligns with musical rhythm and beat structure. Begin with an overall summary: e.g., 'The subject initiates with a hip sway on the downbeat…'. Then narrate movement chronologically, using precise action verbs and transitions like 'then', 'as', and 'after', referencing the timeline (e.g., early/mid/late beat or second). Specify which body parts move, how they articulate (e.g., 'the right arm lifts upward, then sweeps outward; the torso tilts as the knees bend'), describe footwork, weight shifts, and alignment with music beats. Also include any camera movement (e.g., 'camera pans to follow the torso shift'). Avoid general labels—focus on locomotor and non‑locomotor gestures, repetition, rhythm, and choreography phrasing. Always include any buttock or breast movements that you see
+Describe body-part–specific movement in 250 words or less, detailing what body parts are visible and what actions they are performing. Focus on physical actions and positions. Use only generic terms like 'woman' or 'man' to describe people. Begin with an overall summary tied to musical rhythm and beat structure (e.g., 'The subject initiates with a hip sway on the downbeat…'). Then narrate movement chronologically using precise action verbs and transitions like 'then', 'as', 'after', and reference timeline markers (early/mid/late beat or second).
+
+Specify which body parts move and how they articulate (e.g., 'the right arm lifts upward, then sweeps outward; the torso tilts as the knees bend'), including footwork, weight shifts, and alignment with beats. Describe what body parts are doing to themselves or to another person. If sexual activity is present, describe the specific act being performed, focusing exclusively on physical actions and positions - mention where body parts are positioned in relation to each other (e.g., penis in relation to vagina, anal, mouth, etc.). If a white substance shoots from a penis, describe it as the man ejaculating semen.
+
+Include any camera movement (e.g., 'camera pans to follow the torso shift'). Avoid general labels—focus on locomotor and non-locomotor gestures, repetition, rhythm, and choreography phrasing. Always include any buttock or breast movements visible. Do not describe physical appearance, clothing, setting, or background in this paragraph. Do not mention watermarks.
 ```
+
+**Key Features:**
+
+-   **Unified SFW/NSFW handling**: Single prompt handles both safe-for-work dance/choreography and explicit sexual content
+-   **Body part specificity**: Requires detailed description of which body parts are visible and what they're doing
+-   **Interpersonal actions**: Describes what body parts are doing to themselves or to another person
+-   **Explicit content support**: When sexual activity is present, describes specific acts and anatomical positioning
+-   **Generic terminology**: Uses only 'woman' or 'man' to describe people (no other identifying characteristics)
+-   **Musical alignment**: Maintains choreography context with beat structure and rhythm
+-   **Camera awareness**: Includes camera movement descriptions
+-   **Scope limitation**: Explicitly excludes appearance, clothing, setting, and background from this paragraph
 
 ### Cinematic Aesthetic Module (Variable Paragraph Number)
 
@@ -5709,8 +5745,7 @@ The system uses dynamic paragraph numbering based on enabled options:
 5. **Cinematic Aesthetic Control** (always included)
 6. **Stylization & Tone** (always included)
 
-The paragraph numbers and ordinal names (First, Second, Third, etc.) are automatically calculated and inserted based on which modules are enabled.
----
+## The paragraph numbers and ordinal names (First, Second, Third, etc.) are automatically calculated and inserted based on which modules are enabled.
 
 # LLM Options Support
 
@@ -5725,8 +5760,8 @@ The `MediaDescribe` node has been enhanced to support multiple LLM providers thr
 
 ### Input Parameter Renamed
 
-- **Old**: `gemini_options` (GEMINI_OPTIONS type)
-- **New**: `llm_options` (accepts both GEMINI_OPTIONS and LLM_STUDIO_OPTIONS types)
+-   **Old**: `gemini_options` (GEMINI_OPTIONS type)
+-   **New**: `llm_options` (accepts both GEMINI_OPTIONS and LLM_STUDIO_OPTIONS types)
 
 ### Backward Compatibility
 
@@ -5739,6 +5774,7 @@ The `MediaDescribe` node has been enhanced to support multiple LLM providers thr
 **Use Case**: High-quality structured output for text-to-image workflows
 
 **Setup**:
+
 1. Add "Gemini Util - Options" node
 2. Configure API key and model
 3. Connect to MediaDescribe `llm_options` input
@@ -5752,6 +5788,7 @@ The `MediaDescribe` node has been enhanced to support multiple LLM providers thr
 **Use Case**: Privacy-focused local processing with vision models
 
 **Setup**:
+
 1. Start LM Studio with a vision model (e.g., Qwen3-VL)
 2. Add "LLM Studio - Options" node
 3. Configure base URL and model name
@@ -5778,8 +5815,9 @@ else:
 ```
 
 **Provider Identifiers**:
-- Gemini Options: No explicit provider field (defaults to "gemini")
-- LLM Studio Options: `"provider": "llm_studio"`
+
+-   Gemini Options: No explicit provider field (defaults to "gemini")
+-   LLM Studio Options: `"provider": "llm_studio"`
 
 ## LLM Studio Processing Flow
 
@@ -5807,12 +5845,12 @@ else:
 
 ```json
 {
-  "subject": "A woman with wavy brown hair in a relaxed pose",
-  "clothing": "Wearing a fitted navy blue blazer and white blouse",
-  "movement": "Standing still, poised with confident posture",
-  "scene": "Modern office setting with glass windows and natural light",
-  "cinematic_aesthetic": "Soft directional lighting from window, medium shot, shallow depth of field",
-  "stylization_tone": "Professional corporate portrait, clean and polished aesthetic"
+    "subject": "A woman with wavy brown hair in a relaxed pose",
+    "clothing": "Wearing a fitted navy blue blazer and white blouse",
+    "movement": "Standing still, poised with confident posture",
+    "scene": "Modern office setting with glass windows and natural light",
+    "cinematic_aesthetic": "Soft directional lighting from window, medium shot, shallow depth of field",
+    "stylization_tone": "Professional corporate portrait, clean and polished aesthetic"
 }
 ```
 
@@ -5820,37 +5858,38 @@ else:
 
 ```json
 {
-  "subject": "The image shows a woman in business attire standing in a modern office. She has wavy brown hair and is wearing a navy blue blazer. The lighting comes from large windows creating a professional atmosphere. The composition uses a medium shot with natural depth of field.",
-  "clothing": "",
-  "movement": "",
-  "scene": "",
-  "cinematic_aesthetic": "",
-  "stylization_tone": ""
+    "subject": "The image shows a woman in business attire standing in a modern office. She has wavy brown hair and is wearing a navy blue blazer. The lighting comes from large windows creating a professional atmosphere. The composition uses a medium shot with natural depth of field.",
+    "clothing": "",
+    "movement": "",
+    "scene": "",
+    "cinematic_aesthetic": "",
+    "stylization_tone": ""
 }
 ```
 
 **Key Differences**:
-- **Gemini**: Detailed structured fields, optimized for text-to-image prompts
-- **LLM Studio**: Single cohesive caption, better for general description
+
+-   **Gemini**: Detailed structured fields, optimized for text-to-image prompts
+-   **LLM Studio**: Single cohesive caption, better for general description
 
 ## Use Case Recommendations
 
 ### Choose Gemini When:
 
-- ✅ Need structured output for text-to-image workflows
-- ✅ Want detailed categorization (subject, clothing, scene, etc.)
-- ✅ Require high-quality API-powered analysis
-- ✅ Working with image editing models (FLUX Redux, Qwen Image Edit)
-- ✅ Need consistent, production-quality results
+-   ✅ Need structured output for text-to-image workflows
+-   ✅ Want detailed categorization (subject, clothing, scene, etc.)
+-   ✅ Require high-quality API-powered analysis
+-   ✅ Working with image editing models (FLUX Redux, Qwen Image Edit)
+-   ✅ Need consistent, production-quality results
 
 ### Choose LLM Studio When:
 
-- ✅ Privacy is a concern (local processing)
-- ✅ Want to avoid API costs
-- ✅ Have GPU for local inference
-- ✅ Need general narrative descriptions
-- ✅ Want full control over the vision model
-- ✅ Working with custom/fine-tuned models
+-   ✅ Privacy is a concern (local processing)
+-   ✅ Want to avoid API costs
+-   ✅ Have GPU for local inference
+-   ✅ Need general narrative descriptions
+-   ✅ Want full control over the vision model
+-   ✅ Working with custom/fine-tuned models
 
 ## Migration Guide
 
@@ -5879,32 +5918,36 @@ To switch an existing workflow to LLM Studio:
 **Error**: "Failed to connect to LM Studio at {url}"
 
 **Solutions**:
-- Verify LM Studio is running and server started
-- Check base_url is correct (e.g., `http://localhost:1234`)
-- Ensure firewall allows connections on port 1234
-- Try pinging the LM Studio server
+
+-   Verify LM Studio is running and server started
+-   Check base_url is correct (e.g., `http://localhost:1234`)
+-   Ensure firewall allows connections on port 1234
+-   Try pinging the LM Studio server
 
 ### Model Not Found
 
 **Error**: Model-related errors
 
 **Solutions**:
-- Verify model is loaded in LM Studio
-- Check model name exactly matches (case-sensitive)
-- Reload model in LM Studio if necessary
-- Ensure model supports vision inputs
+
+-   Verify model is loaded in LM Studio
+-   Check model name exactly matches (case-sensitive)
+-   Reload model in LM Studio if necessary
+-   Ensure model supports vision inputs
 
 ## Performance Considerations
 
 ### Gemini API
-- **Latency**: Network-dependent (typically 2-5 seconds)
-- **Cost**: Pay per API call
-- **Throughput**: Rate limited by API quota
+
+-   **Latency**: Network-dependent (typically 2-5 seconds)
+-   **Cost**: Pay per API call
+-   **Throughput**: Rate limited by API quota
 
 ### LLM Studio
-- **Latency**: Hardware-dependent (GPU: 1-3 seconds, CPU: 10-30 seconds)
-- **Cost**: Free (local processing)
-- **Throughput**: Limited by local hardware capabilities
+
+-   **Latency**: Hardware-dependent (GPU: 1-3 seconds, CPU: 10-30 seconds)
+-   **Cost**: Free (local processing)
+-   **Throughput**: Limited by local hardware capabilities
 
 ## Configuration Examples
 
@@ -5936,7 +5979,7 @@ Use different providers for different stages:
 # Analysis stage (privacy-focused)
 [LLM Studio Options] → llm_options → [MediaDescribe] → caption
 
-# Generation stage (quality-focused)  
+# Generation stage (quality-focused)
 [Gemini Options] → llm_options → [MediaDescribe] → structured_prompt
 ```
 
@@ -5944,27 +5987,173 @@ Use different providers for different stages:
 
 Planned improvements:
 
-- [ ] Support for additional local LLM providers (Ollama, etc.)
-- [ ] Unified output format across providers
-- [ ] Provider-specific optimization settings
-- [ ] Automatic provider selection based on task
-- [ ] Performance metrics and comparison tools
+-   [ ] Support for additional local LLM providers (Ollama, etc.)
+-   [ ] Unified output format across providers
+-   [ ] Provider-specific optimization settings
+-   [ ] Automatic provider selection based on task
+-   [ ] Performance metrics and comparison tools
 
 ## Related Documentation
 
-- [LLM Studio Options Node](LLM_STUDIO_OPTIONS.md) - Detailed LLM Studio configuration
-- [Gemini Options](GEMINI_OPTIONS_SIMPLIFICATION.md) - Gemini configuration details
-- [Media Describe Overrides](MEDIA_DESCRIBE.md#media-describe---overrides-node-documentation) - Override specific fields
+-   [LLM Studio Options Node](LLM_STUDIO_OPTIONS.md) - Detailed LLM Studio configuration
+-   [Gemini Options](GEMINI_OPTIONS_SIMPLIFICATION.md) - Gemini configuration details
+-   [Media Describe Overrides](MEDIA_DESCRIBE.md#media-describe---overrides-node-documentation) - Override specific fields
+
+---
+
+# Movement Paragraph Enhancement - NSFW Integration
+
+**Date**: October 20, 2025  
+**Status**: Completed
+
+## Overview
+
+The Movement paragraph prompt for video analysis has been enhanced to support both SFW (safe-for-work) and NSFW (not-safe-for-work) content with a single unified prompt. This allows the system to naturally handle both dance/choreography content and explicit sexual content without requiring separate prompt configurations.
+
+## Key Changes
+
+### Unified SFW/NSFW Prompt
+
+Previously, the movement prompt was optimized primarily for dance and choreography. The new prompt integrates explicit sexual content handling while maintaining all the original SFW capabilities.
+
+### New Capabilities
+
+1. **Body Part Specificity**: Requires detailed description of which specific body parts are visible and what actions they're performing
+2. **Interpersonal Actions**: Describes what body parts are doing to themselves or to another person
+3. **Explicit Content Support**: When sexual activity is present, describes specific acts and anatomical positioning
+4. **Generic Terminology**: Uses only 'woman' or 'man' to describe people (no other identifying characteristics)
+5. **Word Limit**: Constrains movement description to 250 words or less for conciseness
+
+### Enhanced Prompt Text
+
+The new movement prompt includes:
+
+```
+Describe body-part–specific movement in 250 words or less, detailing what body parts are
+visible and what actions they are performing. Focus on physical actions and positions.
+Use only generic terms like 'woman' or 'man' to describe people. Begin with an overall
+summary tied to musical rhythm and beat structure (e.g., 'The subject initiates with a
+hip sway on the downbeat…'). Then narrate movement chronologically using precise action
+verbs and transitions like 'then', 'as', 'after', and reference timeline markers
+(early/mid/late beat or second).
+
+Specify which body parts move and how they articulate (e.g., 'the right arm lifts upward,
+then sweeps outward; the torso tilts as the knees bend'), including footwork, weight shifts,
+and alignment with beats. Describe what body parts are doing to themselves or to another
+person. If sexual activity is present, describe the specific act being performed, focusing
+exclusively on physical actions and positions - mention where body parts are positioned in
+relation to each other (e.g., penis in relation to vagina, anal, mouth, etc.). If a white
+substance shoots from a penis, describe it as the man ejaculating semen.
+
+Include any camera movement (e.g., 'camera pans to follow the torso shift'). Avoid general
+labels—focus on locomotor and non-locomotor gestures, repetition, rhythm, and choreography
+phrasing. Always include any buttock or breast movements visible. Do not describe physical
+appearance, clothing, setting, or background in this paragraph. Do not mention watermarks.
+```
+
+## Code Changes
+
+### Location
+
+`nodes/media_describe/media_describe.py` - `_process_video()` method
+
+### Modified Sections
+
+1. **Movement Prompt (lines ~1390-1400)**: Updated the else branch of the movement_prompt generation
+2. **Movement Field Description (lines ~1460-1470)**: Updated the movement_field JSON field description
+
+Both the paragraph prompt and the JSON field description now use the unified SFW/NSFW language.
+
+## Benefits
+
+### Single Prompt Solution
+
+-   No need to maintain separate prompts for SFW vs NSFW content
+-   Simplifies configuration and reduces code complexity
+-   LLM naturally adapts to content type
+
+### Detailed Body Part Descriptions
+
+-   More precise descriptions of physical actions
+-   Better understanding of spatial relationships
+-   Clearer distinction between self-interaction and interpersonal actions
+
+### Explicit Content Handling
+
+-   Direct, clear language for sexual acts
+-   Anatomical specificity (penis, vagina, anal, mouth, etc.)
+-   Recognition of sexual context markers (ejaculation)
+
+### Maintains SFW Capabilities
+
+-   Still describes dance and choreography effectively
+-   Preserves musical rhythm and beat alignment
+-   Retains camera movement awareness
+
+## Usage
+
+No changes to node inputs or outputs. The enhanced prompt works automatically when processing video content:
+
+```
+[Media Selection] → media_path → [MediaDescribe] → movement
+```
+
+The movement output will now:
+
+-   Provide detailed body part-specific descriptions for all content types
+-   Naturally adapt language based on whether content is SFW or NSFW
+-   Maintain 250-word limit for conciseness
+-   Focus on actions and positions rather than appearance
+
+## Considerations
+
+### Content Filtering
+
+Users should be aware that this node can now generate explicit sexual descriptions when processing NSFW content. Implement appropriate content filtering if deploying in environments where such output is not acceptable.
+
+### Generic Terminology
+
+The prompt uses only 'woman' or 'man' to describe people. No other identifying characteristics (age, ethnicity, body type, etc.) are included in movement descriptions.
+
+### Scope Limitation
+
+Movement paragraph explicitly excludes:
+
+-   Physical appearance details
+-   Clothing descriptions
+-   Setting/environment details
+-   Background elements
+-   Watermarks or overlays
+
+These should be described in their respective dedicated paragraphs (Subject, Clothing, Scene, etc.).
+
+## Testing Recommendations
+
+When testing this enhancement:
+
+1. **SFW Dance Content**: Verify choreography descriptions remain detailed and accurate
+2. **NSFW Sexual Content**: Verify explicit acts are described clearly with anatomical specificity
+3. **Mixed Content**: Test edge cases where content may be suggestive but not explicit
+4. **Word Limit**: Verify output stays within 250-word constraint
+5. **Scope Adherence**: Verify movement paragraph doesn't leak into other categories
+
+## Related Changes
+
+This change affects:
+
+-   Video processing in Gemini mode (`_process_video`)
+-   Video processing in LLM Studio mode (uses same prompt structure)
+-   JSON field descriptions in system prompts
+-   Control Panel display of movement field
 
 ## Changelog
 
 ### October 15, 2025 - LLM Options Support
 
-- Renamed `gemini_options` input to `llm_options`
-- Added support for LLM_STUDIO_OPTIONS type
-- Implemented automatic provider detection
-- Added `_process_with_llm_studio()` method for local processing
-- Maintained full backward compatibility
-- Created LLM Studio Options node
-- Updated documentation with provider comparison
-
+-   Renamed `gemini_options` input to `llm_options`
+-   Added support for LLM_STUDIO_OPTIONS type
+-   Implemented automatic provider detection
+-   Added `_process_with_llm_studio()` method for local processing
+-   Maintained full backward compatibility
+-   Created LLM Studio Options node
+-   Updated documentation with provider comparison

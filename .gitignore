@@ -157,3 +157,6 @@ cache_info.json
 # ComfyUI Local
 .comfyui/
 .comfyui-user/
+
+# Chrome
+.ai-image-gen
