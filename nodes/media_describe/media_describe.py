@@ -1849,7 +1849,10 @@ Example (structure only):
         # Build system and user prompts based on model type and media type
         if media_type == "image":
             if model_type == "Text2Image":
-                # Build detailed image prompt matching Gemini implementation
+                # Simple system prompt - following llm_studio_describe.py pattern
+                system_prompt = "You are a helpful image analyst."
+                
+                # Build detailed user prompt with configuration-based instructions
                 subject_field = 'Begin with a gendered noun phrase (e.g., "A woman…", "A man…").'
                 if describe_hair_style:
                     subject_field += ' Include hairstyle and its texture or motion (no color or length).'
@@ -1870,7 +1873,7 @@ Example (structure only):
                 
                 style_field = 'Provide mood/genre descriptors (e.g., "noir-inspired silhouette", "cinematic realism", etc.).'
                 
-                system_prompt = f"""Generate a Wan 2.2 optimized text to image prompt. You are an expert assistant specialized in analyzing and verbalizing input media for instagram-quality posts using the Wan 2.2 Text to Image workflow.
+                user_prompt = f"""Generate a Wan 2.2 optimized text to image prompt. Analyze this image for instagram-quality posts using the Wan 2.2 Text to Image workflow.
 
 DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
 
@@ -1907,12 +1910,16 @@ Each field's value is one fully formed paragraph (a single string) for that cate
 
 ## Global constraints
 Never mention prohibited attributes (ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, makeup), even if visible. Never mention watermarks, logos, branding, or any textual overlays. Be completely decisive and definitive in all descriptions—eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."""
-                user_prompt = "Please analyze this image and provide a detailed description in the JSON format specified in the system prompt."
             else:  # ImageEdit
-                system_prompt = """You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays."""
-                user_prompt = "Please analyze this image and generate a single-sentence Qwen-Image-Edit instruction following the guidelines in the system prompt."
+                # Simple system prompt
+                system_prompt = "You are a helpful image editor assistant."
+                # Detailed instructions in user prompt
+                user_prompt = "Please analyze this image and generate a concise, single-sentence Qwen-Image-Edit instruction. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', or 'or'. Never mention watermarks, logos, branding, or any textual overlays."
         else:  # video
-            # Build detailed video prompt matching Gemini implementation
+            # Simple system prompt - following llm_studio_describe.py pattern
+            system_prompt = "You are a helpful video analyst."
+            
+            # Build detailed user prompt with configuration-based instructions
             subject_field = 'Begin with a gendered noun phrase (e.g., "A woman…", "A man…").'
             if describe_hair_style:
                 subject_field += ' Include hairstyle and its texture or motion (no color or length).'
@@ -1933,7 +1940,7 @@ Never mention prohibited attributes (ethnicity, age, body type, tattoos, glasses
             
             style_field = 'Provide mood/genre descriptors (e.g., "noir-inspired silhouette", "cinematic realism", etc.).'
             
-            system_prompt = f"""You are an expert assistant specialized in analyzing and verbalizing input videos for cinematic-quality video transformation using the Wan 2.2 + VACE workflow.
+            user_prompt = f"""Analyze this video for cinematic-quality video transformation using the Wan 2.2 + VACE workflow.
 
 DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
 
@@ -1970,7 +1977,6 @@ Each field's value is one fully formed paragraph (a single string) for that cate
 
 ## Global constraints
 Never mention prohibited attributes (ethnicity, age, body type, tattoos, glasses, hair color, hair length, eye color, height, makeup), even if visible. Never mention watermarks, logos, branding, or any textual overlays. Be completely decisive and definitive in all descriptions—eliminate all uncertainty language including 'appears to be', 'seems to be', 'might be', 'possibly', 'likely', 'or', 'either/or'. When multiple interpretations are possible, confidently choose one and state it as absolute fact."""
-            user_prompt = "Please analyze this video and provide a detailed description in the JSON format specified in the system prompt."
 
         # Build prompt request for debugging/transparency
         prompt_request = f"""System Prompt:

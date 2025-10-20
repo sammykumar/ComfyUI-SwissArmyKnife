@@ -6301,6 +6301,14 @@ When testing this enhancement:
 
 ## Changelog
 
+### October 20, 2025 - LLM Studio Prompt Architecture Update
+
+-   **System/User Prompt Restructure**: Reorganized LLM Studio API calls to follow `llm_studio_describe.py` pattern
+-   **Simple System Prompts**: Changed to generic system prompts ("You are a helpful image analyst" / "You are a helpful video analyst")
+-   **Detailed User Prompts**: Moved all detailed instructions, requirements, and constraints from system prompt to user prompt
+-   **Better Model Compatibility**: This architecture matches the approach used in standalone LLM Studio nodes and may work better with certain vision models
+-   **Preserved Functionality**: All prompt content and requirements remain identical, only the message role assignment changed
+
 ### October 20, 2025 - LLM Studio Enhanced Prompts
 
 -   **Unified prompt system**: LLM Studio now uses the same enhanced prompts as Gemini
