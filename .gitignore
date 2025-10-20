@@ -113,7 +113,7 @@ yarn-error.log*
 node.zip
 .vscode/
 .claude/
-js/
+
 
 # Dev container and development files
 .devcontainer/.env

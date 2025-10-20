@@ -30,7 +30,7 @@ export default defineConfig({
             output: {
                 dir: 'web/js/vue',
                 assetFileNames: 'assets/[name].[ext]',
-                entryFileNames: 'swiss-army-knife-vue.js',
+                entryFileNames: 'swiss-army-knife-main.js',
             },
         },
         outDir: 'web/js/vue',
