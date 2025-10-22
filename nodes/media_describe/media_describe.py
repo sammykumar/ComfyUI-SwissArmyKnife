@@ -1870,6 +1870,8 @@ Each field's value is one fully formed paragraph (a single string) for that cate
 
 DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
 
+Your response will be used by a text-to-image model, so avoid useless meta phrases like "This image shows…", "You are looking at...", etc.
+
 Return **only** a single valid JSON object (no code fences, no extra text) with **exactly five** string fields in this exact order:
 1. "subject" - Detailed description of the main subject
 2. "clothing" - Clothing and style details
