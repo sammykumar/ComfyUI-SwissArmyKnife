@@ -1920,7 +1920,7 @@ User Prompt:
         # Process based on media type
         if media_type == "video":
             # For video, extract all frames first, then send in a single request
-            fps_sample = llm_options.get("fps_sample", 1.0)
+            sample_rate = llm_options.get("sample_rate", 1.0)
             max_duration = llm_options.get("max_duration", 5.0)
 
             # Extract frames from video
@@ -1930,11 +1930,15 @@ User Prompt:
             duration = total_frames / video_fps if video_fps > 0 else 0
 
             sampling_duration = min(duration, max_duration)
-            num_frames_to_extract = int(sampling_duration / fps_sample)
+            num_frames_to_extract = int(sampling_duration * sample_rate)
             if num_frames_to_extract == 0:
                 num_frames_to_extract = 1
 
-            frame_indices = [int(i * fps_sample * video_fps) for i in range(num_frames_to_extract)]
+            # sample_rate = frames per second we want
+            # video_fps = actual video frames per second
+            # frame_interval = how many video frames to skip between samples
+            frame_interval = video_fps / sample_rate if sample_rate > 0 else video_fps
+            frame_indices = [int(i * frame_interval) for i in range(num_frames_to_extract)]
             frame_indices = [idx for idx in frame_indices if idx < total_frames]
 
             if verbose:

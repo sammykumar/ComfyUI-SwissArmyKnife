@@ -45,12 +45,12 @@ class LLMStudioOptions:
                     "step": 0.1,
                     "tooltip": "Temperature for text generation"
                 }),
-                "fps_sample": ("FLOAT", {
-                    "default": 1.0,
+                "sample_rate": ("FLOAT", {
+                    "default": 2.0,
                     "min": 0.1,
-                    "max": 10.0,
+                    "max": 30.0,
                     "step": 0.1,
-                    "tooltip": "Extract 1 frame every N seconds (for video processing)"
+                    "tooltip": "Frames per second to extract (e.g., 1.0 = 1 frame/sec, 2.0 = 2 frames/sec)"
                 }),
                 "max_duration": ("FLOAT", {
                     "default": 5.0,
@@ -75,7 +75,7 @@ class LLMStudioOptions:
     FUNCTION = "create_options"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
-    def create_options(self, base_url, model_name, prompt_style, temperature, fps_sample, max_duration, change_clothing_color, verbose):
+    def create_options(self, base_url, model_name, prompt_style, temperature, sample_rate, max_duration, change_clothing_color, verbose):
         """
         Create an options object with all the configuration settings
         """
@@ -85,7 +85,7 @@ class LLMStudioOptions:
             "model_name": model_name,
             "model_type": prompt_style,  # Keep internal key as model_type for consistency with Gemini
             "temperature": temperature,
-            "fps_sample": fps_sample,
+            "sample_rate": sample_rate,
             "max_duration": max_duration,
             "change_clothing_color": change_clothing_color == "Yes",
             "describe_clothing": True,  # Always enabled to match Gemini
