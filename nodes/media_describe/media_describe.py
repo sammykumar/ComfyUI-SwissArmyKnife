@@ -1874,7 +1874,7 @@ Return **only** a single valid JSON object (no code fences, no extra text) with 
 1. "subject" - Detailed description of the main subject
 2. "clothing" - Clothing and style details
 3. "movement" - Actions, motion, and choreography across frames
-4. "scene" - Setting, environment, and background elements
+4. "scene" - Setting, environment, and background elements. Be extremely detailed about the physical environment: describe wall colors, wallpaper patterns, textures, materials (wood, concrete, brick, etc.), floor surfaces, ceiling details, furniture placement, decorative elements, architectural features, and any visible objects in the background. Include specific color descriptions and material finishes.
 5. "visual_style" - Combined lighting, camera details, rendering cues, mood/genre descriptors, and overall aesthetic direction
 
 Each field's value is one fully formed paragraph (a single string) for that category."""
