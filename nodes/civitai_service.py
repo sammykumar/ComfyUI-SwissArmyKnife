@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional, List
 import httpx
 
 from .lora_hash_cache import get_cache as get_lora_hash_cache
+from .debug_utils import debug_print
 
 # Optional ComfyUI imports for trigger word extraction
 try:
@@ -35,7 +36,7 @@ class CivitAIService:
         self._hash_cache = get_lora_hash_cache()
         # Only log if there's an issue with API key detection
         if not self.api_key:
-            print("[DEBUG] ❌ No CivitAI API key found (this may be normal during startup before settings sync)")
+            debug_print("[CivitAI] ❌ No CivitAI API key found (this may be normal during startup before settings sync)")
         # Successful API key detection is logged silently
 
     def get_model_info_by_hash(self, file_path: str) -> Optional[Dict[str, Any]]:
@@ -51,19 +52,19 @@ class CivitAIService:
         """
         try:
             if not os.path.exists(file_path):
-                print(f"File not found: {file_path}")
+                debug_print(f"[CivitAI] File not found: {file_path}")
                 return None
 
             # Get all hash types
             file_hashes = self._hash_cache.get_hashes(file_path)
             if not file_hashes:
-                print(f"Could not compute hashes for {file_path}")
+                debug_print(f"[CivitAI] Could not compute hashes for {file_path}")
                 return None
 
             # Check cache for any previously successful hash
             cache_key = os.path.abspath(file_path)
             if cache_key in self.cache:
-                print(f"Using cached CivitAI data for file: {os.path.basename(file_path)}")
+                debug_print(f"[CivitAI] Using cached CivitAI data for file: {os.path.basename(file_path)}")
                 cached_result = self.cache[cache_key]
                 if cached_result:
                     cached_result['cache_hit'] = True
@@ -83,10 +84,10 @@ class CivitAIService:
                 if not hash_value:
                     continue
 
-                print(f"Trying CivitAI lookup with {hash_type}: {hash_value[:16]}...")
+                debug_print(f"[CivitAI] Trying CivitAI lookup with {hash_type}: {hash_value[:16]}...")
                 result = self._run_async(self._get_model_info_by_hash_async(hash_value, hash_type))
                 if result:
-                    print(f"✅ Found CivitAI match using {hash_type} hash")
+                    debug_print(f"[CivitAI] ✅ Found CivitAI match using {hash_type} hash")
                     # Add hash information to result
                     result['matched_hash_type'] = hash_type
                     result['matched_hash_value'] = hash_value
@@ -94,14 +95,14 @@ class CivitAIService:
                     result['cache_hit'] = False  # This is a fresh API call
                     break
                 else:
-                    print(f"❌ No CivitAI match for {hash_type} hash")
+                    debug_print(f"[CivitAI] ❌ No CivitAI match for {hash_type} hash")
 
             # Cache the result (even if None) to avoid repeated API calls
             self.cache[cache_key] = result
             return result
 
         except Exception as e:  # pylint: disable=broad-except
-            print(f"Error fetching CivitAI data for {file_path}: {e}")
+            debug_print(f"[CivitAI] Error fetching CivitAI data for {file_path}: {e}")
             return None
 
     def _run_async(self, coro):

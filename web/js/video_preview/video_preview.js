@@ -6,36 +6,21 @@
 import { app as app$2 } from "/scripts/app.js";
 import { api } from "/scripts/api.js";
 
-// DEBUG mode - will be loaded from server config
-let DEBUG_ENABLED = false;
-
-// Conditional logging wrapper
-const debugLog = (...args) => {
-    if (DEBUG_ENABLED) {
-        console.log("[VideoPreview]", ...args);
+// DEBUG mode - check setting dynamically
+const isDebugEnabled = () => {
+    try {
+        return app$2.extensionManager?.setting?.get("SwissArmyKnife.debug_mode") || false;
+    } catch (error) {
+        return false;
     }
 };
 
-// Load DEBUG setting from server
-async function loadDebugConfig() {
-    try {
-        const response = await fetch("/swissarmyknife/config");
-        if (response.ok) {
-            const config = await response.json();
-            DEBUG_ENABLED = config.debug || false;
-            console.log(`Video Preview Debug Mode: ${DEBUG_ENABLED ? "ENABLED" : "DISABLED"}`);
-        } else {
-            console.warn(
-                "Failed to load Swiss Army Knife config for video preview, defaulting to DEBUG=false"
-            );
-        }
-    } catch (error) {
-        console.warn("Error loading Swiss Army Knife config for video preview:", error);
+// Conditional logging wrapper - checks setting dynamically
+const debugLog = (...args) => {
+    if (isDebugEnabled()) {
+        console.log("[VideoPreview]", ...args);
     }
-}
-
-// Load config immediately
-loadDebugConfig();
+};
 
 console.log(`Loading video_preview.js extension`);
 

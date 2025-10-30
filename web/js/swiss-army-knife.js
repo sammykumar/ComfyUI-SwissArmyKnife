@@ -5,34 +5,21 @@ import { api } from "../../../scripts/api.js";
 const EXTENSION_VERSION = "2.8.11"; // Should match pyproject.toml version
 const LOAD_TIMESTAMP = new Date().toISOString();
 
-// DEBUG mode - will be loaded from server config
-let DEBUG_ENABLED = false; // Default to false, will be set by server config
-
-// Conditional logging wrapper
-const debugLog = (...args) => {
-    if (DEBUG_ENABLED) {
-        console.log("[SwissArmyKnife]", ...args);
+// DEBUG mode - check setting dynamically
+const isDebugEnabled = () => {
+    try {
+        return app.extensionManager?.setting?.get("SwissArmyKnife.debug_mode") || false;
+    } catch (error) {
+        return false;
     }
 };
 
-// Load DEBUG setting from server
-async function loadDebugConfig() {
-    try {
-        const response = await fetch("/swissarmyknife/config");
-        if (response.ok) {
-            const config = await response.json();
-            DEBUG_ENABLED = config.debug || false;
-            console.log(`Swiss Army Knife Debug Mode: ${DEBUG_ENABLED ? "ENABLED" : "DISABLED"}`);
-        } else {
-            console.warn("Failed to load Swiss Army Knife config, defaulting to DEBUG=false");
-        }
-    } catch (error) {
-        console.warn("Error loading Swiss Army Knife config:", error);
+// Conditional logging wrapper - checks setting dynamically
+const debugLog = (...args) => {
+    if (isDebugEnabled()) {
+        console.log("[SwissArmyKnife]", ...args);
     }
-}
-
-// Load config immediately
-loadDebugConfig();
+};
 
 // Helper functions for accessing API keys from settings
 const getGeminiApiKey = () => {
@@ -58,9 +45,7 @@ const getAzureStorageConnectionString = () => {
         const value =
             app.extensionManager.setting.get("SwissArmyKnife.azure_storage.connection_string") ||
             "";
-        console.log(
-            `[Azure Debug] getAzureStorageConnectionString called, value length: ${value.length}`
-        );
+        debugLog(`getAzureStorageConnectionString called, value length: ${value.length}`);
         return value;
     } catch (error) {
         console.warn("Failed to get Azure Storage connection string from settings:", error);
@@ -70,15 +55,15 @@ const getAzureStorageConnectionString = () => {
 
 // Function to sync API keys to backend
 const syncApiKeysToBackend = async () => {
-    console.log("[Azure Debug] syncApiKeysToBackend called");
+    debugLog("syncApiKeysToBackend called");
     try {
         const geminiKey = getGeminiApiKey();
         const civitaiKey = getCivitaiApiKey();
         const azureConnectionString = getAzureStorageConnectionString();
+        const debugMode = isDebugEnabled();
 
-        console.log("[Azure Debug] FULL Azure connection string:");
-        console.log(azureConnectionString);
-        console.log("[Azure Debug] Length:", azureConnectionString.length);
+        debugLog("Azure connection string length:", azureConnectionString.length);
+        debugLog("Debug mode:", debugMode);
 
         const response = await fetch("/swissarmyknife/set_api_keys", {
             method: "POST",
@@ -89,12 +74,12 @@ const syncApiKeysToBackend = async () => {
                 gemini_api_key: geminiKey,
                 civitai_api_key: civitaiKey,
                 azure_storage_connection_string: azureConnectionString,
+                debug_mode: debugMode,
             }),
         });
 
         if (response.ok) {
-            debugLog("[Settings] API keys synced to backend successfully");
-            console.log("[Azure Debug] API keys synced successfully");
+            debugLog("[Settings] API keys and settings synced to backend successfully");
         } else {
             console.warn("[Settings] Failed to sync API keys to backend:", response.status);
         }
@@ -447,12 +432,9 @@ app.registerExtension({
 
                 // Function to update with execution data
                 this.updateControlPanelData = function (data) {
-                    console.log("🔍 [ControlPanelOverview DEBUG] updateControlPanelData called");
-                    console.log("🔍 [ControlPanelOverview DEBUG] data received:", data);
-                    console.log(
-                        "🔍 [ControlPanelOverview DEBUG] data keys:",
-                        Object.keys(data || {})
-                    );
+                    debugLog("🔍 [ControlPanelOverview DEBUG] updateControlPanelData called");
+                    debugLog("🔍 [ControlPanelOverview DEBUG] data received:", data);
+                    debugLog("🔍 [ControlPanelOverview DEBUG] data keys:", Object.keys(data || {}));
 
                     if (
                         !this._cp_leftColumn ||
@@ -460,7 +442,7 @@ app.registerExtension({
                         !this._cp_rightColumn ||
                         !data
                     ) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] Missing columns or data, returning"
                         );
                         return;
@@ -474,34 +456,34 @@ app.registerExtension({
 
                     // Try all possible locations for the data
                     if (data.all_media_describe_data) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] Found data.all_media_describe_data"
                         );
                         rawData = Array.isArray(data.all_media_describe_data)
                             ? data.all_media_describe_data[0]
                             : data.all_media_describe_data;
                     } else if (data.all_media_describe_data_copy) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] Found data.all_media_describe_data_copy"
                         );
                         rawData = Array.isArray(data.all_media_describe_data_copy)
                             ? data.all_media_describe_data_copy[0]
                             : data.all_media_describe_data_copy;
                     } else {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] No all_media_describe_data found in:",
                             Object.keys(data)
                         );
                     }
 
-                    console.log("🔍 [ControlPanelOverview DEBUG] rawData:", rawData);
-                    console.log("🔍 [ControlPanelOverview DEBUG] rawData type:", typeof rawData);
+                    debugLog("🔍 [ControlPanelOverview DEBUG] rawData:", rawData);
+                    debugLog("🔍 [ControlPanelOverview DEBUG] rawData type:", typeof rawData);
 
                     if (rawData) {
                         try {
                             // Parse JSON if it's a string
                             mediaData = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
-                            console.log(
+                            debugLog(
                                 "🔍 [ControlPanelOverview DEBUG] Parsed mediaData:",
                                 mediaData
                             );
@@ -517,7 +499,7 @@ app.registerExtension({
                     }
 
                     if (!mediaData) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] No mediaData, showing 'no data available'"
                         );
                         this._cp_leftColumn.textContent = "(No data available)";
@@ -526,7 +508,7 @@ app.registerExtension({
                         return;
                     }
 
-                    console.log(
+                    debugLog(
                         "🔍 [ControlPanelOverview DEBUG] mediaData keys:",
                         Object.keys(mediaData)
                     );
@@ -546,13 +528,13 @@ app.registerExtension({
                         mediaData.final_prompt ||
                         mediaData.description;
                     if (finalText) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanel DEBUG] Setting positive prompt:",
                             finalText.substring(0, 50)
                         );
                         this._cp_leftColumn.textContent = formatValue(finalText, 2000);
                     } else {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] No positive_prompt/final_prompt/description in mediaData"
                         );
                         this._cp_leftColumn.textContent = "(No final text in data)";
@@ -560,7 +542,7 @@ app.registerExtension({
 
                     // Middle column: Gemini Status
                     if (mediaData.gemini_status) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] Setting gemini_status:",
                             mediaData.gemini_status.substring(0, 50)
                         );
@@ -569,7 +551,7 @@ app.registerExtension({
                             2000
                         );
                     } else {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] No gemini_status in mediaData"
                         );
                         this._cp_middleColumn.textContent = "(No gemini_status in data)";
@@ -594,10 +576,10 @@ app.registerExtension({
                     // Removed loop that displayed additional fields (subject, cinematic_aesthetic, etc.)
 
                     if (rightLines.length === 0) {
-                        console.log("🔍 [ControlPanelOverview DEBUG] No right column data");
+                        debugLog("🔍 [ControlPanelOverview DEBUG] No right column data");
                         this._cp_rightColumn.textContent = "(No media info in data)";
                     } else {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] Setting right column with",
                             rightLines.length,
                             "lines"
@@ -605,27 +587,27 @@ app.registerExtension({
                         this._cp_rightColumn.textContent = rightLines.join("\n");
                     }
 
-                    console.log("🔍 [ControlPanelOverview DEBUG] Display update complete");
+                    debugLog("🔍 [ControlPanelOverview DEBUG] Display update complete");
                     debugLog("[ControlPanelOverview] Updated display with execution data");
                 };
 
                 // Add onExecuted handler to update display with execution results
                 const originalOnExecuted = this.onExecuted;
                 this.onExecuted = function (message) {
-                    console.log("🔍 [ControlPanelOverview DEBUG] onExecuted called");
-                    console.log("🔍 [ControlPanelOverview DEBUG] Full message object:", message);
-                    console.log(
+                    debugLog("🔍 [ControlPanelOverview DEBUG] onExecuted called");
+                    debugLog("🔍 [ControlPanelOverview DEBUG] Full message object:", message);
+                    debugLog(
                         "🔍 [ControlPanelOverview DEBUG] message keys:",
                         Object.keys(message || {})
                     );
 
                     if (message) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] message.output:",
                             message.output
                         );
                         if (message.output) {
-                            console.log(
+                            debugLog(
                                 "🔍 [ControlPanelOverview DEBUG] message.output keys:",
                                 Object.keys(message.output)
                             );
@@ -636,7 +618,7 @@ app.registerExtension({
 
                     // Try multiple data sources - data might be at root or in output
                     if (message && message.output) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] Calling updateControlPanelData with message.output:",
                             message.output
                         );
@@ -645,13 +627,13 @@ app.registerExtension({
                         message &&
                         (message.all_media_describe_data || message.all_media_describe_data_copy)
                     ) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] Calling updateControlPanelData with message (root level):",
                             message
                         );
                         this.updateControlPanelData(message);
                     } else {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelOverview DEBUG] No data found in message.output or message root"
                         );
                     }
@@ -773,11 +755,11 @@ app.registerExtension({
 
                 // Function to update with execution data
                 this.updatePromptBreakdownData = function (data) {
-                    console.log(
+                    debugLog(
                         "🔍 [ControlPanelPromptBreakdown DEBUG] updatePromptBreakdownData called"
                     );
-                    console.log("🔍 [ControlPanelPromptBreakdown DEBUG] data received:", data);
-                    console.log(
+                    debugLog("🔍 [ControlPanelPromptBreakdown DEBUG] data received:", data);
+                    debugLog(
                         "🔍 [ControlPanelPromptBreakdown DEBUG] data keys:",
                         Object.keys(data || {})
                     );
@@ -786,7 +768,7 @@ app.registerExtension({
                     debugLog("[ControlPanelPromptBreakdown] data received:", data);
 
                     if (!this._cpb_subject || !data) {
-                        console.log(
+                        debugLog(
                             "[ControlPanelPromptBreakdown DEBUG] Missing columns or data, returning"
                         );
                         debugLog(
@@ -801,7 +783,7 @@ app.registerExtension({
 
                     // First try prompt_breakdown field (legacy)
                     if (data.prompt_breakdown) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.prompt_breakdown"
                         );
                         rawData = Array.isArray(data.prompt_breakdown)
@@ -810,7 +792,7 @@ app.registerExtension({
                     }
                     // Then try all_media_describe_data (current format from MediaDescribe node)
                     else if (data.all_media_describe_data) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.all_media_describe_data"
                         );
                         rawData = Array.isArray(data.all_media_describe_data)
@@ -819,7 +801,7 @@ app.registerExtension({
                     }
                     // Finally try all_media_describe_data_copy (backup)
                     else if (data.all_media_describe_data_copy) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.all_media_describe_data_copy"
                         );
                         rawData = Array.isArray(data.all_media_describe_data_copy)
@@ -827,8 +809,8 @@ app.registerExtension({
                             : data.all_media_describe_data_copy;
                     }
 
-                    console.log("🔍 [ControlPanelPromptBreakdown DEBUG] rawData:", rawData);
-                    console.log(
+                    debugLog("🔍 [ControlPanelPromptBreakdown DEBUG] rawData:", rawData);
+                    debugLog(
                         "🔍 [ControlPanelPromptBreakdown DEBUG] rawData type:",
                         typeof rawData
                     );
@@ -837,7 +819,7 @@ app.registerExtension({
                         try {
                             promptBreakdown =
                                 typeof rawData === "string" ? JSON.parse(rawData) : rawData;
-                            console.log(
+                            debugLog(
                                 "🔍 [ControlPanelPromptBreakdown DEBUG] Parsed breakdown:",
                                 promptBreakdown
                             );
@@ -861,7 +843,7 @@ app.registerExtension({
                     }
 
                     if (!promptBreakdown) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelPromptBreakdown DEBUG] No promptBreakdown, showing 'no data available'"
                         );
                         this._cpb_subject.textContent = "(No data available)";
@@ -872,7 +854,7 @@ app.registerExtension({
                         return;
                     }
 
-                    console.log(
+                    debugLog(
                         "🔍 [ControlPanelPromptBreakdown DEBUG] Updating columns with data"
                     );
 
@@ -891,19 +873,19 @@ app.registerExtension({
                         ).trim() ||
                         "(empty)";
 
-                    console.log("🔍 [ControlPanelPromptBreakdown DEBUG] Display update complete");
+                    debugLog("🔍 [ControlPanelPromptBreakdown DEBUG] Display update complete");
                     debugLog("[ControlPanelPromptBreakdown] Display update complete");
                 };
 
                 // Add onExecuted handler
                 const originalOnExecuted = this.onExecuted;
                 this.onExecuted = function (message) {
-                    console.log("🔍 [ControlPanelPromptBreakdown DEBUG] onExecuted called");
-                    console.log(
+                    debugLog("🔍 [ControlPanelPromptBreakdown DEBUG] onExecuted called");
+                    debugLog(
                         "🔍 [ControlPanelPromptBreakdown DEBUG] Full message object:",
                         message
                     );
-                    console.log(
+                    debugLog(
                         "🔍 [ControlPanelPromptBreakdown DEBUG] message keys:",
                         Object.keys(message || {})
                     );
@@ -911,12 +893,12 @@ app.registerExtension({
                     debugLog("[ControlPanelPromptBreakdown] onExecuted called");
 
                     if (message && message.output) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelPromptBreakdown DEBUG] Calling updatePromptBreakdownData with message.output"
                         );
                         this.updatePromptBreakdownData(message.output);
                     } else if (message && message.prompt_breakdown) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelPromptBreakdown DEBUG] Calling updatePromptBreakdownData with message (root level)"
                         );
                         this.updatePromptBreakdownData(message);
@@ -924,12 +906,12 @@ app.registerExtension({
                         message &&
                         (message.all_media_describe_data || message.all_media_describe_data_copy)
                     ) {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelPromptBreakdown DEBUG] Calling updatePromptBreakdownData with all_media_describe_data"
                         );
                         this.updatePromptBreakdownData(message);
                     } else {
-                        console.log(
+                        debugLog(
                             "🔍 [ControlPanelPromptBreakdown DEBUG] No data found in message.output, message.prompt_breakdown, or all_media_describe_data"
                         );
                     }
@@ -1071,24 +1053,24 @@ app.registerExtension({
                     const widgetIndex = this.widgets.indexOf(widget);
                     if (widgetIndex > -1) {
                         this.widgets.splice(widgetIndex, 1);
-                        console.log(`🔍 [MediaSelection] Removed widget: ${widget.name}`);
+                        debugLog(`🔍 [MediaSelection] Removed widget: ${widget.name}`);
                     }
 
                     // Remove DOM element if it exists
                     if (widget.element && widget.element.parentNode) {
                         widget.element.parentNode.removeChild(widget.element);
-                        console.log(`🔍 [MediaSelection] Removed DOM element for: ${widget.name}`);
+                        debugLog(`🔍 [MediaSelection] Removed DOM element for: ${widget.name}`);
                     }
                 };
 
                 this.updateMediaWidgets = function () {
                     const mediaSource = this.mediaSourceWidget?.value || "Reddit Post";
 
-                    console.log(
+                    debugLog(
                         `🔍 [MediaSelection UPLOAD DEBUG] ========== updateMediaWidgets START ==========`
                     );
-                    console.log(`🔍 [MediaSelection UPLOAD DEBUG] mediaSource: "${mediaSource}"`);
-                    console.log(
+                    debugLog(`🔍 [MediaSelection UPLOAD DEBUG] mediaSource: "${mediaSource}"`);
+                    debugLog(
                         `🔍 [MediaSelection UPLOAD DEBUG] Total widgets before update: ${
                             this.widgets?.length || 0
                         }`
@@ -1105,25 +1087,25 @@ app.registerExtension({
                         (w) => w.name === "upload_video_button"
                     );
 
-                    console.log(
+                    debugLog(
                         `🔍 [MediaSelection UPLOAD DEBUG] Found existing buttons: image=${!!existingImageButton}, video=${!!existingVideoButton}`
                     );
 
                     // If NOT in Upload Media mode, remove all upload buttons completely
                     if (mediaSource !== "Upload Media") {
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] � NOT in Upload Media mode - removing all upload buttons`
                         );
 
                         if (existingImageButton) {
                             this.removeWidgetSafely(existingImageButton);
-                            console.log(
+                            debugLog(
                                 `🔍 [MediaSelection UPLOAD DEBUG] 🗑️ Removed imageUploadButton`
                             );
                         }
                         if (existingVideoButton) {
                             this.removeWidgetSafely(existingVideoButton);
-                            console.log(
+                            debugLog(
                                 `🔍 [MediaSelection UPLOAD DEBUG] �️ Removed videoUploadButton`
                             );
                         }
@@ -1153,7 +1135,7 @@ app.registerExtension({
 
                     // Manage visibility based on media_source
                     if (mediaSource === "Randomize Media from Path") {
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] === RANDOMIZE MEDIA FROM PATH MODE ===`
                         );
                         debugLog("[MediaSelection] Showing media path widget");
@@ -1194,12 +1176,12 @@ app.registerExtension({
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
 
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] Randomize Mode - upload buttons already removed`
                         );
                         // Upload buttons are automatically removed by the logic above since mediaSource !== "Upload Media"
                     } else if (mediaSource === "Randomize from Subreddit") {
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] === RANDOMIZE FROM SUBREDDIT MODE ===`
                         );
                         debugLog(
@@ -1242,12 +1224,12 @@ app.registerExtension({
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
 
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] Subreddit Mode - upload buttons already removed`
                         );
                         // Upload buttons are automatically removed by the logic above since mediaSource !== "Upload Media"
                     } else if (mediaSource === "Reddit Post") {
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] === REDDIT POST MODE (DEFAULT) ===`
                         );
                         debugLog("[MediaSelection] Reddit Post mode - showing Reddit URL widget");
@@ -1287,17 +1269,17 @@ app.registerExtension({
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
 
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] Reddit Post Mode - upload buttons already removed`
                         );
                         // Upload buttons are automatically removed by the logic above since mediaSource !== "Upload Media"
                     } else {
                         // Upload Media mode
-                        console.log(`🔍 [MediaSelection UPLOAD DEBUG] === UPLOAD MEDIA MODE ===`);
+                        debugLog(`🔍 [MediaSelection UPLOAD DEBUG] === UPLOAD MEDIA MODE ===`);
                         debugLog("[MediaSelection] Upload Media mode - setting up upload widgets");
 
                         const mediaType = this.mediaTypeWidget?.value || "image";
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] Upload mode - mediaType: ${mediaType}`
                         );
 
@@ -1340,12 +1322,12 @@ app.registerExtension({
                                 (w) => w.name === "upload_image_button"
                             );
 
-                            console.log(
+                            debugLog(
                                 `🔍 [MediaSelection UPLOAD DEBUG] Image mode - imageUploadButton exists: ${!!imageUploadButton}`
                             );
 
                             if (!imageUploadButton) {
-                                console.log(
+                                debugLog(
                                     `🔍 [MediaSelection UPLOAD DEBUG] 🆕 Creating new imageUploadButton`
                                 );
                                 // Create a separate upload button widget
@@ -1404,11 +1386,11 @@ app.registerExtension({
                                 imageUploadButton.options = imageUploadButton.options || {};
                                 imageUploadButton.options.serialize = false; // Don't serialize the button state
 
-                                console.log(
+                                debugLog(
                                     `🔍 [MediaSelection UPLOAD DEBUG] ✅ Created imageUploadButton with type: ${imageUploadButton.type}`
                                 );
                             } else {
-                                console.log(
+                                debugLog(
                                     `🔍 [MediaSelection UPLOAD DEBUG] ♻️ Making existing imageUploadButton visible`
                                 );
                                 // Make sure existing button is visible
@@ -1416,7 +1398,7 @@ app.registerExtension({
                                 imageUploadButton.computeSize =
                                     imageUploadButton.constructor.prototype.computeSize;
 
-                                console.log(
+                                debugLog(
                                     `🔍 [MediaSelection UPLOAD DEBUG] ✅ Made existing imageUploadButton visible with type: ${imageUploadButton.type}`
                                 );
                             }
@@ -1431,7 +1413,7 @@ app.registerExtension({
                             if (existingVideoButton) {
                                 this.removeWidgetSafely(existingVideoButton);
                                 this.videoUploadButton = null;
-                                console.log(
+                                debugLog(
                                     `🔍 [MediaSelection UPLOAD DEBUG] 🗑️ Removed videoUploadButton (image mode)`
                                 );
                             }
@@ -1542,7 +1524,7 @@ app.registerExtension({
                             if (existingImageButton) {
                                 this.removeWidgetSafely(existingImageButton);
                                 this.imageUploadButton = null;
-                                console.log(
+                                debugLog(
                                     `🔍 [MediaSelection UPLOAD DEBUG] 🗑️ Removed imageUploadButton (video mode)`
                                 );
                             }
@@ -1556,7 +1538,7 @@ app.registerExtension({
                     }
 
                     // Verification: Check final state of upload buttons
-                    console.log(
+                    debugLog(
                         `🔍 [MediaSelection UPLOAD DEBUG] VERIFICATION for mode "${mediaSource}"`
                     );
 
@@ -1568,42 +1550,42 @@ app.registerExtension({
                         (w) => w.name === "upload_video_button"
                     );
 
-                    console.log(
+                    debugLog(
                         `🔍 [MediaSelection UPLOAD DEBUG] ========== FINAL STATE ==========`
                     );
-                    console.log(`🔍 [MediaSelection UPLOAD DEBUG] mediaSource: "${mediaSource}"`);
-                    console.log(
+                    debugLog(`🔍 [MediaSelection UPLOAD DEBUG] mediaSource: "${mediaSource}"`);
+                    debugLog(
                         `🔍 [MediaSelection UPLOAD DEBUG] Total widgets: ${
                             this.widgets?.length || 0
                         }`
                     );
-                    console.log(
+                    debugLog(
                         `🔍 [MediaSelection UPLOAD DEBUG] Final imageUploadButton exists: ${!!finalImageButton}`
                     );
-                    console.log(
+                    debugLog(
                         `🔍 [MediaSelection UPLOAD DEBUG] Final videoUploadButton exists: ${!!finalVideoButton}`
                     );
 
                     if (mediaSource === "Upload Media") {
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] ✅ Upload Media mode - buttons should exist`
                         );
                     } else {
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] ✅ Non-Upload mode - buttons should be removed`
                         );
                         if (finalImageButton || finalVideoButton) {
-                            console.log(
+                            debugLog(
                                 `🔍 [MediaSelection UPLOAD DEBUG] ⚠️ ERROR: Upload buttons still exist in non-upload mode!`
                             );
                         } else {
-                            console.log(
+                            debugLog(
                                 `🔍 [MediaSelection UPLOAD DEBUG] ✅ SUCCESS: No upload buttons found in non-upload mode`
                             );
                         }
                     }
 
-                    console.log(
+                    debugLog(
                         `🔍 [MediaSelection UPLOAD DEBUG] ========== updateMediaWidgets END ==========`
                     );
 
@@ -1635,10 +1617,10 @@ app.registerExtension({
 
                 // Initial setup - call updateResizeWidgets first, then updateMediaWidgets
                 // (updateMediaWidgets will call updateResizeWidgets at the end)
-                console.log(
+                debugLog(
                     `🔍 [MediaSelection UPLOAD DEBUG] ========== INITIAL SETUP START ==========`
                 );
-                console.log(
+                debugLog(
                     `🔍 [MediaSelection UPLOAD DEBUG] Default media_source: ${
                         this.mediaSourceWidget?.value || "undefined"
                     }`
@@ -1648,7 +1630,7 @@ app.registerExtension({
                 this.updateResizeWidgets();
                 this.updateMediaWidgets();
 
-                console.log(
+                debugLog(
                     `🔍 [MediaSelection UPLOAD DEBUG] ========== INITIAL SETUP COMPLETE ==========`
                 );
 
@@ -1656,10 +1638,10 @@ app.registerExtension({
                 if (this.mediaSourceWidget) {
                     const originalSourceCallback = this.mediaSourceWidget.callback;
                     this.mediaSourceWidget.callback = (value) => {
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] ========== MEDIA_SOURCE CHANGED ==========`
                         );
-                        console.log(
+                        debugLog(
                             `🔍 [MediaSelection UPLOAD DEBUG] Changed from "${this.mediaSourceWidget.value}" to "${value}"`
                         );
 
@@ -1889,7 +1871,7 @@ app.registerExtension({
         const lastSeenVersion = localStorage.getItem("swissarmyknife_last_version");
 
         if (lastSeenVersion && lastSeenVersion !== EXTENSION_VERSION) {
-            console.log(
+            debugLog(
                 `Swiss Army Knife updated from v${lastSeenVersion} to v${EXTENSION_VERSION}`
             );
 
@@ -2061,11 +2043,19 @@ app.registerExtension({
             defaultValue: "",
             tooltip: "Your Azure Storage connection string (includes account name and key)",
             onChange: (newVal, oldVal) => {
-                console.log("[Azure Debug] onChange triggered!");
-                console.log("[Azure Debug] New value length:", newVal ? newVal.length : 0);
-                console.log("[Azure Debug] Old value length:", oldVal ? oldVal.length : 0);
                 debugLog(`[Settings] Azure Storage connection string changed, syncing to backend`);
                 syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "SwissArmyKnife.debug_mode",
+            name: "Debug Mode",
+            type: "boolean",
+            defaultValue: false,
+            tooltip: "Enable debug mode for detailed logging",
+            onChange: (newVal, oldVal) => {
+                debugLog(`Debug mode changed from ${oldVal} to ${newVal}`);
+                syncApiKeysToBackend(); // Sync debug mode to backend
             },
         },
     ],

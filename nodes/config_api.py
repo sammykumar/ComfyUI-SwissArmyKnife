@@ -6,12 +6,22 @@ from aiohttp import web
 import os
 
 
-# Global variable to cache API keys from frontend settings
+# Global variable to cache API keys and settings from frontend
 _cached_api_keys = {
     "gemini_api_key": "",
     "civitai_api_key": "",
     "azure_storage_connection_string": ""
 }
+
+_cached_settings = {
+    "debug_mode": False
+}
+
+
+def get_debug_mode():
+    """Get the debug mode setting"""
+    global _cached_settings
+    return _cached_settings.get("debug_mode", False)
 
 
 def get_api_keys():
@@ -39,12 +49,13 @@ def get_setting_value(setting_id):
 
 
 async def get_config(request):
-    """Get frontend configuration including DEBUG setting and API keys"""
+    """Get frontend configuration including debug setting and API keys"""
     try:
-        # Read DEBUG setting from environment
-        debug = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
+        # Get debug setting from cached settings
+        global _cached_settings
+        debug = _cached_settings.get("debug_mode", False)
         
-        # Get API keys from settings (uses cached values or environment variables)
+        # Get API keys from settings (uses cached values)
         gemini_api_key = get_setting_value("swiss_army_knife.gemini.api_key")
         civitai_api_key = get_setting_value("swiss_army_knife.civitai.api_key")
         azure_connection_string = get_setting_value("swiss_army_knife.azure_storage.connection_string")
@@ -60,27 +71,36 @@ async def get_config(request):
 
 
 async def set_api_keys(request):
-    """Allow frontend to pass API keys from settings to backend"""
+    """Allow frontend to pass API keys and settings from settings to backend"""
     try:
+        from .debug_utils import debug_print
+        
         data = await request.json()
         gemini_key = data.get("gemini_api_key", "")
         civitai_key = data.get("civitai_api_key", "")
         azure_connection_string = data.get("azure_storage_connection_string", "")
+        debug_mode = data.get("debug_mode", False)
         
-        print(f"[Azure Debug] set_api_keys received connection string length: {len(azure_connection_string)}")
+        debug_print(f"[Config API] set_api_keys received:")
+        debug_print(f"  - Azure connection string length: {len(azure_connection_string)}")
+        debug_print(f"  - Debug mode: {debug_mode}")
+        
         if azure_connection_string:
-            print(f"[Azure Debug] Connection string preview: {azure_connection_string[:50]}...")
+            debug_print(f"  - Connection string preview: {azure_connection_string[:50]}...")
         
-        # Store API keys in a global location that can be accessed by nodes
-        global _cached_api_keys
+        # Store API keys and settings in global location
+        global _cached_api_keys, _cached_settings
         _cached_api_keys = {
             "gemini_api_key": gemini_key,
             "civitai_api_key": civitai_key,
             "azure_storage_connection_string": azure_connection_string
         }
+        _cached_settings = {
+            "debug_mode": debug_mode
+        }
         
-        print(f"[Azure Debug] Cached keys after update: {list(_cached_api_keys.keys())}")
-        print(f"[Azure Debug] Cached Azure connection string length: {len(_cached_api_keys.get('azure_storage_connection_string', ''))}")
+        debug_print(f"[Config API] Cached keys after update: {list(_cached_api_keys.keys())}")
+        debug_print(f"[Config API] Cached Azure connection string length: {len(_cached_api_keys.get('azure_storage_connection_string', ''))}")
         
         # Refresh the global CivitAI service to pick up the new API key
         try:
@@ -89,7 +109,7 @@ async def set_api_keys(request):
         except ImportError:
             pass  # CivitAI service not available
         
-        print(f"[Swiss Army Knife] API keys cached: Gemini={bool(gemini_key)}, CivitAI={bool(civitai_key)}, Azure={bool(azure_connection_string)}")
+        print(f"[Swiss Army Knife] Settings cached: Gemini={bool(gemini_key)}, CivitAI={bool(civitai_key)}, Azure={bool(azure_connection_string)}, Debug={debug_mode}")
         
         return web.json_response({"success": True})
     except Exception as e:

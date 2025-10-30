@@ -1,4 +1,21 @@
 import { app as app$1 } from "/scripts/app.js";
+
+// Debug mode helper - check setting dynamically
+const isDebugEnabled = () => {
+    try {
+        return app$1.extensionManager?.setting?.get("SwissArmyKnife.debug_mode") || false;
+    } catch (error) {
+        return false;
+    }
+};
+
+// Conditional logging wrapper for LoRA Manager
+const loraDebugLog = (...args) => {
+    if (isDebugEnabled()) {
+        console.log("[LoRAManager]", ...args);
+    }
+};
+
 class LoraService {
     constructor() {
         this.availableLoras = [];
@@ -51,7 +68,7 @@ class LoraService {
                     this.availableLoras = folderData.loras || [];
                 }
             }
-            console.log(`Super LoRA Loader: Found ${this.availableLoras.length} LoRAs`);
+            loraDebugLog(`Found ${this.availableLoras.length} LoRAs`);
         } catch (error) {
             console.error("Super LoRA Loader: Failed to refresh LoRA list:", error);
             this.availableLoras = [];
@@ -969,8 +986,8 @@ class OverlayService {
                     const labelText = isRootSub
                         ? `${top} (root)`
                         : duplicate
-                          ? `${top} / ${sub}`
-                          : sub;
+                        ? `${top} / ${sub}`
+                        : sub;
                     const countVal = subCountsByKey[key] ?? 0;
                     const chip = document.createElement("button");
                     chip.type = "button";
@@ -2882,8 +2899,8 @@ class SuperLoraWidget extends SuperLoraBaseWidget {
             const arrowRightStart = showStrength
                 ? leftMostMinus - gap
                 : showRemove
-                  ? removeX - gap
-                  : rightEdge - gap;
+                ? removeX - gap
+                : rightEdge - gap;
             upX = arrowRightStart - arrowSize - 4;
             downX = upX - (arrowSize + 2);
             cursorX -= gap;
@@ -3443,8 +3460,8 @@ class SuperLoraHeaderWidget extends SuperLoraBaseWidget {
             ctx.textAlign = "center";
             const font =
                 mode === "icon"
-                    ? (style.iconFont ?? "600 13px 'Segoe UI', Arial, sans-serif")
-                    : (style.font ?? "500 11px 'Segoe UI', Arial, sans-serif");
+                    ? style.iconFont ?? "600 13px 'Segoe UI', Arial, sans-serif"
+                    : style.font ?? "500 11px 'Segoe UI', Arial, sans-serif";
             ctx.font = font;
             const verticalOffset = mode === "icon" ? -0.5 : 0;
             ctx.fillText(label, x + width / 2, midY + verticalOffset);
@@ -4331,7 +4348,9 @@ const _SuperLoraNode = class _SuperLoraNode {
                         );
                     if (skipped.length)
                         this.showToast(
-                            `⚠️ Skipped ${skipped.length} duplicate${skipped.length > 1 ? "s" : ""}`,
+                            `⚠️ Skipped ${skipped.length} duplicate${
+                                skipped.length > 1 ? "s" : ""
+                            }`,
                             "warning"
                         );
                     node.setDirtyCanvas(true, true);
@@ -4425,7 +4444,9 @@ const _SuperLoraNode = class _SuperLoraNode {
                 },
             },
             {
-                content: `${node.properties.useSplitView !== false ? "✅" : "❌"} Split View (High/Low)`,
+                content: `${
+                    node.properties.useSplitView !== false ? "✅" : "❌"
+                } Split View (High/Low)`,
                 callback: () => {
                     node.properties.useSplitView =
                         node.properties.useSplitView === false ? true : false;
@@ -4435,7 +4456,9 @@ const _SuperLoraNode = class _SuperLoraNode {
                 },
             },
             {
-                content: `${node.properties.showSeparateStrengths ? "✅" : "❌"} Separate Model/CLIP Strengths`,
+                content: `${
+                    node.properties.showSeparateStrengths ? "✅" : "❌"
+                } Separate Model/CLIP Strengths`,
                 callback: () => {
                     const enabling = !node.properties.showSeparateStrengths;
                     node.properties.showSeparateStrengths = enabling;
@@ -4464,7 +4487,9 @@ const _SuperLoraNode = class _SuperLoraNode {
                 },
             },
             {
-                content: `${node.properties.autoFetchTriggerWords ? "✅" : "❌"} Auto-fetch Trigger Words`,
+                content: `${
+                    node.properties.autoFetchTriggerWords ? "✅" : "❌"
+                } Auto-fetch Trigger Words`,
                 callback: () => {
                     node.properties.autoFetchTriggerWords = !node.properties.autoFetchTriggerWords;
                     this.syncExecutionWidgets(node);
@@ -4490,7 +4515,9 @@ const _SuperLoraNode = class _SuperLoraNode {
                 },
             },
             {
-                content: `${node.properties.showMoveArrows !== false ? "✅" : "❌"} Show Move Arrows`,
+                content: `${
+                    node.properties.showMoveArrows !== false ? "✅" : "❌"
+                } Show Move Arrows`,
                 callback: () => {
                     node.properties.showMoveArrows =
                         node.properties.showMoveArrows === false ? true : false;
@@ -4499,7 +4526,9 @@ const _SuperLoraNode = class _SuperLoraNode {
                 },
             },
             {
-                content: `${node.properties.showRemoveButton !== false ? "✅" : "❌"} Show Remove Button`,
+                content: `${
+                    node.properties.showRemoveButton !== false ? "✅" : "❌"
+                } Show Remove Button`,
                 callback: () => {
                     node.properties.showRemoveButton =
                         node.properties.showRemoveButton === false ? true : false;
@@ -4508,7 +4537,9 @@ const _SuperLoraNode = class _SuperLoraNode {
                 },
             },
             {
-                content: `${node.properties.showStrengthControls !== false ? "✅" : "❌"} Show Strength Controls`,
+                content: `${
+                    node.properties.showStrengthControls !== false ? "✅" : "❌"
+                } Show Strength Controls`,
                 callback: () => {
                     node.properties.showStrengthControls =
                         node.properties.showStrengthControls === false ? true : false;
@@ -5089,8 +5120,15 @@ const GGUF_CLIP_WIDGET_MAP = {
 };
 const _NodeEnhancerExtension = class _NodeEnhancerExtension {
     static debugLog(...args) {
-        if (this.DEBUG) {
-            console.debug("[NodeEnhancer]", ...args);
+        // Check debug mode from settings dynamically
+        try {
+            const debugEnabled =
+                app$1.extensionManager?.setting?.get("SwissArmyKnife.debug_mode") || false;
+            if (debugEnabled) {
+                console.debug("[NodeEnhancer]", ...args);
+            }
+        } catch {
+            // Fail silently if settings not available
         }
     }
     static isExtensionEnabled() {
@@ -5543,8 +5581,8 @@ const _NodeEnhancerExtension = class _NodeEnhancerExtension {
             const targetOptions = Array.isArray(originalResult)
                 ? originalResult
                 : Array.isArray(optionsArr)
-                  ? optionsArr
-                  : providedOptions;
+                ? optionsArr
+                : providedOptions;
             const options = Array.isArray(targetOptions) ? targetOptions : [];
             for (let i = options.length - 1; i >= 0; i--) {
                 if (options[i]?.__ndSuperSelectorToggle) {
@@ -6262,8 +6300,8 @@ const _NodeEnhancerExtension = class _NodeEnhancerExtension {
                 typeof widget?.name === "string"
                     ? widget.name
                     : typeof widget?.label === "string"
-                      ? widget.label
-                      : null;
+                    ? widget.label
+                    : null;
             if (!widgetName) {
                 continue;
             }
