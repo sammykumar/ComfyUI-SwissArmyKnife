@@ -5,3 +5,4 @@ pillow
 requests
 aiohttp>=3.8.0
 openai
+azure-storage-blob

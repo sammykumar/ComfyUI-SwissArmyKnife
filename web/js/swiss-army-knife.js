@@ -53,11 +53,32 @@ const getCivitaiApiKey = () => {
     }
 };
 
+const getAzureStorageConnectionString = () => {
+    try {
+        const value =
+            app.extensionManager.setting.get("SwissArmyKnife.azure_storage.connection_string") ||
+            "";
+        console.log(
+            `[Azure Debug] getAzureStorageConnectionString called, value length: ${value.length}`
+        );
+        return value;
+    } catch (error) {
+        console.warn("Failed to get Azure Storage connection string from settings:", error);
+        return "";
+    }
+};
+
 // Function to sync API keys to backend
 const syncApiKeysToBackend = async () => {
+    console.log("[Azure Debug] syncApiKeysToBackend called");
     try {
         const geminiKey = getGeminiApiKey();
         const civitaiKey = getCivitaiApiKey();
+        const azureConnectionString = getAzureStorageConnectionString();
+
+        console.log("[Azure Debug] FULL Azure connection string:");
+        console.log(azureConnectionString);
+        console.log("[Azure Debug] Length:", azureConnectionString.length);
 
         const response = await fetch("/swissarmyknife/set_api_keys", {
             method: "POST",
@@ -67,11 +88,13 @@ const syncApiKeysToBackend = async () => {
             body: JSON.stringify({
                 gemini_api_key: geminiKey,
                 civitai_api_key: civitaiKey,
+                azure_storage_connection_string: azureConnectionString,
             }),
         });
 
         if (response.ok) {
             debugLog("[Settings] API keys synced to backend successfully");
+            console.log("[Azure Debug] API keys synced successfully");
         } else {
             console.warn("[Settings] Failed to sync API keys to backend:", response.status);
         }
@@ -1066,7 +1089,9 @@ app.registerExtension({
                     );
                     console.log(`🔍 [MediaSelection UPLOAD DEBUG] mediaSource: "${mediaSource}"`);
                     console.log(
-                        `🔍 [MediaSelection UPLOAD DEBUG] Total widgets before update: ${this.widgets?.length || 0}`
+                        `🔍 [MediaSelection UPLOAD DEBUG] Total widgets before update: ${
+                            this.widgets?.length || 0
+                        }`
                     );
 
                     debugLog(`[MediaSelection] Updating widgets: mediaSource=${mediaSource}`);
@@ -1342,8 +1367,9 @@ app.registerExtension({
 
                                                 try {
                                                     // Use ComfyUI's built-in upload system
-                                                    const uploadResponse =
-                                                        await api.uploadImage(file);
+                                                    const uploadResponse = await api.uploadImage(
+                                                        file
+                                                    );
                                                     debugLog(
                                                         "[MediaSelection] Image uploaded:",
                                                         uploadResponse
@@ -1547,7 +1573,9 @@ app.registerExtension({
                     );
                     console.log(`🔍 [MediaSelection UPLOAD DEBUG] mediaSource: "${mediaSource}"`);
                     console.log(
-                        `🔍 [MediaSelection UPLOAD DEBUG] Total widgets: ${this.widgets?.length || 0}`
+                        `🔍 [MediaSelection UPLOAD DEBUG] Total widgets: ${
+                            this.widgets?.length || 0
+                        }`
                     );
                     console.log(
                         `🔍 [MediaSelection UPLOAD DEBUG] Final imageUploadButton exists: ${!!finalImageButton}`
@@ -1611,7 +1639,9 @@ app.registerExtension({
                     `🔍 [MediaSelection UPLOAD DEBUG] ========== INITIAL SETUP START ==========`
                 );
                 console.log(
-                    `🔍 [MediaSelection UPLOAD DEBUG] Default media_source: ${this.mediaSourceWidget?.value || "undefined"}`
+                    `🔍 [MediaSelection UPLOAD DEBUG] Default media_source: ${
+                        this.mediaSourceWidget?.value || "undefined"
+                    }`
                 );
 
                 debugLog(`[MediaSelection] onNodeCreated - Running initial setup`);
@@ -2021,6 +2051,20 @@ app.registerExtension({
             tooltip: "Your CivitAI API key for LoRA metadata lookup",
             onChange: (newVal, oldVal) => {
                 debugLog(`[Settings] CivitAI API key changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "SwissArmyKnife.azure_storage.connection_string",
+            name: "Azure Storage Connection String",
+            type: "text",
+            defaultValue: "",
+            tooltip: "Your Azure Storage connection string (includes account name and key)",
+            onChange: (newVal, oldVal) => {
+                console.log("[Azure Debug] onChange triggered!");
+                console.log("[Azure Debug] New value length:", newVal ? newVal.length : 0);
+                console.log("[Azure Debug] Old value length:", oldVal ? oldVal.length : 0);
+                debugLog(`[Settings] Azure Storage connection string changed, syncing to backend`);
                 syncApiKeysToBackend();
             },
         },
