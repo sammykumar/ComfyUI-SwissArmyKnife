@@ -159,4 +159,4 @@ cache_info.json
 .comfyui-user/
 
 # Chrome
-.ai-image-gen
+.ai-image-gen.venv/
