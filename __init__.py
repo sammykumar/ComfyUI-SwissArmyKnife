@@ -61,6 +61,15 @@ except ImportError as e:
     MEDIA_SELECTION_NODE_CLASS_MAPPINGS = {}
     MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+# Import vace_annotators nodes
+try:
+    from .nodes.vace_annotators import NODE_CLASS_MAPPINGS as VACE_ANNOTATORS_NODE_CLASS_MAPPINGS
+    from .nodes.vace_annotators import NODE_DISPLAY_NAME_MAPPINGS as VACE_ANNOTATORS_NODE_DISPLAY_NAME_MAPPINGS
+except ImportError as e:
+    print(f"Warning: Could not import vace_annotators nodes: {e}")
+    VACE_ANNOTATORS_NODE_CLASS_MAPPINGS = {}
+    VACE_ANNOTATORS_NODE_DISPLAY_NAME_MAPPINGS = {}
+
 # Register config API routes
 try:
     from .nodes.config_api import register_config_routes
@@ -88,7 +97,7 @@ def get_version():
         import time
         return str(int(time.time()))
 
-# Combine main nodes, helper nodes, control panel, civit metadata helper, azure storage, lora_manager, and media_selection nodes
+# Combine main nodes, helper nodes, control panel, civit metadata helper, azure storage, lora_manager, media_selection, and vace_annotators nodes
 NODE_CLASS_MAPPINGS = {
     **MAIN_NODE_CLASS_MAPPINGS,
     **HELPER_NODE_CLASS_MAPPINGS,
@@ -96,7 +105,8 @@ NODE_CLASS_MAPPINGS = {
     **CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS,
     **AZURE_STORAGE_NODE_CLASS_MAPPINGS,
     **LORA_MANAGER_NODE_CLASS_MAPPINGS,
-    **MEDIA_SELECTION_NODE_CLASS_MAPPINGS
+    **MEDIA_SELECTION_NODE_CLASS_MAPPINGS,
+    **VACE_ANNOTATORS_NODE_CLASS_MAPPINGS
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     **MAIN_NODE_DISPLAY_NAME_MAPPINGS,
@@ -105,7 +115,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     **CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS,
     **AZURE_STORAGE_NODE_DISPLAY_NAME_MAPPINGS,
     **LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS,
-    **MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS
+    **MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS,
+    **VACE_ANNOTATORS_NODE_DISPLAY_NAME_MAPPINGS
 }
 
 WEB_DIRECTORY = "./web"
