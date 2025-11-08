@@ -45,7 +45,7 @@ try:
     from .nodes.media_selection.media_selection import MediaSelection
     from .nodes.media_selection.frame_extractor import FrameExtractor
     from .nodes.media_selection.multi_caption_combiner import MultiCaptionCombiner
-    
+
     MEDIA_SELECTION_NODE_CLASS_MAPPINGS = {
         "MediaSelection": MediaSelection,
         "FrameExtractor": FrameExtractor,
