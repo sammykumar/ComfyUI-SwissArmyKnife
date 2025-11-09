@@ -1796,6 +1796,38 @@ Compare different videos or sources.
 4. Adjust frame count and extraction methods
 5. Fine-tune prompts for your specific use case
 
+## Seed Behavior for "Randomize Media from Path"
+
+**Updated behavior:** The `seed` parameter now acts as a **deterministic index** rather than a random seed.
+
+### How it works:
+
+- Files in the directory are sorted alphabetically for consistent ordering
+- The seed value directly maps to a file index: `file_index = seed % total_files`
+- **Seed 0** always selects the first file (alphabetically)
+- **Seed 1** always selects the second file
+- **Seeds >= total_files** wrap around using modulo
+
+### Examples:
+
+If you have 100 media files in a directory:
+- `seed=0` → selects file at index 0 (first file)
+- `seed=50` → selects file at index 50
+- `seed=99` → selects file at index 99 (last file)
+- `seed=100` → wraps to index 0 (100 % 100 = 0)
+- `seed=101` → wraps to index 1 (101 % 100 = 1)
+
+### Benefits:
+
+- **Predictable**: Same seed always returns the same file
+- **Sequential**: Incrementing seed values give you sequential files
+- **Simple**: Easy to understand and control which file gets selected
+- **No surprises**: Seed 0 is always the first file
+
+### Migration note:
+
+Previously, the seed was used with `random.seed()` to randomize selection. The new behavior provides deterministic, index-based selection. If you need random selection, you can still achieve it by generating random seed values externally.
+
 ## Resources
 
 - Full documentation: `/docs/nodes/media-selection/README.md`
