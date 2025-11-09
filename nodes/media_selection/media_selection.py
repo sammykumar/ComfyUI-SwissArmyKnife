@@ -185,8 +185,8 @@ class MediaSelection:
         # Remove duplicates (files can be found by both non-recursive and recursive patterns)
         all_files = list(set(all_files))
 
-        # Sort files for consistent ordering across runs
-        all_files.sort()
+        # Sort files by creation time (oldest first) for consistent ordering across runs
+        all_files.sort(key=lambda f: os.path.getctime(f))
 
         # Use seed as index with wraparound (seed % file_count)
         # This ensures: seed 0 = first file, seed N >= file_count wraps around
