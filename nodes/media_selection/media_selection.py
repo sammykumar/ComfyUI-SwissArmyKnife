@@ -182,11 +182,12 @@ class MediaSelection:
         if not all_files:
             raise ValueError(f"No {media_type} files found in path: {media_path}")
 
-        # Remove duplicates (files can be found by both non-recursive and recursive patterns)
-        all_files = list(set(all_files))
+        # Sort files by modification time (newest first) so seed=0 selects the most recent file
+        # Note: getctime() returns metadata change time on Linux, getmtime() returns actual modification time
+        all_files.sort(key=lambda f: os.path.getmtime(f), reverse=True)
 
-        # Sort files by creation time (newest first) so seed=0 selects the most recent file
-        all_files.sort(key=lambda f: os.path.getctime(f), reverse=True)
+        # Remove duplicates AFTER sorting (preserving sorted order)
+        all_files = list(dict.fromkeys(all_files))  # Preserves order while removing duplicates
 
         # Use seed as index with wraparound (seed % file_count)
         # This ensures: seed 0 = first file (most recent), seed N >= file_count wraps around
