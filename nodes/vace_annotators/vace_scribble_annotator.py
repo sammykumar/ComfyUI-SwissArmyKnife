@@ -9,6 +9,14 @@ import os
 import torch
 from typing import Tuple
 
+# Prefer ComfyUI folder_paths when available (respects --base-directory)
+try:
+    import folder_paths
+    COMFYUI_AVAILABLE = True
+except Exception:
+    folder_paths = None
+    COMFYUI_AVAILABLE = False
+
 
 class VACEScribbleAnnotator:
     """
@@ -69,12 +77,48 @@ class VACEScribbleAnnotator:
 
     def _get_default_model_path(self, style: str) -> str:
         """Get default model path based on style."""
-        # Try multiple possible base paths
-        possible_bases = [
+        # Try ComfyUI-aware paths first (respects --base-directory)
+        possible_bases = []
+        if COMFYUI_AVAILABLE and folder_paths is not None:
+            try:
+                base_dir = None
+
+                # Prefer an explicit base directory API if present
+                if hasattr(folder_paths, "get_base_directory"):
+                    base_dir = folder_paths.get_base_directory()
+                elif hasattr(folder_paths, "base_dir"):
+                    base_dir = folder_paths.base_dir
+
+                # Some ComfyUI installs expose a "user" directory inside the base dir
+                # (e.g. <base>/user). If only get_user_directory/user_dir is available,
+                # take its parent directory when it looks like a nested 'user' folder.
+                if base_dir is None:
+                    if hasattr(folder_paths, "get_user_directory"):
+                        user_dir = folder_paths.get_user_directory()
+                    elif hasattr(folder_paths, "user_dir"):
+                        user_dir = folder_paths.user_dir
+                    else:
+                        user_dir = None
+
+                    if user_dir:
+                        # If the basename is 'user', use its parent as the base directory
+                        if os.path.basename(os.path.normpath(user_dir)).lower() == "user":
+                            base_dir = os.path.dirname(os.path.normpath(user_dir))
+                        else:
+                            base_dir = user_dir
+
+                if base_dir:
+                    possible_bases.append(os.path.join(base_dir, "models", "vace_annotators", "scribble"))
+            except Exception:
+                # If anything goes wrong, fall back to legacy candidates below
+                pass
+
+        # Legacy / development fallback paths
+        possible_bases.extend([
             "models/vace_annotators/scribble",
             "../models/vace_annotators/scribble",
             os.path.expanduser("~/ComfyUI/models/vace_annotators/scribble"),
-        ]
+        ])
 
         # Model files for different styles
         model_files = {
