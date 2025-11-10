@@ -185,16 +185,16 @@ class MediaSelection:
         # Remove duplicates (files can be found by both non-recursive and recursive patterns)
         all_files = list(set(all_files))
 
-        # Sort files by creation time (oldest first) for consistent ordering across runs
-        all_files.sort(key=lambda f: os.path.getctime(f))
+        # Sort files by creation time (newest first) so seed=0 selects the most recent file
+        all_files.sort(key=lambda f: os.path.getctime(f), reverse=True)
 
         # Use seed as index with wraparound (seed % file_count)
-        # This ensures: seed 0 = first file, seed N >= file_count wraps around
+        # This ensures: seed 0 = first file (most recent), seed N >= file_count wraps around
         file_index = seed % len(all_files)
         selected_media_path = all_files[file_index]
 
         emoji = "📷" if media_type == "image" else "📹"
-        media_info_text = f"{emoji} {media_type.title()} Processing Info (Index Selection):\n• File: {os.path.basename(selected_media_path)}\n• Index: {file_index} of {len(all_files)} files (seed: {seed})\n• Source: {media_path}\n• Full path: {selected_media_path}"
+        media_info_text = f"{emoji} {media_type.title()} Processing Info (Index Selection):\n• File: {os.path.basename(selected_media_path)}\n• Index: {file_index} of {len(all_files)} files (seed: {seed}, 0 = most recent)\n• Source: {media_path}\n• Full path: {selected_media_path}"
 
         return selected_media_path, media_info_text
 
