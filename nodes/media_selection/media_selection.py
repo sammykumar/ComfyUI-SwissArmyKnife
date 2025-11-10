@@ -1,11 +1,6 @@
 import cv2
 import os
-import random
 import glob
-import requests
-import mimetypes
-from urllib.parse import urlparse
-from html import unescape
 import subprocess
 from PIL import Image
 from ..utils.temp_utils import get_temp_file_path
@@ -187,13 +182,19 @@ class MediaSelection:
         if not all_files:
             raise ValueError(f"No {media_type} files found in path: {media_path}")
 
-        # Randomly select a file using the seed
-        random.seed(seed)
-        selected_media_path = random.choice(all_files)
-        random.seed(None)
+        # Remove duplicates (files can be found by both non-recursive and recursive patterns)
+        all_files = list(set(all_files))
+
+        # Sort files by creation time (oldest first) for consistent ordering across runs
+        all_files.sort(key=lambda f: os.path.getctime(f))
+
+        # Use seed as index with wraparound (seed % file_count)
+        # This ensures: seed 0 = first file, seed N >= file_count wraps around
+        file_index = seed % len(all_files)
+        selected_media_path = all_files[file_index]
 
         emoji = "📷" if media_type == "image" else "📹"
-        media_info_text = f"{emoji} {media_type.title()} Processing Info (Random Selection):\n• File: {os.path.basename(selected_media_path)}\n• Source: Random from {media_path}\n• Full path: {selected_media_path}"
+        media_info_text = f"{emoji} {media_type.title()} Processing Info (Index Selection):\n• File: {os.path.basename(selected_media_path)}\n• Index: {file_index} of {len(all_files)} files (seed: {seed})\n• Source: {media_path}\n• Full path: {selected_media_path}"
 
         return selected_media_path, media_info_text
 
@@ -279,9 +280,9 @@ class MediaSelection:
         """
         if resize_mode == "None":
             return pil_image
-        
+
         original_width, original_height = pil_image.size
-        
+
         if resize_mode == "Auto (by orientation)":
             # Determine output dimensions based on image orientation
             # Landscape (wider): 832x480, Portrait (taller): 480x832
@@ -297,11 +298,11 @@ class MediaSelection:
         else:
             # Unknown mode, return original
             return pil_image
-        
+
         # Calculate aspect ratios
         original_aspect = original_width / original_height
         target_aspect = target_width / target_height
-        
+
         # Resize with aspect ratio preservation, then crop to exact dimensions
         if original_aspect > target_aspect:
             # Original is wider, fit to height and crop width
@@ -311,18 +312,18 @@ class MediaSelection:
             # Original is taller, fit to width and crop height
             new_width = target_width
             new_height = int(new_width / original_aspect)
-        
+
         # Resize with high-quality Lanczos resampling
         resized = pil_image.resize((new_width, new_height), Image.LANCZOS)
-        
+
         # Center crop to exact target dimensions
         left = (new_width - target_width) // 2
         top = (new_height - target_height) // 2
         right = left + target_width
         bottom = top + target_height
-        
+
         cropped = resized.crop((left, top, right, bottom))
-        
+
         print(f"Resized image from {original_width}x{original_height} to {target_width}x{target_height}")
         return cropped
 
@@ -330,33 +331,33 @@ class MediaSelection:
         """Process image and optionally resize it."""
         # Read image with PIL for better format support
         pil_image = Image.open(image_path)
-        
+
         # Apply resizing if requested
         if resize_mode != "None":
             pil_image = self._resize_image(pil_image, resize_mode, resize_width, resize_height)
-            
+
             # Save resized image to a temporary file
             from ..utils.temp_utils import get_temp_file_path
-            
+
             # Determine file extension
             _, ext = os.path.splitext(image_path)
             if not ext:
                 ext = '.png'
-            
+
             resized_path = get_temp_file_path(suffix=ext, prefix='resized', subdir='images')
-            
+
             # Convert RGBA to RGB if saving as JPEG
             if ext.lower() in ['.jpg', '.jpeg'] and pil_image.mode == 'RGBA':
                 pil_image = pil_image.convert('RGB')
-            
+
             # Save the resized image
             pil_image.save(resized_path)
             image_path = resized_path
             print(f"Saved resized image to: {resized_path}")
-        
+
         # Get dimensions from the (possibly resized) image
         width, height = pil_image.size
-        
+
         return height, width, 0.0, 0.0, image_path
 
     def _get_image_metadata(self, image_path):
@@ -364,7 +365,7 @@ class MediaSelection:
         img = cv2.imread(image_path)
         if img is None:
             raise ValueError(f"Failed to read image: {image_path}")
-        
+
         height, width = img.shape[:2]
         return height, width, 0.0, 0.0
 
@@ -385,7 +386,7 @@ class MediaSelection:
         """
         if resize_mode == "None":
             return None, original_width, original_height
-        
+
         # Determine target dimensions
         if resize_mode == "Auto (by orientation)":
             # Landscape (wider): 832x480, Portrait (taller): 480x832
@@ -401,11 +402,11 @@ class MediaSelection:
         else:
             # Unknown mode, no resize
             return None, original_width, original_height
-        
+
         # Calculate aspect ratios for proper scaling and cropping
         original_aspect = original_width / original_height
         target_aspect = target_width / target_height
-        
+
         # Determine scale dimensions (fit to one dimension, crop the other)
         if original_aspect > target_aspect:
             # Original is wider, fit to height and crop width
@@ -415,19 +416,19 @@ class MediaSelection:
             # Original is taller, fit to width and crop height
             scale_width = target_width
             scale_height = int(scale_width / original_aspect)
-        
+
         # Create output path
         resized_path = get_temp_file_path(suffix='.mp4', prefix='resized', subdir='videos')
-        
+
         try:
             print(f"Resizing video from {original_width}x{original_height} to {target_width}x{target_height}")
-            
+
             # Build ffmpeg command with scale and crop filters
             # First scale to intermediate size, then crop to exact target
             scale_filter = f"scale={scale_width}:{scale_height}"
             crop_filter = f"crop={target_width}:{target_height}"
             vf_filter = f"{scale_filter},{crop_filter}"
-            
+
             cmd = [
                 'ffmpeg',
                 '-i', video_path,
@@ -439,16 +440,16 @@ class MediaSelection:
                 '-y',
                 resized_path
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            
+
             if os.path.exists(resized_path) and os.path.getsize(resized_path) > 0:
                 print(f"Successfully resized video to: {resized_path}")
                 return resized_path, target_width, target_height
             else:
                 print("Warning: Resized video file is empty, using original")
                 return None, original_width, original_height
-                
+
         except subprocess.CalledProcessError as e:
             print(f"FFmpeg resize error: {e.stderr}")
             print("Warning: Could not resize video. Using original dimensions.")
@@ -484,7 +485,7 @@ class MediaSelection:
             # Trim video
             min_duration = min(1.0, original_duration)
             actual_duration = max(min_duration, min(max_duration, original_duration))
-            
+
             # Use ComfyUI-aware temp directory
             trimmed_video_path = get_temp_file_path(suffix='.mp4', prefix='trimmed', subdir='videos')
 
