@@ -20,6 +20,7 @@ Generate stylized scribble/edge maps from images or video frames. The node autom
 | `images` | IMAGE | ✔ | - | Input image or batch of frames (NHWC, ComfyUI standard). |
 | `style` | COMBO (`anime`,`general`,`sketch`) | ✔ | `anime` | Selects which official VACE checkpoint to load. |
 | `inference_mode` | COMBO (`auto`,`model`,`fallback`) | ✔ | `auto` | `auto` prefers checkpoints when present, `model` requires them (errors otherwise), `fallback` forces Sobel mode. |
+| `batch_size` | INT | ✖ | `10` | Process frames in chunks to limit VRAM. Set to `0` to process the full batch at once. |
 | `resolution` | INT | ✔ | `512` | Square working resolution used before inference. Higher values capture more detail but use more VRAM/time. |
 | `model_path` | STRING | ✖ | `""` | Optional explicit checkpoint path. When empty, the node searches the standard `models/vace_annotators/scribble/...` tree. |
 
@@ -40,6 +41,8 @@ Generate stylized scribble/edge maps from images or video frames. The node autom
 1. **ContourInference (vendor) backend** – Triggered when the checkpoint contains `model0.*` keys. The node instantiates the original VACE generator, keeps inputs in `[0,1]`, and uses the native Sigmoid outputs directly. This reproduces the vendor visuals exactly and ignores the old edge-threshold slider.
 2. **ResNet backend** – Triggered for legacy/custom checkpoints that match the vendored ResNet architecture. Inputs are normalized to `[-1,1]`, outputs go through adaptive quantile thresholding, and optional thinning runs to mimic the previous SwissArmyKnife behavior.
 3. **Sobel fallback** – When checkpoints are missing (or `inference_mode=fallback`), the node applies grayscale Sobel filters, normalizes magnitudes per-frame, thresholds with an internal factor of `0.12`, and produces usable scribble maps without any external files.
+
+Every backend respects the `batch_size` chunking control, so large frame batches can be streamed without exhausting VRAM.
 
 ### Resolution handling
 
@@ -67,6 +70,7 @@ All three backends resize incoming frames to the chosen `resolution` for process
 4. Leave `model_path` blank unless you store checkpoints in a custom location.
 5. Adjust `resolution` to balance fidelity vs. performance (512 is the vendor default; 768–1024 offers more detail).
 6. Run the workflow; the node logs which backend ran and outputs an IMAGE tensor ready for previews or downstream control nodes.
+7. If the GPU runs out of memory, lower `batch_size` (e.g., 8–12) so frames are processed in smaller chunks.
 
 ---
 

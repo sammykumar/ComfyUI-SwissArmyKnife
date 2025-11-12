@@ -171,6 +171,7 @@ Generates scribble/edge maps from images for stylized effects.
 | `images` | IMAGE | - | Input images or video frames (batch supported) |
 | `style` | ENUM | "anime" | Style: "anime", "general", or "sketch" |
 | `inference_mode` | ENUM | "auto" | `auto` prefers vendored model, `model` requires checkpoint, `fallback` forces Sobel mode |
+| `batch_size` | INT | 10 | Process frames in chunks to reduce VRAM usage (0 = full batch). |
 | `resolution` | INT | 512 | Processing resolution (64-2048, step 64) |
 | `model_path` | STRING | "" | Optional custom model path |
 
@@ -192,6 +193,7 @@ Generates scribble/edge maps from images for stylized effects.
 - `model` mode surfaces helpful errors when checkpoints are missing or incompatible.
 - Edge thresholding is now automatic: vendor checkpoints emit stylized maps directly, while Sobel/ResNet fallback paths reuse an internal factor of `0.12`.
 - Adaptive quantile thresholding plus morphological thinning (legacy backend) remains available automatically when the vendor checkpoint is missing.
+- Use the `batch_size` field to stream large frame batches across multiple forward passes if you run into VRAM limits.
 - Useful for style transfer and artistic video generation; can be combined with other control signals.
 
 ## Usage Examples

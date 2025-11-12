@@ -66,6 +66,12 @@ class VACEScribbleAnnotator:
                     "multiline": False,
                     "tooltip": "Custom path to model file (leave empty for default discovery)",
                 }),
+                "batch_size": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 128,
+                    "tooltip": "Process frames in chunks to reduce VRAM usage (0 = process entire batch).",
+                }),
             },
         }
 
@@ -198,32 +204,51 @@ class VACEScribbleAnnotator:
             scribble_maps = 1.0 - edges.repeat(1, 1, 1, 3)
             return scribble_maps.permute(0, 2, 3, 1).cpu()
 
-    def _process_scribble(self, images: torch.Tensor, model, resolution: int, inference_mode: str) -> torch.Tensor:
-        batch_size = images.shape[0]
-        print(f"Processing {batch_size} frame(s) for scribble detection at resolution {resolution} (mode={inference_mode})")
+    def _process_scribble(
+        self,
+        images: torch.Tensor,
+        model,
+        resolution: int,
+        inference_mode: str,
+        batch_size: int,
+    ) -> torch.Tensor:
+        total_frames = images.shape[0]
+        effective_batch = batch_size if batch_size and batch_size > 0 else total_frames
+        print(
+            f"Processing {total_frames} frame(s) for scribble detection at resolution {resolution} "
+            f"(mode={inference_mode}, chunk_size={effective_batch})"
+        )
 
-        if isinstance(model, torch.nn.Module):
-            with torch.no_grad():
-                normalize_mode = getattr(model, "_sak_input_normalization", "tanh")
-                inp = preprocess_scribble_input(images, resolution, normalize_mode=normalize_mode)
-                device = next(model.parameters()).device
-                out = model(inp.to(device))
-                post_mode = getattr(model, "_sak_postprocess", "quantile")
-                if post_mode == "vendor":
-                    scribble_maps = postprocess_vendor_scribble_output(
-                        out.detach(),
-                        target_hw=(images.shape[1], images.shape[2]),
-                    )
-                else:
-                    scribble_maps = postprocess_scribble_output(
-                        out.detach(),
-                        target_hw=(images.shape[1], images.shape[2]),
-                        user_threshold=EDGE_THRESHOLD_DEFAULT,
-                        apply_thinning=True,
-                    )
-                return scribble_maps
+        outputs = []
+        for start in range(0, total_frames, effective_batch):
+            end = min(total_frames, start + effective_batch)
+            chunk = images[start:end]
+            if isinstance(model, torch.nn.Module):
+                outputs.append(self._run_model_chunk(chunk, model, resolution))
+            else:
+                outputs.append(self._sobel_fallback(chunk, resolution))
+        return torch.cat(outputs, dim=0)
 
-        return self._sobel_fallback(images, resolution)
+    def _run_model_chunk(self, images: torch.Tensor, model: torch.nn.Module, resolution: int) -> torch.Tensor:
+        with torch.no_grad():
+            normalize_mode = getattr(model, "_sak_input_normalization", "tanh")
+            inp = preprocess_scribble_input(images, resolution, normalize_mode=normalize_mode)
+            device = next(model.parameters()).device
+            out = model(inp.to(device))
+            post_mode = getattr(model, "_sak_postprocess", "quantile")
+            if post_mode == "vendor":
+                scribble_maps = postprocess_vendor_scribble_output(
+                    out.detach(),
+                    target_hw=(images.shape[1], images.shape[2]),
+                )
+            else:
+                scribble_maps = postprocess_scribble_output(
+                    out.detach(),
+                    target_hw=(images.shape[1], images.shape[2]),
+                    user_threshold=EDGE_THRESHOLD_DEFAULT,
+                    apply_thinning=True,
+                )
+            return scribble_maps
 
     def generate_scribble(
         self,
@@ -232,9 +257,10 @@ class VACEScribbleAnnotator:
         inference_mode: str,
         resolution: int,
         model_path: str = "",
+        batch_size: int = 10,
     ) -> Tuple[torch.Tensor]:
         model = self._load_model(style, model_path, inference_mode)
-        scribble_maps = self._process_scribble(images, model, resolution, inference_mode)
+        scribble_maps = self._process_scribble(images, model, resolution, inference_mode, batch_size)
         print(f"✓ Generated scribble maps: shape={scribble_maps.shape}")
         return (scribble_maps,)
 
