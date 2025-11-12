@@ -30,7 +30,7 @@ class MediaDescribe:
     def _call_gemini_with_retry(self, client, model, contents, config, max_retries=3, retry_delay=5):
         """
         Call Gemini API with retry logic for handling overload errors.
-        
+
         Args:
             client: Gemini client instance
             model: Gemini model name
@@ -38,10 +38,10 @@ class MediaDescribe:
             config: Generation config
             max_retries: Maximum number of retry attempts (default: 3)
             retry_delay: Delay in seconds between retries (default: 5)
-            
+
         Returns:
             Response from Gemini API
-            
+
         Raises:
             Exception: If all retries fail
         """
@@ -82,8 +82,8 @@ class MediaDescribe:
                 # Check if it's an error we should retry
                 error_str = str(e)
                 should_retry = (
-                    "500" in error_str or 
-                    "503" in error_str or 
+                    "500" in error_str or
+                    "503" in error_str or
                     "overloaded" in error_str.lower() or
                     "empty response" in error_str.lower()
                 )
@@ -224,7 +224,7 @@ class MediaDescribe:
     def _build_final_json(self, raw_llm_json, overrides, subject, visual_style, clothing, scene, movement):
         """
         Build the final JSON output by applying overrides to the raw LLM JSON.
-        
+
         Args:
             raw_llm_json: The raw JSON string from the LLM (Gemini)
             overrides: Dictionary of overrides from Media Describe - Overrides node
@@ -233,7 +233,7 @@ class MediaDescribe:
             clothing: Parsed/overridden clothing paragraph
             scene: Parsed/overridden scene paragraph
             movement: Parsed/overridden movement paragraph
-            
+
         Returns:
             JSON string with all overrides applied
         """
@@ -259,7 +259,7 @@ class MediaDescribe:
                 cleaned_json = '\n'.join(lines[start_idx:end_idx])
 
             # Parse the JSON
-            json_data = json.loads(cleaned_json)
+            json.loads(cleaned_json)
         except (json.JSONDecodeError, ValueError):
             # If parsing fails, create a new JSON structure from the paragraphs
             pass  # json_data not needed - we'll build from paragraphs
@@ -427,7 +427,7 @@ class MediaDescribe:
         """
         try:
             # Extract the gif ID from the URL
-            # URL format: https://www.redgifs.com/watch/GIFID  
+            # URL format: https://www.redgifs.com/watch/GIFID
             gif_id = redgifs_url.split('/')[-1].lower()
 
             print(f"Extracting RedGifs video for ID: {gif_id}")
@@ -436,7 +436,7 @@ class MediaDescribe:
             # RedGifs typically serves videos in these formats
             possible_urls = [
                 f"https://thumbs2.redgifs.com/{gif_id}.mp4",
-                f"https://thumbs.redgifs.com/{gif_id}.mp4", 
+                f"https://thumbs.redgifs.com/{gif_id}.mp4",
                 f"https://files.redgifs.com/{gif_id}.mp4",
                 f"https://thumbs2.redgifs.com/{gif_id}-mobile.mp4",
                 f"https://thumbs.redgifs.com/{gif_id}-mobile.mp4"
@@ -568,7 +568,7 @@ class MediaDescribe:
                 is_image = (
                     url.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')) or
                     'i.redd.it' in url or
-                    (post_data.get('media_metadata') is not None and 
+                    (post_data.get('media_metadata') is not None and
                      any(m.get('e') == 'Image' for m in post_data.get('media_metadata', {}).values()))
                 )
 
@@ -577,7 +577,7 @@ class MediaDescribe:
                     'v.redd.it' in url or
                     'redgifs.com' in url or
                     'gfycat.com' in url or
-                    (post_data.get('media_metadata') is not None and 
+                    (post_data.get('media_metadata') is not None and
                      any(m.get('e') == 'AnimatedImage' or m.get('e') == 'Video' for m in post_data.get('media_metadata', {}).values()))
                 )
 
@@ -922,7 +922,7 @@ class MediaDescribe:
     def _process_image(self, gemini_api_key, gemini_model, model_type, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, prefix_text, image, selected_media_path, media_info_text, override_subject="", override_visual_style="", override_clothing="", overrides=None):
         """
         Process image using logic from GeminiImageDescribe
-        
+
         Args:
             override_subject: Override text for SUBJECT paragraph
             override_visual_style: Override text for VISUAL STYLE paragraph (combining cinematic/aesthetic and stylization/tone)
@@ -1320,7 +1320,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
     def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text, override_subject="", override_visual_style="", override_clothing="", override_scene="", override_movement="", overrides=None):
         """
         Process video using logic from GeminiVideoDescribe
-        
+
         Args:
             override_subject: Override text for SUBJECT paragraph
             override_visual_style: Override text for VISUAL STYLE paragraph (combining cinematic/aesthetic and stylization/tone)
@@ -1378,9 +1378,9 @@ Describe the initial pose and body position in the first frame of the video. The
             else:
                 movement_prompt = f"""
 {paragraph_num}. MOVEMENT ({self._ordinal(paragraph_num)} Paragraph)
-Describe body-part–specific movement detailing what body parts are visible and what actions they are performing. Focus on physical actions and positions. Use only generic terms like 'woman' or 'man' to describe people. Begin with an overall summary tied to musical rhythm and beat structure (e.g., 'The subject initiates with a hip sway on the downbeat…'). Then narrate movement chronologically using precise action verbs and transitions like 'then', 'as', 'after', and reference timeline markers (early/mid/late beat or second). 
+Describe body-part–specific movement detailing what body parts are visible and what actions they are performing. Focus on physical actions and positions. Use only generic terms like 'woman' or 'man' to describe people. Begin with an overall summary tied to musical rhythm and beat structure (e.g., 'The subject initiates with a hip sway on the downbeat…'). Then narrate movement chronologically using precise action verbs and transitions like 'then', 'as', 'after', and reference timeline markers (early/mid/late beat or second).
 
-Specify which body parts move and how they articulate (e.g., 'the right arm lifts upward, then sweeps outward; the torso tilts as the knees bend'), including footwork, weight shifts, and alignment with beats. Describe what body parts are doing to themselves or to another person. If sexual activity is present, describe the specific act being performed, focusing exclusively on physical actions and positions - mention where body parts are positioned in relation to each other (e.g., penis in relation to vagina, anal, mouth, etc.). If a white substance shoots from a penis, describe it as the man ejaculating semen. 
+Specify which body parts move and how they articulate (e.g., 'the right arm lifts upward, then sweeps outward; the torso tilts as the knees bend'), including footwork, weight shifts, and alignment with beats. Describe what body parts are doing to themselves or to another person. If sexual activity is present, describe the specific act being performed, focusing exclusively on physical actions and positions - mention where body parts are positioned in relation to each other (e.g., penis in relation to vagina, anal, mouth, etc.). If a white substance shoots from a penis, describe it as the man ejaculating semen.
 
 Include any camera movement (e.g., 'camera pans to follow the torso shift'). Avoid general labels—focus on locomotor and non-locomotor gestures, repetition, rhythm, and choreography phrasing. Always include any buttock or breast movements visible. Do not describe physical appearance, clothing, setting, or background in this paragraph. Do not mention watermarks."""
             prompts.append(movement_prompt)
@@ -1563,7 +1563,6 @@ Example (structure only):
             final_video_path = selected_media_path
             actual_duration = original_duration
             trimmed = False
-            trimmed_video_output_path = selected_media_path
 
             # Calculate duration based on max_duration
             if max_duration > 0:
@@ -1584,7 +1583,6 @@ Example (structure only):
                 if self._trim_video(selected_media_path, trimmed_video_path, actual_duration):
                     final_video_path = trimmed_video_path
                     trimmed = True
-                    trimmed_video_output_path = trimmed_video_path
 
                     # Verify trimmed file exists and has content
                     if os.path.exists(trimmed_video_path) and os.path.getsize(trimmed_video_path) > 0:
@@ -1596,7 +1594,6 @@ Example (structure only):
                 else:
                     print(f"Warning: Could not trim video. Using original video for {original_duration:.2f}s")
                     actual_duration = original_duration
-                    # trimmed_video_output_path = selected_media_path  # Not needed - using final_video_path
 
             # Read the final video file (original or trimmed)
             with open(final_video_path, 'rb') as video_file:
@@ -1804,11 +1801,11 @@ Example (structure only):
             raise Exception(f"Video analysis failed: {error_msg}")
 
     def _process_with_llm_studio(self, media_path, media_type, llm_options, media_info_text,
-                                  override_subject, override_visual_style, override_clothing, 
+                                  override_subject, override_visual_style, override_clothing,
                                   override_scene, override_movement, overrides):
         """
         Process media using LLM Studio (local vision model).
-        
+
         Args:
             media_path: Path to media file
             media_type: "image" or "video"
@@ -1816,7 +1813,7 @@ Example (structure only):
             media_info_text: Media information string
             override_*: Override values for each paragraph
             overrides: Full overrides dictionary
-            
+
         Returns:
             Tuple of (all_media_describe_data, raw_llm_json, positive_prompt_json, positive_prompt, prompt_request, height, width)
         """
@@ -2235,7 +2232,7 @@ User Prompt:
             # Process with LLM Studio
             return self._process_with_llm_studio(
                 media_processed_path, media_type, llm_studio_options, media_info_text,
-                override_subject, override_visual_style, override_clothing, 
+                override_subject, override_visual_style, override_clothing,
                 override_scene, override_movement, overrides
             )
 

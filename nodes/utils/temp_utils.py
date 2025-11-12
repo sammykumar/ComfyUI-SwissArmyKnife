@@ -19,14 +19,14 @@ except ImportError:
 def get_temp_directory() -> str:
     """
     Get the base temporary directory for ComfyUI operations.
-    
+
     This function respects ComfyUI's configuration:
     - Uses ComfyUI's user directory + '/temp' if available
     - Falls back to system temp directory if ComfyUI not available
-    
+
     When using Docker with --base-directory, this ensures temp files
     are stored within the ComfyUI workspace rather than the container's /tmp.
-    
+
     Returns:
         str: Path to the base temporary directory
     """
@@ -47,13 +47,13 @@ def get_temp_directory() -> str:
 def get_temp_subdirectory(subdir_name: str) -> str:
     """
     Get or create a subdirectory within ComfyUI's temp directory.
-    
+
     Args:
         subdir_name: Name of the subdirectory to create
-        
+
     Returns:
         str: Path to the subdirectory
-        
+
     Example:
         frames_dir = get_temp_subdirectory("comfyui_frames")
     """
@@ -66,18 +66,18 @@ def get_temp_subdirectory(subdir_name: str) -> str:
 def get_temp_file_path(suffix: str = "", prefix: str = "tmp", subdir: Optional[str] = None) -> str:
     """
     Generate a temporary file path within ComfyUI's temp directory.
-    
+
     This is a replacement for tempfile.NamedTemporaryFile that respects
     ComfyUI's base directory configuration.
-    
+
     Args:
         suffix: File extension (e.g., '.mp4', '.jpg')
         prefix: Filename prefix (default: 'tmp')
         subdir: Optional subdirectory within temp (e.g., 'video_processing')
-        
+
     Returns:
         str: Full path to the temporary file (file is NOT created)
-        
+
     Example:
         temp_video = get_temp_file_path(suffix='.mp4', subdir='videos')
         # Use the path to write your file

@@ -9,7 +9,7 @@ import signal
 def register_restart_routes(app):
     """
     Register restart API route with ComfyUI server.
-    
+
     Args:
         app: The aiohttp or PromptServer application instance
     """

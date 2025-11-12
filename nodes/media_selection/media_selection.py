@@ -273,13 +273,13 @@ class MediaSelection:
     def _resize_image(self, pil_image, resize_mode, resize_width, resize_height):
         """
         Resize an image based on the specified mode.
-        
+
         Args:
             pil_image: PIL Image object to resize
             resize_mode: "None", "Auto (by orientation)", or "Custom"
             resize_width: Target width for Custom mode
             resize_height: Target height for Custom mode
-            
+
         Returns:
             Resized PIL Image object or original if no resize
         """
@@ -377,7 +377,7 @@ class MediaSelection:
     def _resize_video(self, video_path, resize_mode, resize_width, resize_height, original_width, original_height):
         """
         Resize a video based on the specified mode using ffmpeg.
-        
+
         Args:
             video_path: Path to the video file
             resize_mode: "None", "Auto (by orientation)", or "Custom"
@@ -385,7 +385,7 @@ class MediaSelection:
             resize_height: Target height for Custom mode
             original_width: Original video width
             original_height: Original video height
-            
+
         Returns:
             Tuple of (resized_video_path, target_width, target_height) or (None, original_width, original_height) if no resize
         """
@@ -446,7 +446,7 @@ class MediaSelection:
                 resized_path
             ]
 
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
 
             if os.path.exists(resized_path) and os.path.getsize(resized_path) > 0:
                 print(f"Successfully resized video to: {resized_path}")

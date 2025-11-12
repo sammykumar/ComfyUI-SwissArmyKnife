@@ -85,18 +85,18 @@ class CivitMetadataHelper:
     def collect_metadata(self, steps, cfg, seed, high_sampler, low_sampler, lora_high, lora_low, positive_prompt, negative_prompt):
         """
         Collect and format metadata for CivitAI submissions.
-        
+
         Args:
             steps: Number of sampling steps
             cfg: CFG scale value
             seed: Random seed for generation
             high_sampler: High resolution sampler name
-            low_sampler: Low resolution sampler name  
+            low_sampler: Low resolution sampler name
             lora_high: High resolution LoRA model name
             lora_low: Low resolution LoRA model name
             positive_prompt: Positive prompt text
             negative_prompt: Negative prompt text
-            
+
         Returns:
             Tuple of (formatted_metadata, json_metadata, summary)
         """
@@ -172,10 +172,10 @@ class CivitMetadataHelper:
     def _format_for_display(self, metadata: Dict[str, Any]) -> str:
         """
         Format metadata for human-readable display.
-        
+
         Args:
             metadata: Structured metadata dictionary
-            
+
         Returns:
             Formatted string for display
         """
@@ -229,11 +229,11 @@ class CivitMetadataHelper:
     def _wrap_text(self, text: str, width: int) -> list:
         """
         Wrap text to specified width while preserving words.
-        
+
         Args:
             text: Text to wrap
             width: Maximum line width
-            
+
         Returns:
             List of wrapped lines
         """

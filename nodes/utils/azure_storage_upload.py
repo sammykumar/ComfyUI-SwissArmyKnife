@@ -20,7 +20,7 @@ except ImportError:
 class AzureStorageUpload:
     """
     Upload files to Azure Blob Storage Container.
-    
+
     Uses the Azure Storage connection string from ComfyUI settings:
     SwissArmyKnife.azure_storage.connection_string
     """
@@ -78,17 +78,17 @@ class AzureStorageUpload:
         return ""
 
     def upload_to_azure(
-        self, 
-        filename: str, 
+        self,
+        filename: str,
         container_name: str = "uploads"
     ) -> Tuple[str, str, str]:
         """
         Upload a file to Azure Blob Storage.
-        
+
         Args:
             filename: Path to the file to upload
             container_name: Name of the Azure Storage container
-            
+
         Returns:
             Tuple of (upload_status, blob_url, blob_name)
         """
@@ -159,7 +159,7 @@ class AzureStorageUpload:
             print(f"⬆️  Uploading file to blob: {blob_name}")
             with open(filename, "rb") as data:
                 blob_client.upload_blob(
-                    data, 
+                    data,
                     overwrite=True,
                     content_settings=content_settings
                 )
