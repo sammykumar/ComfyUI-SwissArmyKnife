@@ -73,10 +73,10 @@ class CivitMetadataHelper:
         }
 
     RETURN_TYPES = ("STRING", "STRING", "STRING")
-   RETURN_NAMES = ("formatted_metadata", "json_metadata", "summary")
-   FUNCTION = "collect_metadata"
-   CATEGORY = "Swiss Army Knife 🔪/Utils"
-   OUTPUT_NODE = True  # Makes this an output node that displays in the UI
+    RETURN_NAMES = ("formatted_metadata", "json_metadata", "summary")
+    FUNCTION = "collect_metadata"
+    CATEGORY = "Swiss Army Knife 🔪/Utils"
+    OUTPUT_NODE = True  # Makes this an output node that displays in the UI
     DESCRIPTION = (
         "Collects steps/CFG/seeds, sampler names, LoRA identifiers, and prompts, then emits formatted text plus JSON summaries "
         "that match CivitAI’s metadata expectations."

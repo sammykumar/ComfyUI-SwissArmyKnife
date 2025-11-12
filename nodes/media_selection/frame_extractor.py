@@ -71,6 +71,10 @@ class FrameExtractor:
     RETURN_NAMES = ("frame_paths", "frame_timestamps", "frame_info", "frames_directory")
     FUNCTION = "extract_frames"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
+    DESCRIPTION = (
+        "Extracts a configurable number of frames from a source video (evenly spaced, random, or start/middle/end) and outputs "
+        "their file paths, timestamps, summary info, and the temp directory containing the images."
+    )
 
     def extract_frames(self, video_path, num_frames, extraction_method, seed=0, start_time=0.0, end_time=0.0, output_format="png"):
         """
