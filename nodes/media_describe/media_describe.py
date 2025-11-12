@@ -161,7 +161,7 @@ class MediaDescribe:
             cinematic_part = json_data.get("cinematic_aesthetic_control", json_data.get("cinematic_aesthetic", ""))
             stylization_part = json_data.get("stylization_tone", "")
             visual_style_direct = json_data.get("visual_style", "")
-            
+
             # Prefer direct visual_style field, fallback to combining old fields
             if visual_style_direct:
                 visual_style = visual_style_direct
@@ -183,7 +183,7 @@ class MediaDescribe:
             # Now combining paragraphs 1 and 2 (cinematic_aesthetic + stylization_tone) into visual_style
             if len(paragraphs) >= 1:
                 subject = paragraphs[0] if len(paragraphs) > 0 else ""
-            
+
             # Combine paragraphs 1 and 2 into visual_style
             visual_style_parts = []
             if len(paragraphs) >= 2:
@@ -191,7 +191,7 @@ class MediaDescribe:
             if len(paragraphs) >= 3:
                 visual_style_parts.append(paragraphs[2])
             visual_style = " ".join(visual_style_parts)
-            
+
             # Shift remaining paragraphs
             if len(paragraphs) >= 4:
                 clothing = paragraphs[3] if len(paragraphs) > 3 else ""
@@ -1892,7 +1892,7 @@ User Prompt:
         # Log prompt construction
         if verbose:
             print(f"\n{'='*60}")
-            print(f"🔧 LLM Studio Prompt Construction:")
+            print("🔧 LLM Studio Prompt Construction:")
             print(f"{'='*60}")
             print(f"Media Type: {media_type}")
             print(f"Model Type: {model_type}")
@@ -1979,7 +1979,7 @@ User Prompt:
                 # Debug logging
                 if verbose:
                     print(f"\n{'='*60}")
-                    print(f"🔍 LLM Studio Video Prompt Debug:")
+                    print("🔍 LLM Studio Video Prompt Debug:")
                     print(f"{'='*60}")
                     print(f"📝 System Prompt:\n{system_prompt}")
                     print(f"\n📝 User Prompt:\n{user_prompt}")
@@ -2027,7 +2027,7 @@ User Prompt:
             # Debug logging
             if verbose:
                 print(f"\n{'='*60}")
-                print(f"🔍 LLM Studio Image Prompt Debug:")
+                print("🔍 LLM Studio Image Prompt Debug:")
                 print(f"{'='*60}")
                 print(f"📝 System Prompt:\n{system_prompt}")
                 print(f"\n📝 User Prompt:\n{user_prompt}")
@@ -2065,41 +2065,41 @@ User Prompt:
             # Try to parse as JSON first
             if verbose:
                 print(f"\n{'='*60}")
-                print(f"🔍 Parsing LLM Response:")
+                print("🔍 Parsing LLM Response:")
                 print(f"{'='*60}")
                 print(f"Raw response:\n{combined_caption[:500]}...")
                 print(f"{'='*60}\n")
-            
+
             # Clean any markdown code fences if present
             cleaned_response = combined_caption.strip()
             if cleaned_response.startswith('```'):
                 lines = cleaned_response.split('\n')
                 cleaned_response = '\n'.join(lines[1:-1]) if len(lines) > 2 else cleaned_response
                 cleaned_response = cleaned_response.replace('```json', '').replace('```', '').strip()
-            
+
             # Parse the JSON
             llm_json = json.loads(cleaned_response)
-            
+
             # Normalize field names - videos use "cinematic_aesthetic_control", we need "cinematic_aesthetic"
             if "cinematic_aesthetic_control" in llm_json and "cinematic_aesthetic" not in llm_json:
                 llm_json["cinematic_aesthetic"] = llm_json.pop("cinematic_aesthetic_control")
-            
+
             # Ensure all required fields exist
             required_fields = ["subject", "clothing", "movement", "scene", "cinematic_aesthetic", "stylization_tone"]
             for field in required_fields:
                 if field not in llm_json:
                     llm_json[field] = ""
-            
+
             if verbose:
-                print(f"✅ Successfully parsed JSON response")
+                print("✅ Successfully parsed JSON response")
                 print(f"Fields found: {list(llm_json.keys())}")
-            
+
         except (json.JSONDecodeError, ValueError) as e:
             # If JSON parsing fails, fall back to simple structure
             if verbose:
                 print(f"⚠️ Failed to parse as JSON: {e}")
-                print(f"Creating simple structure with full response in subject field")
-            
+                print("Creating simple structure with full response in subject field")
+
             llm_json = {
                 "subject": combined_caption,
                 "clothing": "",

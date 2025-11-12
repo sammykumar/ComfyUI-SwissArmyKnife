@@ -55,11 +55,11 @@ class GeminiUtilOptions:
         """
         # Get API key from ComfyUI settings
         effective_api_key = get_setting_value("swiss_army_knife.gemini.api_key")
-        
+
         # Fallback to environment variable if settings not available
         if not effective_api_key:
             effective_api_key = os.environ.get("GEMINI_API_KEY", "")
-        
+
         options = {
             "gemini_api_key": effective_api_key,
             "gemini_model": gemini_model,

@@ -125,7 +125,7 @@ class LLMStudioVideoDescribe:
         # video_fps = actual frames per second in video
         # interval = video_fps / sample_rate = how many video frames to skip
         frame_interval = video_fps / sample_rate if sample_rate > 0 else video_fps
-        
+
         frame_indices = [int(i * frame_interval) for i in range(num_frames_to_extract)]
         # Make sure we don't exceed total frames
         frame_indices = [idx for idx in frame_indices if idx < total_frames]

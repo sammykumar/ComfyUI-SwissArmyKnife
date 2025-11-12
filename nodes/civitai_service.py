@@ -295,7 +295,7 @@ def get_civitai_service() -> CivitAIService:
         except ImportError:
             # config_api not available, no API key
             pass
-        
+
         _civitai_service = CivitAIService(api_key=api_key)
     return _civitai_service
 

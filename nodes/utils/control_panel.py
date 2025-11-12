@@ -149,7 +149,7 @@ class ControlPanelPromptBreakdown:
         # Parse JSON input
         if positive_prompt_json:
             try:
-                print(f"\n🔍 Parsing positive_prompt_json (structured JSON)")
+                print("\n🔍 Parsing positive_prompt_json (structured JSON)")
 
                 # Parse the JSON data
                 if isinstance(positive_prompt_json, str):
@@ -202,7 +202,7 @@ class ControlPanelPromptBreakdown:
 
             return result
         else:
-            print(f"\n(No valid data found in positive_prompt_json)")
+            print("\n(No valid data found in positive_prompt_json)")
 
         print("\n" + "="*60 + "\n")
 

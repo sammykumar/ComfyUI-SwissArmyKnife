@@ -5,7 +5,6 @@ This module contains the LLMStudioOptions node which provides configuration
 options for LLM Studio media description nodes.
 """
 
-import os
 
 
 class LLMStudioOptions:

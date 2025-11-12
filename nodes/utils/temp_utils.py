@@ -39,7 +39,7 @@ def get_temp_directory() -> str:
             return temp_dir
         except Exception as e:
             print(f"Warning: Could not get ComfyUI temp directory: {e}")
-    
+
     # Fallback to system temp directory
     return tempfile.gettempdir()
 
@@ -88,10 +88,10 @@ def get_temp_file_path(suffix: str = "", prefix: str = "tmp", subdir: Optional[s
         base_temp = get_temp_subdirectory(subdir)
     else:
         base_temp = get_temp_directory()
-    
+
     # Generate a unique filename
     import uuid
     unique_id = uuid.uuid4().hex[:8]
     filename = f"{prefix}_{unique_id}{suffix}"
-    
+
     return os.path.join(base_temp, filename)

@@ -85,7 +85,7 @@ class MultiCaptionCombiner:
         try:
             # Parse captions
             caption_list = self._parse_captions(captions)
-            
+
             if not caption_list:
                 raise ValueError("No captions provided to combine")
 
@@ -102,9 +102,9 @@ class MultiCaptionCombiner:
 
             # Call Gemini API
             print(f"Combining {len(caption_list)} captions using Gemini {gemini_model}...")
-            
+
             client = genai.Client(api_key=gemini_api_key)
-            
+
             contents = [
                 types.Content(
                     role="user",
@@ -133,7 +133,7 @@ class MultiCaptionCombiner:
             combined_caption = response.text.strip()
 
             # Format status
-            gemini_status = f"🤖 Gemini Caption Combiner Status: ✅ Complete\n"
+            gemini_status = "🤖 Gemini Caption Combiner Status: ✅ Complete\n"
             gemini_status += f"• Model: {gemini_model}\n"
             gemini_status += f"• Style: {combination_style}\n"
             gemini_status += f"• Captions Combined: {len(caption_list)}\n"
@@ -154,7 +154,7 @@ class MultiCaptionCombiner:
         # Try comma-separated first
         if ',' in captions_str:
             return [c.strip() for c in captions_str.split(',') if c.strip()]
-        
+
         # Fall back to newline-separated
         return [c.strip() for c in captions_str.split('\n') if c.strip()]
 
@@ -171,7 +171,7 @@ class MultiCaptionCombiner:
 
     def _build_system_prompt(self, style, captions, timestamps, custom_prompt, output_format):
         """Build the system prompt based on combination style."""
-        
+
         if style == "Custom" and custom_prompt:
             return custom_prompt
 

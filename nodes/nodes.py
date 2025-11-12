@@ -218,7 +218,7 @@ class LoRAInfoExtractor:
                 # Get API key from ComfyUI settings only (no environment variable fallback)
                 from .config_api import get_setting_value
                 effective_api_key = get_setting_value("swiss_army_knife.civitai.api_key")
-                
+
                 print(f"  - effective_api_key provided: {bool(effective_api_key)}")
                 civitai_service = CivitAIService(api_key=effective_api_key)
 

@@ -15,7 +15,7 @@ def is_debug_enabled():
     env_debug = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
     if env_debug:
         return True
-    
+
     # Check frontend settings
     try:
         from .config_api import get_debug_mode

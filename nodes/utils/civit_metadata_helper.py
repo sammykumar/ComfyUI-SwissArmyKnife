@@ -100,7 +100,7 @@ class CivitMetadataHelper:
         Returns:
             Tuple of (formatted_metadata, json_metadata, summary)
         """
-        
+
         # Create structured metadata
         metadata = {
             "generation_parameters": {
@@ -125,25 +125,25 @@ class CivitMetadataHelper:
                 "negative_chars": len(negative_prompt.strip())
             }
         }
-        
+
         # Create formatted text version for display
         formatted_metadata = self._format_for_display(metadata)
-        
+
         # Create JSON version for data processing
         json_metadata = json.dumps(metadata, indent=2)
-        
+
         # Create summary for quick reference
         lora_info = ""
         if lora_high.strip() or lora_low.strip():
             lora_info = f" | LoRAs: {lora_high.strip() or '(none)'}/{lora_low.strip() or '(none)'}"
-        
+
         summary = (
             f"Steps: {steps} | CFG: {cfg} | Seed: {seed} | "
             f"Samplers: {high_sampler}/{low_sampler}{lora_info} | "
             f"Pos: {len(positive_prompt.strip())} chars | "
             f"Neg: {len(negative_prompt.strip())} chars"
         )
-        
+
         # Log summary to console
         print("\n" + "="*60)
         print("CIVITAI METADATA HELPER - Generation Parameters")
@@ -166,9 +166,9 @@ class CivitMetadataHelper:
         else:
             print("   (empty)")
         print("="*60 + "\n")
-        
+
         return (formatted_metadata, json_metadata, summary)
-    
+
     def _format_for_display(self, metadata: Dict[str, Any]) -> str:
         """
         Format metadata for human-readable display.
@@ -180,12 +180,12 @@ class CivitMetadataHelper:
             Formatted string for display
         """
         lines = []
-        
+
         # Header
         lines.append("=" * 50)
         lines.append("🎯 CIVITAI METADATA HELPER")
         lines.append("=" * 50)
-        
+
         # Generation Parameters
         lines.append("\n📊 GENERATION PARAMETERS")
         lines.append("-" * 30)
@@ -197,13 +197,13 @@ class CivitMetadataHelper:
         lines.append(f"Low Sampler: {gen_params['samplers']['low_res']}")
         lines.append(f"High LoRA: {gen_params['loras']['high_res'] or '(none)'}")
         lines.append(f"Low LoRA: {gen_params['loras']['low_res'] or '(none)'}")
-        
+
         # Prompts
         lines.append("\n📝 PROMPTS")
         lines.append("-" * 30)
         prompts = metadata["prompts"]
         prompt_lengths = metadata["prompt_lengths"]
-        
+
         lines.append(f"Positive ({prompt_lengths['positive_chars']} chars):")
         if prompts["positive"]:
             # Split long prompts into multiple lines
@@ -212,7 +212,7 @@ class CivitMetadataHelper:
                 lines.append(f"  {line}")
         else:
             lines.append("  (empty)")
-            
+
         lines.append(f"\nNegative ({prompt_lengths['negative_chars']} chars):")
         if prompts["negative"]:
             # Split long prompts into multiple lines
@@ -221,11 +221,11 @@ class CivitMetadataHelper:
                 lines.append(f"  {line}")
         else:
             lines.append("  (empty)")
-        
+
         lines.append("\n" + "=" * 50)
-        
+
         return "\n".join(lines)
-    
+
     def _wrap_text(self, text: str, width: int) -> list:
         """
         Wrap text to specified width while preserving words.
@@ -241,7 +241,7 @@ class CivitMetadataHelper:
         lines = []
         current_line = []
         current_length = 0
-        
+
         for word in words:
             if current_length + len(word) + 1 <= width:
                 current_line.append(word)
@@ -251,10 +251,10 @@ class CivitMetadataHelper:
                     lines.append(" ".join(current_line))
                 current_line = [word]
                 current_length = len(word)
-        
+
         if current_line:
             lines.append(" ".join(current_line))
-            
+
         return lines
 
 
