@@ -30,6 +30,10 @@ class ControlPanelOverview:
     FUNCTION = "display_info"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True  # Makes this an output node that displays in the UI
+    DESCRIPTION = (
+        "Displays the full `all_media_describe_data` JSON inside ComfyUI’s Control Panel so you can audit MediaDescribe outputs "
+        "without leaving the workflow."
+    )
 
     def display_info(self, **kwargs):
         """
@@ -114,6 +118,10 @@ class ControlPanelPromptBreakdown:
     FUNCTION = "display_info"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True  # Makes this an output node that displays in the UI
+    DESCRIPTION = (
+        "Breaks the structured positive prompt JSON into columns (subject, clothing, movement, scene, visual style) for quick "
+        "review while iterating on overrides."
+    )
 
     def display_info(self, **kwargs):
         """

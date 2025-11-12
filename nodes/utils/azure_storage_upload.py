@@ -51,6 +51,10 @@ class AzureStorageUpload:
     FUNCTION = "upload_to_azure"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True
+    DESCRIPTION = (
+        "Uploads any file path to Azure Blob Storage using the connection string stored in Swiss Army Knife settings, returning "
+        "status text plus the blob URL/name."
+    )
     
     def get_connection_string(self) -> str:
         """Get connection string from settings."""

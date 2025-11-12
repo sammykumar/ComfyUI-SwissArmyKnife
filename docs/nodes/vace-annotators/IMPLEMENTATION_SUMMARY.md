@@ -255,11 +255,9 @@ from vace.annotators.flow import FlowAnnotator
 ```
 
 **Scribble Node** (`vace_scribble_annotator.py`):
-```python
-from vace.annotators.scribble import ScribbleAnnotator
-
-# Similar updates in _load_model() and _process_scribble()
-```
+- ✅ Uses vendored ResNet generator defined in `nodes/vace_annotators/annotator_models/scribble.py`
+- ✅ Loader + caching implemented in `nodes/vace_annotators/scribble_loader.py`
+- ✅ Adaptive preprocessing/postprocessing and Sobel fallback included
 
 ### 4. Add Tensor Conversions
 

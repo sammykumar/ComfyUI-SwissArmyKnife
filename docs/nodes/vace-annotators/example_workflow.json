@@ -44,7 +44,6 @@
         "inputs": {
           "images": "node:1:IMAGE",
           "style": "anime",
-          "edge_threshold": 0.5,
           "resolution": 512
         },
         "outputs": {
@@ -106,7 +105,7 @@
       "description": "Anime-style edge extraction",
       "steps": [
         "1. Load Anime Image/Video",
-        "2. Connect to VACE Scribble Annotator (style: anime, edge_threshold: 0.3)",
+        "2. Connect to VACE Scribble Annotator (style: anime)",
         "3. Save output scribble maps",
         "4. Optional: Use scribble maps as control signal for generation"
       ]

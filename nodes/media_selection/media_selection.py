@@ -93,6 +93,10 @@ class MediaSelection:
     RETURN_NAMES = ("media_path", "media_type", "media_info", "height", "width", "duration", "fps")
     FUNCTION = "select_media"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
+    DESCRIPTION = (
+        "Selects an image or video from uploads, filesystem directories, or Reddit sources, optionally trims/resizes it, and "
+        "returns the resolved path plus metadata (type, dimensions, duration, fps)."
+    )
 
     def select_media(self, media_source, media_type, seed, media_path="", uploaded_image_file="", uploaded_video_file="", reddit_url="", subreddit_url="", max_duration=0.0, resize_mode="None", resize_width=832, resize_height=480):
         """

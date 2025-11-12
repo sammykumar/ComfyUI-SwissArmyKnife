@@ -74,6 +74,10 @@ class LLMStudioOptions:
     RETURN_NAMES = ("llm_studio_options",)
     FUNCTION = "create_options"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
+    DESCRIPTION = (
+        "Collects LM Studio connection details (URL, model, sampling rates, temperature, clothing-color toggle) into a single "
+        "`llm_studio_options` dict that downstream describe nodes consume."
+    )
 
     def create_options(self, base_url, model_name, prompt_style, temperature, sample_rate, max_duration, change_clothing_color, verbose):
         """

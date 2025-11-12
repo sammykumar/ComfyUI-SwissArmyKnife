@@ -61,6 +61,10 @@ class MultiCaptionCombiner:
     RETURN_NAMES = ("combined_caption", "gemini_status")
     FUNCTION = "combine_captions"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
+    DESCRIPTION = (
+        "Calls Gemini with your API key/model to merge multiple frame captions (plus optional timestamps) into a cohesive "
+        "description, returning the combined text and a status summary."
+    )
 
     def combine_captions(self, captions, gemini_api_key, gemini_model, combination_style, timestamps="", custom_prompt="", output_format="Paragraph"):
         """
