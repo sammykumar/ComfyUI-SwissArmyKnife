@@ -6,6 +6,8 @@ Supports anime-style and general edge detection.
 """
 
 import os
+import sys
+import importlib
 import torch
 from typing import Tuple
 
@@ -47,7 +49,7 @@ class VACEScribbleAnnotator:
                     "tooltip": "Style of scribble/edge detection"
                 }),
                 "edge_threshold": ("FLOAT", {
-                    "default": 0.5,
+                    "default": 0.12,
                     "min": 0.0,
                     "max": 1.0,
                     "step": 0.05,
@@ -130,9 +132,19 @@ class VACEScribbleAnnotator:
         model_file = model_files.get(style, "anime_style/netG_A_latest.pth")
 
         # Check each possible base path
+        # Debug: list candidates checked
+        try:
+            print(f"VACE scribble: checking {len(possible_bases)} candidate base paths for style '{style}'")
+        except Exception:
+            pass
         for base_path in possible_bases:
             full_path = os.path.join(base_path, model_file)
+            try:
+                print(f"  candidate: {full_path}")
+            except Exception:
+                pass
             if os.path.exists(full_path):
+                print(f"  -> found: {full_path}")
                 return full_path
 
         # Return the first path as default (even if it doesn't exist)
@@ -166,23 +178,99 @@ class VACEScribbleAnnotator:
 
         print(f"Loading VACE scribble model: {style} from {model_path}")
 
-        # Load model based on style
-        # Note: This is a placeholder implementation
-        # In a real implementation, you would load the actual VACE model architecture
-        try:
-            # Placeholder: In real implementation, load actual VACE scribble model
-            model = {
+        # Attempt to load an official annotator model if the VACE-Annotators package
+        # or repository code is available in Python path. We'll try several common
+        # module/package names and class names used for generators.
+        def _find_model_class():
+            candidates = [
+                'vace_annotators',
+                'VACE_Annotators',
+                'VACE_annotators',
+                'vace.annotators',
+                'scribble',
+                'VACE.Annotators',
+            ]
+            class_names = ['NetG', 'Generator', 'ResnetGenerator', 'netG']
+
+            for mod_name in candidates:
+                try:
+                    mod = importlib.import_module(mod_name)
+                except Exception:
+                    continue
+
+                # Walk the module attributes to find a candidate class
+                for attr_name in dir(mod):
+                    if attr_name in class_names:
+                        cls = getattr(mod, attr_name)
+                        if isinstance(cls, type):
+                            return cls
+
+                # Also try submodules
+                try:
+                    for sub in getattr(mod, '__all__', []) or []:
+                        try:
+                            submod = importlib.import_module(f"{mod_name}.{sub}")
+                        except Exception:
+                            continue
+                        for attr_name in dir(submod):
+                            if attr_name in class_names:
+                                cls = getattr(submod, attr_name)
+                                if isinstance(cls, type):
+                                    return cls
+                except Exception:
+                    pass
+
+            return None
+
+        model_obj = None
+        model_cls = _find_model_class()
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        if model_cls is not None:
+            try:
+                # Instantiate with no args if possible
+                model = model_cls()
+                # Load checkpoint
+                ckpt = torch.load(model_path, map_location='cpu')
+                # Try common checkpoint key names
+                if isinstance(ckpt, dict) and 'state_dict' in ckpt:
+                    state = ckpt['state_dict']
+                else:
+                    state = ckpt
+
+                # If state keys are prefixed (e.g. 'module.'), try to clean
+                try:
+                    model.load_state_dict(state)
+                except RuntimeError:
+                    # attempt to strip common prefixes
+                    new_state = {}
+                    for k, v in state.items():
+                        new_k = k
+                        if k.startswith('module.'):
+                            new_k = k[len('module.'):]
+                        new_state[new_k] = v
+                    model.load_state_dict(new_state)
+
+                model.to(device)
+                model.eval()
+                model_obj = model
+                print(f"✓ Loaded annotator model class {model_cls.__name__} from module for style {style}")
+            except Exception as e:
+                print(f"Could not instantiate/load model class {model_cls}: {e}")
+
+        # If we couldn't load an official model, fall back to a lightweight placeholder
+        if model_obj is None:
+            print("No VACE annotator model class found on PYTHONPATH or failed to load checkpoint.")
+            print("Falling back to built-in Sobel edge detector fallback. To use the official model, install the VACE-Annotators code or add it to PYTHONPATH.")
+            model_obj = {
                 "type": style,
                 "path": model_path,
-                "loaded": True
+                "loaded": False,
             }
 
-            self._model_cache[cache_key] = model
-            print("✓ VACE scribble model loaded successfully")
-            return model
-
-        except Exception as e:
-            raise RuntimeError(f"Failed to load VACE scribble model: {str(e)}")
+        # Cache and return
+        self._model_cache[cache_key] = model_obj
+        return model_obj
 
     def _process_scribble(self, images: torch.Tensor, model, edge_threshold: float, resolution: int) -> torch.Tensor:
         """
@@ -197,41 +285,92 @@ class VACEScribbleAnnotator:
         Returns:
             Scribble maps [B, H, W, C] in ComfyUI format
         """
+        import torch.nn.functional as F
+
         batch_size = images.shape[0]
         print(f"Processing {batch_size} frame(s) for scribble detection at resolution {resolution}")
 
-        # Placeholder implementation
-        # In real implementation, you would:
-        # 1. Convert ComfyUI format to model input format
-        # 2. Resize to processing resolution
-        # 3. Run inference for edge/scribble detection
-        # 4. Apply threshold
-        # 5. Post-process scribble maps
-        # 6. Convert back to ComfyUI format
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        # For now, return simple edge detection as placeholder
-        # Convert to grayscale
-        gray = images.mean(dim=-1, keepdim=True)
+        # Convert images from ComfyUI format [B,H,W,C] (0..1 or 0..255) to NCHW float [B,1,H,W]
+        img = images
+        # If images look like 0..255 ints, normalize to 0..1
+        if img.dtype == torch.uint8 or img.max() > 2.0:
+            img = img.float() / 255.0
+        else:
+            img = img.float()
 
-        # Simple edge detection using gradient
-        # Compute gradients in x and y directions
-        grad_x = torch.abs(gray[:, :, 1:, :] - gray[:, :, :-1, :])
-        grad_y = torch.abs(gray[:, 1:, :, :] - gray[:, :-1, :, :])
+        # If model is a torch module, run it; otherwise use Sobel fallback
+        if isinstance(model, torch.nn.Module):
+            with torch.no_grad():
+                inp = F.interpolate(img.permute(0, 3, 1, 2), size=(resolution, resolution), mode='bilinear', align_corners=False)
+                inp = inp.to(device)
+                # Normalize to -1..1 if values in 0..1
+                if inp.max() <= 1.0:
+                    inp = inp * 2.0 - 1.0
+                try:
+                    out = model(inp)
+                except Exception as e:
+                    print(f"Model inference failed: {e}. Falling back to Sobel.")
+                    model = None
+                else:
+                    # Convert output to magnitude in 0..1
+                    if isinstance(out, tuple) or isinstance(out, list):
+                        out = out[0]
+                    # Ensure out is on CPU
+                    out = out.detach().cpu()
+                    # If out is multi-channel, reduce to single channel
+                    if out.ndim == 4 and out.shape[1] > 1:
+                        mag = out.abs().mean(dim=1, keepdim=True)
+                    elif out.ndim == 4:
+                        mag = out.abs()
+                    else:
+                        mag = out.unsqueeze(1).abs()
 
-        # Pad to maintain size
-        grad_x = torch.nn.functional.pad(grad_x, (0, 0, 0, 1))
-        grad_y = torch.nn.functional.pad(grad_y, (0, 0, 0, 0, 0, 1))
+                    # Map from [-1,1] -> [0,1] if necessary
+                    if mag.max() > 1.1:
+                        # assume already in 0..255 or large range; normalize
+                        mag = mag / (mag.max() + 1e-8)
+                    elif mag.min() < -0.5:
+                        mag = (mag + 1.0) / 2.0
 
-        # Combine gradients
-        edges = torch.sqrt(grad_x ** 2 + grad_y ** 2)
+                    # Resize back to input resolution
+                    mag = F.interpolate(mag, size=(images.shape[1], images.shape[2]), mode='bilinear', align_corners=False)
+                    # Apply threshold
+                    edges = (mag > edge_threshold).float()
+                    scribble_maps = 1.0 - edges.repeat(1, 1, 1, 3)
+                    # Convert from NCHW back to NHWC
+                    scribble_maps = scribble_maps.permute(0, 2, 3, 1).cpu()
+                    return scribble_maps
 
-        # Apply threshold
-        edges = (edges > edge_threshold).float()
+        # Sobel fallback
+        with torch.no_grad():
+            gray = img.mean(dim=-1, keepdim=True)  # [B,H,W,1]
+            # to NCHW
+            gray_n = gray.permute(0, 3, 1, 2).to(device)
+            gray_n = F.interpolate(gray_n, size=(resolution, resolution), mode='bilinear', align_corners=False)
 
-        # Convert to RGB (white edges on black background)
-        scribble_maps = 1.0 - edges.repeat(1, 1, 1, 3)
+            # Sobel kernels
+            kx = torch.tensor([[[ -1., 0., 1.], [ -2., 0., 2.], [ -1., 0., 1.]]], device=device)
+            ky = torch.tensor([[[ -1., -2., -1.], [0., 0., 0.], [1., 2., 1.]]], device=device)
+            kx = kx.unsqueeze(1)  # [1,1,3,3]
+            ky = ky.unsqueeze(1)
 
-        return scribble_maps
+            grad_x = F.conv2d(gray_n, kx, padding=1)
+            grad_y = F.conv2d(gray_n, ky, padding=1)
+            mag = torch.sqrt(grad_x ** 2 + grad_y ** 2)
+
+            # Normalize per image
+            max_per = mag.view(mag.shape[0], -1).max(dim=1)[0].view(-1, 1, 1, 1)
+            mag = mag / (max_per + 1e-8)
+
+            # Resize back to original
+            mag = F.interpolate(mag, size=(images.shape[1], images.shape[2]), mode='bilinear', align_corners=False)
+
+            edges = (mag > edge_threshold).float()
+            scribble_maps = 1.0 - edges.repeat(1, 1, 1, 3)
+            scribble_maps = scribble_maps.permute(0, 2, 3, 1).cpu()
+            return scribble_maps
 
     def generate_scribble(self, images: torch.Tensor, style: str, edge_threshold: float, resolution: int, model_path: str = "") -> Tuple[torch.Tensor]:
         """
