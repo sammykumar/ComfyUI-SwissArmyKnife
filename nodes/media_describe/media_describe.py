@@ -2181,6 +2181,10 @@ User Prompt:
     RETURN_NAMES = ("all_media_describe_data", "raw_llm_json", "positive_prompt_json", "positive_prompt", "prompt_request", "height", "width")
     FUNCTION = "describe_media"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
+    DESCRIPTION = (
+        "Analyzes an image or video (via Media Selection) with Gemini/LLM Studio, then outputs the full structured JSON, "
+        "flattened prompts, and inferred dimensions for downstream control-panel and prompt-building nodes."
+    )
 
     def describe_media(self, media_processed_path, llm_studio_options=None, overrides=None):
         """

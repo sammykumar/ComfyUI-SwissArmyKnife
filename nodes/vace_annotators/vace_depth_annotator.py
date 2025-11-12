@@ -59,6 +59,10 @@ class VACEDepthAnnotator:
     RETURN_NAMES = ("depth_maps",)
     FUNCTION = "generate_depth"
     CATEGORY = "Swiss Army Knife 🔪/VACE Annotators"
+    DESCRIPTION = (
+        "Loads a VACE depth checkpoint (MiDaS or Depth Anything v2), processes IMAGE batches at the chosen resolution, and "
+        "returns depth maps for downstream control signals."
+    )
 
     def _get_default_model_path(self, model_type: str) -> str:
         """Get default model path based on model type."""

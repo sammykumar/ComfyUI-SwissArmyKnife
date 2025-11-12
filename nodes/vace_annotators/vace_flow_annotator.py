@@ -59,6 +59,10 @@ class VACEFlowAnnotator:
     RETURN_NAMES = ("flow_maps",)
     FUNCTION = "generate_flow"
     CATEGORY = "Swiss Army Knife 🔪/VACE Annotators"
+    DESCRIPTION = (
+        "Loads the VACE RAFT checkpoint, computes forward/backward/bidirectional optical flow between consecutive frames at the "
+        "chosen resolution, and emits flow maps as IMAGE tensors."
+    )
 
     def _get_default_model_path(self) -> str:
         """Get default model path for RAFT flow model."""

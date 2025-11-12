@@ -73,6 +73,10 @@ class VACEScribbleAnnotator:
     RETURN_NAMES = ("scribble_maps",)
     FUNCTION = "generate_scribble"
     CATEGORY = "Swiss Army Knife 🔪/VACE Annotators"
+    DESCRIPTION = (
+        "Runs the vendored VACE scribble models (anime/general/sketch) or Sobel fallback to convert IMAGE batches into RGB "
+        "scribble maps at the requested resolution."
+    )
 
     def _get_default_model_path(self, style: str) -> str:
         """Resolve default checkpoint path for a style."""
