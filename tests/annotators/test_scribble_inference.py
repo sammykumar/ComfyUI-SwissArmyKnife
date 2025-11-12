@@ -34,7 +34,13 @@ def _save_image(tensor: torch.Tensor, path: Path) -> None:
 def test_scribble_fallback_smoke(tmp_path):
     node = VACEScribbleAnnotator()
     images = _load_sample()
-    out = node.generate_scribble(images, "anime", "fallback", 0.08, 256)[0]
+    out = node.generate_scribble(
+        images,
+        "anime",
+        "fallback",
+        256,
+        edge_threshold=0.08,
+    )[0]
     assert out.shape == images.shape
     contrast = float(out.max().item() - out.min().item())
     assert contrast > 0.05, "Fallback scribble map should have visible edges"
@@ -50,6 +56,13 @@ def test_scribble_model_optional(tmp_path):
     clear_scribble_cache()
     node = VACEScribbleAnnotator()
     images = _load_sample()
-    out = node.generate_scribble(images, "anime", "model", 0.12, 256, model_path=MODEL_PATH)[0]
+    out = node.generate_scribble(
+        images,
+        "anime",
+        "model",
+        512,
+        edge_threshold=0.12,
+        model_path=MODEL_PATH,
+    )[0]
     assert out.shape == images.shape
     _save_image(out, OUTPUT_DIR / "scribble_model.png")

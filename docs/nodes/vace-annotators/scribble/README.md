@@ -22,6 +22,7 @@ Generate stylized scribble/edge maps from images or video frames. The node autom
 | `inference_mode` | COMBO (`auto`,`model`,`fallback`) | ✔ | `auto` | `auto` prefers checkpoints when present, `model` requires them (errors otherwise), `fallback` forces Sobel mode. |
 | `batch_size` | INT | ✖ | `10` | Process frames in chunks to limit VRAM. Set to `0` to process the full batch at once. |
 | `resolution` | INT | ✔ | `512` | Square working resolution used before inference. Higher values capture more detail but use more VRAM/time. |
+| `edge_threshold` | FLOAT | ✔ | `0.12` | Controls how aggressively Sobel/legacy outputs are thresholded. Lower values draw more lines. Ignored by vendor checkpoints. |
 | `model_path` | STRING | ✖ | `""` | Optional explicit checkpoint path. When empty, the node searches the standard `models/vace_annotators/scribble/...` tree. |
 
 ---
@@ -38,9 +39,9 @@ Generate stylized scribble/edge maps from images or video frames. The node autom
 
 ### Backend auto-detection
 
-1. **ContourInference (vendor) backend** – Triggered when the checkpoint contains `model0.*` keys. The node instantiates the original VACE generator, keeps inputs in `[0,1]`, and uses the native Sigmoid outputs directly. This reproduces the vendor visuals exactly and ignores the old edge-threshold slider.
-2. **ResNet backend** – Triggered for legacy/custom checkpoints that match the vendored ResNet architecture. Inputs are normalized to `[-1,1]`, outputs go through adaptive quantile thresholding, and optional thinning runs to mimic the previous SwissArmyKnife behavior.
-3. **Sobel fallback** – When checkpoints are missing (or `inference_mode=fallback`), the node applies grayscale Sobel filters, normalizes magnitudes per-frame, thresholds with an internal factor of `0.12`, and produces usable scribble maps without any external files.
+1. **ContourInference (vendor) backend** – Triggered when the checkpoint contains `model0.*` keys. The node instantiates the original VACE generator, keeps inputs in `[0,1]`, and uses the native Sigmoid outputs directly. This reproduces the vendor visuals exactly and ignores the `edge_threshold` control because it is unnecessary.
+2. **ResNet backend** – Triggered for legacy/custom checkpoints that match the vendored ResNet architecture. Inputs are normalized to `[-1,1]`, outputs go through adaptive quantile thresholding, and optional thinning runs to mimic the previous SwissArmyKnife behavior. The `edge_threshold` slider is applied during post-processing to help you emphasize or relax edges.
+3. **Sobel fallback** – When checkpoints are missing (or `inference_mode=fallback`), the node applies grayscale Sobel filters, normalizes magnitudes per-frame, and thresholds using the `edge_threshold` value (default `0.12`) before producing usable scribble maps without any external files.
 
 Every backend respects the `batch_size` chunking control, so large frame batches can be streamed without exhausting VRAM.
 
@@ -96,7 +97,7 @@ All three backends resize incoming frames to the chosen `resolution` for process
 
 ## Change Log (key highlights)
 
-- **Nov 2025**: Vendor ContourInference graph added, automatic backend detection, edge-threshold slider removed.
+- **Nov 2025**: Vendor ContourInference graph added, automatic backend detection, and the `edge_threshold` slider was reintroduced for the non-vendor backends (default `0.12`).
 - **Oct 2025**: Initial vendored ResNet model + Sobel fallback shipped (pre-threshold-removal).
 
 ---

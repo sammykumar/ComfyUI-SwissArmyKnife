@@ -1,13 +1,27 @@
 import os
-from .nodes.nodes import NODE_CLASS_MAPPINGS as MAIN_NODE_CLASS_MAPPINGS
-from .nodes.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MAPPINGS
-from .nodes.helper_nodes import HELPER_NODE_CLASS_MAPPINGS
-from .nodes.helper_nodes import HELPER_NODE_DISPLAY_NAME_MAPPINGS
+
+try:
+    from .nodes.nodes import NODE_CLASS_MAPPINGS as MAIN_NODE_CLASS_MAPPINGS
+    from .nodes.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MAPPINGS
+except ImportError:
+    from nodes.nodes import NODE_CLASS_MAPPINGS as MAIN_NODE_CLASS_MAPPINGS
+    from nodes.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MAPPINGS
+
+try:
+    from .nodes.helper_nodes import HELPER_NODE_CLASS_MAPPINGS
+    from .nodes.helper_nodes import HELPER_NODE_DISPLAY_NAME_MAPPINGS
+except ImportError:
+    from nodes.helper_nodes import HELPER_NODE_CLASS_MAPPINGS
+    from nodes.helper_nodes import HELPER_NODE_DISPLAY_NAME_MAPPINGS
 
 # Import control panel node
 try:
-    from .nodes.utils.control_panel import CONTROL_PANEL_NODE_CLASS_MAPPINGS
-    from .nodes.utils.control_panel import CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS
+    try:
+        from .nodes.utils.control_panel import CONTROL_PANEL_NODE_CLASS_MAPPINGS
+        from .nodes.utils.control_panel import CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS
+    except ImportError:
+        from nodes.utils.control_panel import CONTROL_PANEL_NODE_CLASS_MAPPINGS
+        from nodes.utils.control_panel import CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS
 except ImportError as e:
     print(f"Warning: Could not import control panel node: {e}")
     CONTROL_PANEL_NODE_CLASS_MAPPINGS = {}
@@ -15,8 +29,12 @@ except ImportError as e:
 
 # Import civit metadata helper node
 try:
-    from .nodes.utils.civit_metadata_helper import CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS
-    from .nodes.utils.civit_metadata_helper import CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS
+    try:
+        from .nodes.utils.civit_metadata_helper import CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS
+        from .nodes.utils.civit_metadata_helper import CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS
+    except ImportError:
+        from nodes.utils.civit_metadata_helper import CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS
+        from nodes.utils.civit_metadata_helper import CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS
 except ImportError as e:
     print(f"Warning: Could not import civit metadata helper node: {e}")
     CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS = {}
@@ -24,8 +42,12 @@ except ImportError as e:
 
 # Import Azure Storage Upload node
 try:
-    from .nodes.utils.azure_storage_upload import NODE_CLASS_MAPPINGS as AZURE_STORAGE_NODE_CLASS_MAPPINGS
-    from .nodes.utils.azure_storage_upload import NODE_DISPLAY_NAME_MAPPINGS as AZURE_STORAGE_NODE_DISPLAY_NAME_MAPPINGS
+    try:
+        from .nodes.utils.azure_storage_upload import NODE_CLASS_MAPPINGS as AZURE_STORAGE_NODE_CLASS_MAPPINGS
+        from .nodes.utils.azure_storage_upload import NODE_DISPLAY_NAME_MAPPINGS as AZURE_STORAGE_NODE_DISPLAY_NAME_MAPPINGS
+    except ImportError:
+        from nodes.utils.azure_storage_upload import NODE_CLASS_MAPPINGS as AZURE_STORAGE_NODE_CLASS_MAPPINGS
+        from nodes.utils.azure_storage_upload import NODE_DISPLAY_NAME_MAPPINGS as AZURE_STORAGE_NODE_DISPLAY_NAME_MAPPINGS
 except ImportError as e:
     print(f"Warning: Could not import Azure Storage Upload node: {e}")
     AZURE_STORAGE_NODE_CLASS_MAPPINGS = {}
@@ -33,8 +55,12 @@ except ImportError as e:
 
 # Import lora_manager nodes
 try:
-    from .nodes.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
-    from .nodes.lora_manager import NODE_DISPLAY_NAME_MAPPINGS as LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
+    try:
+        from .nodes.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
+        from .nodes.lora_manager import NODE_DISPLAY_NAME_MAPPINGS as LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
+    except ImportError:
+        from nodes.lora_manager import NODE_CLASS_MAPPINGS as LORA_MANAGER_NODE_CLASS_MAPPINGS
+        from nodes.lora_manager import NODE_DISPLAY_NAME_MAPPINGS as LORA_MANAGER_NODE_DISPLAY_NAME_MAPPINGS
 except ImportError as e:
     print(f"Warning: Could not import lora_manager nodes: {e}")
     LORA_MANAGER_NODE_CLASS_MAPPINGS = {}
@@ -42,9 +68,14 @@ except ImportError as e:
 
 # Import media_selection nodes
 try:
-    from .nodes.media_selection.media_selection import MediaSelection
-    from .nodes.media_selection.frame_extractor import FrameExtractor
-    from .nodes.media_selection.multi_caption_combiner import MultiCaptionCombiner
+    try:
+        from .nodes.media_selection.media_selection import MediaSelection
+        from .nodes.media_selection.frame_extractor import FrameExtractor
+        from .nodes.media_selection.multi_caption_combiner import MultiCaptionCombiner
+    except ImportError:
+        from nodes.media_selection.media_selection import MediaSelection
+        from nodes.media_selection.frame_extractor import FrameExtractor
+        from nodes.media_selection.multi_caption_combiner import MultiCaptionCombiner
 
     MEDIA_SELECTION_NODE_CLASS_MAPPINGS = {
         "MediaSelection": MediaSelection,
@@ -61,10 +92,13 @@ except ImportError as e:
     MEDIA_SELECTION_NODE_CLASS_MAPPINGS = {}
     MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS = {}
 
-# Import vace_annotators nodes
 try:
-    from .nodes.vace_annotators import NODE_CLASS_MAPPINGS as VACE_ANNOTATORS_NODE_CLASS_MAPPINGS
-    from .nodes.vace_annotators import NODE_DISPLAY_NAME_MAPPINGS as VACE_ANNOTATORS_NODE_DISPLAY_NAME_MAPPINGS
+    try:
+        from .nodes.vace_annotators import NODE_CLASS_MAPPINGS as VACE_ANNOTATORS_NODE_CLASS_MAPPINGS
+        from .nodes.vace_annotators import NODE_DISPLAY_NAME_MAPPINGS as VACE_ANNOTATORS_NODE_DISPLAY_NAME_MAPPINGS
+    except ImportError:
+        from nodes.vace_annotators import NODE_CLASS_MAPPINGS as VACE_ANNOTATORS_NODE_CLASS_MAPPINGS
+        from nodes.vace_annotators import NODE_DISPLAY_NAME_MAPPINGS as VACE_ANNOTATORS_NODE_DISPLAY_NAME_MAPPINGS
 except ImportError as e:
     print(f"Warning: Could not import vace_annotators nodes: {e}")
     VACE_ANNOTATORS_NODE_CLASS_MAPPINGS = {}

@@ -59,6 +59,13 @@ class VACEScribbleAnnotator:
                     "step": 64,
                     "tooltip": "Processing resolution (lower = faster, higher = more detail)",
                 }),
+                "edge_threshold": ("FLOAT", {
+                    "default": EDGE_THRESHOLD_DEFAULT,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.01,
+                    "tooltip": "Threshold applied to Sobel magnitudes and non-vendor model outputs; lower = more edges",
+                }),
             },
             "optional": {
                 "model_path": ("STRING", {
@@ -174,7 +181,7 @@ class VACEScribbleAnnotator:
         self._model_cache[cache_key] = model
         return model
 
-    def _sobel_fallback(self, images: torch.Tensor, resolution: int) -> torch.Tensor:
+    def _sobel_fallback(self, images: torch.Tensor, resolution: int, edge_threshold: float) -> torch.Tensor:
         import torch.nn.functional as F
 
         img = images
@@ -200,8 +207,8 @@ class VACEScribbleAnnotator:
             mag = mag / (max_per + 1e-8)
 
             mag = F.interpolate(mag, size=(images.shape[1], images.shape[2]), mode='bilinear', align_corners=False)
-            edges = (mag > EDGE_THRESHOLD_DEFAULT).float()
-            scribble_maps = 1.0 - edges.repeat(1, 1, 1, 3)
+            edges = (mag > edge_threshold).float()
+            scribble_maps = 1.0 - edges.repeat(1, 3, 1, 1)
             return scribble_maps.permute(0, 2, 3, 1).cpu()
 
     def _process_scribble(
@@ -211,6 +218,7 @@ class VACEScribbleAnnotator:
         resolution: int,
         inference_mode: str,
         batch_size: int,
+        edge_threshold: float,
     ) -> torch.Tensor:
         total_frames = images.shape[0]
         effective_batch = batch_size if batch_size and batch_size > 0 else total_frames
@@ -224,12 +232,18 @@ class VACEScribbleAnnotator:
             end = min(total_frames, start + effective_batch)
             chunk = images[start:end]
             if isinstance(model, torch.nn.Module):
-                outputs.append(self._run_model_chunk(chunk, model, resolution))
+                outputs.append(self._run_model_chunk(chunk, model, resolution, edge_threshold))
             else:
-                outputs.append(self._sobel_fallback(chunk, resolution))
+                outputs.append(self._sobel_fallback(chunk, resolution, edge_threshold))
         return torch.cat(outputs, dim=0)
 
-    def _run_model_chunk(self, images: torch.Tensor, model: torch.nn.Module, resolution: int) -> torch.Tensor:
+    def _run_model_chunk(
+        self,
+        images: torch.Tensor,
+        model: torch.nn.Module,
+        resolution: int,
+        edge_threshold: float,
+    ) -> torch.Tensor:
         with torch.no_grad():
             normalize_mode = getattr(model, "_sak_input_normalization", "tanh")
             inp = preprocess_scribble_input(images, resolution, normalize_mode=normalize_mode)
@@ -245,7 +259,7 @@ class VACEScribbleAnnotator:
                 scribble_maps = postprocess_scribble_output(
                     out.detach(),
                     target_hw=(images.shape[1], images.shape[2]),
-                    user_threshold=EDGE_THRESHOLD_DEFAULT,
+                    user_threshold=edge_threshold,
                     apply_thinning=True,
                 )
             return scribble_maps
@@ -256,11 +270,20 @@ class VACEScribbleAnnotator:
         style: str,
         inference_mode: str,
         resolution: int,
+        edge_threshold: float = EDGE_THRESHOLD_DEFAULT,
         model_path: str = "",
         batch_size: int = 10,
     ) -> Tuple[torch.Tensor]:
+        edge_threshold = float(max(0.0, min(1.0, edge_threshold)))
         model = self._load_model(style, model_path, inference_mode)
-        scribble_maps = self._process_scribble(images, model, resolution, inference_mode, batch_size)
+        scribble_maps = self._process_scribble(
+            images,
+            model,
+            resolution,
+            inference_mode,
+            batch_size,
+            edge_threshold,
+        )
         print(f"✓ Generated scribble maps: shape={scribble_maps.shape}")
         return (scribble_maps,)
 

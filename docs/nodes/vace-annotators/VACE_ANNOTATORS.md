@@ -173,6 +173,7 @@ Generates scribble/edge maps from images for stylized effects.
 | `inference_mode` | ENUM | "auto" | `auto` prefers vendored model, `model` requires checkpoint, `fallback` forces Sobel mode |
 | `batch_size` | INT | 10 | Process frames in chunks to reduce VRAM usage (0 = full batch). |
 | `resolution` | INT | 512 | Processing resolution (64-2048, step 64) |
+| `edge_threshold` | FLOAT | 0.12 | Threshold used by Sobel and legacy ResNet backends (lower = more edges). Ignored by vendor checkpoints. |
 | `model_path` | STRING | "" | Optional custom model path |
 
 #### Outputs
@@ -191,7 +192,7 @@ Generates scribble/edge maps from images for stylized effects.
 
 - `auto` inference will use vendored VACE model when checkpoints are present, otherwise Sobel fallback.
 - `model` mode surfaces helpful errors when checkpoints are missing or incompatible.
-- Edge thresholding is now automatic: vendor checkpoints emit stylized maps directly, while Sobel/ResNet fallback paths reuse an internal factor of `0.12`.
+- `edge_threshold` replaces the internal factor so you can decide how aggressive Sobel/ResNet edges should be (default `0.12`). Vendor checkpoints ignore this control.
 - Adaptive quantile thresholding plus morphological thinning (legacy backend) remains available automatically when the vendor checkpoint is missing.
 - Use the `batch_size` field to stream large frame batches across multiple forward passes if you run into VRAM limits.
 - Useful for style transfer and artistic video generation; can be combined with other control signals.
