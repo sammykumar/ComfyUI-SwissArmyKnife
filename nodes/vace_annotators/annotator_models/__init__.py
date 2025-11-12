@@ -5,6 +5,7 @@ from .scribble import (
     load_scribble_model,
     preprocess_scribble_input,
     postprocess_scribble_output,
+    postprocess_vendor_scribble_output,
     STYLE_CONFIGS,
 )
 
@@ -14,4 +15,5 @@ __all__ = [
     "load_scribble_model",
     "preprocess_scribble_input",
     "postprocess_scribble_output",
+    "postprocess_vendor_scribble_output",
 ]

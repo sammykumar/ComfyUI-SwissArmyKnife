@@ -22,19 +22,19 @@ except Exception:  # pragma: no cover - runtime dependency
 
 from .annotator_models import (
     postprocess_scribble_output,
+    postprocess_vendor_scribble_output,
     preprocess_scribble_input,
 )
 from .scribble_loader import ScribbleLoaderError, get_scribble_model
+
+
+EDGE_THRESHOLD_DEFAULT = 0.12
 
 
 class VACEScribbleAnnotator:
     """ComfyUI node for VACE scribble/edge detection."""
 
     _model_cache = {}
-
-    def __init__(self):
-        self.model = None
-        self.current_model_path = None
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -51,13 +51,6 @@ class VACEScribbleAnnotator:
                 "inference_mode": (["auto", "model", "fallback"], {
                     "default": "auto",
                     "tooltip": "auto: prefer model when available. model: require checkpoint. fallback: always Sobel",
-                }),
-                "edge_threshold": ("FLOAT", {
-                    "default": 0.12,
-                    "min": 0.0,
-                    "max": 1.0,
-                    "step": 0.02,
-                    "tooltip": "Edge threshold / contrast factor (lower = more edges)",
                 }),
                 "resolution": ("INT", {
                     "default": 512,
@@ -171,7 +164,7 @@ class VACEScribbleAnnotator:
         self._model_cache[cache_key] = model
         return model
 
-    def _sobel_fallback(self, images: torch.Tensor, edge_threshold: float, resolution: int) -> torch.Tensor:
+    def _sobel_fallback(self, images: torch.Tensor, resolution: int) -> torch.Tensor:
         import torch.nn.functional as F
 
         img = images
@@ -197,40 +190,47 @@ class VACEScribbleAnnotator:
             mag = mag / (max_per + 1e-8)
 
             mag = F.interpolate(mag, size=(images.shape[1], images.shape[2]), mode='bilinear', align_corners=False)
-            edges = (mag > edge_threshold).float()
+            edges = (mag > EDGE_THRESHOLD_DEFAULT).float()
             scribble_maps = 1.0 - edges.repeat(1, 1, 1, 3)
             return scribble_maps.permute(0, 2, 3, 1).cpu()
 
-    def _process_scribble(self, images: torch.Tensor, model, edge_threshold: float, resolution: int, inference_mode: str) -> torch.Tensor:
+    def _process_scribble(self, images: torch.Tensor, model, resolution: int, inference_mode: str) -> torch.Tensor:
         batch_size = images.shape[0]
         print(f"Processing {batch_size} frame(s) for scribble detection at resolution {resolution} (mode={inference_mode})")
 
         if isinstance(model, torch.nn.Module):
             with torch.no_grad():
-                inp = preprocess_scribble_input(images, resolution)
+                normalize_mode = getattr(model, "_sak_input_normalization", "tanh")
+                inp = preprocess_scribble_input(images, resolution, normalize_mode=normalize_mode)
                 device = next(model.parameters()).device
                 out = model(inp.to(device))
-                scribble_maps = postprocess_scribble_output(
-                    out.detach(),
-                    target_hw=(images.shape[1], images.shape[2]),
-                    user_threshold=edge_threshold,
-                    apply_thinning=True,
-                )
+                post_mode = getattr(model, "_sak_postprocess", "quantile")
+                if post_mode == "vendor":
+                    scribble_maps = postprocess_vendor_scribble_output(
+                        out.detach(),
+                        target_hw=(images.shape[1], images.shape[2]),
+                    )
+                else:
+                    scribble_maps = postprocess_scribble_output(
+                        out.detach(),
+                        target_hw=(images.shape[1], images.shape[2]),
+                        user_threshold=EDGE_THRESHOLD_DEFAULT,
+                        apply_thinning=True,
+                    )
                 return scribble_maps
 
-        return self._sobel_fallback(images, edge_threshold, resolution)
+        return self._sobel_fallback(images, resolution)
 
     def generate_scribble(
         self,
         images: torch.Tensor,
         style: str,
         inference_mode: str,
-        edge_threshold: float,
         resolution: int,
         model_path: str = "",
     ) -> Tuple[torch.Tensor]:
         model = self._load_model(style, model_path, inference_mode)
-        scribble_maps = self._process_scribble(images, model, edge_threshold, resolution, inference_mode)
+        scribble_maps = self._process_scribble(images, model, resolution, inference_mode)
         print(f"✓ Generated scribble maps: shape={scribble_maps.shape}")
         return (scribble_maps,)
 

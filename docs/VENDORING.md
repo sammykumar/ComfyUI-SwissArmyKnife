@@ -6,7 +6,7 @@ This repository vendors a minimal subset of the VACE-Annotators project (Apache-
 
 | File | Description | Upstream Source |
 | --- | --- | --- |
-| `nodes/vace_annotators/annotator_models/scribble.py` | ResNet generator architecture plus preprocessing/postprocessing helpers. | Derived from the `scribble` generator in [ali-vilab/VACE-Annotators](https://github.com/ali-vilab/VACE-Annotators) (Apache-2.0). |
+| `nodes/vace_annotators/annotator_models/scribble.py` | ResNet generator architecture plus preprocessing/postprocessing helpers. As of this update it also vendors the official `ContourInference` graph to mirror upstream behavior. | Derived from the `scribble` generator in [ali-vilab/VACE-Annotators](https://github.com/ali-vilab/VACE-Annotators) (Apache-2.0). |
 | `nodes/vace_annotators/annotator_models/__init__.py` | Shim exporting loader + helpers. | Local glue code referencing the vendored generator. |
 | `nodes/vace_annotators/scribble_loader.py` | Loader, device handling, caching, and error plumbing. | Local adaptation based on SwissArmyKnife requirements. |
 
