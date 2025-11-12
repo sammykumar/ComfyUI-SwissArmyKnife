@@ -32,7 +32,8 @@ Behavior and usage
 Inputs (node fields):
 - `images` (IMAGE) — Input images or frames (batch supported)
 - `style` (choice: `anime`, `general`, `sketch`) — Which annotator style/checkpoint to use
-- `edge_threshold` (FLOAT) — Edge threshold (default: **0.12**). Lower = more edges.
+- `inference_mode` (choice: `auto`, `model`, `fallback`) — Auto = prefer vendored model, Model = require checkpoint, Fallback = always Sobel
+- `edge_threshold` (FLOAT) — Edge/adaptive-threshold intensity control (default: **0.12**). Lower = more edges.
 - `resolution` (INT) — Internal processing resolution (default: 512)
 - `model_path` (STRING) — Optional explicit path to a checkpoint (overrides default path resolution)
 
@@ -108,11 +109,11 @@ High-level goals
 - Reproduce the stylized scribble outputs produced by the VACE-Annotators `scribble` models (anime/general/sketch) inside the ComfyUI node, with equivalent preprocessing, model architecture, checkpoint loading, and postprocessing.
 - Deliver a user-friendly experience in Docker/ComfyUI without requiring users to pip-install the full upstream repo (recommended: vendor minimal model code and transforms into `nodes/vace_annotators/annotator_models/`).
 
-Files and placement (suggested)
-- `nodes/vace_annotators/annotator_models/scribble.py` — vendored minimal model classes and helper layers required by the generator/netG implementation.
-- `nodes/vace_annotators/annotator_models/__init__.py` — small package shim to expose `load_scribble_model(path, style, device)` helper.
-- `nodes/vace_annotators/scribble_loader.py` — thin loader & adapter to instantiate model, handle state_dict key mismatches, and wrap device/eval logic.
-- `tests/annotators/test_scribble_inference.py` — small test harness that runs one sample frame through the model and saves output images for visual diff.
+Files and placement (implemented)
+- `nodes/vace_annotators/annotator_models/scribble.py` — vendored ResNet generator, preprocessing, postprocessing helpers (Apache-2.0 attribution included).
+- `nodes/vace_annotators/annotator_models/__init__.py` — shim exporting loader + helpers.
+- `nodes/vace_annotators/scribble_loader.py` — thin loader, caching, and device handling for checkpoints.
+- `tests/annotators/test_scribble_inference.py` — smoke tests for fallback + optional model inference, writes artifacts under `tests/output/`.
 
 Step-by-step implementation
 1) Acquire upstream reference code
@@ -186,13 +187,13 @@ Acceptance criteria (how to know we matched upstream)
 - Automated checks: the test harness saves model output images to `tests/output/` and provides a small visual-diff script (pixel-level similarity or structural similarity index) to assert similarity beyond trivial thresholds.
 
 Implementation checklist (developer view)
-- [ ] Copy generator class and minimal helpers into `nodes/vace_annotators/annotator_models/scribble.py` with license header.
-- [ ] Implement `load_scribble_model(path, style, device)` and wire it into `vace_scribble_annotator._load_model()`.
-- [ ] Implement exact preprocessing transforms used upstream.
-- [ ] Implement postprocessing (tanh->0..1, thinning, adaptive thresholding, denoising).
-- [ ] Add a node `inference_mode` option and improved error messages.
-- [ ] Add tests and a small visual-diff utility.
-- [ ] Add `VENDORING.md` documenting the vendored files and upstream links.
+- [x] Copy generator class and minimal helpers into `nodes/vace_annotators/annotator_models/scribble.py` with license header.
+- [x] Implement `load_scribble_model(path, style, device)` and wire it into `vace_scribble_annotator._load_model()`.
+- [x] Implement exact preprocessing transforms used upstream.
+- [x] Implement postprocessing (tanh->0..1, thinning, adaptive thresholding, denoising).
+- [x] Add a node `inference_mode` option and improved error messages.
+- [x] Add tests and a small visual-diff utility.
+- [x] Add `docs/VENDORING.md` documenting the vendored files and upstream links.
 
 
 Attribution & license

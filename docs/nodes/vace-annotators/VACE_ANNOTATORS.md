@@ -170,7 +170,8 @@ Generates scribble/edge maps from images for stylized effects.
 |-------|------|---------|-------------|
 | `images` | IMAGE | - | Input images or video frames (batch supported) |
 | `style` | ENUM | "anime" | Style: "anime", "general", or "sketch" |
-| `edge_threshold` | FLOAT | 0.5 | Edge detection threshold (0.0-1.0, step 0.05) |
+| `inference_mode` | ENUM | "auto" | `auto` prefers vendored model, `model` requires checkpoint, `fallback` forces Sobel mode |
+| `edge_threshold` | FLOAT | 0.12 | Adaptive threshold / contrast control (0.0-1.0, step 0.02) |
 | `resolution` | INT | 512 | Processing resolution (64-2048, step 64) |
 | `model_path` | STRING | "" | Optional custom model path |
 
@@ -188,10 +189,11 @@ Generates scribble/edge maps from images for stylized effects.
 
 #### Usage Notes
 
-- Lower threshold = more edges detected
-- Higher threshold = fewer, stronger edges
-- Useful for style transfer and artistic video generation
-- Can be combined with other control signals
+- `auto` inference will use vendored VACE model when checkpoints are present, otherwise Sobel fallback.
+- `model` mode surfaces helpful errors when checkpoints are missing or incompatible.
+- Lower threshold = more edges detected; higher threshold = thinner, sparser strokes (applies to both modes).
+- Adaptive quantile thresholding plus morphological thinning matches upstream stylized output more closely.
+- Useful for style transfer and artistic video generation; can be combined with other control signals.
 
 ## Usage Examples
 

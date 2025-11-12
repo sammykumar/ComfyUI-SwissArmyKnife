@@ -50,6 +50,10 @@ Example workflows and demonstrations:
 - Usage demonstrations
 - Integration examples
 
+### 📦 Vendoring Notes
+
+- **[VENDORING.md](VENDORING.md)** — Tracks files copied/adapted from external projects (e.g., VACE-Annotators scribble generator) plus update instructions.
+
 ## 🚀 Quick Start
 
 ### For Developers
