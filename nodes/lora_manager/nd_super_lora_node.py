@@ -45,6 +45,10 @@ class SuperDualLoraLoader:
     RETURN_TYPES = ("WANVIDLORA", "WANVIDLORA", "CLIP", "STRING")
     RETURN_NAMES = ("high_noise_lora", "low_noise_lora", "CLIP", "TRIGGER_WORDS")
     FUNCTION = "load_loras"
+    DESCRIPTION = (
+        "Consumes Wan high/low noise LoRA stacks plus a JSON bundle, applies enabled LoRAs with per-entry strengths, and emits "
+        "updated high/low models, CLIP, and aggregated trigger words."
+    )
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -191,6 +195,10 @@ class SuperLoraLoader:
     RETURN_TYPES = ("WANVIDLORA", "CLIP", "STRING")
     RETURN_NAMES = ("WANVIDLORA", "CLIP", "TRIGGER_WORDS")
     FUNCTION = "load_loras"
+    DESCRIPTION = (
+        "Single-stream LoRA loader that parses template bundles, applies each enabled LoRA to the provided model/CLIP combo, and "
+        "returns the updated stack plus collected trigger words."
+    )
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -297,6 +305,5 @@ class SuperLoraLoader:
         print("---------------------------------")
 
         return (current_model, current_clip, combined_trigger_words)
-
 
 

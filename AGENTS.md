@@ -83,6 +83,20 @@ docs/
 3. **Integration docs** → `docs/integrations/[service]/`
 4. **Web JavaScript widget docs** → `docs/web-js/`
 5. **Examples** → `docs/examples/`
+6. **ComfyUI help pages** → every registered node **must** have a matching help markdown file inside `web/docs/`. The filename must match the node key from `NODE_CLASS_MAPPINGS` (e.g., `web/docs/VACEScribbleAnnotator.md`). Use the help page template described at https://docs.comfy.org/custom-nodes/help_page and keep its content in sync with the canonical node doc under `docs/nodes/...`.
+
+#### ComfyUI Help Page Structure
+
+```
+web/
+└── docs/
+    ├── NodeName.md        # Default help page loaded in ComfyUI
+    ├── NodeName/en.md     # (Optional) locale-specific overrides
+    └── NodeName/zh.md
+```
+
+- At minimum provide headings for **Summary**, **Inputs**, **Outputs**, **Usage Tips**, and link back to the full documentation under `docs/`.
+- If you update a node’s behavior, update both the canonical doc (`docs/nodes/...`) **and** the corresponding `web/docs/NodeName.md` help file in the same PR.
 
 ### Finding Documentation
 

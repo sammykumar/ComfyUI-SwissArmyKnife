@@ -44,6 +44,10 @@ class GeminiUtilOptions:
     RETURN_NAMES = ("gemini_options",)
     FUNCTION = "create_options"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
+    DESCRIPTION = (
+        "Packages Gemini configuration (model choice, prompt style, clothing-color toggle) plus the API key so MediaDescribe "
+        "receives a single `gemini_options` object."
+    )
 
     def create_options(self, gemini_model, prompt_style, change_clothing_color):
         """

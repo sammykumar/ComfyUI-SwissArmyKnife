@@ -84,6 +84,10 @@ class LLMStudioVideoDescribe:
     RETURN_NAMES = ("combined_caption", "frame_captions", "frames_processed")
     FUNCTION = "describe_video"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
+    DESCRIPTION = (
+        "Samples frames from a source video, sends them to an LM Studio VL model, and returns combined/frame-level captions plus "
+        "the number of frames processed."
+    )
 
     def extract_frames_from_video(
         self, 
@@ -352,6 +356,10 @@ class LLMStudioPictureDescribe:
     RETURN_NAMES = ("caption",)
     FUNCTION = "describe_image"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
+    DESCRIPTION = (
+        "Captions a single IMAGE tensor by relaying it to an LM Studio vision-language model, returning the generated paragraph "
+        "for downstream prompt or logging nodes."
+    )
 
     def encode_image(self, image_path: Path) -> str:
         """Encode image to base64 string."""

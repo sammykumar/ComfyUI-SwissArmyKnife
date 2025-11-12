@@ -77,6 +77,10 @@ class CivitMetadataHelper:
     FUNCTION = "collect_metadata"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True  # Makes this an output node that displays in the UI
+    DESCRIPTION = (
+        "Collects steps/CFG/seeds, sampler names, LoRA identifiers, and prompts, then emits formatted text plus JSON summaries "
+        "that match CivitAI’s metadata expectations."
+    )
 
     def collect_metadata(self, steps, cfg, seed, high_sampler, low_sampler, lora_high, lora_low, positive_prompt, negative_prompt):
         """

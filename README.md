@@ -105,6 +105,12 @@ pre-commit install
     - Template save/load system
     - Enhanced file picker with search
     - See [docs/LORA_MANAGER_INTEGRATION.md](docs/LORA_MANAGER_INTEGRATION.md) for details
+- **VACE Annotators**: Video preprocessing nodes for VACE-Annotators integration
+    - **VACE Annotator - Depth**: Generate depth maps (MiDaS, Depth Anything V2)
+    - **VACE Annotator - Flow**: Compute optical flow (RAFT)
+    - **VACE Annotator - Scribble**: Extract edge/scribble maps (Anime, General, Sketch)
+    - Model caching, batch processing, configurable resolution
+    - See [docs/nodes/vace-annotators/README.md](docs/nodes/vace-annotators/README.md) for details
 
 ### Web Extension (JavaScript)
 

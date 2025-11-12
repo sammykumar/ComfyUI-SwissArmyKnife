@@ -40,6 +40,10 @@ class VideoPreview:
     FUNCTION = "preview_videos"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True  # Makes this an output node that displays in the UI
+    DESCRIPTION = (
+        "Displays any combination of reference/base/upscaled video file paths in the custom JS preview so you can compare clips "
+        "side-by-side without additional processing."
+    )
 
     def preview_videos(self, reference_vid="", base_vid="", upscaled_vid=""):
         """

@@ -40,6 +40,10 @@ class VideoPreviewNative:
     FUNCTION = "preview_videos"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True  # Makes this an output node that displays in the UI
+    DESCRIPTION = (
+        "Echoes any connected video file paths to the UI so the native Comfy viewer can play reference/base/upscaled clips "
+        "without the custom JS widget."
+    )
 
     def preview_videos(self, reference_vid="", base_vid="", upscaled_vid=""):
         """

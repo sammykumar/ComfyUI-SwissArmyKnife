@@ -60,6 +60,10 @@ class MediaDescribeOverrides:
     RETURN_NAMES = ("overrides",)
     FUNCTION = "create_overrides"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
+    DESCRIPTION = (
+        "Let users override individual MediaDescribe paragraphs (subject, visual style, clothing, scene, movement) and prepend "
+        "custom text before the generated description."
+    )
 
     def create_overrides(self, prompt_prefix="", override_subject="", override_visual_style="",
                         override_clothing="", override_scene="", override_movement=""):
