@@ -17,3 +17,17 @@ Generate anime/general/sketch scribble maps using the official VACE ContourInfer
 
 ## Additional Resources
 - [Full documentation](docs/nodes/vace-annotators/scribble/README.md)
+
+## Run outside ComfyUI (CLI Runner)
+
+We provide a small helper script for running the annotator outside of ComfyUI to facilitate fast development:
+
+```bash
+source .venv/bin/activate
+python scripts/run_scribble_node.py --image tests/data/example.jpg --mask tests/data/example_mask.png --inference_mode fallback --output out
+```
+
+Notes:
+- The runner uses `inference_mode=fallback` by default, which uses a Sobel-based fallback and requires no checkpoints. Using the vendor models requires `--inference_mode model` and a valid `--model_path`.
+- For faster iterations, use small images and `inference_mode=fallback`.
+

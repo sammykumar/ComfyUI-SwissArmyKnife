@@ -72,6 +72,10 @@ class VACEScribbleAnnotator:
                     "max": 128,
                     "tooltip": "Process frames in chunks to reduce VRAM usage (0 = process entire batch).",
                 }),
+                "mask": ("MASK", {
+                    "default": None,
+                    "tooltip": "Optional mask to restrict scribble generation to specific regions (batch or single-frame).",
+                }),
             },
         }
 
@@ -201,8 +205,50 @@ class VACEScribbleAnnotator:
 
             mag = F.interpolate(mag, size=(images.shape[1], images.shape[2]), mode='bilinear', align_corners=False)
             edges = (mag > EDGE_THRESHOLD_DEFAULT).float()
-            scribble_maps = 1.0 - edges.repeat(1, 1, 1, 3)
+            # Repeat channel dimension (C=1 -> C=3) to form RGB scribble map
+            scribble_maps = 1.0 - edges.repeat(1, 3, 1, 1)
             return scribble_maps.permute(0, 2, 3, 1).cpu()
+
+    def _apply_mask_to_scribbles(self, scribble_maps: torch.Tensor, mask: torch.Tensor | None) -> torch.Tensor:
+        """Apply a mask to the NHWC scribble_maps tensor.
+
+        scribble_maps: [B, H, W, 3] float (0..1)
+        mask: optional tensor; valid shapes: [B, H, W], [B, H, W, C], [1, H, W], etc.
+        """
+        if mask is None:
+            return scribble_maps
+
+        import torch.nn.functional as F
+
+        scribble_maps = scribble_maps.cpu().float()
+        m = mask.float()
+        # Treat uint8 masks (0..255) as 0..1
+        if m.dtype == torch.uint8 or (hasattr(m, 'max') and m.max() > 2.0):
+            m = m / 255.0
+
+        # Normalize mask dims: [B, H, W, 1]
+        if m.ndim == 3:
+            m = m.unsqueeze(-1)
+        if m.ndim == 4 and m.shape[-1] > 1:
+            if m.shape[-1] == 4:
+                m = m[..., 3:4]
+            else:
+                m = m.mean(dim=-1, keepdim=True)
+
+        # Broadcast mask over batch if needed
+        if m.shape[0] == 1 and scribble_maps.shape[0] > 1:
+            m = m.repeat(scribble_maps.shape[0], 1, 1, 1)
+
+        # Resize mask to scribble shape
+        single_nchw = m.permute(0, 3, 1, 2)
+        if single_nchw.shape[2] != scribble_maps.shape[1] or single_nchw.shape[3] != scribble_maps.shape[2]:
+            single_resized = F.interpolate(single_nchw, size=(scribble_maps.shape[1], scribble_maps.shape[2]), mode='bilinear', align_corners=False)
+        else:
+            single_resized = single_nchw
+        mask_nhwc = single_resized.permute(0, 2, 3, 1)
+        mask3 = mask_nhwc.repeat(1, 1, 1, 3).to(scribble_maps.dtype)
+
+        return scribble_maps * mask3 + (1.0 - mask3)
 
     def _process_scribble(
         self,
@@ -258,9 +304,13 @@ class VACEScribbleAnnotator:
         resolution: int,
         model_path: str = "",
         batch_size: int = 10,
+        mask: torch.Tensor | None = None,
     ) -> Tuple[torch.Tensor]:
         model = self._load_model(style, model_path, inference_mode)
         scribble_maps = self._process_scribble(images, model, resolution, inference_mode, batch_size)
+        scribble_maps = scribble_maps.cpu()
+        if mask is not None:
+            scribble_maps = self._apply_mask_to_scribbles(scribble_maps, mask)
         print(f"✓ Generated scribble maps: shape={scribble_maps.shape}")
         return (scribble_maps,)
 
