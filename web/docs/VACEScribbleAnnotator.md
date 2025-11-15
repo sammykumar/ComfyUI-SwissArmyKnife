@@ -24,7 +24,7 @@ We provide a small helper script for running the annotator outside of ComfyUI to
 
 ```bash
 source .venv/bin/activate
-python scripts/run_scribble_node.py --image tests/data/example.jpg --mask tests/data/example_mask.png --inference_mode fallback --output out
+python scripts/run_scribble_node.py --image tests/data/example.jpg --mask tests/data/example_mask.png --inference_mode fallback --outputDir tests/data/output/
 ```
 
 Notes:

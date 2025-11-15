@@ -6,13 +6,13 @@ Usage (basic):
 
 ```bash
 source .venv/bin/activate
-python scripts/run_scribble_node.py --image path/to/image.jpg --output out
+python scripts/run_scribble_node.py --image path/to/image.jpg --outputDir out
 ```
 
 Run with mask (optional):
 
 ```bash
-python scripts/run_scribble_node.py --image path/to/image.jpg --mask path/to/mask.png --output out
+python scripts/run_scribble_node.py --image path/to/image.jpg --mask path/to/mask.png --outputDir out
 ```
 
 Notes:

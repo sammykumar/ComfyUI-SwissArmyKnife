@@ -56,12 +56,20 @@ def to_nhwc_tensor(imgs: List[np.ndarray]) -> torch.Tensor:
     return torch.from_numpy(batch)
 
 
-def save_nhwc_tensor_as_images(tensor: torch.Tensor, out_dir: str, prefix: str = "scribble"):
+def save_nhwc_tensor_as_images(tensor: torch.Tensor, out_dir: str, prefix: str = "scribble", input_paths: list | None = None):
     os.makedirs(out_dir, exist_ok=True)
     arr = tensor.numpy()
     for i in range(arr.shape[0]):
         img = (arr[i] * 255.0).clip(0, 255).astype("uint8")
-        Image.fromarray(img).save(os.path.join(out_dir, f"{prefix}_{i}.png"))
+        # Determine filename: if we have input_paths mapping, use base name
+        if input_paths is not None and i < len(input_paths):
+            base = os.path.splitext(os.path.basename(input_paths[i]))[0]
+            filename = f"{base}_scribble.png"
+        elif arr.shape[0] == 1:
+            filename = f"{prefix}.png"
+        else:
+            filename = f"{prefix}_{i}.png"
+        Image.fromarray(img).save(os.path.join(out_dir, filename))
 
 
 def main():
@@ -73,7 +81,9 @@ def main():
     p.add_argument("--resolution", default=512, type=int)
     p.add_argument("--model_path", default="")
     p.add_argument("--batch_size", default=0, type=int)
-    p.add_argument("--output", default="out")
+    # Support both --output and --outputDir; --output is kept for backward compatibility
+    p.add_argument("--output", dest="outputDir", help=argparse.SUPPRESS)
+    p.add_argument("--outputDir", dest="outputDir", default="tests/data/output/", help='Output directory to save generated scribble images (default: tests/data/output/)')
     args = p.parse_args()
 
     images = [load_image(p) for p in args.image]
@@ -94,7 +104,7 @@ def main():
         raise RuntimeError("Annotator doesn't expose generate_scribble")
 
     scribble_maps = res[0]
-    save_nhwc_tensor_as_images(scribble_maps, args.output)
+    save_nhwc_tensor_as_images(scribble_maps, args.outputDir, input_paths=args.image)
 
 
 if __name__ == "__main__":
