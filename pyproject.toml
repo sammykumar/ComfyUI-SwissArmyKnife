@@ -49,10 +49,15 @@ DisplayName = "Swiss Army Knife"
 includes = ["dist/"]
 
 [tool.setuptools]
-packages = ["nodes"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.package-data]
-"*" = ["web/js/*.js"]
+"nodes" = ["web/js/*.js"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

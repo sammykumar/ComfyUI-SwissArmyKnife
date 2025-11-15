@@ -1,6 +1,9 @@
-# Include the main package files
+# Include the main package files (support both root and src layouts during migration)
 include __init__.py
+include src/nodes/__init__.py
 recursive-include utils *.py
+recursive-include src/nodes *.py
+recursive-include src/nodes *.json
 
 # Include web extension files
 include web/js/*.js

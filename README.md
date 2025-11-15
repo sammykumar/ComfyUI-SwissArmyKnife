@@ -2,6 +2,8 @@
 
 A collection of custom nodes for ComfyUI featuring Gemini AI integration for video and image analysis, with a complete development environment using GPU-accelerated containers.
 
+Note: The Python source files have been migrated to a `src/` layout to reduce top-level clutter. The package is still importable as `nodes` when installed, and the root `nodes/` folder is kept as a compatibility shim during migration. Use `pip install -e .` to install the package for development.
+
 ## Features
 
 - **🤖 Gemini AI Integration**: Video, image, and media analysis using Google's Gemini AI

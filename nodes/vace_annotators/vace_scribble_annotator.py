@@ -79,6 +79,10 @@ class VACEScribbleAnnotator:
                     "max": 128,
                     "tooltip": "Process frames in chunks to reduce VRAM usage (0 = process entire batch).",
                 }),
+                "mask": ("MASK", {
+                    "default": None,
+                    "tooltip": "Optional mask to restrict scribble generation to specific regions (batch or single-frame).",
+                }),
             },
         }
 
@@ -237,6 +241,62 @@ class VACEScribbleAnnotator:
                 outputs.append(self._sobel_fallback(chunk, resolution, edge_threshold))
         return torch.cat(outputs, dim=0)
 
+    def _apply_mask_to_scribbles(self, scribble_maps: torch.Tensor, mask: torch.Tensor | None, mask_threshold: float | None = None) -> torch.Tensor:
+        """Apply a mask to the NHWC scribble_maps tensor.
+
+        scribble_maps: [B, H, W, 3] float (0..1)
+        mask: optional tensor; valid shapes: [B, H, W], [B, H, W, C], [1, H, W], etc.
+        mask_threshold: optional float to binarize mask.
+        """
+        if mask is None:
+            return scribble_maps
+
+        import torch.nn.functional as F
+
+        # Ensure scribble_maps on CPU float
+        scribble_maps = scribble_maps.cpu().float()
+
+        # Convert mask to float 0..1
+        m = mask.float()
+        if m.dtype == torch.uint8 or m.max() > 2.0:
+            m = m.float() / 255.0
+
+        # Ensure consistent dims: [B, H, W, C] or [B, H, W]
+        if m.ndim == 3:
+            # [B, H, W] -> [B, H, W, 1]
+            m = m.unsqueeze(-1)
+        if m.ndim == 4 and m.shape[-1] > 1:
+            # Prefer alpha channel if present; else average channels
+            if m.shape[-1] == 4:
+                m = m[..., 3:4]
+            else:
+                m = m.mean(dim=-1, keepdim=True)
+
+        # Broadcast single-mask across batch if needed
+        if m.shape[0] == 1 and scribble_maps.shape[0] > 1:
+            m = m.repeat(scribble_maps.shape[0], 1, 1, 1)
+
+        # Resize mask to scribble HW if needed (NCHW expected for interpolate)
+        single_nchw = m.permute(0, 3, 1, 2)
+        if single_nchw.shape[2] != scribble_maps.shape[1] or single_nchw.shape[3] != scribble_maps.shape[2]:
+            single_resized = F.interpolate(single_nchw, size=(scribble_maps.shape[1], scribble_maps.shape[2]), mode='bilinear', align_corners=False)
+        else:
+            single_resized = single_nchw
+
+        mask_nhwc = single_resized.permute(0, 2, 3, 1)
+        # Create 3 channel mask to match scribble maps
+        mask3 = mask_nhwc.repeat(1, 1, 1, 3)
+
+        if mask_threshold is not None:
+            mask3 = (mask3 > float(mask_threshold)).float()
+
+        # Ensure same dtype
+        mask3 = mask3.to(scribble_maps.dtype)
+
+        # Apply mask: inside mask keep scribbles, outside set to white (1.0)
+        out = scribble_maps * mask3 + (1.0 - mask3)
+        return out
+
     def _run_model_chunk(
         self,
         images: torch.Tensor,
@@ -273,6 +333,8 @@ class VACEScribbleAnnotator:
         edge_threshold: float = EDGE_THRESHOLD_DEFAULT,
         model_path: str = "",
         batch_size: int = 10,
+        mask: torch.Tensor | None = None,
+        mask_threshold: float | None = None,
     ) -> Tuple[torch.Tensor]:
         edge_threshold = float(max(0.0, min(1.0, edge_threshold)))
         model = self._load_model(style, model_path, inference_mode)
@@ -284,6 +346,14 @@ class VACEScribbleAnnotator:
             batch_size,
             edge_threshold,
         )
+        # Ensure CPU for mask application and postprocessing
+        scribble_maps = scribble_maps.cpu()
+        if mask is not None:
+            if hasattr(torch, 'no_grad'):
+                with torch.no_grad():
+                    scribble_maps = self._apply_mask_to_scribbles(scribble_maps, mask, mask_threshold)
+            else:
+                scribble_maps = self._apply_mask_to_scribbles(scribble_maps, mask, mask_threshold)
         print(f"✓ Generated scribble maps: shape={scribble_maps.shape}")
         return (scribble_maps,)
 

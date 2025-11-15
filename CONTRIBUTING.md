@@ -60,6 +60,8 @@ If you prefer to set up locally:
 ### Python Backend Development
 
 The backend nodes are located in `nodes/`:
+Note: We migrated Python sources to a `src/` layout to reduce top-level clutter. During the migration, the repository still ships a root `nodes/` folder as a compatibility shim for development. For packaging and distribution we use the `src/` layout; use `pip install -e .` to install the package and run tests.
+
 
 - `nodes/nodes.py` - Main Gemini AI integration nodes
 - `nodes/helper_nodes.py` - Helper/utility nodes
