@@ -36,11 +36,11 @@ class GPUMonitor:
             try:
                 # torch.cuda.mem_get_info() returns (free, total) in bytes
                 free_bytes, total_bytes = torch.cuda.mem_get_info()
-                free_mb = free_bytes / 1024 / 1024
-                total_mb = total_bytes / 1024 / 1024
-                used_mb = total_mb - free_mb
+                free_gb = free_bytes / 1024 / 1024 / 1024
+                total_gb = total_bytes / 1024 / 1024 / 1024
+                used_gb = total_gb - free_gb
                 
-                print(f"[GPU Monitor] Memory: {used_mb:.0f}MB used / {total_mb:.0f}MB total ({free_mb:.0f}MB free)")
+                print(f"[GPU Monitor] Memory: {used_gb:.1f}GB used / {total_gb:.1f}GB total ({free_gb:.1f}GB free)")
             except Exception as e:
                 print(f"[GPU Monitor] Error checking memory: {e}")
             
