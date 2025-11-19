@@ -233,10 +233,18 @@ class VACEScribbleAnnotator:
         resolution: int,
         model_path: str = "",
     ) -> Tuple[torch.Tensor]:
-        model = self._load_model(style, model_path, inference_mode)
-        scribble_maps = self._process_scribble(images, model, resolution, inference_mode)
-        print(f"✓ Generated scribble maps: shape={scribble_maps.shape}")
-        return (scribble_maps,)
+        from ..utils.gpu_monitor import GPUMonitor
+
+        monitor = GPUMonitor(interval=1.0)
+        monitor.start()
+        
+        try:
+            model = self._load_model(style, model_path, inference_mode)
+            scribble_maps = self._process_scribble(images, model, resolution, inference_mode)
+            print(f"✓ Generated scribble maps: shape={scribble_maps.shape}")
+            return (scribble_maps,)
+        finally:
+            monitor.stop()
 
 
 if __name__ == "__main__":  # pragma: no cover - manual smoke test
