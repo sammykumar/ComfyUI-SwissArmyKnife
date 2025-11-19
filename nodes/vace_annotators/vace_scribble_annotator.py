@@ -233,14 +233,30 @@ class VACEScribbleAnnotator:
         resolution: int,
         model_path: str = "",
     ) -> Tuple[torch.Tensor]:
-        from ..utils.gpu_monitor import GPUMonitor
+        from ..utils.gpu_monitor import GPUMonitor, dump_gpu_models
 
-        monitor = GPUMonitor(interval=1.0)
+        # Determine log path
+        log_path = "comfyui_swiss_army_knife.log"
+        if COMFYUI_AVAILABLE and folder_paths is not None:
+            try:
+                base_dir = folder_paths.base_path
+                log_path = os.path.join(base_dir, "comfyui_swiss_army_knife.log")
+            except Exception:
+                pass
+
+        monitor = GPUMonitor(interval=1.0, log_path=log_path)
         monitor.start()
         
         try:
             model = self._load_model(style, model_path, inference_mode)
-            scribble_maps = self._process_scribble(images, model, resolution, inference_mode)
+            try:
+                scribble_maps = self._process_scribble(images, model, resolution, inference_mode)
+            except Exception:
+                print("!!! Exception during processing - Dumping Memory Summary !!!")
+                if torch.cuda.is_available():
+                    print(torch.cuda.memory_summary())
+                dump_gpu_models(log_path)
+                raise
             print(f"✓ Generated scribble maps: shape={scribble_maps.shape}")
             return (scribble_maps,)
         finally:
