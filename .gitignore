@@ -161,3 +161,4 @@ cache_info.json
 # Chrome
 .ai-image-gen.venv/
 .venv/
+.ai-image-gen/
