@@ -1837,6 +1837,58 @@ Example (structure only):
         describe_bokeh = llm_options.get("describe_bokeh", True)
         describe_subject = llm_options.get("describe_subject", True)
 
+        # Create media identifier from filename (as per user's request)
+        media_identifier = os.path.basename(media_path)
+
+        # Build cache options dict with all parameters that affect prompt generation
+        cache_options = {
+            "describe_clothing": describe_clothing,
+            "describe_hair_style": describe_hair_style,
+            "describe_bokeh": describe_bokeh,
+            "describe_subject": describe_subject,
+            "change_clothing_color": change_clothing_color,
+            "temperature": temperature,
+            "media_type": media_type,
+        }
+
+        # Add video-specific options
+        if media_type == "video":
+            cache_options["sample_rate"] = llm_options.get("sample_rate", 1.0)
+            cache_options["max_duration"] = llm_options.get("max_duration", 5.0)
+
+        # Check cache before building prompts (early check with basic options)
+        cache = get_cache()
+        cached_result = cache.get(
+            media_identifier=media_identifier,
+            gemini_model=model_name,
+            model_type=model_type if media_type == "image" else "",
+            options=cache_options
+        )
+
+        if cached_result:
+            if verbose:
+                print(f"🎯 Cache HIT for {media_identifier}")
+                print(f"   Cache key (partial): {cached_result['cache_key'][:16]}...")
+                print(f"   Cached at: {cached_result['human_timestamp']}")
+            
+            # Return cached result - reconstruct the return tuple
+            # The cache stores the combined_caption which we need to reconstruct into return values
+            cached_description = cached_result.get('description', '')
+            
+            # Try to parse cached extra_data if it exists
+            height = cached_result.get('height', 512)
+            width = cached_result.get('width', 512)
+            all_data = cached_result.get('all_data', '{}')
+            raw_llm_json = cached_result.get('raw_llm_json', '{}')
+            positive_prompt = cached_result.get('positive_prompt', cached_description)
+            prompt_request = cached_result.get('prompt_request', '')
+            
+            return (all_data, raw_llm_json, raw_llm_json, positive_prompt, prompt_request, height, width)
+
+        if verbose:
+            print(f"🔍 Cache MISS for {media_identifier}")
+            print(f"   Will call LLM and cache result")
+
         # Initialize LLM Studio client
         try:
             client = OpenAI(base_url=f"{base_url}/v1", api_key="lm-studio")
@@ -2151,6 +2203,30 @@ User Prompt:
             "scene": llm_json.get("scene", ""),
             "visual_style": llm_json.get("visual_style", "")
         })
+
+        # Store result in cache for future use
+        try:
+            cache.set(
+                media_identifier=media_identifier,
+                gemini_model=model_name,
+                description=combined_caption,
+                model_type=model_type if media_type == "image" else "",
+                options=cache_options,
+                extra_data={
+                    "height": height,
+                    "width": width,
+                    "all_data": all_data,
+                    "raw_llm_json": raw_llm_json,
+                    "positive_prompt": positive_prompt,
+                    "prompt_request": prompt_request,
+                }
+            )
+            if verbose:
+                print(f"💾 Cached result for {media_identifier}")
+        except Exception as e:
+            # Don't fail if caching fails, just log it
+            if verbose:
+                print(f"⚠️ Failed to cache result: {e}")
 
         return (all_data, raw_llm_json, raw_llm_json, positive_prompt, prompt_request, height, width)
 

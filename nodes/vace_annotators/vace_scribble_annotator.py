@@ -34,8 +34,6 @@ EDGE_THRESHOLD_DEFAULT = 0.12
 class VACEScribbleAnnotator:
     """ComfyUI node for VACE scribble/edge detection."""
 
-    _model_cache = {}
-
     @classmethod
     def INPUT_TYPES(cls):
         """Node schema."""
@@ -151,13 +149,9 @@ class VACEScribbleAnnotator:
             print(f"{message} Falling back to Sobel implementation.")
             return None
 
-        cache_key = f"{style}:{resolved_path}"
-        if cache_key in self._model_cache:
-            print(f"✓ Using cached VACE scribble model: {style}")
-            return self._model_cache[cache_key]
-
         print(f"Loading VACE scribble model: {style} from {resolved_path}")
         try:
+            # scribble_loader handles its own caching, so we don't need to cache here.
             model = get_scribble_model(style, resolved_path)
         except ScribbleLoaderError as exc:
             if inference_mode == "model":
@@ -165,7 +159,6 @@ class VACEScribbleAnnotator:
             print(f"Failed to load VACE scribble model ({exc}). Using Sobel fallback.")
             model = None
 
-        self._model_cache[cache_key] = model
         return model
 
     def _sobel_fallback(self, images: torch.Tensor, resolution: int) -> torch.Tensor:
