@@ -2,6 +2,16 @@
 Control Panel Node - Displays comprehensive workflow information
 """
 
+from nodes.debug_utils import Logger
+
+
+_overview_logger = Logger("ControlPanelOverview")
+_prompt_logger = Logger("ControlPanelPromptBreakdown")
+
+
+def _log_section(logger, title):
+    logger.debug(f"\n{'=' * 60}\n{title}\n{'=' * 60}")
+
 
 class ControlPanelOverview:
     """
@@ -42,17 +52,15 @@ class ControlPanelOverview:
         """
         import json
 
-        # Log summary to console
-        print("\n" + "="*60)
-        print("CONTROL PANEL - Workflow Information")
-        print("="*60)
+        _log_section(_overview_logger, "CONTROL PANEL - Workflow Information")
 
         all_media_data = kwargs.get("all_media_describe_data")
 
-        # DEBUG: Print ALL kwargs to see what we're receiving
-        print("\n🔍 DEBUG - All kwargs received:")
+        _overview_logger.debug("\n🔍 DEBUG - All kwargs received:")
         for key, value in kwargs.items():
-            print(f"  - {key}: {type(value).__name__} = {str(value)[:200]}")
+            _overview_logger.debug(
+                f"  - {key}: {type(value).__name__} = {str(value)[:200]}"
+            )
 
         if all_media_data:
             try:
@@ -62,9 +70,8 @@ class ControlPanelOverview:
                 else:
                     data = all_media_data
 
-                # Log to console
-                print("\n📊 All Media Describe Data:")
-                print(json.dumps(data, indent=2))
+                _overview_logger.debug("\n📊 All Media Describe Data:")
+                _overview_logger.debug(json.dumps(data, indent=2))
 
                 # DOUBLE the output - return BOTH in ui dict
                 result = {
@@ -74,19 +81,19 @@ class ControlPanelOverview:
                     }
                 }
 
-                print("\n🔍 DEBUG - Returning to UI:")
-                print(json.dumps(result, indent=2))
+                _overview_logger.debug("\n🔍 DEBUG - Returning to UI:")
+                _overview_logger.debug(json.dumps(result, indent=2))
 
                 return result
 
             except json.JSONDecodeError as e:
-                print(f"\n❌ Error parsing JSON: {e}")
-                print(f"Raw data: {all_media_data}")
+                _overview_logger.error(f"Error parsing JSON: {e}")
+                _overview_logger.error(f"Raw data: {all_media_data}")
                 return {"ui": {"error": [f"Invalid JSON: {str(e)}"]}}
         else:
-            print("\n(No all_media_describe_data connected)")
+            _overview_logger.debug("\n(No all_media_describe_data connected)")
 
-        print("\n" + "="*60 + "\n")
+        _overview_logger.debug("\n" + "="*60 + "\n")
 
         return {"ui": {"status": ["No inputs connected"]}}
 
@@ -130,10 +137,7 @@ class ControlPanelPromptBreakdown:
         """
         import json
 
-        # Log summary to console
-        print("\n" + "="*60)
-        print("CONTROL PANEL - Prompt Breakdown")
-        print("="*60)
+        _log_section(_prompt_logger, "CONTROL PANEL - Prompt Breakdown")
 
         # Get input data
         positive_prompt_json = kwargs.get("positive_prompt_json")
@@ -149,7 +153,7 @@ class ControlPanelPromptBreakdown:
         # Parse JSON input
         if positive_prompt_json:
             try:
-                print(f"\n🔍 Parsing positive_prompt_json (structured JSON)")
+                _prompt_logger.debug("\n🔍 Parsing positive_prompt_json (structured JSON)")
 
                 # Parse the JSON data
                 if isinstance(positive_prompt_json, str):
@@ -173,21 +177,21 @@ class ControlPanelPromptBreakdown:
                     )
                 )
 
-                print("✅ Successfully parsed structured JSON from Gemini")
+                _prompt_logger.debug("✅ Successfully parsed structured JSON from Gemini")
 
             except json.JSONDecodeError as e:
-                print(f"\n❌ Error parsing positive_prompt_json: {e}")
-                print(f"Raw data: {positive_prompt_json}")
+                _prompt_logger.error(f"Error parsing positive_prompt_json: {e}")
+                _prompt_logger.error(f"Raw data: {positive_prompt_json}")
                 return {"ui": {"error": [f"Invalid JSON: {str(e)}"]}}
 
         # Log to console
         if prompt_breakdown["subject"] or prompt_breakdown["visual_style"]:
-            print("\n📊 Prompt Breakdown:")
-            print(f"  Subject: {prompt_breakdown['subject'][:100]}...")
-            print(f"  Clothing: {prompt_breakdown['clothing'][:100]}...")
-            print(f"  Movement: {prompt_breakdown['movement'][:100]}...")
-            print(f"  Scene: {prompt_breakdown['scene'][:100]}...")
-            print(f"  Visual Style: {prompt_breakdown['visual_style'][:100]}...")
+            _prompt_logger.debug("\n📊 Prompt Breakdown:")
+            _prompt_logger.debug(f"  Subject: {prompt_breakdown['subject'][:100]}...")
+            _prompt_logger.debug(f"  Clothing: {prompt_breakdown['clothing'][:100]}...")
+            _prompt_logger.debug(f"  Movement: {prompt_breakdown['movement'][:100]}...")
+            _prompt_logger.debug(f"  Scene: {prompt_breakdown['scene'][:100]}...")
+            _prompt_logger.debug(f"  Visual Style: {prompt_breakdown['visual_style'][:100]}...")
 
             # Return structured data for UI display in columns
             result = {
@@ -197,14 +201,14 @@ class ControlPanelPromptBreakdown:
                 }
             }
 
-            print("\n🔍 DEBUG - Returning to UI:")
-            print(json.dumps(result, indent=2))
+            _prompt_logger.debug("\n🔍 DEBUG - Returning to UI:")
+            _prompt_logger.debug(json.dumps(result, indent=2))
 
             return result
         else:
-            print(f"\n(No valid data found in positive_prompt_json)")
+            _prompt_logger.debug("\n(No valid data found in positive_prompt_json)")
 
-        print("\n" + "="*60 + "\n")
+        _prompt_logger.debug("\n" + "="*60 + "\n")
 
         return {"ui": {"status": ["No JSON input connected"]}}
 
