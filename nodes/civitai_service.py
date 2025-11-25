@@ -248,35 +248,7 @@ class CivitAIService:
             print(f"Error getting trigger words for {file_path}: {e}")
             return []
 
-    def get_trigger_words_by_filename(self, lora_filename: str, max_words: int = 3) -> List[str]:
-        """
-        Get trigger words for a LoRA file by filename (resolves full path).
 
-        Args:
-            lora_filename: Name of the LoRA file
-            max_words: Maximum number of trigger words to return
-
-        Returns:
-            List of trigger words
-        """
-        if not COMFYUI_AVAILABLE or folder_paths is None:
-            print("CivitAI Service: Cannot resolve LoRA path - ComfyUI not available")
-            return []
-
-        try:
-            # Import lora_utils for path resolution
-            from .lora_manager.lora_utils import resolve_lora_full_path
-
-            full_path = resolve_lora_full_path(lora_filename)
-            if not full_path:
-                print(f"CivitAI Service: LoRA file '{lora_filename}' not found in configured directories")
-                return []
-
-            return self.get_trigger_words(full_path, max_words)
-
-        except Exception as e:
-            print(f"CivitAI Service: Error getting trigger words for '{lora_filename}': {e}")
-            return []
 
 
 # Global service instance
