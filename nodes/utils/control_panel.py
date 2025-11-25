@@ -2,7 +2,7 @@
 Control Panel Node - Displays comprehensive workflow information
 """
 
-from nodes.debug_utils import Logger
+from ..debug_utils import Logger
 
 
 _overview_logger = Logger("ControlPanelOverview")
