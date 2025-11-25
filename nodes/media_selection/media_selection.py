@@ -4,7 +4,10 @@ import glob
 import subprocess
 from PIL import Image
 from ..utils.temp_utils import get_temp_file_path
+import random
+from ..debug_utils import Logger
 
+logger = Logger("MediaSelection")
 
 class MediaSelection:
     """
@@ -578,7 +581,7 @@ class MediaSelection:
                     print(f"Successfully trimmed video with re-encoding: {os.path.getsize(output_path)} bytes")
                     return True
                 else:
-                    print("Error: Re-encoded file is also empty")
+                    logger.error("Error: Re-encoded file is also empty")
                     return False
 
             except subprocess.CalledProcessError as e2:

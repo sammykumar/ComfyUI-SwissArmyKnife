@@ -7,7 +7,11 @@ Supports MiDaS and Depth Anything V2 models.
 
 import os
 import torch
+import torch.nn.functional as F
 from typing import Tuple
+from ..debug_utils import Logger
+
+logger = Logger("VaceDepthAnnotator")
 
 
 class VACEDepthAnnotator:
@@ -115,7 +119,7 @@ class VACEDepthAnnotator:
                 f"Expected location: {model_path}"
             )
 
-        print(f"Loading VACE depth model: {model_type} from {model_path}")
+        logger.log(f"Loading VACE depth model: {model_type} from {model_path}")
 
         # Load model based on type
         # Note: This is a placeholder implementation
@@ -129,7 +133,7 @@ class VACEDepthAnnotator:
             }
 
             self._model_cache[cache_key] = model
-            print("✓ VACE depth model loaded successfully")
+            logger.log(f"Model loaded successfully on {self.device}")
             return model
 
         except Exception as e:
@@ -148,7 +152,7 @@ class VACEDepthAnnotator:
             Depth maps [B, H, W, C] in ComfyUI format
         """
         batch_size = images.shape[0]
-        print(f"Processing {batch_size} frame(s) for depth estimation at resolution {resolution}")
+        logger.log(f"Processing batch of {batch_size} images for depth estimation at resolution {resolution}")
 
         # Placeholder implementation
         # In real implementation, you would:
