@@ -48,6 +48,13 @@ class Logger:
         # Errors are always printed
         print(self._format("ERROR", message))
 
+    def info(self, message):
+        self.log(message)
+
+    def warning(self, message):
+        if is_debug_enabled():
+            print(self._format("WARNING", message))
+
 
 # Backwards compatibility for existing code until fully migrated
 def debug_print(*args, **kwargs):
