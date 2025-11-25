@@ -11,6 +11,9 @@ import os
 from typing import Tuple
 
 import torch
+from ..debug_utils import Logger
+
+logger = Logger("VaceScribbleAnnotator")
 
 # Prefer ComfyUI folder_paths when available (respects --base-directory)
 try:
@@ -146,17 +149,17 @@ class VACEScribbleAnnotator:
                 raise FileNotFoundError(
                     f"{message} Download checkpoints from https://huggingface.co/ali-vilab/VACE-Annotators"
                 )
-            print(f"{message} Falling back to Sobel implementation.")
+            logger.log(f"{message} Falling back to Sobel implementation.")
             return None
 
-        print(f"Loading VACE scribble model: {style} from {resolved_path}")
+        logger.log(f"Loading VACE scribble model: {style} from {resolved_path}")
         try:
             # scribble_loader handles its own caching, so we don't need to cache here.
             model = get_scribble_model(style, resolved_path)
         except ScribbleLoaderError as exc:
             if inference_mode == "model":
                 raise
-            print(f"Failed to load VACE scribble model ({exc}). Using Sobel fallback.")
+            logger.log(f"Failed to load VACE scribble model ({exc}). Using Sobel fallback.")
             model = None
 
         return model
@@ -193,7 +196,7 @@ class VACEScribbleAnnotator:
 
     def _process_scribble(self, images: torch.Tensor, model, resolution: int, inference_mode: str) -> torch.Tensor:
         batch_size = images.shape[0]
-        print(f"Processing {batch_size} frame(s) for scribble detection at resolution {resolution} (mode={inference_mode})")
+        logger.log(f"Processing batch of {batch_size} images for scribble generation at resolution {resolution} (mode={inference_mode})")
 
         if isinstance(model, torch.nn.Module):
             with torch.no_grad():
@@ -245,12 +248,12 @@ class VACEScribbleAnnotator:
             try:
                 scribble_maps = self._process_scribble(images, model, resolution, inference_mode)
             except Exception:
-                print("!!! Exception during processing - Dumping Memory Summary !!!")
+                logger.error("!!! Exception during processing - Dumping Memory Summary !!!")
                 if torch.cuda.is_available():
-                    print(torch.cuda.memory_summary())
+                    logger.error(torch.cuda.memory_summary())
                 dump_gpu_models(log_path)
                 raise
-            print(f"✓ Generated scribble maps: shape={scribble_maps.shape}")
+            logger.log(f"✓ Generated scribble maps: shape={scribble_maps.shape}")
             return (scribble_maps,)
         finally:
             monitor.stop()

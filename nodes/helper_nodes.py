@@ -1,3 +1,7 @@
+import torch
+from .debug_utils import Logger
+
+logger = Logger("HelperNodes")
 class ShowText:
     """
     A simple ComfyUI custom node that displays text input.
@@ -37,7 +41,7 @@ class ShowText:
         """
         Simply return the input text and display it
         """
-        print(f"ShowText node displaying: {text[:100]}...")  # Log first 100 chars
+        logger.log(f"ShowText node displaying: {text[:100]}...")  # Log first 100 chars
         return (text,)
 
 

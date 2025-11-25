@@ -7,7 +7,11 @@ Uses RAFT (Recurrent All-Pairs Field Transforms) architecture.
 
 import os
 import torch
+import torch.nn.functional as F
 from typing import Tuple
+from ..debug_utils import Logger
+
+logger = Logger("VaceFlowAnnotator")
 
 
 class VACEFlowAnnotator:
@@ -109,7 +113,7 @@ class VACEFlowAnnotator:
                 f"Expected location: {model_path}"
             )
 
-        print(f"Loading VACE flow model (RAFT) from {model_path}")
+        logger.log(f"Loading VACE flow model (RAFT) from {model_path}")
 
         # Load model
         # Note: This is a placeholder implementation
@@ -123,7 +127,7 @@ class VACEFlowAnnotator:
             }
 
             self._model_cache[cache_key] = model
-            print("✓ VACE flow model loaded successfully")
+            logger.log("✓ VACE flow model loaded successfully")
             return model
 
         except Exception as e:
@@ -150,7 +154,7 @@ class VACEFlowAnnotator:
                 f"Please provide a batch of video frames."
             )
 
-        print(f"Processing {batch_size} frames for optical flow ({flow_direction}) at resolution {resolution}")
+        logger.log(f"Processing {batch_size} frames for optical flow ({flow_direction}) at resolution {resolution}")
 
         # Placeholder implementation
         # In real implementation, you would:

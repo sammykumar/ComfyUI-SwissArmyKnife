@@ -10,7 +10,9 @@ from .lora_hash_cache import get_cache as get_lora_hash_cache
 from .media_describe import (GeminiUtilOptions, LLMStudioOptions, MediaDescribe, MediaDescribeOverrides, 
                               LLMStudioVideoDescribe, LLMStudioPictureDescribe)
 from .utils.video_preview import VideoPreview
+from .debug_utils import Logger
 
+logger = Logger("Nodes")
 
 
 class FilenameGenerator:
@@ -205,12 +207,12 @@ class LoRAInfoExtractor:
         """Extract LoRA stack metadata and return JSON plus human readable summary."""
 
         debug_repr = repr(lora)
-        print("[DEBUG] LoRAInfoExtractor.extract_lora_info called")
-        print(f"  - use_civitai_api: {use_civitai_api}")
-        print(f"  - fallback_name: '{fallback_name}'")
-        print(f"  - wan_model_type: '{wan_model_type}'")
-        print(f"  - lora type: {type(lora)}")
-        print(f"  - lora repr: {debug_repr[:300]}{'...' if len(debug_repr) > 300 else ''}")
+        logger.log("LoRAInfoExtractor.extract_lora_info called")
+        logger.log(f"  - use_civitai_api: {use_civitai_api}")
+        logger.log(f"  - fallback_name: '{fallback_name}'")
+        logger.log(f"  - wan_model_type: '{wan_model_type}'")
+        logger.log(f"  - lora type: {type(lora)}")
+        logger.log(f"  - lora repr: {debug_repr[:300]}{'...' if len(debug_repr) > 300 else ''}")
 
         try:
             civitai_service = None
@@ -219,16 +221,16 @@ class LoRAInfoExtractor:
                 from .config_api import get_setting_value
                 effective_api_key = get_setting_value("swiss_army_knife.civitai.api_key")
                 
-                print(f"  - effective_api_key provided: {bool(effective_api_key)}")
+                logger.log(f"  - effective_api_key provided: {bool(effective_api_key)}")
                 civitai_service = CivitAIService(api_key=effective_api_key)
 
             entries = self._discover_lora_entries(lora)
             if not entries:
                 synthetic = self._coerce_single_lora(lora)
                 if synthetic:
-                    print("[DEBUG] No stack entries found, using synthetic single LoRA entry")
+                    logger.log("No stack entries found, using synthetic single LoRA entry")
                     entries = [synthetic]
-            print(f"[DEBUG] Discovered {len(entries)} LoRA entries in stack")
+            logger.log(f"Discovered {len(entries)} LoRA entries in stack")
 
             processed_entries = []
             info_lines: List[str] = []
@@ -293,7 +295,7 @@ class LoRAInfoExtractor:
             return (json.dumps(empty_payload, indent=2), f"Fallback: {fallback_label}", lora)
 
         except Exception as exc:  # pylint: disable=broad-except
-            print(f"[DEBUG] Error in extract_lora_info: {exc}")
+            logger.error(f"Error in extract_lora_info: {exc}")
             fallback_label = fallback_name.strip() or "Error Extracting LoRA"
             error_payload = {
                 "loras": [],
@@ -701,7 +703,7 @@ class VideoMetadataNode:
                     # If JSON parsing fails, treat as simple string
                     cmd.extend(['-metadata', f'lora={lora_json.strip()}'])
                 except Exception as e:
-                    print(f"Warning: Could not process LoRA JSON: {e}")
+                    logger.warn(f"Could not process LoRA JSON: {e}")
                     cmd.extend(['-metadata', f'lora={lora_json.strip()}'])
 
             # Add output filename
@@ -714,7 +716,7 @@ class VideoMetadataNode:
             if overwrite_original == "Yes":
                 os.replace(temp_filename, output_filename)
 
-            print(f"Successfully updated metadata in video: {output_filename}")
+            logger.log(f"Successfully updated metadata in video: {output_filename}")
             return (output_filename,)
 
         except subprocess.CalledProcessError as e:
