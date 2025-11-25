@@ -18,6 +18,42 @@ from ..debug_utils import Logger
 logger = Logger("MediaDescribe")
 from google.genai import types
 
+DEFAULT_IMAGE_TEXT2IMAGE_SYSTEM_PROMPT = """Generate a Wan 2.2 optimized text to image prompt. You are an expert assistant specialized in analyzing and verbalizing input media for instagram-quality posts using the Wan 2.2 Text to Image workflow.
+
+DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
+
+Return **only** a single valid JSON object (no code fences, no extra text) with **exactly five** string fields in this exact order:
+1. "subject" - Detailed description of the main subject
+2. "clothing" - Clothing and style details
+3. "movement" - Pose, gesture, or implied motion
+4. "scene" - Setting, environment, and background elements
+5. "visual_style" - Combined lighting, camera details, rendering cues, mood/genre descriptors, and overall aesthetic direction
+
+Each field's value is one fully formed paragraph (a single string) for that category."""
+
+DEFAULT_IMAGE_TEXT2IMAGE_USER_PROMPT = "Please analyze this image and provide a detailed description in the JSON format specified in the system prompt."
+
+DEFAULT_IMAGE_EDIT_SYSTEM_PROMPT = """You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays."""
+
+DEFAULT_IMAGE_EDIT_USER_PROMPT = "Please analyze this image and generate a single-sentence Qwen-Image-Edit instruction following the guidelines in the system prompt."
+
+DEFAULT_VIDEO_SYSTEM_PROMPT = """You are an expert assistant specialized in analyzing and verbalizing input videos for cinematic-quality video transformation using the Wan 2.2 + VACE workflow.
+
+DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
+
+Your response will be used by a text-to-image model, so avoid useless meta phrases like "This image shows…", "You are looking at...", etc.
+
+Return **only** a single valid JSON object (no code fences, no extra text) with **exactly five** string fields in this exact order:
+1. "subject" - Detailed description of the main subject including posture, gestures, facial expressions, and body positioning
+2. "clothing" - Describe all visible clothing and accessories with absolute certainty and definitiveness. Be specific about garment types (tank top, blazer, cargo pants, midi dress, etc.), definitive colors with specific names (not just "red" but "crimson red", "burgundy", "scarlet"), material types (cotton, denim, silk, leather, wool, linen, polyester), texture descriptions (ribbed, smooth, distressed, brushed, woven, knit), fit and silhouette (fitted, loose, oversized, tailored, form-fitting, relaxed), garment length (cropped, full-length, knee-length, floor-length), construction details (visible seams, straps, buttons, zippers, waistbands, cuffs, collars, pockets), layering (outer jackets over inner shirts), and condition (pristine, worn, faded, wrinkled). Include footwear if visible with specific shoe type (sneakers, boots, heels, sandals) and style details. Describe exactly how fabrics respond to motion and body movement (stretching over muscles, swaying with movement, tightening across joints, wrinkling at bends, flowing behind movement, clinging to form). Make decisive choices when multiple interpretations are possible - choose one specific description and state it as fact. Do not describe any text, typography, words, letters, logos, brand names, or written content visible on clothing or accessories.
+3. "movement" - Describe body-part-specific movement across frames. Detail what body parts are visible and what actions they perform. Narrate movement chronologically using precise action verbs (e.g., "lifts", "sweeps", "tilts", "bends"). Include transitions between poses, weight shifts, footwork, spatial positioning, and timing. Describe the choreography, rhythm, and flow of motion from start to finish. Focus on physical actions and positions without describing appearance, clothing, or setting.
+4. "scene" - Setting, environment, and background elements. Be extremely detailed about the physical environment: describe wall colors, wallpaper patterns, textures, materials (wood, concrete, brick, plaster, etc.), floor surfaces (hardwood, tile, carpet, concrete), ceiling details (exposed beams, lighting fixtures, height), furniture placement and style, decorative elements (artwork, plants, mirrors), architectural features (windows, doorways, molding, columns), spatial layout, room dimensions, and any visible objects in the background. Include specific color descriptions (e.g., "warm beige", "matte charcoal gray"), material finishes (glossy, matte, distressed, polished), surface textures (smooth, rough, weathered), and how lighting interacts with these surfaces (reflections, shadows, highlights).
+5. "visual_style" - Combined lighting characteristics (source position, direction, quality/hardness, color temperature, intensity), camera techniques (shot type/framing, angle/height, movement/motion), exposure and color grading (contrast, saturation, color palette), rendering style (photorealistic, stylized, cinematic), mood descriptors (dramatic, intimate, ethereal, gritty), genre aesthetics (noir, documentary, fashion, music video), and overall visual tone. Describe how light shapes the scene, creates depth, and establishes atmosphere.
+
+Each field's value is one fully formed paragraph (a single string) for that category."""
+
+DEFAULT_VIDEO_USER_PROMPT = "Please analyze this video and provide a detailed description in the JSON format specified in the system prompt."
+
 from ..cache import get_cache, get_file_media_identifier, get_tensor_media_identifier
 from ..utils.temp_utils import get_temp_file_path
 
@@ -1808,7 +1844,8 @@ Example (structure only):
 
     def _process_with_llm_studio(self, media_path, media_type, llm_options, media_info_text,
                                   override_subject, override_visual_style, override_clothing, 
-                                  override_scene, override_movement, overrides):
+                                  override_scene, override_movement, overrides,
+                                  use_custom_prompts, custom_system_prompt, custom_user_prompt):
         """
         Process media using LLM Studio (local vision model).
         
@@ -1839,6 +1876,8 @@ Example (structure only):
         describe_hair_style = llm_options.get("describe_hair_style", True)
         describe_bokeh = llm_options.get("describe_bokeh", True)
         describe_subject = llm_options.get("describe_subject", True)
+        custom_system_prompt = custom_system_prompt or ""
+        custom_user_prompt = custom_user_prompt or ""
 
         # Create media identifier from filename (as per user's request)
         media_identifier = os.path.basename(media_path)
@@ -1853,6 +1892,11 @@ Example (structure only):
             "temperature": temperature,
             "media_type": media_type,
         }
+
+        cache_options["use_custom_prompts"] = use_custom_prompts
+        if use_custom_prompts:
+            cache_options["custom_system_prompt"] = custom_system_prompt
+            cache_options["custom_user_prompt"] = custom_user_prompt
 
         # Add video-specific options
         if media_type == "video":
@@ -1904,38 +1948,24 @@ Example (structure only):
         # Build system and user prompts based on model type and media type
         if media_type == "image":
             if model_type == "Text2Image":
-                system_prompt = """Generate a Wan 2.2 optimized text to image prompt. You are an expert assistant specialized in analyzing and verbalizing input media for instagram-quality posts using the Wan 2.2 Text to Image workflow.
-
-DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
-
-Return **only** a single valid JSON object (no code fences, no extra text) with **exactly five** string fields in this exact order:
-1. "subject" - Detailed description of the main subject
-2. "clothing" - Clothing and style details
-3. "movement" - Pose, gesture, or implied motion
-4. "scene" - Setting, environment, and background elements
-5. "visual_style" - Combined lighting, camera details, rendering cues, mood/genre descriptors, and overall aesthetic direction
-
-Each field's value is one fully formed paragraph (a single string) for that category."""
-                user_prompt = "Please analyze this image and provide a detailed description in the JSON format specified in the system prompt."
+                system_prompt = DEFAULT_IMAGE_TEXT2IMAGE_SYSTEM_PROMPT
+                user_prompt = DEFAULT_IMAGE_TEXT2IMAGE_USER_PROMPT
             else:  # ImageEdit
-                system_prompt = """You are an expert assistant generating concise, single-sentence Qwen-Image-Edit instructions. Always be completely decisive and definitive - when you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays."""
-                user_prompt = "Please analyze this image and generate a single-sentence Qwen-Image-Edit instruction following the guidelines in the system prompt."
+                system_prompt = DEFAULT_IMAGE_EDIT_SYSTEM_PROMPT
+                user_prompt = DEFAULT_IMAGE_EDIT_USER_PROMPT
         else:  # video
-            system_prompt = """You are an expert assistant specialized in analyzing and verbalizing input videos for cinematic-quality video transformation using the Wan 2.2 + VACE workflow.
+            system_prompt = DEFAULT_VIDEO_SYSTEM_PROMPT
+            user_prompt = DEFAULT_VIDEO_USER_PROMPT
 
-DECISIVENESS REQUIREMENT: Always provide definitive, certain descriptions. When you see something that could be described multiple ways, make a confident choice and state it as fact. Never use uncertain language like "appears to be", "seems to be", "might be", "possibly", "likely", or "or". Never mention watermarks, logos, branding, or any textual overlays.
-
-Your response will be used by a text-to-image model, so avoid useless meta phrases like "This image shows…", "You are looking at...", etc.
-
-Return **only** a single valid JSON object (no code fences, no extra text) with **exactly five** string fields in this exact order:
-1. "subject" - Detailed description of the main subject including posture, gestures, facial expressions, and body positioning
-2. "clothing" - Describe all visible clothing and accessories with absolute certainty and definitiveness. Be specific about garment types (tank top, blazer, cargo pants, midi dress, etc.), definitive colors with specific names (not just "red" but "crimson red", "burgundy", "scarlet"), material types (cotton, denim, silk, leather, wool, linen, polyester), texture descriptions (ribbed, smooth, distressed, brushed, woven, knit), fit and silhouette (fitted, loose, oversized, tailored, form-fitting, relaxed), garment length (cropped, full-length, knee-length, floor-length), construction details (visible seams, straps, buttons, zippers, waistbands, cuffs, collars, pockets), layering (outer jackets over inner shirts), and condition (pristine, worn, faded, wrinkled). Include footwear if visible with specific shoe type (sneakers, boots, heels, sandals) and style details. Describe exactly how fabrics respond to motion and body movement (stretching over muscles, swaying with movement, tightening across joints, wrinkling at bends, flowing behind movement, clinging to form). Make decisive choices when multiple interpretations are possible - choose one specific description and state it as fact. Do not describe any text, typography, words, letters, logos, brand names, or written content visible on clothing or accessories.
-3. "movement" - Describe body-part-specific movement across frames. Detail what body parts are visible and what actions they perform. Narrate movement chronologically using precise action verbs (e.g., "lifts", "sweeps", "tilts", "bends"). Include transitions between poses, weight shifts, footwork, spatial positioning, and timing. Describe the choreography, rhythm, and flow of motion from start to finish. Focus on physical actions and positions without describing appearance, clothing, or setting.
-4. "scene" - Setting, environment, and background elements. Be extremely detailed about the physical environment: describe wall colors, wallpaper patterns, textures, materials (wood, concrete, brick, plaster, etc.), floor surfaces (hardwood, tile, carpet, concrete), ceiling details (exposed beams, lighting fixtures, height), furniture placement and style, decorative elements (artwork, plants, mirrors), architectural features (windows, doorways, molding, columns), spatial layout, room dimensions, and any visible objects in the background. Include specific color descriptions (e.g., "warm beige", "matte charcoal gray"), material finishes (glossy, matte, distressed, polished), surface textures (smooth, rough, weathered), and how lighting interacts with these surfaces (reflections, shadows, highlights).
-5. "visual_style" - Combined lighting characteristics (source position, direction, quality/hardness, color temperature, intensity), camera techniques (shot type/framing, angle/height, movement/motion), exposure and color grading (contrast, saturation, color palette), rendering style (photorealistic, stylized, cinematic), mood descriptors (dramatic, intimate, ethereal, gritty), genre aesthetics (noir, documentary, fashion, music video), and overall visual tone. Describe how light shapes the scene, creates depth, and establishes atmosphere.
-
-Each field's value is one fully formed paragraph (a single string) for that category."""
-            user_prompt = "Please analyze this video and provide a detailed description in the JSON format specified in the system prompt."
+        if use_custom_prompts:
+            custom_system = custom_system_prompt.strip()
+            custom_user = custom_user_prompt.strip()
+            if custom_system:
+                system_prompt = custom_system
+            if custom_user:
+                user_prompt = custom_user
+            if verbose:
+                logger.info("✍️ Using custom prompts for LLM Studio request")
 
         # Build prompt request for debugging/transparency
         prompt_request = f"""System Prompt:
@@ -2253,6 +2283,20 @@ User Prompt:
                 "overrides": ("OVERRIDES", {
                     "tooltip": "Paragraph overrides from Media Describe - Overrides node (optional)"
                 }),
+                "use_custom_prompts": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Toggle to send manual system/user prompts to LM Studio instead of the auto-generated templates"
+                }),
+                "custom_system_prompt": ("STRING", {
+                    "default": DEFAULT_IMAGE_TEXT2IMAGE_SYSTEM_PROMPT,
+                    "multiline": True,
+                    "tooltip": "System prompt to send when Use Custom Prompts is enabled"
+                }),
+                "custom_user_prompt": ("STRING", {
+                    "default": DEFAULT_IMAGE_TEXT2IMAGE_USER_PROMPT,
+                    "multiline": True,
+                    "tooltip": "User prompt to send when Use Custom Prompts is enabled"
+                }),
             }
         }
 
@@ -2265,7 +2309,15 @@ User Prompt:
         "flattened prompts, and inferred dimensions for downstream control-panel and prompt-building nodes."
     )
 
-    def describe_media(self, media_processed_path, llm_studio_options=None, overrides=None):
+    def describe_media(
+        self,
+        media_processed_path,
+        llm_studio_options=None,
+        overrides=None,
+        use_custom_prompts=False,
+        custom_system_prompt=DEFAULT_IMAGE_TEXT2IMAGE_SYSTEM_PROMPT,
+        custom_user_prompt=DEFAULT_IMAGE_TEXT2IMAGE_USER_PROMPT,
+    ):
         """
         Process media (image or video) and analyze with LLM Studio
 
@@ -2273,6 +2325,9 @@ User Prompt:
             media_processed_path: Path to the processed media file from Media Selection node
             llm_studio_options: Configuration options from LLM Studio - Options node (optional)
             overrides: Dictionary of paragraph overrides from Media Describe - Overrides node (optional)
+            use_custom_prompts: When True, send the provided custom prompts to the LLM instead of auto templates
+            custom_system_prompt: Multiline system prompt text (used only when use_custom_prompts is True)
+            custom_user_prompt: User prompt text (used only when use_custom_prompts is True)
         """
         # Validate media path
         if not media_processed_path or not media_processed_path.strip():
@@ -2313,9 +2368,19 @@ User Prompt:
 
             # Process with LLM Studio
             return self._process_with_llm_studio(
-                media_processed_path, media_type, llm_studio_options, media_info_text,
-                override_subject, override_visual_style, override_clothing, 
-                override_scene, override_movement, overrides
+                media_processed_path,
+                media_type,
+                llm_studio_options,
+                media_info_text,
+                override_subject,
+                override_visual_style,
+                override_clothing,
+                override_scene,
+                override_movement,
+                overrides,
+                use_custom_prompts,
+                custom_system_prompt,
+                custom_user_prompt,
             )
 
         except Exception as e:

@@ -5848,6 +5848,31 @@ else:
 5. **Apply Overrides**: Merge any user-specified overrides
 6. **Return Results**: Same output format as Gemini mode
 
+## Custom Prompt Override Inputs
+
+**Date**: November 25, 2025  
+**Status**: Completed
+
+The MediaDescribe node now exposes the exact system and user prompts it sends to LM Studio so you can edit them directly without digging into the source code.
+
+### New Optional Inputs
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `use_custom_prompts` | BOOLEAN | `False` | When enabled, the node sends the text from the two fields below instead of the auto-generated prompt templates. Leave off to keep the adaptive Wan/VACE templates. |
+| `custom_system_prompt` | STRING (multiline) | Wan 2.2 Text2Image template | Editable system prompt text. Pre-populated with the existing Wan 2.2 instructions so you can tweak them. Only applied when `use_custom_prompts=True`. |
+| `custom_user_prompt` | STRING (multiline) | `Please analyze this image…` | Editable user prompt text. Also only applied when `use_custom_prompts=True`. |
+
+### Behavior Details
+
+-   The default text matches the previous Wan 2.2 Text2Image instructions, so existing workflows remain unchanged.
+-   Set `use_custom_prompts` to **True** to push your edits. Leave it **False** to keep the adaptive prompts for Text2Image/ImageEdit/Video modes.
+-   Fields accept any multiline text; trim or expand as needed for your house style. When customizing video or ImageEdit flows, paste the existing defaults from this document (see the "User Prompts" and "System Prompt" sections above) and modify them.
+-   Prompt text is now included in the caching key, ensuring different prompt variations do not collide.
+-   `prompt_request` output mirrors the final strings, making it easy to audit exactly what was sent to LM Studio.
+
+This mirrors the UX pattern already used by the dedicated `LLMStudioVideoDescribe` node—users can now experiment with prompt engineering directly inside the main MediaDescribe node UI.
+
 ## Output Comparison
 
 ### Gemini Output (Structured)

@@ -15,6 +15,7 @@ The Control Panel node was not displaying data from `all_media_describe_data` in
 1. **Doubled output data** - Return both `all_media_describe_data` and `all_media_describe_data_copy` in the UI dict for redundancy
 2. **Added comprehensive logging** - Print all kwargs received to debug what data is coming in
 3. **Added output logging** - Print the full result structure being returned to the UI
+4. **Debug-controlled logging** - All Python console output now uses `nodes/debug_utils.Logger`, so it only appears when the global debug flag (environment `DEBUG=true` or the Control Panel debug toggle) is enabled
 
 ```python
 # DOUBLE the output - return BOTH in ui dict
@@ -87,6 +88,8 @@ console.log(
 ## Debugging Workflow
 
 ### Step 1: Check Python Console Output
+
+Make sure debug mode is enabled (`DEBUG=true` or toggle in the Control Panel settings); only then will the Control Panel logs appear in the ComfyUI server console because they now use the centralized debug logger.
 
 Look for the Control Panel debug output in the ComfyUI server logs:
 
