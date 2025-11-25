@@ -78,6 +78,7 @@ response = client.chat.completions.create(
 - **`verbose`** (BOOLEAN): Debug logging
     - Default: `False`
     - Shows detailed processing information
+    - **Note**: All logging respects the global `DEBUG` environment variable or frontend debug setting
 
 ## Output Parameters
 
@@ -109,6 +110,8 @@ print(f"Description: {caption}")
 ```
 
 ## Console Output
+
+**Note**: Logging output respects the global `DEBUG` environment variable. Set `DEBUG=true` or enable debug mode in the frontend settings to see detailed logs. When debug mode is disabled, only essential info and errors are shown.
 
 ### Normal Mode:
 

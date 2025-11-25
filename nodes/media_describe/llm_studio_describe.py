@@ -12,6 +12,13 @@ import tempfile
 import os
 from pathlib import Path
 from typing import Tuple, List
+import logging
+
+from ..debug_utils import setup_logging, get_logger
+
+# Set up logging
+setup_logging()
+logger = get_logger(__name__)
 
 
 class LLMStudioVideoDescribe:
@@ -162,12 +169,12 @@ class LLMStudioVideoDescribe:
             self.base_url = base_url
             self.model_name = model_name
             self.client = OpenAI(base_url=f"{base_url}/v1", api_key="lm-studio")
-            print(f"✅ Connected to LM Studio at {base_url}")
-            print(f"📦 Using model: {model_name}")
+            logger.debug(f"Connected to LM Studio at {base_url}")
+            logger.debug(f"Using model: {model_name}")
             return True
         except Exception as e:
-            print(f"❌ Error connecting to LM Studio: {e}")
-            print(f"Make sure LM Studio is running at {base_url}")
+            logger.error(f"Error connecting to LM Studio: {e}")
+            logger.error(f"Make sure LM Studio is running at {base_url}")
             return False
 
     def describe_video(
@@ -190,16 +197,16 @@ class LLMStudioVideoDescribe:
         # Initialize LM Studio client
         if not self.initialize_client(base_url, model_name):
             error_msg = f"Failed to connect to LM Studio at {base_url}"
-            print(f"❌ {error_msg}")
+            logger.error(error_msg)
             return (error_msg, "[]", 0)
 
         # Validate video path
         if not video_path or not os.path.exists(video_path):
             error_msg = f"Video file not found: {video_path}"
-            print(f"❌ {error_msg}")
+            logger.error(error_msg)
             return (error_msg, "[]", 0)
 
-        print(f"🎬 Processing video: {video_path}")
+        logger.debug(f"Processing video: {video_path}")
 
         # Extract frames from video
         try:
@@ -211,16 +218,16 @@ class LLMStudioVideoDescribe:
 
             if not frame_paths:
                 error_msg = "No frames extracted from video"
-                print(f"❌ {error_msg}")
+                logger.error(error_msg)
                 return (error_msg, "[]", 0)
 
             sampling_duration = min(video_duration, max_duration)
-            print(f"📹 Video duration: {video_duration:.2f}s, sampling {sampling_duration:.2f}s")
-            print(f"📸 Extracted {len(frame_paths)} frames ({sample_rate} fps)")
+            logger.debug(f"Video duration: {video_duration:.2f}s, sampling {sampling_duration:.2f}s")
+            logger.debug(f"Extracted {len(frame_paths)} frames ({sample_rate} fps)")
 
         except Exception as e:
             error_msg = f"Error extracting frames: {e}"
-            print(f"❌ {error_msg}")
+            logger.error(error_msg)
             return (error_msg, "[]", 0)
 
         # Encode frames
@@ -235,20 +242,20 @@ class LLMStudioVideoDescribe:
                     }
                 })
             except Exception as e:
-                print(f"⚠️ Error encoding frame {frame}: {e}")
+                logger.warning(f"Error encoding frame {frame}: {e}")
                 continue
 
         if not images:
             error_msg = "No frames could be encoded"
-            print(f"❌ {error_msg}")
+            logger.error(error_msg)
             return (error_msg, "[]", 0)
 
         # Build content array with text prompt followed by all frames
-        print(f"\n🤖 Analyzing {len(images)} frames in single request...")
+        logger.debug(f"Analyzing {len(images)} frames in single request...")
         content_array = [{"type": "text", "text": caption_prompt}] + images
 
         if verbose:
-            print(f"� Sending {len(images)} frames in single request")
+            logger.debug(f"Sending {len(images)} frames in single request")
 
         # Send all frames in a single API request
         try:
@@ -271,21 +278,21 @@ class LLMStudioVideoDescribe:
             combined_caption = response.choices[0].message.content.strip()
 
             if verbose:
-                print(f"✅ Video analysis complete: {combined_caption[:150]}...")
+                logger.debug(f"Video analysis complete: {combined_caption[:150]}...")
 
         except Exception as e:
             error_msg = f"Failed to analyze video: {e}"
-            print(f"❌ {error_msg}")
+            logger.error(error_msg)
             return (error_msg, "[]", len(images))
 
-        print(f"\n✅ Video description: {combined_caption}\n")
+        logger.debug(f"Video description: {combined_caption}")
 
         if verbose:
-            print("="*80)
-            print("📋 FULL VIDEO DESCRIPTION")
-            print("="*80)
-            print(combined_caption)
-            print("="*80)
+            logger.debug("="*80)
+            logger.debug("FULL VIDEO DESCRIPTION")
+            logger.debug("="*80)
+            logger.debug(combined_caption)
+            logger.debug("="*80)
 
         # Clean up temporary files
         try:
@@ -295,7 +302,7 @@ class LLMStudioVideoDescribe:
             if frame_paths and frame_paths[0].parent.exists():
                 frame_paths[0].parent.rmdir()
         except Exception as e:
-            print(f"⚠️ Error cleaning up temp files: {e}")
+            logger.warning(f"Error cleaning up temp files: {e}")
 
         # Return results
         # Note: frame_captions is now the combined description (single request approach)
@@ -381,12 +388,12 @@ class LLMStudioPictureDescribe:
             self.base_url = base_url
             self.model_name = model_name
             self.client = OpenAI(base_url=f"{base_url}/v1", api_key="lm-studio")
-            print(f"✅ Connected to LM Studio at {base_url}")
-            print(f"📦 Using model: {model_name}")
+            logger.debug(f"Connected to LM Studio at {base_url}")
+            logger.debug(f"Using model: {model_name}")
             return True
         except Exception as e:
-            print(f"❌ Error connecting to LM Studio: {e}")
-            print(f"Make sure LM Studio is running at {base_url}")
+            logger.error(f"Error connecting to LM Studio: {e}")
+            logger.error(f"Make sure LM Studio is running at {base_url}")
             return False
 
     def caption_image(
@@ -429,7 +436,7 @@ class LLMStudioPictureDescribe:
             return response.choices[0].message.content
 
         except Exception as e:
-            print(f"❌ Error processing image: {e}")
+            logger.error(f"Error processing image: {e}")
             return f"[Error: {e}]"
 
     def describe_image(
@@ -450,10 +457,10 @@ class LLMStudioPictureDescribe:
         # Initialize LM Studio client
         if not self.initialize_client(base_url, model_name):
             error_msg = f"Failed to connect to LM Studio at {base_url}"
-            print(f"❌ {error_msg}")
+            logger.error(error_msg)
             return (error_msg,)
 
-        print("🖼️ Processing image...")
+        logger.debug("Processing image...")
 
         # Convert ComfyUI image tensor to base64
         try:
@@ -472,7 +479,7 @@ class LLMStudioPictureDescribe:
                 pil_image = Image.fromarray(img_array)
             else:
                 error_msg = "Invalid image format"
-                print(f"❌ {error_msg}")
+                logger.error(error_msg)
                 return (error_msg,)
 
             # Encode to base64
@@ -488,31 +495,31 @@ class LLMStudioPictureDescribe:
             }
 
             if verbose:
-                print("✅ Image encoded successfully")
+                logger.debug("Image encoded successfully")
 
         except Exception as e:
             error_msg = f"Error encoding image: {e}"
-            print(f"❌ {error_msg}")
+            logger.error(error_msg)
             return (error_msg,)
 
         # Caption the image
-        print("\n🤖 Generating caption...")
+        logger.debug("Generating caption...")
 
         caption = self.caption_image(image_data, caption_prompt, temperature)
 
         if "[Error" in caption:
             error_msg = "Failed to caption image"
-            print(f"❌ {error_msg}")
+            logger.error(error_msg)
             return (caption,)
 
-        print(f"\n✅ Caption: {caption}\n")
+        logger.debug(f"Caption: {caption}")
 
         if verbose:
-            print("="*80)
-            print("📋 FULL CAPTION")
-            print("="*80)
-            print(caption)
-            print("="*80)
+            logger.debug("="*80)
+            logger.debug("FULL CAPTION")
+            logger.debug("="*80)
+            logger.debug(caption)
+            logger.debug("="*80)
 
         return (caption,)
 

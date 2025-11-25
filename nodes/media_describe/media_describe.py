@@ -11,12 +11,18 @@ import json
 import random
 from urllib.parse import urlparse
 from html import unescape
+import logging
 
 from google import genai
 from google.genai import types
 
 from ..cache import get_cache, get_file_media_identifier, get_tensor_media_identifier
 from ..utils.temp_utils import get_temp_file_path
+from ..debug_utils import setup_logging, get_logger
+
+# Set up logging
+setup_logging()
+logger = get_logger(__name__)
 
 class MediaDescribe:
     """
@@ -68,7 +74,7 @@ class MediaDescribe:
 
                 # If not the last attempt, retry after delay
                 if attempt < max_retries - 1:
-                    print(f"Gemini API returned empty response. Retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
+                    logger.warning(f"Gemini API returned empty response. Retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
                     time.sleep(retry_delay)
                     last_error = RuntimeError(error_msg)
                     continue
@@ -90,8 +96,8 @@ class MediaDescribe:
 
                 # If not the last attempt and it's a retryable error, retry after delay
                 if attempt < max_retries - 1 and should_retry:
-                    print(f"Gemini API error: {error_str}")
-                    print(f"Retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
+                    logger.warning(f"Gemini API error: {error_str}")
+                    logger.warning(f"Retrying in {retry_delay} seconds... (Attempt {attempt + 1}/{max_retries})")
                     time.sleep(retry_delay)
                     continue
                 else:
