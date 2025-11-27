@@ -45,6 +45,10 @@ class LLMStudioVideoDescribe:
                     "multiline": False,
                     "tooltip": "Model name in LM Studio (e.g. qwen/qwen3-vl-30b)"
                 }),
+                "api_endpoint": (["chat/completions", "completions"], {
+                    "default": "completions",
+                    "tooltip": "API endpoint: 'chat/completions' (may include thinking tags) or 'completions' (cleaner output)"
+                }),
                 "video_path": ("STRING", {
                     "default": "",
                     "multiline": False,
@@ -177,6 +181,7 @@ class LLMStudioVideoDescribe:
         self,
         base_url: str,
         model_name: str,
+        api_endpoint: str,
         video_path: str,
         sample_rate: float,
         max_duration: float,
@@ -248,6 +253,7 @@ class LLMStudioVideoDescribe:
 
         # Build content array with text prompt followed by all frames
         logger.log(f"\n🤖 Analyzing {len(images)} frames in single request...")
+        logger.log(f"📡 Using endpoint: /v0/{api_endpoint}")
         content_array = [{"type": "text", "text": caption_prompt}] + images
 
         if verbose:
@@ -255,23 +261,41 @@ class LLMStudioVideoDescribe:
 
         # Send all frames in a single API request
         try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a helpful video analysis assistant."
-                    },
-                    {
-                        "role": "user",
-                        "content": content_array
-                    }
-                ],
-                temperature=temperature
-                # max_tokens removed - let model generate as much as needed
-            )
-
-            combined_caption = response.choices[0].message.content.strip()
+            if api_endpoint == "chat/completions":
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are a helpful video analysis assistant."
+                        },
+                        {
+                            "role": "user",
+                            "content": content_array
+                        }
+                    ],
+                    temperature=temperature
+                )
+                combined_caption = response.choices[0].message.content.strip()
+            else:  # completions endpoint
+                import requests
+                # Build prompt with images for completions endpoint
+                payload = {
+                    "model": self.model_name,
+                    "prompt": caption_prompt,
+                    "images": [img["image_url"]["url"] for img in images],
+                    "temperature": temperature
+                }
+                
+                response = requests.post(
+                    f"{self.base_url}/v0/completions",
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                    timeout=120
+                )
+                response.raise_for_status()
+                result = response.json()
+                combined_caption = result["choices"][0]["text"].strip()
 
             if verbose:
                 logger.log(f"✅ Video analysis complete: {combined_caption[:150]}...")
@@ -332,6 +356,10 @@ class LLMStudioPictureDescribe:
                     "default": "qwen/qwen3-vl-30b",
                     "multiline": False,
                     "tooltip": "Model name in LM Studio (e.g. qwen/qwen3-vl-30b)"
+                }),
+                "api_endpoint": (["chat/completions", "completions"], {
+                    "default": "completions",
+                    "tooltip": "API endpoint: 'chat/completions' (may include thinking tags) or 'completions' (cleaner output)"
                 }),
                 "image": ("IMAGE", {
                     "tooltip": "Input image to analyze"
@@ -396,7 +424,8 @@ class LLMStudioPictureDescribe:
         self,
         image_data: dict,
         prompt: str,
-        temperature: float
+        temperature: float,
+        api_endpoint: str
     ) -> str:
         """
         Caption a single image using LM Studio API.
@@ -405,31 +434,49 @@ class LLMStudioPictureDescribe:
             image_data: Image data in base64 format
             prompt: Prompt for captioning
             temperature: Temperature for generation
+            api_endpoint: Which API endpoint to use
 
         Returns:
             Generated caption text
         """
         try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a helpful image captioner."
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            image_data
-                        ]
-                    }
-                ],
-                temperature=temperature
-                # max_tokens removed - let model generate as much as needed
-            )
-
-            return response.choices[0].message.content
+            if api_endpoint == "chat/completions":
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are a helpful image captioner."
+                        },
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                image_data
+                            ]
+                        }
+                    ],
+                    temperature=temperature
+                )
+                return response.choices[0].message.content
+            else:  # completions endpoint
+                import requests
+                payload = {
+                    "model": self.model_name,
+                    "prompt": prompt,
+                    "images": [image_data["image_url"]["url"]],
+                    "temperature": temperature
+                }
+                
+                response = requests.post(
+                    f"{self.base_url}/v0/completions",
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                    timeout=120
+                )
+                response.raise_for_status()
+                result = response.json()
+                return result["choices"][0]["text"].strip()
 
         except Exception as e:
             logger.error(f"❌ Error processing image: {e}")
@@ -439,6 +486,7 @@ class LLMStudioPictureDescribe:
         self,
         base_url: str,
         model_name: str,
+        api_endpoint: str,
         image,
         caption_prompt: str,
         temperature: float,
@@ -457,6 +505,7 @@ class LLMStudioPictureDescribe:
             return (error_msg,)
 
         logger.log("🖼️ Processing image...")
+        logger.log(f"📡 Using endpoint: /v0/{api_endpoint}")
 
         # Convert ComfyUI image tensor to base64
         try:
@@ -501,7 +550,7 @@ class LLMStudioPictureDescribe:
         # Caption the image
         logger.log("\n🤖 Generating caption...")
 
-        caption = self.caption_image(image_data, caption_prompt, temperature)
+        caption = self.caption_image(image_data, caption_prompt, temperature, api_endpoint)
 
         if "[Error" in caption:
             error_msg = "Failed to caption image"

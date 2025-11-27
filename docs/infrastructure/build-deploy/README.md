@@ -7,6 +7,7 @@ Documentation for building, packaging, and publishing ComfyUI-SwissArmyKnife.
 - **[PUBLISHING_WORKFLOW.md](PUBLISHING_WORKFLOW.md)** - Complete publishing workflow and process
 - **[PYTHON_PACKAGE_BUILD_FIX.md](PYTHON_PACKAGE_BUILD_FIX.md)** - Python package build fixes
 - **[GET_VERSION_IMPORT_FIX.md](GET_VERSION_IMPORT_FIX.md)** - Version import and detection fixes
+- **[WORKFLOW_VERSION_CONTROL.md](WORKFLOW_VERSION_CONTROL.md)** - GitHub-based workflow versioning strategy
 
 ## 🎯 Quick Reference
 
