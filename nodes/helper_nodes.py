@@ -37,7 +37,10 @@ class ShowText:
         """
         Simply return the input text and display it
         """
-        print(f"ShowText node displaying: {text[:100]}...")  # Log first 100 chars
+        from nodes.debug_utils import setup_logging, get_logger
+        setup_logging()
+        logger = get_logger(__name__)
+        logger.debug(f"ShowText node displaying: {text[:100]}...")  # Log first 100 chars
         return (text,)
 
 

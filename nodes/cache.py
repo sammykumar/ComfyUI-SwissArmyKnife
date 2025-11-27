@@ -8,6 +8,10 @@ per media+prompt combination.
 
 import os
 import json
+from nodes.debug_utils import setup_logging, get_logger
+
+setup_logging()
+logger = get_logger(__name__)
 import hashlib
 import time
 from typing import Optional, Dict, Any
@@ -109,7 +113,7 @@ class GeminiCache:
 
         except (json.JSONDecodeError, IOError) as e:
             # If cache file is corrupted, remove it
-            print(f"[CACHE] Corrupted cache file {cache_file}, removing: {e}")
+            logger.warning(f"[CACHE] Corrupted cache file {cache_file}, removing: {e}")
             try:
                 os.remove(cache_file)
             except OSError:
@@ -155,7 +159,7 @@ class GeminiCache:
             with open(cache_file, 'w', encoding='utf-8') as f:
                 json.dump(cache_entry, f, indent=2, ensure_ascii=False)
         except IOError as e:
-            print(f"[CACHE] Failed to write cache file {cache_file}: {e}")
+            logger.error(f"[CACHE] Failed to write cache file {cache_file}: {e}")
 
     def get_cache_info(self) -> Dict[str, Any]:
         """Get information about the cache."""

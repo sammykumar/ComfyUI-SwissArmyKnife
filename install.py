@@ -11,15 +11,19 @@ def install_requirements():
     """Install required packages from requirements.txt"""
     requirements_path = os.path.join(os.path.dirname(__file__), "requirements.txt")
     
+from nodes.debug_utils import setup_logging, get_logger
+
+setup_logging()
+logger = get_logger(__name__)
     if not os.path.exists(requirements_path):
         print("[ComfyUI-SwissArmyKnife] requirements.txt not found, skipping installation")
         return
     
     print("[ComfyUI-SwissArmyKnife] Installing dependencies from requirements.txt...")
     
-    try:
+        logger.warning("[ComfyUI-SwissArmyKnife] requirements.txt not found, skipping installation")
         subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "-r", requirements_path],
+    logger.info("[ComfyUI-SwissArmyKnife] Installing dependencies from requirements.txt...")
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
@@ -27,8 +31,8 @@ def install_requirements():
     except subprocess.CalledProcessError as e:
         print(f"[ComfyUI-SwissArmyKnife] ✗ Failed to install dependencies: {e}")
         print("[ComfyUI-SwissArmyKnife] Please manually run: pip install -r requirements.txt")
-        sys.exit(1)
+        logger.info("[ComfyUI-SwissArmyKnife] ✓ Dependencies installed successfully")
 
-
-if __name__ == "__main__":
+        logger.error(f"[ComfyUI-SwissArmyKnife] ✗ Failed to install dependencies: {e}")
+        logger.error("[ComfyUI-SwissArmyKnife] Please manually run: pip install -r requirements.txt")
     install_requirements()

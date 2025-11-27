@@ -10,6 +10,11 @@ from .lora_hash_cache import get_cache as get_lora_hash_cache
 from .media_describe import (GeminiUtilOptions, LLMStudioOptions, MediaDescribe, MediaDescribeOverrides, 
                               LLMStudioVideoDescribe, LLMStudioPictureDescribe)
 from .utils.video_preview import VideoPreview
+from .debug_utils import setup_logging, get_logger
+
+# Initialize logging
+setup_logging()
+logger = get_logger(__name__)
 
 
 
@@ -205,12 +210,12 @@ class LoRAInfoExtractor:
         """Extract LoRA stack metadata and return JSON plus human readable summary."""
 
         debug_repr = repr(lora)
-        print("[DEBUG] LoRAInfoExtractor.extract_lora_info called")
-        print(f"  - use_civitai_api: {use_civitai_api}")
-        print(f"  - fallback_name: '{fallback_name}'")
-        print(f"  - wan_model_type: '{wan_model_type}'")
-        print(f"  - lora type: {type(lora)}")
-        print(f"  - lora repr: {debug_repr[:300]}{'...' if len(debug_repr) > 300 else ''}")
+        logger.debug("LoRAInfoExtractor.extract_lora_info called")
+        logger.debug(f"  - use_civitai_api: {use_civitai_api}")
+        logger.debug(f"  - fallback_name: '{fallback_name}'")
+        logger.debug(f"  - wan_model_type: '{wan_model_type}'")
+        logger.debug(f"  - lora type: {type(lora)}")
+        logger.debug(f"  - lora repr: {debug_repr[:300]}{'...' if len(debug_repr) > 300 else ''}")
 
         try:
             civitai_service = None
@@ -219,16 +224,16 @@ class LoRAInfoExtractor:
                 from .config_api import get_setting_value
                 effective_api_key = get_setting_value("swiss_army_knife.civitai.api_key")
                 
-                print(f"  - effective_api_key provided: {bool(effective_api_key)}")
+                logger.debug(f"  - effective_api_key provided: {bool(effective_api_key)}")
                 civitai_service = CivitAIService(api_key=effective_api_key)
 
             entries = self._discover_lora_entries(lora)
-            if not entries:
+                if not entries:
                 synthetic = self._coerce_single_lora(lora)
                 if synthetic:
-                    print("[DEBUG] No stack entries found, using synthetic single LoRA entry")
+                        logger.debug("No stack entries found, using synthetic single LoRA entry")
                     entries = [synthetic]
-            print(f"[DEBUG] Discovered {len(entries)} LoRA entries in stack")
+            logger.debug(f"Discovered {len(entries)} LoRA entries in stack")
 
             processed_entries = []
             info_lines: List[str] = []

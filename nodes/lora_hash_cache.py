@@ -8,6 +8,10 @@ invalidated when files change.
 from __future__ import annotations
 
 import json
+from nodes.debug_utils import setup_logging, get_logger
+
+setup_logging()
+logger = get_logger(__name__)
 import os
 import threading
 import time
@@ -52,7 +56,7 @@ class LoRAHashCache:
             if isinstance(data, dict):
                 self._data = data
         except (json.JSONDecodeError, OSError) as exc:
-            print(f"[LoRAHashCache] Failed to load cache: {exc}. Rebuilding cache file.")
+            logger.error(f"[LoRAHashCache] Failed to load cache: {exc}. Rebuilding cache file.")
             self._data = {}
 
     def _save(self) -> None:
@@ -62,7 +66,7 @@ class LoRAHashCache:
                 json.dump(self._data, fh, indent=2, sort_keys=True)
             tmp_path.replace(self._cache_path)
         except OSError as exc:
-            print(f"[LoRAHashCache] Failed to write cache: {exc}")
+            logger.error(f"[LoRAHashCache] Failed to write cache: {exc}")
             if tmp_path.exists():
                 try:
                     tmp_path.unlink()
@@ -75,7 +79,7 @@ class LoRAHashCache:
         except FileNotFoundError:
             return None
         except OSError as exc:
-            print(f"[LoRAHashCache] Unable to stat file '{file_path}': {exc}")
+            logger.warning(f"[LoRAHashCache] Unable to stat file '{file_path}': {exc}")
             return None
 
     def _is_entry_valid(self, file_path: str, entry: Dict[str, object]) -> bool:
@@ -120,10 +124,10 @@ class LoRAHashCache:
                     blake3_hasher.update(file_content)
 
         except FileNotFoundError:
-            print(f"[LoRAHashCache] File missing during hashing: {file_path}")
+            logger.warning(f"[LoRAHashCache] File missing during hashing: {file_path}")
             return None
         except OSError as exc:
-            print(f"[LoRAHashCache] Error hashing '{file_path}': {exc}")
+            logger.error(f"[LoRAHashCache] Error hashing '{file_path}': {exc}")
             return None
 
         # Calculate standard hashes
@@ -198,14 +202,14 @@ class LoRAHashCache:
                     }
                     # If any hash type is missing, recalculate
                     if any(v is None for v in complete_hashes.values() if v != cached_hashes.get("blake3")):
-                        print(f"[LoRAHashCache] Incomplete hash cache for {normalized_path}, recalculating...")
+                        logger.info(f"[LoRAHashCache] Incomplete hash cache for {normalized_path}, recalculating...")
                     else:
                         return complete_hashes
 
                 # Fallback to legacy single hash format
                 legacy_hash = entry.get("hash")
                 if legacy_hash:
-                    print(f"[LoRAHashCache] Converting legacy hash cache for {normalized_path}")
+                    logger.info(f"[LoRAHashCache] Converting legacy hash cache for {normalized_path}")
                     # Don't return incomplete data, force recalculation
 
             file_stat = self._stat_file(normalized_path)
@@ -216,7 +220,7 @@ class LoRAHashCache:
                     self._save()
                 return None
 
-            print(f"[LoRAHashCache] Computing hashes for {os.path.basename(normalized_path)}...")
+            logger.info(f"[LoRAHashCache] Computing hashes for {os.path.basename(normalized_path)}...")
             file_hashes = self._calculate_hashes(normalized_path)
             if not file_hashes:
                 return None

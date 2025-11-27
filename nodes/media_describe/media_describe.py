@@ -343,7 +343,7 @@ class MediaDescribe:
 
         except (json.JSONDecodeError, ValueError) as e:
             # If JSON parsing fails, return the original string
-            print(f"Warning: Failed to parse JSON for positive prompt: {e}")
+            logger.warning(f"Warning: Failed to parse JSON for positive prompt: {e}")
             return json_string
 
     def _trim_video(self, input_path, output_path, duration):
@@ -358,15 +358,15 @@ class MediaDescribe:
 
         # Validate inputs
         if duration <= 0:
-            print(f"Error: Invalid duration {duration} seconds for video trimming")
+            logger.error(f"Error: Invalid duration {duration} seconds for video trimming")
             return False
 
         if not os.path.exists(input_path):
-            print(f"Error: Input video file does not exist: {input_path}")
+            logger.error(f"Error: Input video file does not exist: {input_path}")
             return False
 
         try:
-            print(f"Trimming video: {input_path} -> {output_path} (duration: {duration}s)")
+            logger.info(f"Trimming video: {input_path} -> {output_path} (duration: {duration}s)")
 
             # Use ffmpeg to trim the video from the beginning
             cmd = [
@@ -383,17 +383,17 @@ class MediaDescribe:
 
             # Check if output file was created and has content
             if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
-                print(f"Successfully trimmed video with copy codec: {os.path.getsize(output_path)} bytes")
+                logger.info(f"Successfully trimmed video with copy codec: {os.path.getsize(output_path)} bytes")
                 return True
             else:
-                print("Warning: Trimmed file is empty, trying re-encoding")
+                logger.warning("Warning: Trimmed file is empty, trying re-encoding")
                 raise subprocess.CalledProcessError(1, cmd, "Empty output file")
 
         except subprocess.CalledProcessError as e:
-            print(f"FFmpeg copy error: {e.stderr}")
+            logger.error(f"FFmpeg copy error: {e.stderr}")
             # Fallback: try with re-encoding if copy fails
             try:
-                print("Attempting video trimming with re-encoding...")
+                logger.info("Attempting video trimming with re-encoding...")
                 cmd = [
                     'ffmpeg',
                     '-i', input_path,
@@ -408,17 +408,17 @@ class MediaDescribe:
 
                 # Check if output file was created and has content
                 if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
-                    print(f"Successfully trimmed video with re-encoding: {os.path.getsize(output_path)} bytes")
+                    logger.info(f"Successfully trimmed video with re-encoding: {os.path.getsize(output_path)} bytes")
                     return True
                 else:
-                    print("Error: Re-encoded file is also empty")
+                    logger.warning("Error: Re-encoded file is also empty")
                     return False
 
             except subprocess.CalledProcessError as e2:
-                print(f"FFmpeg re-encoding also failed: {e2.stderr}")
+                logger.error(f"FFmpeg re-encoding also failed: {e2.stderr}")
                 return False
         except FileNotFoundError:
-            print("FFmpeg not found. Please install ffmpeg to use duration trimming.")
+            logger.warning("FFmpeg not found. Please install ffmpeg to use duration trimming.")
             return False
 
     def _extract_redgifs_video_url(self, redgifs_url):
@@ -436,7 +436,7 @@ class MediaDescribe:
             # URL format: https://www.redgifs.com/watch/GIFID  
             gif_id = redgifs_url.split('/')[-1].lower()
 
-            print(f"Extracting RedGifs video for ID: {gif_id}")
+            logger.debug(f"Extracting RedGifs video for ID: {gif_id}")
 
             # Try common RedGifs video URL patterns
             # RedGifs typically serves videos in these formats
@@ -457,18 +457,18 @@ class MediaDescribe:
             # Try each possible URL to find a working video
             for video_url in possible_urls:
                 try:
-                    print(f"Trying video URL: {video_url}")
+                    logger.debug(f"Trying video URL: {video_url}")
                     response = requests.head(video_url, headers=headers, timeout=10)
                     if response.status_code == 200:
                         content_type = response.headers.get('content-type', '')
                         if content_type.startswith('video/'):
-                            print(f"Found working RedGifs video URL: {video_url}")
+                            logger.info(f"Found working RedGifs video URL: {video_url}")
                             return video_url, 'video'
                 except requests.RequestException:
                     continue
 
             # If direct URLs don't work, try to parse the page
-            print("Direct URLs failed, attempting to parse RedGifs page...")
+            logger.debug("Direct URLs failed, attempting to parse RedGifs page...")
             page_response = requests.get(redgifs_url, headers=headers, timeout=30)
             page_response.raise_for_status()
 
@@ -500,7 +500,7 @@ class MediaDescribe:
                         if test_response.status_code == 200:
                             content_type = test_response.headers.get('content-type', '')
                             if content_type.startswith('video/'):
-                                print(f"Found RedGifs video URL from page: {video_url}")
+                                logger.info(f"Found RedGifs video URL from page: {video_url}")
                                 return video_url, 'video'
                     except requests.RequestException:
                         continue
@@ -550,7 +550,7 @@ class MediaDescribe:
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
 
-            print(f"Fetching posts from r/{subreddit_name} (sort: {selected_sort})...")
+            logger.info(f"Fetching posts from r/{subreddit_name} (sort: {selected_sort})...")
             response = requests.get(json_url, headers=headers, timeout=30)
             response.raise_for_status()
 
@@ -596,7 +596,7 @@ class MediaDescribe:
             if not media_posts:
                 raise ValueError(f"No {media_type} posts found in r/{subreddit_name}. Try a different subreddit or media type.")
 
-            print(f"Found {len(media_posts)} {media_type} posts in r/{subreddit_name} (sort: {selected_sort})")
+            logger.info(f"Found {len(media_posts)} {media_type} posts in r/{subreddit_name} (sort: {selected_sort})")
 
             # Randomly select a post using the seed (already seeded above)
             selected_post = random.choice(media_posts)
@@ -611,8 +611,8 @@ class MediaDescribe:
                 post_id = selected_post.get('id', '')
                 post_url = f"https://www.reddit.com/r/{subreddit_name}/comments/{post_id}/"
 
-            print(f"Selected random post: {selected_post.get('title', 'Unknown')}")
-            print(f"Post URL: {post_url}")
+            logger.info(f"Selected random post: {selected_post.get('title', 'Unknown')}")
+            logger.info(f"Post URL: {post_url}")
 
             return post_url
 
@@ -695,7 +695,7 @@ class MediaDescribe:
                     media_url, media_type = self._extract_redgifs_url(url)
                     if not media_url:
                         # Fallback: try to use the original URL directly
-                        print(f"Warning: Could not extract direct video URL from {url}, trying original URL as fallback")
+                        logger.warning(f"Warning: Could not extract direct video URL from {url}, trying original URL as fallback")
                         media_url = url
                         media_type = 'video'
 
@@ -715,18 +715,18 @@ class MediaDescribe:
                 raise ValueError(f"No downloadable media found in Reddit post: {post_title}")
 
             # Download the media file
-            print(f"Downloading media from: {media_url}")
+            logger.info(f"Downloading media from: {media_url}")
 
             # Special handling for redgifs URLs that might not be direct video URLs
             if 'redgifs.com' in media_url and not media_url.endswith(('.mp4', '.webm', '.mov')):
-                print("Warning: Redgifs URL doesn't appear to be a direct video link, trying to extract...")
+                logger.warning("Warning: Redgifs URL doesn't appear to be a direct video link, trying to extract...")
                 extracted_url, extracted_type = self._extract_redgifs_url(media_url)
                 if extracted_url:
-                    print(f"Successfully extracted direct video URL: {extracted_url}")
+                    logger.info(f"Successfully extracted direct video URL: {extracted_url}")
                     media_url = extracted_url
                     media_type = extracted_type
                 else:
-                    print("Failed to extract direct URL, will try original URL anyway...")
+                    logger.debug("Failed to extract direct URL, will try original URL anyway...")
 
             media_response = requests.get(media_url, headers=headers, timeout=60)
             media_response.raise_for_status()
@@ -735,16 +735,16 @@ class MediaDescribe:
             content_type = media_response.headers.get('content-type', '')
             content_length = len(media_response.content)
 
-            print(f"Downloaded content: {content_type}, size: {content_length} bytes")
+            logger.info(f"Downloaded content: {content_type}, size: {content_length} bytes")
 
             # If we got HTML instead of media (common with redgifs), try to extract again
             if content_type.startswith('text/html') and 'redgifs.com' in media_url:
-                print("Got HTML content instead of video, this suggests URL extraction failed")
+                logger.warning("Got HTML content instead of video, this suggests URL extraction failed")
                 raise ValueError(f"Redgifs URL returned webpage instead of video: {media_url}")
 
             # Validate we have actual content
             if content_length < 1024:  # Less than 1KB is suspicious for media
-                print(f"Warning: Very small content size ({content_length} bytes), might not be valid media")
+                logger.warning(f"Warning: Very small content size ({content_length} bytes), might not be valid media")
 
             # Determine file extension from content type or URL
             file_ext = None
@@ -800,7 +800,7 @@ class MediaDescribe:
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
 
-            print(f"[DEBUG] Attempting to extract video URL from: {redgifs_url}")
+            logger.debug(f"Attempting to extract video URL from: {redgifs_url}")
 
             # Handle different redgifs URL formats
             if 'redgifs.com' in redgifs_url:
@@ -817,12 +817,12 @@ class MediaDescribe:
                 elif path_parts:
                     gif_id = path_parts[-1]
 
-                print(f"[DEBUG] Extracted gif_id: {gif_id}")
+                logger.debug(f"Extracted gif_id: {gif_id}")
 
                 if gif_id:
                     # Strategy 1: Try to scrape the page for video URLs
                     try:
-                        print("[DEBUG] Strategy 1: Scraping page for video URLs")
+                        logger.debug("Strategy 1: Scraping page for video URLs")
                         response = requests.get(redgifs_url, headers=headers, timeout=30)
                         if response.status_code == 200:
                             content = response.text
@@ -844,7 +844,7 @@ class MediaDescribe:
                                 for match in matches:
                                     # Clean up the URL (remove escaping)
                                     clean_url = match.replace('\\', '')
-                                    print(f"[DEBUG] Found potential video URL: {clean_url}")
+                                    logger.debug(f"Found potential video URL: {clean_url}")
 
                                     # Test if the URL is accessible
                                     try:
@@ -852,16 +852,16 @@ class MediaDescribe:
                                         if test_response.status_code == 200:
                                             content_type = test_response.headers.get('content-type', '')
                                             if 'video' in content_type.lower() or clean_url.endswith('.mp4'):
-                                                print(f"[DEBUG] Successfully found working video URL: {clean_url}")
+                                                logger.debug(f"Successfully found working video URL: {clean_url}")
                                                 return clean_url, 'video'
                                     except:
                                         continue
                     except Exception as e:
-                        print(f"[DEBUG] Strategy 1 failed: {str(e)}")
+                        logger.debug(f"Strategy 1 failed: {str(e)}")
 
                     # Strategy 2: Try common direct URL patterns
                     try:
-                        print("[DEBUG] Strategy 2: Trying direct URL patterns")
+                        logger.debug("Strategy 2: Trying direct URL patterns")
                         direct_patterns = [
                             f"https://files.redgifs.com/{gif_id}.mp4",
                             f"https://thumbs.redgifs.com/{gif_id}.mp4",
@@ -871,57 +871,57 @@ class MediaDescribe:
 
                         for direct_url in direct_patterns:
                             try:
-                                print(f"[DEBUG] Testing direct URL: {direct_url}")
+                                logger.debug(f"Testing direct URL: {direct_url}")
                                 test_response = requests.head(direct_url, headers=headers, timeout=10)
                                 if test_response.status_code == 200:
-                                    print(f"[DEBUG] Direct URL successful: {direct_url}")
+                                    logger.debug(f"Direct URL successful: {direct_url}")
                                     return direct_url, 'video'
                             except:
                                 continue
                     except Exception as e:
-                        print(f"[DEBUG] Strategy 2 failed: {str(e)}")
+                        logger.debug(f"Strategy 2 failed: {str(e)}")
 
                     # Strategy 3: Try the API (might be rate limited or require auth)
                     try:
-                        print("[DEBUG] Strategy 3: Trying redgifs API")
+                        logger.debug("Strategy 3: Trying redgifs API")
                         api_url = f"https://api.redgifs.com/v2/gifs/{gif_id}"
                         response = requests.get(api_url, headers=headers, timeout=30)
 
                         if response.status_code == 200:
                             data = response.json()
-                            print(f"[DEBUG] API response structure: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+                            logger.debug(f"API response structure: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
 
                             if 'gif' in data and 'urls' in data['gif']:
                                 video_urls = data['gif']['urls']
-                                print(f"[DEBUG] Available video qualities: {list(video_urls.keys())}")
+                                logger.debug(f"Available video qualities: {list(video_urls.keys())}")
 
                                 for quality in ['hd', 'sd', 'poster']:
                                     if quality in video_urls and video_urls[quality]:
                                         video_url = video_urls[quality]
-                                        print(f"[DEBUG] Found {quality} quality video: {video_url}")
+                                        logger.debug(f"Found {quality} quality video: {video_url}")
                                         return video_url, 'video'
                         else:
-                            print(f"[DEBUG] API returned status {response.status_code}: {response.text[:200]}")
+                            logger.debug(f"API returned status {response.status_code}: {response.text[:200]}")
                     except Exception as e:
-                        print(f"[DEBUG] Strategy 3 failed: {str(e)}")
+                        logger.debug(f"Strategy 3 failed: {str(e)}")
 
             elif 'gfycat.com' in redgifs_url:
-                print("[DEBUG] Processing gfycat URL (legacy)")
+                logger.debug("Processing gfycat URL (legacy)")
                 # Gfycat was shut down, but some URLs might redirect to redgifs
                 parsed_url = urlparse(redgifs_url)
                 path_parts = parsed_url.path.strip('/').split('/')
 
                 if path_parts:
                     gfy_name = path_parts[-1]
-                    print(f"[DEBUG] Extracted gfy_name: {gfy_name}")
+                    logger.debug(f"Extracted gfy_name: {gfy_name}")
 
                     # Try redgifs with the gfy name
                     return self._extract_redgifs_url(f"https://www.redgifs.com/watch/{gfy_name}")
 
-            print(f"[DEBUG] All strategies failed for {redgifs_url}")
+            logger.warning(f"All strategies failed for {redgifs_url}")
 
         except Exception as e:
-            print(f"[DEBUG] Exception in _extract_redgifs_url: {str(e)}")
+            logger.debug(f"Exception in _extract_redgifs_url: {str(e)}")
 
         return None, None
 
@@ -1547,7 +1547,7 @@ Example (structure only):
             original_duration = frame_count / fps if fps > 0 else 0
             cap.release()
 
-            print(f"Original video properties: {frame_count} frames, {fps:.2f} fps, {width}x{height}, {original_duration:.2f}s duration")
+            logger.debug(f"Original video properties: {frame_count} frames, {fps:.2f} fps, {width}x{height}, {original_duration:.2f}s duration")
 
             # Determine output dimensions based on video orientation
             if width > height:
@@ -1576,7 +1576,7 @@ Example (structure only):
                 # Ensure we don't go below 1 second minimum for meaningful analysis
                 min_duration = min(1.0, original_duration)
                 actual_duration = max(min_duration, min(max_duration, original_duration))
-                print(f"Duration calculation: max_duration={max_duration}, original={original_duration:.2f}s, actual={actual_duration:.2f}s")
+                logger.debug(f"Duration calculation: max_duration={max_duration}, original={original_duration:.2f}s, actual={actual_duration:.2f}s")
             else:
                 actual_duration = original_duration
 
@@ -1586,7 +1586,7 @@ Example (structure only):
                 trimmed_video_path = get_temp_file_path(suffix='.mp4', prefix='trimmed', subdir='videos')
 
                 # Attempt to trim the video
-                print(f"Attempting to trim video from {original_duration:.2f}s to {actual_duration:.2f}s")
+                logger.debug(f"Attempting to trim video from {original_duration:.2f}s to {actual_duration:.2f}s")
                 if self._trim_video(selected_media_path, trimmed_video_path, actual_duration):
                     final_video_path = trimmed_video_path
                     trimmed = True
@@ -1594,13 +1594,13 @@ Example (structure only):
 
                     # Verify trimmed file exists and has content
                     if os.path.exists(trimmed_video_path) and os.path.getsize(trimmed_video_path) > 0:
-                        print(f"Successfully trimmed video to {trimmed_video_path}")
+                        logger.debug(f"Successfully trimmed video to {trimmed_video_path}")
                     else:
-                        print("Warning: Trimmed video file is empty or missing, using original")
+                        logger.warning("Trimmed video file is empty or missing, using original")
                         final_video_path = selected_media_path
                         trimmed = False
                 else:
-                    print(f"Warning: Could not trim video. Using original video for {original_duration:.2f}s")
+                    logger.warning(f"Could not trim video. Using original video for {original_duration:.2f}s")
                     actual_duration = original_duration
                     # trimmed_video_output_path = selected_media_path  # Not needed - using final_video_path
 
@@ -1624,7 +1624,7 @@ Example (structure only):
             elif final_video_path.lower().endswith(('.avi',)):
                 video_mime_type = "video/x-msvideo"
 
-            print(f"Processing video: {file_size:.2f} MB, {actual_duration:.2f}s, MIME: {video_mime_type}")
+            logger.info(f"Processing video: {file_size:.2f} MB, {actual_duration:.2f}s, MIME: {video_mime_type}")
 
             # Update video info to include trimming details
             end_time = actual_duration  # Since we start from 0
@@ -1847,8 +1847,8 @@ Example (structure only):
         try:
             client = OpenAI(base_url=f"{base_url}/v1", api_key="lm-studio")
             if verbose:
-                print(f"✅ Connected to LM Studio at {base_url}")
-                print(f"📦 Using model: {model_name}")
+                logger.info(f"✅ Connected to LM Studio at {base_url}")
+                logger.info(f"📦 Using model: {model_name}")
         except Exception as e:
             raise Exception(f"Failed to connect to LM Studio at {base_url}: {str(e)}")
 
@@ -1897,17 +1897,17 @@ User Prompt:
 
         # Log prompt construction
         if verbose:
-            print(f"\n{'='*60}")
-            print(f"🔧 LLM Studio Prompt Construction:")
-            print(f"{'='*60}")
-            print(f"Media Type: {media_type}")
-            print(f"Model Type: {model_type}")
-            print(f"Describe Clothing: {describe_clothing}")
-            print(f"Change Clothing Color: {change_clothing_color}")
-            print(f"Describe Hair Style: {describe_hair_style}")
-            print(f"Describe Bokeh: {describe_bokeh}")
-            print(f"Describe Subject: {describe_subject}")
-            print(f"{'='*60}\n")
+            logger.debug(f"\n{'='*60}")
+            logger.debug("🔧 LLM Studio Prompt Construction:")
+            logger.debug(f"{'='*60}")
+            logger.debug(f"Media Type: {media_type}")
+            logger.debug(f"Model Type: {model_type}")
+            logger.debug(f"Describe Clothing: {describe_clothing}")
+            logger.debug(f"Change Clothing Color: {change_clothing_color}")
+            logger.debug(f"Describe Hair Style: {describe_hair_style}")
+            logger.debug(f"Describe Bokeh: {describe_bokeh}")
+            logger.debug(f"Describe Subject: {describe_subject}")
+            logger.debug(f"{'='*60}\n")
 
         # Get image dimensions
         height, width = 512, 512  # Default
@@ -1921,7 +1921,7 @@ User Prompt:
                 img = PILImage.open(media_path)
                 width, height = img.size
         except Exception as e:
-            print(f"Warning: Could not get media dimensions: {e}")
+            logger.warning(f"Could not get media dimensions: {e}")
 
         # Process based on media type
         if media_type == "video":
@@ -1948,7 +1948,7 @@ User Prompt:
             frame_indices = [idx for idx in frame_indices if idx < total_frames]
 
             if verbose:
-                print(f"📹 Extracting {len(frame_indices)} frames from video...")
+                logger.info(f"Extracting {len(frame_indices)} frames from video...")
 
             # Extract all frames and encode to base64
             frame_data_list = []
@@ -1969,10 +1969,10 @@ User Prompt:
                     })
 
                     if verbose:
-                        print(f"✅ Extracted frame {idx + 1}/{len(frame_indices)}")
+                        logger.debug(f"✅ Extracted frame {idx + 1}/{len(frame_indices)}")
                 else:
                     if verbose:
-                        print(f"❌ Failed to extract frame {idx + 1}")
+                        logger.warning(f"❌ Failed to extract frame {idx + 1}")
 
             cap.release()
 
@@ -1984,13 +1984,13 @@ User Prompt:
 
                 # Debug logging
                 if verbose:
-                    print(f"\n{'='*60}")
-                    print(f"🔍 LLM Studio Video Prompt Debug:")
-                    print(f"{'='*60}")
-                    print(f"📝 System Prompt:\n{system_prompt}")
-                    print(f"\n📝 User Prompt:\n{user_prompt}")
-                    print(f"\n📊 Sending {len(frame_data_list)} frames in single request")
-                    print(f"{'='*60}\n")
+                    logger.debug(f"\n{'='*60}")
+                    logger.debug("🔍 LLM Studio Video Prompt Debug:")
+                    logger.debug(f"{'='*60}")
+                    logger.debug(f"📝 System Prompt:\n{system_prompt}")
+                    logger.debug(f"\n📝 User Prompt:\n{user_prompt}")
+                    logger.debug(f"\n📊 Sending {len(frame_data_list)} frames in single request")
+                    logger.debug(f"{'='*60}\n")
 
                 # Send all frames in a single request
                 try:
@@ -2013,9 +2013,9 @@ User Prompt:
                     combined_caption = response.choices[0].message.content
 
                     if verbose:
-                        print(f"✅ Video analysis complete: {combined_caption[:150]}...")
+                        logger.info(f"✅ Video analysis complete: {combined_caption[:150]}...")
                 except Exception as e:
-                    print(f"❌ Error processing video: {e}")
+                    logger.error(f"❌ Error processing video: {e}")
                     combined_caption = f"[Error: {e}]"
 
         else:
@@ -2032,12 +2032,12 @@ User Prompt:
 
             # Debug logging
             if verbose:
-                print(f"\n{'='*60}")
-                print(f"🔍 LLM Studio Image Prompt Debug:")
-                print(f"{'='*60}")
-                print(f"📝 System Prompt:\n{system_prompt}")
-                print(f"\n📝 User Prompt:\n{user_prompt}")
-                print(f"{'='*60}\n")
+                logger.debug(f"\n{'='*60}")
+                logger.debug("🔍 LLM Studio Image Prompt Debug:")
+                logger.debug(f"{'='*60}")
+                logger.debug(f"📝 System Prompt:\n{system_prompt}")
+                logger.debug(f"\n📝 User Prompt:\n{user_prompt}")
+                logger.debug(f"{'='*60}\n")
 
             try:
                 response = client.chat.completions.create(
@@ -2062,7 +2062,7 @@ User Prompt:
                 combined_caption = response.choices[0].message.content
 
                 if verbose:
-                    print(f"✅ Image caption: {combined_caption}")
+                    logger.info(f"✅ Image caption: {combined_caption}")
             except Exception as e:
                 raise Exception(f"LLM Studio image captioning failed: {str(e)}")
 
