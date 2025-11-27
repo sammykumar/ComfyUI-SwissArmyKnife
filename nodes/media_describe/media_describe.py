@@ -12,7 +12,7 @@ import random
 from urllib.parse import urlparse
 from html import unescape
 
-import google.generativeai as genai
+import google.genai as genai
 from ..debug_utils import Logger
 
 logger = Logger("MediaDescribe")
