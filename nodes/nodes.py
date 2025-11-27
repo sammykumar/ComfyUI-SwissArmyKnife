@@ -8,7 +8,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from .civitai_service import CivitAIService
 from .lora_hash_cache import get_cache as get_lora_hash_cache
 from .media_describe import (GeminiUtilOptions, LLMStudioOptions, MediaDescribe, MediaDescribeOverrides, 
-                              LLMStudioVideoDescribe, LLMStudioPictureDescribe)
+                              LLMStudioVideoDescribe, LLMStudioPictureDescribe,
+                              LLMStudioStructuredDescribe, LLMStudioStructuredVideoDescribe)
 from .utils.video_preview import VideoPreview
 from .debug_utils import Logger
 
@@ -788,6 +789,8 @@ NODE_CLASS_MAPPINGS = {
     "MediaDescribeOverrides": MediaDescribeOverrides,
     "LLMStudioVideoDescribe": LLMStudioVideoDescribe,
     "LLMStudioPictureDescribe": LLMStudioPictureDescribe,
+    "LLMStudioStructuredDescribe": LLMStudioStructuredDescribe,
+    "LLMStudioStructuredVideoDescribe": LLMStudioStructuredVideoDescribe,
     "FilenameGenerator": FilenameGenerator,
     "VideoMetadataNode": VideoMetadataNode,
     "LoRAInfoExtractor": LoRAInfoExtractor,
@@ -802,6 +805,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "MediaDescribeOverrides": "Media Describe - Overrides",
     "LLMStudioVideoDescribe": "LLM Studio Video Describe",
     "LLMStudioPictureDescribe": "LLM Studio Picture Describe",
+    "LLMStudioStructuredDescribe": "LLM Studio Structured Describe (Image)",
+    "LLMStudioStructuredVideoDescribe": "LLM Studio Structured Describe (Video)",
     "FilenameGenerator": "Filename Generator",
     "VideoMetadataNode": "Update Video Metadata",
     "LoRAInfoExtractor": "LoRA Info Extractor",
