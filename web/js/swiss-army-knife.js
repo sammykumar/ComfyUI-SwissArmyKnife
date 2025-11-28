@@ -1763,6 +1763,16 @@ app.registerExtension({
                 const result = onResize?.call(this, size);
                 if (this._json_display_dom) {
                     this._json_display_dom.style.width = this.size[0] - 20 + "px";
+                    // Trigger recompute after width change to handle content reflow
+                    requestAnimationFrame(() => {
+                        const sz = this.computeSize();
+                        if (sz[0] < this.size[0]) sz[0] = this.size[0];
+                        if (sz[1] < this.size[1]) sz[1] = this.size[1];
+                        this.onResize?.(sz);
+                        if (this.graph) {
+                            this.graph.setDirtyCanvas(true, false);
+                        }
+                    });
                 }
                 return result;
             };
@@ -1779,7 +1789,7 @@ app.registerExtension({
                     dom.style.fontSize = "11px";
                     dom.style.lineHeight = "1.35";
                     dom.style.overflow = "auto";
-                    dom.style.maxHeight = "300px";
+                    dom.style.minHeight = "300px";
                     dom.style.padding = "8px";
                     dom.style.borderRadius = "6px";
                     dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
@@ -1801,6 +1811,21 @@ app.registerExtension({
                         serialize: false,
                         hideOnZoom: false,
                     });
+
+                    // Add custom computeSize to measure actual content height
+                    widget.computeSize = function(width) {
+                        if (!dom) return [width || 400, 300];
+                        
+                        // Measure actual content height (scrollHeight includes all content)
+                        const contentHeight = dom.scrollHeight;
+                        const minHeight = 100;
+                        const maxHeight = 800;  // Max 800px height
+                        
+                        // Clamp between min and max, add padding
+                        const finalHeight = Math.max(minHeight, Math.min(maxHeight, contentHeight + 16));
+                        
+                        return [width || 400, finalHeight];
+                    };
 
                     // Store references
                     this._json_display_dom = dom;
@@ -1859,6 +1884,17 @@ app.registerExtension({
                         
                         this._json_display_content.textContent = finalText;
                         debugLog("[updateJsonDisplay] ✅ Successfully updated display");
+                        
+                        // Trigger node resize after content update (wait for browser reflow)
+                        requestAnimationFrame(() => {
+                            const sz = this.computeSize();
+                            if (sz[0] < this.size[0]) sz[0] = this.size[0];
+                            if (sz[1] < this.size[1]) sz[1] = this.size[1];
+                            this.onResize?.(sz);
+                            if (this.graph) {
+                                this.graph.setDirtyCanvas(true, false);
+                            }
+                        });
                     } catch (error) {
                         const errorMsg = `Error parsing JSON: ${error.message}`;
                         this._json_display_content.textContent = errorMsg;
