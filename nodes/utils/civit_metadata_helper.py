@@ -121,16 +121,24 @@ class CivitMetadataHelper:
         positive_prompt: str,
         negative_prompt: str,
     ) -> Tuple[str, str, str]:
+        # Normalize all free-form text inputs in case upstream nodes send dicts or numbers
+        high_sampler_clean = self._normalize_text(high_sampler)
+        low_sampler_clean = self._normalize_text(low_sampler)
+        lora_high_clean = self._normalize_text(lora_high)
+        lora_low_clean = self._normalize_text(lora_low)
+        positive_clean = self._normalize_text(positive_prompt)
+        negative_clean = self._normalize_text(negative_prompt)
+
         metadata = self._build_metadata_dict(
             steps,
             cfg,
             seed,
-            high_sampler,
-            low_sampler,
-            lora_high,
-            lora_low,
-            positive_prompt,
-            negative_prompt,
+            high_sampler_clean,
+            low_sampler_clean,
+            lora_high_clean,
+            lora_low_clean,
+            positive_clean,
+            negative_clean,
         )
 
         formatted_metadata = self._format_for_display(metadata)
@@ -263,6 +271,24 @@ class CivitMetadataHelper:
             return ["  (empty)"]
         wrapped = textwrap.wrap(prompt, width=60)
         return [f"  {line}" for line in wrapped]
+
+    def _normalize_text(self, value: Any) -> str:
+        """
+        Ensure node inputs are coerced into strings before trimming so upstream nodes
+        can safely pass numeric values or dictionaries (e.g., via JSON widgets).
+        """
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value.strip()
+        if isinstance(value, (int, float, bool)):
+            return str(value).strip()
+        if isinstance(value, (dict, list)):
+            try:
+                return json.dumps(value, ensure_ascii=False)
+            except TypeError:
+                return str(value).strip()
+        return str(value).strip()
 
 
 CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS = {
