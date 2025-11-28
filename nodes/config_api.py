@@ -14,7 +14,8 @@ _cached_api_keys = {
 }
 
 _cached_settings = {
-    "debug_mode": False
+    "debug_mode": False,
+    "profiler_enabled": True
 }
 
 
@@ -22,6 +23,12 @@ def get_debug_mode():
     """Get the debug mode setting"""
     global _cached_settings
     return _cached_settings.get("debug_mode", False)
+
+
+def get_profiler_enabled():
+    """Get the profiler enabled setting"""
+    global _cached_settings
+    return _cached_settings.get("profiler_enabled", True)
 
 
 def get_api_keys():
@@ -60,8 +67,11 @@ async def get_config(request):
         civitai_api_key = get_setting_value("swiss_army_knife.civitai.api_key")
         azure_connection_string = get_setting_value("swiss_army_knife.azure_storage.connection_string")
 
+        profiler_enabled = _cached_settings.get("profiler_enabled", True)
+        
         return web.json_response({
             "debug": debug,
+            "profiler_enabled": profiler_enabled,
             "gemini_api_key": gemini_api_key,
             "civitai_api_key": civitai_api_key,
             "azure_storage_connection_string": azure_connection_string
@@ -80,6 +90,7 @@ async def set_api_keys(request):
         civitai_key = data.get("civitai_api_key", "")
         azure_connection_string = data.get("azure_storage_connection_string", "")
         debug_mode = data.get("debug_mode", False)
+        profiler_enabled = data.get("profiler_enabled", True)
         
         debug_print(f"[Config API] set_api_keys received:")
         debug_print(f"  - Azure connection string length: {len(azure_connection_string)}")
@@ -96,7 +107,8 @@ async def set_api_keys(request):
             "azure_storage_connection_string": azure_connection_string
         }
         _cached_settings = {
-            "debug_mode": debug_mode
+            "debug_mode": debug_mode,
+            "profiler_enabled": profiler_enabled
         }
         
         debug_print(f"[Config API] Cached keys after update: {list(_cached_api_keys.keys())}")
@@ -109,7 +121,7 @@ async def set_api_keys(request):
         except ImportError:
             pass  # CivitAI service not available
         
-        print(f"[Swiss Army Knife] Settings cached: Gemini={bool(gemini_key)}, CivitAI={bool(civitai_key)}, Azure={bool(azure_connection_string)}, Debug={debug_mode}")
+        print(f"[Swiss Army Knife] Settings cached: Gemini={bool(gemini_key)}, CivitAI={bool(civitai_key)}, Azure={bool(azure_connection_string)}, Debug={debug_mode}, Profiler={profiler_enabled}")
         
         return web.json_response({"success": True})
     except Exception as e:

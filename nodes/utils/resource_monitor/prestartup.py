@@ -17,6 +17,16 @@ def inject_profiling():
     """
     global PROFILER_ENABLED
 
+    # Check if profiler is enabled in settings
+    try:
+        from ...config_api import get_profiler_enabled
+        if not get_profiler_enabled():
+            logger.info("⏸️  Profiler is disabled in settings")
+            PROFILER_ENABLED = False
+            return False
+    except Exception as e:
+        logger.warning(f"Could not check profiler setting, defaulting to enabled: {e}")
+
     try:
         # Import ComfyUI execution modules
         import execution
@@ -41,10 +51,14 @@ def inject_profiling():
         async def map_node_with_profiling(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt=False, execution_block_cb=None, pre_execute_cb=None, hidden_inputs=None):
             """Wrap the actual node function execution to capture timing"""
             
+            # Check if profiler is enabled before doing any profiling work
+            from ...config_api import get_profiler_enabled
+            profiler_enabled = get_profiler_enabled()
+            
             # Only track timing for the main FUNCTION execution, not check_lazy_status, etc.
             is_main_execution = (func == getattr(obj, 'FUNCTION', None) or (isinstance(func, str) and func == getattr(obj, 'FUNCTION', None)))
             
-            if is_main_execution:
+            if is_main_execution and profiler_enabled:
                 # Get node type
                 class_type = obj.__class__.__name__
                 
@@ -56,7 +70,7 @@ def inject_profiling():
                 # Execute original function
                 result = await original_map_node_over_list(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt, execution_block_cb, pre_execute_cb, hidden_inputs)
                 
-                if is_main_execution:
+                if is_main_execution and profiler_enabled:
                     # End timing
                     end_time = time.time()
                     execution_time = (end_time - start_time) * 1000  # Convert to ms
@@ -71,7 +85,7 @@ def inject_profiling():
                 return result
                 
             except Exception as e:
-                if is_main_execution:
+                if is_main_execution and profiler_enabled:
                     # Track error
                     if prompt_id in profiler.active_profiles:
                         if unique_id in profiler.active_profiles[prompt_id].nodes:
@@ -83,30 +97,37 @@ def inject_profiling():
             def prompt_executor_execute_with_profiling(self, prompt, prompt_id, extra_data={}, execute_outputs=[]):
                 """Wrap workflow execution to capture start/end times"""
 
-                # Start workflow profiling
-                profiler.start_workflow(prompt_id)
+                # Check if profiler is enabled
+                from ...config_api import get_profiler_enabled
+                profiler_enabled = get_profiler_enabled()
+                
+                if profiler_enabled:
+                    # Start workflow profiling
+                    profiler.start_workflow(prompt_id)
 
                 try:
                     # Execute original function
                     result = original_prompt_executor_execute(self, prompt, prompt_id, extra_data, execute_outputs)
 
-                    # End workflow profiling
-                    profiler.end_workflow(prompt_id)
+                    if profiler_enabled:
+                        # End workflow profiling
+                        profiler.end_workflow(prompt_id)
 
-                    # Broadcast profiler update via WebSocket
-                    try:
-                        from server import PromptServer
-                        server = PromptServer.instance
-                        stats = profiler.get_stats()
-                        server.send_sync("swissarmyknife.profiler", stats)
-                    except Exception as e:
-                        logger.debug(f"Failed to broadcast profiler update: {e}")
+                        # Broadcast profiler update via WebSocket
+                        try:
+                            from server import PromptServer
+                            server = PromptServer.instance
+                            stats = profiler.get_stats()
+                            server.send_sync("swissarmyknife.profiler", stats)
+                        except Exception as e:
+                            logger.debug(f"Failed to broadcast profiler update: {e}")
 
                     return result
 
                 except Exception:
-                    # Still end workflow on error
-                    profiler.end_workflow(prompt_id)
+                    if profiler_enabled:
+                        # Still end workflow on error
+                        profiler.end_workflow(prompt_id)
                     raise
 
             # Replace the method

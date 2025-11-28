@@ -61,9 +61,11 @@ const syncApiKeysToBackend = async () => {
         const civitaiKey = getCivitaiApiKey();
         const azureConnectionString = getAzureStorageConnectionString();
         const debugMode = isDebugEnabled();
+        const profilerEnabled = app.extensionManager?.setting?.get("SwissArmyKnife.profiler_enabled") ?? true;
 
         debugLog("Azure connection string length:", azureConnectionString.length);
         debugLog("Debug mode:", debugMode);
+        debugLog("Profiler enabled:", profilerEnabled);
 
         const response = await fetch("/swissarmyknife/set_api_keys", {
             method: "POST",
@@ -75,6 +77,7 @@ const syncApiKeysToBackend = async () => {
                 civitai_api_key: civitaiKey,
                 azure_storage_connection_string: azureConnectionString,
                 debug_mode: debugMode,
+                profiler_enabled: profilerEnabled,
             }),
         });
 
@@ -2460,6 +2463,17 @@ app.registerExtension({
             onChange: (newVal, oldVal) => {
                 debugLog(`Debug mode changed from ${oldVal} to ${newVal}`);
                 syncApiKeysToBackend(); // Sync debug mode to backend
+            },
+        },
+        {
+            id: "SwissArmyKnife.profiler_enabled",
+            name: "Workflow Profiler",
+            type: "boolean",
+            defaultValue: true,
+            tooltip: "Enable workflow profiler to track execution times and resource usage",
+            onChange: (newVal, oldVal) => {
+                debugLog(`Profiler enabled changed from ${oldVal} to ${newVal}`);
+                syncApiKeysToBackend(); // Sync profiler setting to backend
             },
         },
     ],
