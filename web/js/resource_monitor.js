@@ -208,10 +208,10 @@ function injectRestartButtonStyles() {
         /* Restart Button */
         #swissarmyknife-restart-button {
             position: relative;
+            display: flex;
+            align-items: center;
             padding-left: 1rem;
             padding-right: 1rem;
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
             background-color: #dc3545;
             color: white;
             font-weight: 600;
@@ -523,7 +523,7 @@ app.registerExtension({
                     
                     // Add CPU temp if available
                     if (hardware.cpu_temp !== null) {
-                        buttonGroup.appendChild(createMonitorDisplay("Temp", "cpu-temp"));
+                        buttonGroup.appendChild(createMonitorDisplay("TEMP", "cpu-temp"));
                     }
                 }
                 
@@ -535,17 +535,12 @@ app.registerExtension({
                         // Extract compact GPU model name
                         const gpuModel = extractGPUModel(device.name);
                         
-                        // Add GPU utilization monitor if pynvml available
-                        if (gpu.pynvml_available) {
-                            buttonGroup.appendChild(createMonitorDisplay(`GPU ${index} (${gpuModel})`, `gpu${index}`));
-                        }
+                        // Add VRAM monitor with index
+                        buttonGroup.appendChild(createMonitorDisplay(`VRAM ${index}`, `vram${index}`));
                         
-                        // Add VRAM monitor with model name
-                        buttonGroup.appendChild(createMonitorDisplay(`VRAM ${index} (${gpuModel})`, `vram${index}`));
-                        
-                        // Add GPU temp if available with model name
+                        // Add GPU temp if available - just model name, all caps
                         if (device.temperature !== null && device.temperature !== undefined) {
-                            buttonGroup.appendChild(createMonitorDisplay(`TEMP ${index} (${gpuModel})`, `gpu${index}-temp`));
+                            buttonGroup.appendChild(createMonitorDisplay(gpuModel.toUpperCase(), `gpu${index}-temp`));
                         }
                     });
                 }
