@@ -41,10 +41,47 @@ function createRestartButton() {
     button.textContent = "Restart";
     button.title = "Restart ComfyUI Server";
     
-    // Add click handler (no functionality yet, just a placeholder)
+    // Add click handler with restart functionality
     button.addEventListener("click", async () => {
-        debugLog("Restart button clicked (no functionality yet)");
-        // TODO: Implement restart functionality
+        debugLog("Restart button clicked");
+        
+        try {
+            debugLog("Sending restart request...");
+            
+            // Show notification immediately
+            if (app.extensionManager?.toast?.add) {
+                app.extensionManager.toast.add({
+                    severity: "warn",
+                    summary: "Server Restarting",
+                    detail: "ComfyUI server is restarting...",
+                    life: 3000,
+                });
+            }
+            
+            // Call the restart API endpoint
+            // Note: The server may terminate before sending a complete response,
+            // so we don't rely on the response - just trigger and reload
+            fetch("/swissarmyknife/restart", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }).catch(() => {
+                // Ignore fetch errors - server is restarting
+                debugLog("Fetch error (expected - server restarting)");
+            });
+            
+            debugLog("Server restart initiated");
+            
+            // Wait a moment then try to reconnect
+            setTimeout(() => {
+                debugLog("Reloading page...");
+                window.location.reload();
+            }, 2000);
+            
+        } catch (error) {
+            console.error("[SwissArmyKnife][ResourceMonitor] Error restarting server:", error);
+        }
     });
 
     return button;
