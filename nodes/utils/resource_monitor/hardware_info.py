@@ -26,7 +26,7 @@ class HardwareInfo:
     """
     Collects system hardware information (CPU, RAM, Disk)
     """
-    
+
     def __init__(self):
         self._cpu_brand = None
         if CPUINFO_AVAILABLE:
@@ -36,7 +36,7 @@ class HardwareInfo:
             except Exception as e:
                 logger.warning(f"Failed to get CPU brand: {e}")
                 self._cpu_brand = "Unknown CPU"
-    
+
     def get_cpu_usage(self) -> Optional[float]:
         """
         Get current CPU usage percentage (0-100)
@@ -44,13 +44,13 @@ class HardwareInfo:
         """
         if not PSUTIL_AVAILABLE:
             return None
-        
+
         try:
             return psutil.cpu_percent(interval=0.1)
         except Exception as e:
             logger.error(f"Error getting CPU usage: {e}")
             return None
-    
+
     def get_cpu_per_core(self) -> Optional[list]:
         """
         Get CPU usage per core
@@ -58,13 +58,13 @@ class HardwareInfo:
         """
         if not PSUTIL_AVAILABLE:
             return None
-        
+
         try:
             return psutil.cpu_percent(interval=0.1, percpu=True)
         except Exception as e:
             logger.error(f"Error getting per-core CPU usage: {e}")
             return None
-    
+
     def get_memory_info(self) -> Optional[Dict[str, Any]]:
         """
         Get RAM usage information
@@ -73,7 +73,7 @@ class HardwareInfo:
         """
         if not PSUTIL_AVAILABLE:
             return None
-        
+
         try:
             mem = psutil.virtual_memory()
             return {
@@ -88,7 +88,7 @@ class HardwareInfo:
         except Exception as e:
             logger.error(f"Error getting memory info: {e}")
             return None
-    
+
     def get_disk_usage(self, path: str = "/") -> Optional[Dict[str, Any]]:
         """
         Get disk usage for specified path
@@ -97,7 +97,7 @@ class HardwareInfo:
         """
         if not PSUTIL_AVAILABLE:
             return None
-        
+
         try:
             disk = psutil.disk_usage(path)
             return {
@@ -112,7 +112,7 @@ class HardwareInfo:
         except Exception as e:
             logger.error(f"Error getting disk usage: {e}")
             return None
-    
+
     def get_cpu_temperature(self) -> Optional[float]:
         """
         Get CPU temperature (if available)
@@ -122,13 +122,13 @@ class HardwareInfo:
         """
         if not PSUTIL_AVAILABLE:
             return None
-        
+
         try:
             # Try to get temperature sensors
             temps = psutil.sensors_temperatures()
             if not temps:
                 return None
-            
+
             # Try common sensor names
             for name in ['coretemp', 'k10temp', 'cpu_thermal', 'cpu-thermal']:
                 if name in temps:
@@ -136,18 +136,18 @@ class HardwareInfo:
                     if entries:
                         # Return the first current temperature
                         return entries[0].current
-            
+
             # If no known sensors, try the first available
             first_sensor = next(iter(temps.values()))
             if first_sensor:
                 return first_sensor[0].current
-                
+
         except (AttributeError, Exception) as e:
             # sensors_temperatures may not be available on all platforms
             logger.debug(f"CPU temperature not available: {e}")
-        
+
         return None
-    
+
     def get_cpu_count(self) -> Optional[Dict[str, int]]:
         """
         Get CPU core count information
@@ -155,7 +155,7 @@ class HardwareInfo:
         """
         if not PSUTIL_AVAILABLE:
             return None
-        
+
         try:
             return {
                 "physical": psutil.cpu_count(logical=False),
@@ -164,7 +164,7 @@ class HardwareInfo:
         except Exception as e:
             logger.error(f"Error getting CPU count: {e}")
             return None
-    
+
     def get_full_status(self) -> Dict[str, Any]:
         """
         Get all hardware information in a single call
@@ -174,7 +174,7 @@ class HardwareInfo:
             "available": PSUTIL_AVAILABLE,
             "cpu_brand": self._cpu_brand
         }
-        
+
         if PSUTIL_AVAILABLE:
             status["cpu_percent"] = self.get_cpu_usage()
             status["cpu_per_core"] = self.get_cpu_per_core()
@@ -182,5 +182,5 @@ class HardwareInfo:
             status["cpu_temp"] = self.get_cpu_temperature()
             status["memory"] = self.get_memory_info()
             status["disk"] = self.get_disk_usage()
-        
+
         return status

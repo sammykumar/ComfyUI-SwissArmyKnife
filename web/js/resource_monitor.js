@@ -166,9 +166,80 @@ function createRestartButton() {
 }
 
 /**
- * Injects CSS styles for the restart button
+ * Creates the profiler button element
  */
-function injectRestartButtonStyles() {
+function createProfilerButton() {
+    debugLog("Creating profiler button");
+
+    const button = document.createElement("button");
+    button.id = "swissarmyknife-profiler-button";
+    button.className = "comfyui-button";
+    button.innerHTML = "📊";
+    button.title = "View Workflow Profiler";
+    
+    // Create popup container
+    const popup = createProfilerPopup();
+    button._profilerPopup = popup;
+    button._profilerData = null;
+    
+    // Add click handler to toggle popup
+    button.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        debugLog("Profiler button clicked");
+        
+        const isVisible = popup.style.display === "block";
+        
+        if (!isVisible) {
+            // Fetch latest data if not cached
+            if (!button._profilerData) {
+                try {
+                    debugLog("Fetching profiler data...");
+                    const response = await fetchWithRetry("/swissarmyknife/profiler/stats");
+                    const result = await response.json();
+                    
+                    if (result.success && result.data) {
+                        button._profilerData = result.data;
+                        updateProfilerPopupContent(popup, result.data);
+                    }
+                } catch (error) {
+                    console.error("[SwissArmyKnife][Profiler] Error fetching profiler data:", error);
+                }
+            }
+            
+            // Position and show popup
+            const rect = button.getBoundingClientRect();
+            const monitorRect = document.getElementById("swissarmyknife-resource-monitor").getBoundingClientRect();
+            
+            popup.style.left = `${monitorRect.left + monitorRect.width / 2}px`;
+            popup.style.bottom = `${window.innerHeight - monitorRect.top + 12}px`;
+            popup.style.display = "block";
+            
+            debugLog("Profiler popup opened");
+        } else {
+            popup.style.display = "none";
+            debugLog("Profiler popup closed");
+        }
+    });
+    
+    // Close popup when clicking outside
+    document.addEventListener("click", (e) => {
+        if (popup.style.display === "block" && 
+            !popup.contains(e.target) && 
+            !button.contains(e.target)) {
+            popup.style.display = "none";
+        }
+    });
+    
+    // Append popup to body
+    document.body.appendChild(popup);
+
+    return button;
+}
+
+/**
+ * Injects CSS styles for the resource monitor (restart button + profiler)
+ */
+function injectResourceMonitorStyles() {
     debugLog("Injecting restart button styles");
 
     const styleId = "swissarmyknife-restart-button-styles";
@@ -302,10 +373,747 @@ function injectRestartButtonStyles() {
             font-size: 0.875rem;
             line-height: 1.25rem;
         }
+
+        /* Profiler Button */
+        #swissarmyknife-profiler-button {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1rem;
+            height: 100%;
+            background-color: rgba(99, 102, 241, 0.8);
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        #swissarmyknife-profiler-button::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2rem;
+            width: 1px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #swissarmyknife-profiler-button:hover {
+            background-color: rgba(79, 70, 229, 0.9);
+        }
+
+        #swissarmyknife-profiler-button:active {
+            background-color: rgba(67, 56, 202, 1);
+        }
+
+        /* Profiler Popup */
+        #swissarmyknife-profiler-popup {
+            position: fixed;
+            display: none;
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            background-color: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            transform: translateX(-50%);
+            padding: 1.5rem;
+        }
+
+        /* Arrow pointer for popup */
+        #swissarmyknife-profiler-popup::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid rgba(0, 0, 0, 0.85);
+        }
+
+        /* Popup Header */
+        .profiler-popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .profiler-popup-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .profiler-popup-close {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1.25rem;
+            line-height: 1;
+            transition: all 0.2s ease;
+        }
+
+        .profiler-popup-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Progress Gauge */
+        .profiler-gauge-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .profiler-gauge-svg {
+            width: 120px;
+            height: 120px;
+            transform: rotate(-90deg);
+        }
+
+        .profiler-gauge-circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 8;
+        }
+
+        .profiler-gauge-circle-progress {
+            fill: none;
+            stroke: #fbbf24;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .profiler-gauge-text {
+            position: absolute;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .profiler-gauge-label {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Stats Grid */
+        .profiler-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .profiler-stat-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .profiler-stat-card:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .profiler-stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.25rem;
+        }
+
+        .profiler-stat-value {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .profiler-stat-icon {
+            margin-right: 0.25rem;
+        }
+
+        /* Node Table */
+        .profiler-node-table-container {
+            margin-bottom: 1rem;
+        }
+
+        .profiler-node-table-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 0.75rem;
+        }
+
+        .profiler-node-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+
+        .profiler-node-table th {
+            text-align: left;
+            padding: 0.5rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+
+        .profiler-node-table th:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .profiler-node-table td {
+            padding: 0.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .profiler-node-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .profiler-cache-icon {
+            font-size: 0.875rem;
+        }
+
+        /* Footer Actions */
+        .profiler-popup-footer {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .profiler-btn {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .profiler-btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+        }
+
+        .profiler-btn-primary:hover {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+
+        .profiler-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .profiler-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .profiler-btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .profiler-btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        /* Profiler Modal */
+        #swissarmyknife-profiler-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            z-index: 11000;
+            padding: 2rem;
+        }
+
+        .profiler-modal-content {
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(31, 41, 55, 0.95) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .profiler-modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .profiler-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .profiler-modal-close {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1.5rem;
+            line-height: 1;
+            transition: all 0.2s ease;
+        }
+
+        .profiler-modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Tabs */
+        .profiler-tabs {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .profiler-tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .profiler-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .profiler-tab.active {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+        }
+
+        .profiler-tab-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .profiler-tab-panel {
+            display: none;
+        }
+
+        .profiler-tab-panel.active {
+            display: block;
+        }
     `;
 
     document.head.appendChild(style);
-    debugLog("Restart button styles injected");
+    debugLog("Resource monitor styles injected");
+}
+
+/**
+ * Fetch with retry logic
+ */
+async function fetchWithRetry(url, maxAttempts = 3) {
+    for (let i = 0; i < maxAttempts; i++) {
+        try {
+            const response = await fetch(url);
+            if (response.ok) {
+                return response;
+            }
+        } catch (error) {
+            if (i < maxAttempts - 1) {
+                await new Promise(r => setTimeout(r, 100 * Math.pow(2, i)));
+                continue;
+            }
+            throw error;
+        }
+    }
+    throw new Error(`Failed to fetch ${url} after ${maxAttempts} attempts`);
+}
+
+/**
+ * Format milliseconds to readable string
+ */
+function formatMs(ms) {
+    if (ms === null || ms === undefined) return "N/A";
+    if (ms < 1000) return `${Math.round(ms)}ms`;
+    return `${(ms / 1000).toFixed(2)}s`;
+}
+
+/**
+ * Format bytes to human readable
+ */
+function formatBytes(bytes) {
+    if (bytes === null || bytes === undefined) return "N/A";
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+}
+
+/**
+ * Create profiler popup
+ */
+function createProfilerPopup() {
+    const popup = document.createElement("div");
+    popup.id = "swissarmyknife-profiler-popup";
+    
+    popup.innerHTML = `
+        <div class="profiler-popup-header">
+            <div class="profiler-popup-title">Workflow Profiler</div>
+            <button class="profiler-popup-close">✕</button>
+        </div>
+        
+        <div class="profiler-gauge-container">
+            <svg class="profiler-gauge-svg" viewBox="0 0 120 120">
+                <circle class="profiler-gauge-circle-bg" cx="60" cy="60" r="52"></circle>
+                <circle class="profiler-gauge-circle-progress" cx="60" cy="60" r="52" 
+                    stroke-dasharray="326.73" stroke-dashoffset="326.73"></circle>
+            </svg>
+            <div class="profiler-gauge-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                <div id="profiler-gauge-value" style="font-size: 1.5rem; font-weight: 700; text-align: center;">--</div>
+            </div>
+            <div class="profiler-gauge-label">Latest Workflow Time</div>
+        </div>
+        
+        <div class="profiler-stats-grid" id="profiler-stats-grid">
+            <!-- Stats cards will be inserted here -->
+        </div>
+        
+        <div class="profiler-node-table-container">
+            <div class="profiler-node-table-title">Top 10 Slowest Nodes</div>
+            <table class="profiler-node-table" id="profiler-node-table">
+                <thead>
+                    <tr>
+                        <th>Node Type</th>
+                        <th>Time</th>
+                        <th>VRAM</th>
+                        <th>Cache</th>
+                    </tr>
+                </thead>
+                <tbody id="profiler-node-table-body">
+                    <tr><td colspan="4" style="text-align: center; padding: 1rem;">No data available</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="profiler-popup-footer">
+            <button class="profiler-btn profiler-btn-primary" id="profiler-view-full">View Full History</button>
+            <button class="profiler-btn profiler-btn-danger" id="profiler-clear-history">Clear History</button>
+        </div>
+    `;
+    
+    // Close button handler
+    popup.querySelector(".profiler-popup-close").addEventListener("click", (e) => {
+        e.stopPropagation();
+        popup.style.display = "none";
+    });
+    
+    // View Full History button handler
+    popup.querySelector("#profiler-view-full").addEventListener("click", (e) => {
+        e.stopPropagation();
+        openProfilerModal();
+    });
+    
+    // Clear History button handler
+    popup.querySelector("#profiler-clear-history").addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (confirm("Are you sure you want to clear profiler history?")) {
+            try {
+                await fetch("/swissarmyknife/profiler/archive", { method: "POST" });
+                if (app.extensionManager?.toast?.add) {
+                    app.extensionManager.toast.add({
+                        severity: "success",
+                        summary: "History Cleared",
+                        detail: "Profiler history has been archived",
+                        life: 3000,
+                    });
+                }
+                // Refresh data
+                const button = document.getElementById("swissarmyknife-profiler-button");
+                if (button) {
+                    button._profilerData = null;
+                }
+            } catch (error) {
+                console.error("[SwissArmyKnife][Profiler] Error clearing history:", error);
+            }
+        }
+    });
+    
+    return popup;
+}
+
+/**
+ * Update profiler popup content with latest data
+ */
+function updateProfilerPopupContent(popup, data) {
+    debugLog("Updating profiler popup content", data);
+    
+    if (!data || !data.latest) {
+        return;
+    }
+    
+    const latest = data.latest;
+    
+    // Update gauge
+    const gaugeValue = popup.querySelector("#profiler-gauge-value");
+    const gaugeCircle = popup.querySelector(".profiler-gauge-circle-progress");
+    
+    if (latest.executionTime) {
+        gaugeValue.textContent = formatMs(latest.executionTime);
+        
+        // Calculate percentage (assume max 10s for full circle)
+        const maxTime = 10000;
+        const percent = Math.min((latest.executionTime / maxTime) * 100, 100);
+        const circumference = 326.73;
+        const offset = circumference - (percent / 100) * circumference;
+        gaugeCircle.style.strokeDashoffset = offset;
+    }
+    
+    // Update stats grid
+    const statsGrid = popup.querySelector("#profiler-stats-grid");
+    statsGrid.innerHTML = `
+        <div class="profiler-stat-card">
+            <div class="profiler-stat-label">⏱️ Total Time</div>
+            <div class="profiler-stat-value">${formatMs(latest.executionTime)}</div>
+        </div>
+        <div class="profiler-stat-card">
+            <div class="profiler-stat-label">🎮 VRAM Peak</div>
+            <div class="profiler-stat-value">${formatBytes(latest.totalVramPeak)}</div>
+        </div>
+        <div class="profiler-stat-card">
+            <div class="profiler-stat-label">💾 RAM Peak</div>
+            <div class="profiler-stat-value">${formatBytes(latest.totalRamPeak)}</div>
+        </div>
+        <div class="profiler-stat-card">
+            <div class="profiler-stat-label">✅ Cache Hits</div>
+            <div class="profiler-stat-value">${latest.cacheHits}</div>
+        </div>
+        <div class="profiler-stat-card">
+            <div class="profiler-stat-label">⚡ Executed</div>
+            <div class="profiler-stat-value">${latest.cacheMisses}</div>
+        </div>
+        <div class="profiler-stat-card">
+            <div class="profiler-stat-label">📦 Total Nodes</div>
+            <div class="profiler-stat-value">${latest.cacheHits + latest.cacheMisses}</div>
+        </div>
+    `;
+    
+    // Update node table (top 10 slowest)
+    const tbody = popup.querySelector("#profiler-node-table-body");
+    
+    if (latest.nodes && Object.keys(latest.nodes).length > 0) {
+        const nodeArray = Object.values(latest.nodes)
+            .filter(n => n.executionTime !== null)
+            .sort((a, b) => (b.executionTime || 0) - (a.executionTime || 0))
+            .slice(0, 10);
+        
+        if (nodeArray.length > 0) {
+            tbody.innerHTML = nodeArray.map(node => `
+                <tr>
+                    <td>${node.nodeType}</td>
+                    <td>${formatMs(node.executionTime)}</td>
+                    <td>${formatBytes(node.vramDelta)}</td>
+                    <td class="profiler-cache-icon">${node.cacheHit ? '🟢' : '⚡'}</td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1rem;">No executed nodes in latest workflow</td></tr>';
+        }
+    } else {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1rem;">No node data available</td></tr>';
+    }
+}
+
+/**
+ * Open profiler modal with full details
+ */
+function openProfilerModal() {
+    debugLog("Opening profiler modal");
+    
+    // Create modal if it doesn't exist
+    let modal = document.getElementById("swissarmyknife-profiler-modal");
+    if (!modal) {
+        modal = createProfilerModal();
+        document.body.appendChild(modal);
+    }
+    
+    modal.style.display = "block";
+    
+    // Fetch latest data
+    fetchProfilerDataForModal();
+}
+
+/**
+ * Create profiler modal
+ */
+function createProfilerModal() {
+    const modal = document.createElement("div");
+    modal.id = "swissarmyknife-profiler-modal";
+    
+    modal.innerHTML = `
+        <div class="profiler-modal-content">
+            <div class="profiler-modal-header">
+                <div class="profiler-modal-title">📊 Workflow Profiler</div>
+                <button class="profiler-modal-close">✕</button>
+            </div>
+            
+            <div class="profiler-tabs">
+                <button class="profiler-tab active" data-tab="latest">📊 Latest Run</button>
+                <button class="profiler-tab" data-tab="previous">📈 Previous Runs</button>
+                <button class="profiler-tab" data-tab="analytics">🔍 Node Analytics</button>
+                <button class="profiler-tab" data-tab="settings">⚙️ Settings</button>
+            </div>
+            
+            <div class="profiler-tab-content">
+                <div class="profiler-tab-panel active" id="profiler-tab-latest">
+                    <h3>Latest Workflow Execution</h3>
+                    <div id="profiler-latest-content">Loading...</div>
+                </div>
+                
+                <div class="profiler-tab-panel" id="profiler-tab-previous">
+                    <h3>Previous Workflow Runs</h3>
+                    <div id="profiler-previous-content">Loading...</div>
+                </div>
+                
+                <div class="profiler-tab-panel" id="profiler-tab-analytics">
+                    <h3>Node Performance Analytics</h3>
+                    <div id="profiler-analytics-content">Loading...</div>
+                </div>
+                
+                <div class="profiler-tab-panel" id="profiler-tab-settings">
+                    <h3>Profiler Settings</h3>
+                    <div id="profiler-settings-content">Loading...</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Close button
+    modal.querySelector(".profiler-modal-close").addEventListener("click", () => {
+        modal.style.display = "none";
+    });
+    
+    // Tab switching
+    modal.querySelectorAll(".profiler-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+            const tabId = tab.dataset.tab;
+            
+            // Update active tab
+            modal.querySelectorAll(".profiler-tab").forEach(t => t.classList.remove("active"));
+            modal.querySelectorAll(".profiler-tab-panel").forEach(p => p.classList.remove("active"));
+            
+            tab.classList.add("active");
+            modal.querySelector(`#profiler-tab-${tabId}`).classList.add("active");
+        });
+    });
+    
+    // Close on outside click
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+    
+    return modal;
+}
+
+/**
+ * Fetch profiler data for modal
+ */
+async function fetchProfilerDataForModal() {
+    try {
+        const response = await fetchWithRetry("/swissarmyknife/profiler/stats");
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            updateModalContent(result.data);
+        }
+    } catch (error) {
+        console.error("[SwissArmyKnife][Profiler] Error fetching modal data:", error);
+    }
+}
+
+/**
+ * Update modal content with profiler data
+ */
+function updateModalContent(data) {
+    // TODO: Implement full modal content updates for all tabs
+    // For now, show basic data
+    
+    const latestContent = document.getElementById("profiler-latest-content");
+    if (latestContent && data.latest) {
+        latestContent.innerHTML = `
+            <pre style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; overflow-x: auto; color: white;">
+${JSON.stringify(data.latest, null, 2)}
+            </pre>
+        `;
+    }
+    
+    const previousContent = document.getElementById("profiler-previous-content");
+    if (previousContent && data.history) {
+        previousContent.innerHTML = `
+            <p style="color: rgba(255,255,255,0.7);">Total workflows: ${data.history.length}</p>
+            <pre style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; overflow-x: auto; max-height: 400px; color: white;">
+${JSON.stringify(data.history.slice(0, 10), null, 2)}
+            </pre>
+        `;
+    }
+    
+    const analyticsContent = document.getElementById("profiler-analytics-content");
+    if (analyticsContent && data.node_averages) {
+        analyticsContent.innerHTML = `
+            <pre style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; overflow-x: auto; max-height: 400px; color: white;">
+${JSON.stringify(data.node_averages, null, 2)}
+            </pre>
+        `;
+    }
+    
+    const settingsContent = document.getElementById("profiler-settings-content");
+    if (settingsContent) {
+        settingsContent.innerHTML = `
+            <p style="color: rgba(255,255,255,0.7);">Profiler is currently enabled and running.</p>
+            <p style="color: rgba(255,255,255,0.5); font-size: 0.875rem;">Settings and archive management coming soon.</p>
+        `;
+    }
 }
 
 /**
@@ -502,7 +1310,7 @@ app.registerExtension({
         debugLog("Resource Monitor extension setup started");
         
         // Inject styles first
-        injectRestartButtonStyles();
+        injectResourceMonitorStyles();
         
         // Create button group DIV (plain DOM, no deprecated imports)
         const buttonGroup = document.createElement("div");
@@ -553,7 +1361,11 @@ app.registerExtension({
             console.error("[SwissArmyKnife][ResourceMonitor] Error fetching initial status:", error);
         }
         
-        // Add restart button at the end (after monitors)
+        // Add profiler button (between monitors and restart)
+        const profilerButton = createProfilerButton();
+        buttonGroup.appendChild(profilerButton);
+        
+        // Add restart button at the end (after profiler)
         const restartButton = createRestartButton();
         buttonGroup.appendChild(restartButton);
         
@@ -564,6 +1376,47 @@ app.registerExtension({
         // Listen for monitor updates via WebSocket
         api.addEventListener("swissarmyknife.monitor", (event) => {
             handleMonitorUpdate(event.detail);
+        });
+        
+        // Listen for profiler updates via WebSocket
+        api.addEventListener("swissarmyknife.profiler", (event) => {
+            debugLog("Profiler update received", event.detail);
+            
+            // Update cached data
+            if (profilerButton._profilerData) {
+                profilerButton._profilerData = event.detail;
+                
+                // Update popup if visible
+                const popup = profilerButton._profilerPopup;
+                if (popup && popup.style.display === "block") {
+                    updateProfilerPopupContent(popup, event.detail);
+                }
+            }
+        });
+        
+        // Listen for ComfyUI executed events to refresh profiler
+        api.addEventListener("executed", () => {
+            debugLog("Node executed, refreshing profiler data");
+            
+            // Refresh profiler data after a short delay to ensure backend has processed
+            setTimeout(async () => {
+                try {
+                    const response = await fetchWithRetry("/swissarmyknife/profiler/stats");
+                    const result = await response.json();
+                    
+                    if (result.success && result.data) {
+                        profilerButton._profilerData = result.data;
+                        
+                        // Update popup if visible
+                        const popup = profilerButton._profilerPopup;
+                        if (popup && popup.style.display === "block") {
+                            updateProfilerPopupContent(popup, result.data);
+                        }
+                    }
+                } catch (error) {
+                    debugLog("Error refreshing profiler data:", error);
+                }
+            }, 500);
         });
         
         debugLog("Resource Monitor extension setup completed");

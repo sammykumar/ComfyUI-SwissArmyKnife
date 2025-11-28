@@ -32,14 +32,14 @@ class GPUInfo:
     Collects GPU information (VRAM, utilization, temperature)
     Prefers pynvml for detailed metrics, falls back to torch
     """
-    
+
     def __init__(self):
         self.device_count = 0
         self._handles = []
-        
+
         if CUDA_AVAILABLE:
             self.device_count = torch.cuda.device_count()
-            
+
             # Initialize pynvml handles if available
             if PYNVML_AVAILABLE:
                 try:
@@ -50,11 +50,11 @@ class GPUInfo:
                 except Exception as e:
                     logger.error(f"Error initializing pynvml handles: {e}")
                     self._handles = []
-    
+
     def get_device_count(self) -> int:
         """Get number of available CUDA devices"""
         return self.device_count
-    
+
     def get_vram_info(self, device_id: int = 0) -> Optional[Dict[str, Any]]:
         """
         Get VRAM usage for specified device
@@ -62,13 +62,13 @@ class GPUInfo:
         """
         if not CUDA_AVAILABLE or device_id >= self.device_count:
             return None
-        
+
         try:
             # Try pynvml first for more accurate info
             if PYNVML_AVAILABLE and device_id < len(self._handles):
                 handle = self._handles[device_id]
                 mem_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-                
+
                 return {
                     "total": mem_info.total,
                     "used": mem_info.used,
@@ -78,13 +78,13 @@ class GPUInfo:
                     "used_gb": mem_info.used / (1024**3),
                     "free_gb": mem_info.free / (1024**3)
                 }
-            
+
             # Fallback to torch
             if TORCH_AVAILABLE:
                 with torch.cuda.device(device_id):
                     free_bytes, total_bytes = torch.cuda.mem_get_info(device_id)
                     used_bytes = total_bytes - free_bytes
-                    
+
                     return {
                         "total": total_bytes,
                         "used": used_bytes,
@@ -94,12 +94,12 @@ class GPUInfo:
                         "used_gb": used_bytes / (1024**3),
                         "free_gb": free_bytes / (1024**3)
                     }
-        
+
         except Exception as e:
             logger.error(f"Error getting VRAM info for device {device_id}: {e}")
-        
+
         return None
-    
+
     def get_gpu_utilization(self, device_id: int = 0) -> Optional[float]:
         """
         Get GPU utilization percentage (0-100)
@@ -107,7 +107,7 @@ class GPUInfo:
         """
         if not PYNVML_AVAILABLE or device_id >= len(self._handles):
             return None
-        
+
         try:
             handle = self._handles[device_id]
             util = pynvml.nvmlDeviceGetUtilizationRates(handle)
@@ -115,7 +115,7 @@ class GPUInfo:
         except Exception as e:
             logger.error(f"Error getting GPU utilization for device {device_id}: {e}")
             return None
-    
+
     def get_gpu_temperature(self, device_id: int = 0) -> Optional[float]:
         """
         Get GPU temperature in Celsius
@@ -123,7 +123,7 @@ class GPUInfo:
         """
         if not PYNVML_AVAILABLE or device_id >= len(self._handles):
             return None
-        
+
         try:
             handle = self._handles[device_id]
             temp = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
@@ -131,12 +131,12 @@ class GPUInfo:
         except Exception as e:
             logger.error(f"Error getting GPU temperature for device {device_id}: {e}")
             return None
-    
+
     def get_gpu_name(self, device_id: int = 0) -> Optional[str]:
         """Get GPU device name"""
         if not CUDA_AVAILABLE or device_id >= self.device_count:
             return None
-        
+
         try:
             # Try pynvml first
             if PYNVML_AVAILABLE and device_id < len(self._handles):
@@ -144,16 +144,16 @@ class GPUInfo:
                 name = pynvml.nvmlDeviceGetName(handle)
                 # Decode if bytes
                 return name.decode('utf-8') if isinstance(name, bytes) else name
-            
+
             # Fallback to torch
             if TORCH_AVAILABLE:
                 return torch.cuda.get_device_name(device_id)
-        
+
         except Exception as e:
             logger.error(f"Error getting GPU name for device {device_id}: {e}")
-        
+
         return f"GPU {device_id}"
-    
+
     def get_gpu_power_usage(self, device_id: int = 0) -> Optional[Dict[str, float]]:
         """
         Get GPU power usage in watts
@@ -162,12 +162,12 @@ class GPUInfo:
         """
         if not PYNVML_AVAILABLE or device_id >= len(self._handles):
             return None
-        
+
         try:
             handle = self._handles[device_id]
             power_mw = pynvml.nvmlDeviceGetPowerUsage(handle)  # milliwatts
             power_limit_mw = pynvml.nvmlDeviceGetPowerManagementLimit(handle)
-            
+
             return {
                 "current": power_mw / 1000.0,  # Convert to watts
                 "limit": power_limit_mw / 1000.0,
@@ -176,7 +176,7 @@ class GPUInfo:
         except Exception as e:
             logger.debug(f"Error getting GPU power usage for device {device_id}: {e}")
             return None
-    
+
     def get_device_info(self, device_id: int = 0) -> Dict[str, Any]:
         """
         Get all information for a specific GPU device
@@ -186,28 +186,28 @@ class GPUInfo:
                 "available": False,
                 "device_id": device_id
             }
-        
+
         info = {
             "available": True,
             "device_id": device_id,
             "name": self.get_gpu_name(device_id),
             "vram": self.get_vram_info(device_id)
         }
-        
+
         # Add pynvml-only metrics if available
         if PYNVML_AVAILABLE:
             info["utilization"] = self.get_gpu_utilization(device_id)
             info["temperature"] = self.get_gpu_temperature(device_id)
             info["power"] = self.get_gpu_power_usage(device_id)
-        
+
         return info
-    
+
     def get_all_devices_info(self) -> List[Dict[str, Any]]:
         """
         Get information for all GPU devices
         """
         return [self.get_device_info(i) for i in range(self.device_count)]
-    
+
     def get_full_status(self) -> Dict[str, Any]:
         """
         Get complete GPU status for all devices
@@ -219,7 +219,7 @@ class GPUInfo:
             "device_count": self.device_count,
             "devices": self.get_all_devices_info()
         }
-    
+
     def clear_vram_cache(self, device_id: Optional[int] = None):
         """
         Clear VRAM cache for specified device (or all devices)
@@ -227,7 +227,7 @@ class GPUInfo:
         if not TORCH_AVAILABLE or not CUDA_AVAILABLE:
             logger.warning("Cannot clear VRAM - CUDA not available")
             return
-        
+
         try:
             if device_id is not None and device_id < self.device_count:
                 with torch.cuda.device(device_id):
@@ -239,10 +239,10 @@ class GPUInfo:
                     with torch.cuda.device(i):
                         torch.cuda.empty_cache()
                 logger.info(f"Cleared VRAM cache for all {self.device_count} devices")
-        
+
         except Exception as e:
             logger.error(f"Error clearing VRAM cache: {e}")
-    
+
     def __del__(self):
         """Cleanup pynvml on destruction"""
         if PYNVML_AVAILABLE:

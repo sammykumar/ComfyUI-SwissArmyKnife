@@ -31,7 +31,7 @@ def register_profiler_routes(app):
         app: The aiohttp or PromptServer application instance
     """
     from aiohttp import web
-    
+
     @app.routes.get("/swissarmyknife/profiler/stats")
     async def get_profiler_stats(request):
         """
@@ -45,20 +45,20 @@ def register_profiler_routes(app):
                     "success": False,
                     "error": "Profiler not initialized"
                 }, status=503)
-            
+
             stats = manager.get_stats()
             return web.json_response({
                 "success": True,
                 "data": stats
             })
-        
+
         except Exception as e:
             logger.error(f"Error getting profiler stats: {e}", exc_info=True)
             return web.json_response({
                 "success": False,
                 "error": str(e)
             }, status=500)
-    
+
     @app.routes.get("/swissarmyknife/profiler/archives")
     async def list_archives(request):
         """
@@ -72,20 +72,20 @@ def register_profiler_routes(app):
                     "success": False,
                     "error": "Profiler not initialized"
                 }, status=503)
-            
+
             archives = manager.list_archives()
             return web.json_response({
                 "success": True,
                 "data": archives
             })
-        
+
         except Exception as e:
             logger.error(f"Error listing archives: {e}", exc_info=True)
             return web.json_response({
                 "success": False,
                 "error": str(e)
             }, status=500)
-    
+
     @app.routes.post("/swissarmyknife/profiler/archive")
     async def create_archive(request):
         """
@@ -99,20 +99,20 @@ def register_profiler_routes(app):
                     "success": False,
                     "error": "Profiler not initialized"
                 }, status=503)
-            
+
             filename = manager.create_archive()
             return web.json_response({
                 "success": True,
                 "data": {"filename": filename}
             })
-        
+
         except Exception as e:
             logger.error(f"Error creating archive: {e}", exc_info=True)
             return web.json_response({
                 "success": False,
                 "error": str(e)
             }, status=500)
-    
+
     @app.routes.post("/swissarmyknife/profiler/archive/{filename}/load")
     async def load_archive(request):
         """
@@ -121,20 +121,20 @@ def register_profiler_routes(app):
         """
         try:
             filename = request.match_info['filename']
-            
+
             manager = get_profiler_manager()
             if not manager:
                 return web.json_response({
                     "success": False,
                     "error": "Profiler not initialized"
                 }, status=503)
-            
+
             manager.load_archive(filename)
             return web.json_response({
                 "success": True,
                 "data": {"message": f"Loaded archive {filename}"}
             })
-        
+
         except FileNotFoundError as e:
             return web.json_response({
                 "success": False,
@@ -146,7 +146,7 @@ def register_profiler_routes(app):
                 "success": False,
                 "error": str(e)
             }, status=500)
-    
+
     @app.routes.delete("/swissarmyknife/profiler/archive/{filename}")
     async def delete_archive(request):
         """
@@ -155,20 +155,20 @@ def register_profiler_routes(app):
         """
         try:
             filename = request.match_info['filename']
-            
+
             manager = get_profiler_manager()
             if not manager:
                 return web.json_response({
                     "success": False,
                     "error": "Profiler not initialized"
                 }, status=503)
-            
+
             manager.delete_archive(filename)
             return web.json_response({
                 "success": True,
                 "data": {"message": f"Deleted archive {filename}"}
             })
-        
+
         except FileNotFoundError as e:
             return web.json_response({
                 "success": False,
@@ -180,5 +180,5 @@ def register_profiler_routes(app):
                 "success": False,
                 "error": str(e)
             }, status=500)
-    
+
     logger.info("Profiler API routes registered")
