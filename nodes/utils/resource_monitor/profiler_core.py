@@ -265,9 +265,13 @@ class ProfilerManager:
         if self.torch_available:
             try:
                 import torch
-                node_profile.vram_after = torch.cuda.memory_allocated()
-                node_profile.vram_peak = torch.cuda.max_memory_allocated() - (node_profile.vram_before or 0)
+                if torch.cuda.is_available():
+                    node_profile.vram_after = torch.cuda.memory_allocated()
+                    node_profile.vram_peak = torch.cuda.max_memory_allocated()
+                    vram_delta = node_profile.vram_after - (node_profile.vram_before or 0)
+                    print(f"[SwissArmyKnife][Profiler] Node {node_profile.node_type} VRAM: before={node_profile.vram_before}, after={node_profile.vram_after}, peak={node_profile.vram_peak}, delta={vram_delta}")
             except Exception as e:
+                print(f"[SwissArmyKnife][Profiler] VRAM tracking error: {e}")
                 logger.debug(f"VRAM tracking error: {e}")
 
         # Track RAM
