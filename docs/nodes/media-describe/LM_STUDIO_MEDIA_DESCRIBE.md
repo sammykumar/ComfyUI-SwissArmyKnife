@@ -1,13 +1,13 @@
-# LLM Studio Video Describe Node
+# LM Studio Video Describe Node
 
 **Node Type**: `LLMStudioVideoDescribe`  
-**Display Name**: "LLM Studio Video Describe"  
+**Display Name**: "LM Studio Video Describe"  
 **Category**: Swiss Army Knife 🔪/Media Caption  
 **Created**: October 14, 2025
 
 ## Overview
 
-The LLM Studio Video Describe node enables video captioning using LM Studio's OpenAI-compatible API with vision-language models like Qwen3-VL. It extracts frames from videos and generates intelligent captions using local models.
+The LM Studio Video Describe node enables video captioning using LM Studio's OpenAI-compatible API with vision-language models like Qwen3-VL. It extracts frames from videos and generates intelligent captions using local models.
 
 ## Key Features
 
@@ -140,7 +140,7 @@ The temperature is reduced by 40% (`temperature * 0.6`) for more consistent outp
 ### Basic Setup
 
 1. Start LM Studio and load a vision model (e.g., `qwen/qwen3-vl-30b`)
-2. Add LLM Studio Video Describe node to workflow
+2. Add LM Studio Video Describe node to workflow
 3. Configure inputs:
     - `base_url`: `http://192.168.50.41:1234` (LM Studio server)
     - `model_name`: Match the model loaded in LM Studio
@@ -328,7 +328,7 @@ Files are automatically cleaned up after processing.
 
 ### October 14, 2025 - Initial Release
 
-- Created LLM Studio Video Describe node
+- Created LM Studio Video Describe node
 - Implemented OpenAI client integration
 - Added comprehensive documentation
 - Registered node in ComfyUI system

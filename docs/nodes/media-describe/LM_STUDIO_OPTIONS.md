@@ -1,13 +1,13 @@
-# LLM Studio Options Node
+# LM Studio Options Node
 
 **Node Type**: `LLMStudioOptions`  
-**Display Name**: "LLM Studio - Options"  
+**Display Name**: "LM Studio - Options"  
 **Category**: Swiss Army Knife 🔪/Media Caption  
 **Created**: October 15, 2025
 
 ## Overview
 
-The **LLM Studio Options** node provides configuration settings for using LM Studio with vision-language models (like Qwen3-VL) for media analysis. This node outputs an options object that can be connected to the `MediaDescribe` node to use local LLM models instead of Gemini API.
+The **LM Studio Options** node provides configuration settings for using LM Studio with vision-language models (like Qwen3-VL) for media analysis. This node outputs an options object that can be connected to the `MediaDescribe` node to use local LLM models instead of Gemini API.
 
 ## Key Features
 
@@ -47,14 +47,14 @@ Describe this image in detail, focusing on the subject, setting, and mood.
 
 1. **Configuration Storage**: The node packages all settings into a dictionary with the identifier `"provider": "llm_studio"`
 2. **Connection**: Connect the output to the `MediaDescribe` node's `llm_options` input
-3. **Processing**: MediaDescribe detects the provider and routes processing to LLM Studio instead of Gemini
+3. **Processing**: MediaDescribe detects the provider and routes processing to LM Studio instead of Gemini
 
 ## Usage Example
 
 ### Basic Setup
 
 1. Start LM Studio and load a vision model (e.g., `qwen/qwen3-vl-30b`)
-2. Add LLM Studio - Options node to workflow
+2. Add LM Studio - Options node to workflow
 3. Configure inputs:
     - `base_url`: `http://192.168.50.41:1234` (LM Studio server)
     - `model_name`: Match the model loaded in LM Studio
@@ -87,7 +87,7 @@ For video analysis:
 
 ## Comparison with Gemini Options
 
-| Feature               | LLM Studio Options         | Gemini Options                |
+| Feature               | LM Studio Options         | Gemini Options                |
 | --------------------- | -------------------------- | ----------------------------- |
 | **API Key**           | Not required (local)       | Required (GEMINI_API_KEY)     |
 | **Processing**        | Local GPU/CPU              | Cloud-based API               |
@@ -189,16 +189,16 @@ If LM Studio is on a different machine:
 
 ## Integration with MediaDescribe
 
-The LLM Studio Options node works seamlessly with MediaDescribe:
+The LM Studio Options node works seamlessly with MediaDescribe:
 
-1. **Create Options**: LLM Studio - Options node
+1. **Create Options**: LM Studio - Options node
 2. **Connect**: Output → MediaDescribe `llm_options` input
-3. **Process**: MediaDescribe automatically detects LLM Studio provider
+3. **Process**: MediaDescribe automatically detects LM Studio provider
 4. **Output**: Receives simplified caption-based output
 
 ### Output Differences
 
-**LLM Studio Output:**
+**LM Studio Output:**
 - Single combined caption
 - Simple JSON structure
 - Less structured than Gemini output
@@ -225,15 +225,15 @@ Planned improvements:
 
 - **MediaDescribe**: Main node that uses these options
 - **Gemini Util - Options**: Alternative cloud-based option provider
-- **LLM Studio Video Describe**: Direct video description (standalone)
-- **LLM Studio Picture Describe**: Direct image description (standalone)
+- **LM Studio Video Describe**: Direct video description (standalone)
+- **LM Studio Picture Describe**: Direct image description (standalone)
 - **Media Describe - Overrides**: Override specific output fields
 
 ## Changelog
 
 ### October 15, 2025 - Initial Release
 
-- Created LLM Studio Options node
+- Created LM Studio Options node
 - Supports image and video processing configuration
 - Integrates with MediaDescribe node via `llm_options` input
 - Default settings optimized for Qwen3-VL models

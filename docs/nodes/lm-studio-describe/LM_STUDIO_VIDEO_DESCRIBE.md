@@ -1,4 +1,4 @@
-# LLM Studio Video Describe Node
+# LM Studio Video Describe Node
 
 A ComfyUI custom node for describing videos using LM Studio with vision-language models like Qwen3-VL.
 
@@ -212,9 +212,9 @@ the frame, with noticeable changes in posture and arm positioning.
 
 ## Related Nodes
 
-- **LLM Studio Picture Describe**: For single image analysis
-- **Media Describe**: Unified node with LLM Studio and Gemini support
-- **LLM Studio - Options**: Configuration node for Media Describe
+- **LM Studio Picture Describe**: For single image analysis
+- **Media Describe**: Unified node with LM Studio and Gemini support
+- **LM Studio - Options**: Configuration node for Media Describe
 
 ## Code Location
 

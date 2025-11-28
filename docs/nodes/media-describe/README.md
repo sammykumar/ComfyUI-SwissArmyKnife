@@ -5,19 +5,19 @@ AI-powered media description using Google's Gemini API and local vLLM/LM Studio 
 ## 📄 Documentation
 
 - **[MEDIA_DESCRIBE.md](MEDIA_DESCRIBE.md)** - Complete consolidated documentation for Gemini-based Media Describe
-- **[LLM_STUDIO_MEDIA_DESCRIBE.md](LLM_STUDIO_MEDIA_DESCRIBE.md)** - Complete documentation for LLM Studio Media Describe (local LM Studio)
-- **[LLM_STUDIO_QUICK_REFERENCE.md](LLM_STUDIO_QUICK_REFERENCE.md)** - Quick reference guide for LLM Studio node
-- **[LLM_STUDIO_OPTIONS.md](LLM_STUDIO_OPTIONS.md)** - LLM Studio Options node configuration guide
+- **[LM_STUDIO_MEDIA_DESCRIBE.md](LM_STUDIO_MEDIA_DESCRIBE.md)** - Complete documentation for LM Studio Media Describe (local LM Studio)
+- **[LM_STUDIO_QUICK_REFERENCE.md](LM_STUDIO_QUICK_REFERENCE.md)** - Quick reference guide for LM Studio node
+- **[LM_STUDIO_OPTIONS.md](LM_STUDIO_OPTIONS.md)** - LM Studio Options node configuration guide
 - **[VISUAL_STYLE_UPDATE.md](VISUAL_STYLE_UPDATE.md)** - ✨ **NEW**: Combined "Cinematic/Aesthetic" and "Stylization/Tone" into unified "Visual Style" (Dec 2024)
 
 ### Core Nodes
 
-- **MediaDescribe** - Main node for analyzing media with Gemini AI (cloud-based) or LLM Studio (local)
+- **MediaDescribe** - Main node for analyzing media with Gemini AI (cloud-based) or LM Studio (local)
 - **LLMStudioVideoDescribe** - Video analysis with local LM Studio (OpenAI-compatible API)
 - **[Media Describe - Overrides](MEDIA_DESCRIBE_OVERRIDES_NODE.md)** - Paragraph override configuration node
 - **[Media Describe - Prompt Breakdown](PROMPT_BREAKDOWN_NODE.md)** - Display node for formatted paragraph breakdown
 - **Gemini Util - Options** - Gemini API configuration node
-- **LLM Studio - Options** - LLM Studio configuration node (NEW)
+- **LM Studio - Options** - LM Studio configuration node (NEW)
 
 ### Core Implementation
 
@@ -69,7 +69,7 @@ Main analysis node that processes images/videos with Gemini AI.
 
 - Media source configuration (upload, random, reddit)
 - Media type (image/video)
-- LLM options (from Gemini Util - Options or LLM Studio - Options node)
+- LLM options (from Gemini Util - Options or LM Studio - Options node)
 - **Overrides** (optional, from Media Describe - Overrides node)
 
 **Outputs (8 total):**
@@ -148,11 +148,11 @@ Configuration node for paragraph-level customization.
 └─────────────────────────┘
 ```
 
-### Basic Workflow (LLM Studio)
+### Basic Workflow (LM Studio)
 
 ```
 ┌─────────────────────────┐
-│ LLM Studio - Options    │
+│ LM Studio - Options    │
 └─────────────────────────┘
             │ (llm_options)
             ▼
@@ -174,7 +174,7 @@ Configuration node for paragraph-level customization.
 ┌─────────────────────────┐   │
 │ Gemini Util - Options   │   │
 │ OR                      │   │
-│ LLM Studio - Options    │   │
+│ LM Studio - Options    │   │
 └─────────────────────────┘   │
             │ (llm_options)    │
             ▼                  │

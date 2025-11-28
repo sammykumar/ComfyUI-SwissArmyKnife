@@ -6,16 +6,16 @@
 
 ## Overview
 
-Enhanced the `MediaDescribe` node to support multiple LLM providers (Gemini API and LLM Studio) through a unified `llm_options` input parameter. This allows users to choose between cloud-based Gemini analysis or local LM Studio processing with vision models.
+Enhanced the `MediaDescribe` node to support multiple LLM providers (Gemini API and LM Studio) through a unified `llm_options` input parameter. This allows users to choose between cloud-based Gemini analysis or local LM Studio processing with vision models.
 
 ## Changes Made
 
-### 1. Created LLM Studio Options Node
+### 1. Created LM Studio Options Node
 
 **File**: `nodes/media_describe/llm_studio_options.py` (NEW)
 
 - **Node Type**: `LLMStudioOptions`
-- **Display Name**: "LLM Studio - Options"
+- **Display Name**: "LM Studio - Options"
 - **Category**: Swiss Army Knife 🔪/Media Caption
 
 **Inputs**:
@@ -45,7 +45,7 @@ Enhanced the `MediaDescribe` node to support multiple LLM providers (Gemini API 
 
 #### New Method: `_process_with_llm_studio()`
 
-Added comprehensive LLM Studio processing method (lines 1782-2003):
+Added comprehensive LM Studio processing method (lines 1782-2003):
 
 **Features**:
 - Connects to local LM Studio via OpenAI-compatible API
@@ -104,7 +104,7 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     ...
-    "LLMStudioOptions": "LLM Studio - Options",
+    "LLMStudioOptions": "LM Studio - Options",
     ...
 }
 ```
@@ -115,7 +115,7 @@ Created comprehensive documentation:
 
 #### New Files
 
-1. **`docs/nodes/media-describe/LLM_STUDIO_OPTIONS.md`** (9,111 bytes)
+1. **`docs/nodes/media-describe/LM_STUDIO_OPTIONS.md`** (9,111 bytes)
    - Complete node documentation
    - Input/output specifications
    - Usage examples and workflows
@@ -132,7 +132,7 @@ Created comprehensive documentation:
    - Configuration examples
 
 3. **Updated `docs/nodes/media-describe/README.md`**
-   - Added LLM Studio Options to core nodes list
+   - Added LM Studio Options to core nodes list
    - Updated workflow diagrams
    - Added reference to new documentation
 
@@ -165,7 +165,7 @@ Created and ran comprehensive syntax validation (`test_syntax_validation.py`):
 
 Automatic detection based on options dictionary structure:
 - **Gemini**: No explicit provider field (backward compatibility)
-- **LLM Studio**: `"provider": "llm_studio"` in options
+- **LM Studio**: `"provider": "llm_studio"` in options
 
 ### Output Compatibility
 
@@ -181,7 +181,7 @@ Both providers return the same output structure:
 - Optimized for text-to-image workflows
 - Designed for FLUX/SDXL prompts
 
-**LLM Studio** (Caption-based):
+**LM Studio** (Caption-based):
 - Narrative description in subject field
 - Other fields empty or minimal
 - Better for general description
@@ -195,7 +195,7 @@ Both providers return the same output structure:
 - ✅ Require consistent production results
 - ✅ Working with image editing models
 
-### Choose LLM Studio When:
+### Choose LM Studio When:
 - ✅ Privacy is a concern (local processing)
 - ✅ Want to avoid API costs
 - ✅ Have GPU for local inference
@@ -224,16 +224,16 @@ Both providers return the same output structure:
 ## Files Modified
 
 ### Created (1 file)
-- `nodes/media_describe/llm_studio_options.py` - New LLM Studio Options node
+- `nodes/media_describe/llm_studio_options.py` - New LM Studio Options node
 
 ### Modified (4 files)
 - `nodes/media_describe/__init__.py` - Added LLMStudioOptions export
-- `nodes/media_describe/media_describe.py` - Renamed parameter, added LLM Studio processing
+- `nodes/media_describe/media_describe.py` - Renamed parameter, added LM Studio processing
 - `nodes/nodes.py` - Added LLMStudioOptions registration
 - `docs/nodes/media-describe/README.md` - Updated documentation index
 
 ### Documentation (2 files)
-- `docs/nodes/media-describe/LLM_STUDIO_OPTIONS.md` - New comprehensive guide
+- `docs/nodes/media-describe/LM_STUDIO_OPTIONS.md` - New comprehensive guide
 - `docs/nodes/media-describe/MEDIA_DESCRIBE.md` - Added LLM Options section
 
 ## Testing Recommendations
@@ -246,13 +246,13 @@ When testing in a full ComfyUI environment with all dependencies:
 3. Provide test media
 4. Verify processing works as before
 
-### Test 2: LLM Studio Options (New Feature)
+### Test 2: LM Studio Options (New Feature)
 1. Start LM Studio with Qwen3-VL or similar vision model
 2. Add MediaDescribe node
-3. Connect LLM Studio - Options node to `llm_options` input
+3. Connect LM Studio - Options node to `llm_options` input
 4. Configure base URL and model name
 5. Provide test media (image or video)
-6. Verify LLM Studio processing works
+6. Verify LM Studio processing works
 
 ### Test 3: Mixed Workflow
 1. Create workflow with both option types
@@ -275,7 +275,7 @@ Potential improvements identified:
 
 ✅ **Implementation Complete and Validated**
 
-The MediaDescribe node now supports both cloud-based (Gemini) and local (LLM Studio) LLM providers through a unified `llm_options` interface. The implementation:
+The MediaDescribe node now supports both cloud-based (Gemini) and local (LM Studio) LLM providers through a unified `llm_options` interface. The implementation:
 
 - ✅ Maintains full backward compatibility
 - ✅ Provides clear documentation

@@ -1,11 +1,11 @@
-# LLM Studio Video Describe - Quick Reference
+# LM Studio Video Describe - Quick Reference
 
-**Quick access guide for the LLM Studio Video Describe node**
+**Quick access guide for the LM Studio Video Describe node**
 
 ## Basic Usage
 
 ```python
-# Node: LLM Studio Video Describe
+# Node: LM Studio Video Describe
 # Category: Swiss Army Knife 🔪/Media Caption
 
 Inputs:
@@ -70,7 +70,7 @@ Vision-language models that work with this node:
 
 ## Key Features
 
-| Feature    | LLM Studio              |
+| Feature    | LM Studio              |
 | ---------- | ----------------------- |
 | API        | OpenAI-compatible       |
 | Port       | 1234 (default)          |
@@ -86,7 +86,7 @@ Vision-language models that work with this node:
 
 ## Full Documentation
 
-See [LLM_STUDIO_MEDIA_DESCRIBE.md](./LLM_STUDIO_MEDIA_DESCRIBE.md) for complete documentation.
+See [LM_STUDIO_MEDIA_DESCRIBE.md](./LM_STUDIO_MEDIA_DESCRIBE.md) for complete documentation.
 
 ## Related Nodes
 

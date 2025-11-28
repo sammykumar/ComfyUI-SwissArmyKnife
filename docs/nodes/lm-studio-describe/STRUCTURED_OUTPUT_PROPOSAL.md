@@ -2,7 +2,7 @@
 
 ## Overview
 
-LM Studio supports structured output via JSON Schema, which is more reliable than prompting for JSON in natural language. This proposal outlines how to implement structured output for the LLM Studio nodes.
+LM Studio supports structured output via JSON Schema, which is more reliable than prompting for JSON in natural language. This proposal outlines how to implement structured output for the LM Studio nodes.
 
 **Reference**: https://lmstudio.ai/docs/developer/openai-compat/structured-output
 

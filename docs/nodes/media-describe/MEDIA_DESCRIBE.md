@@ -5763,7 +5763,7 @@ The system uses dynamic paragraph numbering based on enabled options:
 
 ## Overview
 
-The `MediaDescribe` node has been enhanced to support multiple LLM providers through the renamed `llm_options` input. This allows you to use either **Gemini API** (cloud-based) or **LLM Studio** (local) for media analysis.
+The `MediaDescribe` node has been enhanced to support multiple LLM providers through the renamed `llm_options` input. This allows you to use either **Gemini API** (cloud-based) or **LM Studio** (local) for media analysis.
 
 ## Key Changes
 
@@ -5792,20 +5792,20 @@ The `MediaDescribe` node has been enhanced to support multiple LLM providers thr
 
 **Documentation**: See existing Gemini Options documentation
 
-### 2. LLM Studio (Local)
+### 2. LM Studio (Local)
 
 **Use Case**: Privacy-focused local processing with vision models
 
 **Setup**:
 
 1. Start LM Studio with a vision model (e.g., Qwen3-VL)
-2. Add "LLM Studio - Options" node
+2. Add "LM Studio - Options" node
 3. Configure base URL and model name
 4. Connect to MediaDescribe `llm_options` input
 
 **Output**: Simple caption-based description
 
-**Documentation**: See [LLM_STUDIO_OPTIONS.md](LLM_STUDIO_OPTIONS.md)
+**Documentation**: See [LM_STUDIO_OPTIONS.md](LM_STUDIO_OPTIONS.md)
 
 ## How Provider Detection Works
 
@@ -5816,7 +5816,7 @@ The MediaDescribe node automatically detects which provider to use based on the 
 provider = llm_options.get("provider", "gemini")  # Default to Gemini
 
 if provider == "llm_studio":
-    # Use LLM Studio processing
+    # Use LM Studio processing
     return self._process_with_llm_studio(...)
 else:
     # Use Gemini processing (default)
@@ -5826,14 +5826,14 @@ else:
 **Provider Identifiers**:
 
 -   Gemini Options: No explicit provider field (defaults to "gemini")
--   LLM Studio Options: `"provider": "llm_studio"`
+-   LM Studio Options: `"provider": "llm_studio"`
 
-## LLM Studio Processing Flow
+## LM Studio Processing Flow
 
 ### Image Processing
 
 1. **Load Image**: Read image file and encode to base64
-2. **Call LLM Studio**: Send to local vision model with caption prompt
+2. **Call LM Studio**: Send to local vision model with caption prompt
 3. **Generate Caption**: Receive natural language description
 4. **Format Output**: Create simplified JSON structure
 5. **Apply Overrides**: Merge any user-specified overrides
@@ -5842,7 +5842,7 @@ else:
 ### Video Processing
 
 1. **Extract Frames**: Sample frames based on `fps_sample` and `max_duration`
-2. **Caption Frames**: Send each frame to LLM Studio vision model
+2. **Caption Frames**: Send each frame to LM Studio vision model
 3. **Combine Captions**: Use LLM to create coherent video description
 4. **Format Output**: Create simplified JSON structure
 5. **Apply Overrides**: Merge any user-specified overrides
@@ -5888,7 +5888,7 @@ This mirrors the UX pattern already used by the dedicated `LLMStudioVideoDescrib
 }
 ```
 
-### LLM Studio Output (Caption-based)
+### LM Studio Output (Caption-based)
 
 ```json
 {
@@ -5904,7 +5904,7 @@ This mirrors the UX pattern already used by the dedicated `LLMStudioVideoDescrib
 **Key Differences**:
 
 -   **Gemini**: Detailed structured fields, optimized for text-to-image prompts
--   **LLM Studio**: Single cohesive caption, better for general description
+-   **LM Studio**: Single cohesive caption, better for general description
 
 ## Use Case Recommendations
 
@@ -5916,7 +5916,7 @@ This mirrors the UX pattern already used by the dedicated `LLMStudioVideoDescrib
 -   ✅ Working with image editing models (FLUX Redux, Qwen Image Edit)
 -   ✅ Need consistent, production-quality results
 
-### Choose LLM Studio When:
+### Choose LM Studio When:
 
 -   ✅ Privacy is a concern (local processing)
 -   ✅ Want to avoid API costs
@@ -5935,19 +5935,19 @@ This mirrors the UX pattern already used by the dedicated `LLMStudioVideoDescrib
 2. **Connection Type**: GEMINI_OPTIONS still accepted
 3. **Processing**: Automatic fallback to Gemini mode
 
-### Adding LLM Studio Support
+### Adding LM Studio Support
 
-To switch an existing workflow to LLM Studio:
+To switch an existing workflow to LM Studio:
 
 1. **Remove**: Gemini Util - Options node
-2. **Add**: LLM Studio - Options node
+2. **Add**: LM Studio - Options node
 3. **Connect**: Same connection point (`llm_options` input)
 4. **Configure**: Set base URL and model name
-5. **Run**: MediaDescribe automatically detects and uses LLM Studio
+5. **Run**: MediaDescribe automatically detects and uses LM Studio
 
 ## Error Handling
 
-### LLM Studio Connection Errors
+### LM Studio Connection Errors
 
 **Error**: "Failed to connect to LM Studio at {url}"
 
@@ -5977,7 +5977,7 @@ To switch an existing workflow to LLM Studio:
 -   **Cost**: Pay per API call
 -   **Throughput**: Rate limited by API quota
 
-### LLM Studio
+### LM Studio
 
 -   **Latency**: Hardware-dependent (GPU: 1-3 seconds, CPU: 10-30 seconds)
 -   **Cost**: Free (local processing)
@@ -5995,11 +5995,11 @@ To switch an existing workflow to LLM Studio:
 
 **Result**: Structured prompt optimized for FLUX/SDXL
 
-### Example 2: LLM Studio for Privacy
+### Example 2: LM Studio for Privacy
 
 ```
 [Media Selection] → media_path
-[LLM Studio Options] → llm_options → [MediaDescribe] → outputs → [Control Panel]
+[LM Studio Options] → llm_options → [MediaDescribe] → outputs → [Control Panel]
 [Overrides] → overrides
 ```
 
@@ -6011,7 +6011,7 @@ Use different providers for different stages:
 
 ```
 # Analysis stage (privacy-focused)
-[LLM Studio Options] → llm_options → [MediaDescribe] → caption
+[LM Studio Options] → llm_options → [MediaDescribe] → caption
 
 # Generation stage (quality-focused)
 [Gemini Options] → llm_options → [MediaDescribe] → structured_prompt
@@ -6029,7 +6029,7 @@ Planned improvements:
 
 ## Related Documentation
 
--   [LLM Studio Options Node](LLM_STUDIO_OPTIONS.md) - Detailed LLM Studio configuration
+-   [LM Studio Options Node](LM_STUDIO_OPTIONS.md) - Detailed LM Studio configuration
 -   [Gemini Options](GEMINI_OPTIONS_SIMPLIFICATION.md) - Gemini configuration details
 -   [Media Describe Overrides](MEDIA_DESCRIBE.md#media-describe---overrides-node-documentation) - Override specific fields
 
@@ -6176,7 +6176,7 @@ When testing this enhancement:
 This change affects:
 
 -   Video processing in Gemini mode (`_process_video`)
--   Video processing in LLM Studio mode (uses same prompt structure)
+-   Video processing in LM Studio mode (uses same prompt structure)
 -   JSON field descriptions in system prompts
 -   Control Panel display of movement field
 
@@ -6302,7 +6302,7 @@ shows recessed lighting fixtures creating even illumination with minimal shadows
 This change affects:
 
 -   Video processing in Gemini mode (`_process_video`)
--   Video processing in LLM Studio mode (uses same prompt structure)
+-   Video processing in LM Studio mode (uses same prompt structure)
 -   JSON field descriptions in system prompts
 -   Control Panel display of scene field
 
@@ -6326,5 +6326,5 @@ When testing this enhancement:
 -   Implemented automatic provider detection
 -   Added `_process_with_llm_studio()` method for local processing
 -   Maintained full backward compatibility
--   Created LLM Studio Options node
+-   Created LM Studio Options node
 -   Updated documentation with provider comparison

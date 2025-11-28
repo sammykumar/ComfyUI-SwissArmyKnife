@@ -1,10 +1,10 @@
-# LLM Studio Prompt Logging
+# LM Studio Prompt Logging
 
-Debug logging for LLM Studio API calls in the Media Describe node.
+Debug logging for LM Studio API calls in the Media Describe node.
 
 ## Overview
 
-When using LLM Studio for media description, it's crucial to verify that prompts are being sent correctly. The verbose logging system provides detailed insight into:
+When using LM Studio for media description, it's crucial to verify that prompts are being sent correctly. The verbose logging system provides detailed insight into:
 
 - System prompts being constructed
 - User prompts being sent
@@ -13,7 +13,7 @@ When using LLM Studio for media description, it's crucial to verify that prompts
 
 ## Enabling Verbose Logging
 
-Set `verbose=True` in the **LLM Studio - Options** node to enable detailed prompt logging.
+Set `verbose=True` in the **LM Studio - Options** node to enable detailed prompt logging.
 
 ## Log Output Format
 
@@ -23,7 +23,7 @@ Shows the initial configuration after prompts are built:
 
 ```
 ============================================================
-🔧 LLM Studio Prompt Construction:
+🔧 LM Studio Prompt Construction:
 ============================================================
 Media Type: image
 Model Type: Text2Image
@@ -48,7 +48,7 @@ Shows prompts when processing video with all frames sent in a single request:
 ✅ Extracted frame 5/5
 
 ============================================================
-🔍 LLM Studio Video Prompt Debug:
+🔍 LM Studio Video Prompt Debug:
 ============================================================
 📝 System Prompt:
 You are an expert assistant specialized in analyzing and verbalizing input videos for cinematic-quality video transformation using the Wan 2.2 + VACE workflow.
@@ -80,7 +80,7 @@ Shows prompts for single image analysis:
 
 ```
 ============================================================
-🔍 LLM Studio Image Prompt Debug:
+🔍 LM Studio Image Prompt Debug:
 ============================================================
 📝 System Prompt:
 Generate a Wan 2.2 optimized text to image prompt. You are an expert assistant specialized in analyzing and verbalizing input media for instagram-quality posts using the Wan 2.2 Text to Image workflow.
@@ -209,7 +209,7 @@ Please analyze this image and provide a detailed description in the JSON format 
 
 **Solution**: Updated code to:
 
-- Parse JSON response from LLM Studio
+- Parse JSON response from LM Studio
 - Normalize field names (`cinematic_aesthetic_control` → `cinematic_aesthetic`)
 - Ensure all required fields exist
 - Fall back to simple structure only if JSON parsing fails
@@ -242,5 +242,5 @@ Key methods:
 ## Related Documentation
 
 - [Media Describe Node](../../nodes/media-describe/MEDIA_DESCRIBE.md)
-- [LLM Studio Options](../../nodes/media-describe/LLM_STUDIO_OPTIONS.md)
+- [LM Studio Options](../../nodes/media-describe/LM_STUDIO_OPTIONS.md)
 - [Debug Mode Implementation](DEBUG_MODE_IMPLEMENTATION.md)

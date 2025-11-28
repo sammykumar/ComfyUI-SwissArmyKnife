@@ -18,4 +18,4 @@ Extract frames from a video clip and ask an LM Studio-hosted VL model (e.g., Qwe
 3. Feed the caption into downstream prompt or logging nodes.
 
 ## Additional Resources
-- [Full documentation](docs/nodes/llm-studio-describe/LLM_STUDIO_VIDEO_DESCRIBE.md)
+- [Full documentation](docs/nodes/lm-studio-describe/LM_STUDIO_VIDEO_DESCRIBE.md)

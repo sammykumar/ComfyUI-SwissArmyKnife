@@ -5,7 +5,7 @@
 
 ## Overview
 
-Updated the prompt framework across all media describe nodes, LLM Studio options, user prompts, and system prompts to combine "Cinematic/Aesthetic" and "Stylization/Tone" into a unified "Visual Style" field.
+Updated the prompt framework across all media describe nodes, LM Studio options, user prompts, and system prompts to combine "Cinematic/Aesthetic" and "Stylization/Tone" into a unified "Visual Style" field.
 
 ## Changes Made
 
@@ -38,7 +38,7 @@ Updated the prompt framework across all media describe nodes, LLM Studio options
 
 ### 3. System Prompt Updates
 
-#### LLM Studio Prompts
+#### LM Studio Prompts
 
 - **Image prompts**: Updated from 6 fields to 5 fields, combining cinematic and stylization into `visual_style`
 - **Video prompts**: Updated from 6 fields to 5 fields, combining cinematic and stylization into `visual_style`

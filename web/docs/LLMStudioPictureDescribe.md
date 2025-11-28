@@ -15,4 +15,4 @@ Send a single image tensor to LM Studio and receive a richly detailed caption us
 2. Tweak the prompt to emphasize facial features, outfits, etc., then route the caption to ShowText or Control Panel.
 
 ## Additional Resources
-- [Full documentation](docs/nodes/llm-studio-describe/LLM_STUDIO_VIDEO_DESCRIBE.md#related-nodes)
+- [Full documentation](docs/nodes/lm-studio-describe/LM_STUDIO_VIDEO_DESCRIBE.md#related-nodes)

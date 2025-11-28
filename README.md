@@ -11,6 +11,58 @@ A collection of custom nodes for ComfyUI featuring Gemini AI integration for vid
 - **🧪 Full Testing Suite**: Python and JavaScript testing with CI/CD integration
 - **⚡ Hot Reload Development**: Instant feedback for both backend and frontend changes
 
+## Release Notes
+
+### Version 3.0.0 (Breaking Changes)
+
+**⚠️ BREAKING CHANGES - Please read before upgrading**
+
+This major release includes significant cleanup and reorganization of the node library.
+
+#### Removed Nodes
+
+The following nodes have been removed as they are now redundant or better served by built-in ComfyUI functionality:
+
+- **FilenameGenerator** - Use ComfyUI's built-in string nodes
+- **VideoMetadataNode** - Functionality merged into enhanced video preview
+- **ShowText** - Use ComfyUI's built-in display nodes
+- **FrameExtractor** - Use ComfyUI's built-in video frame extraction
+- **MultiCaptionCombiner** - Use ComfyUI's built-in string concatenation
+- **GeminiUtilOptions** - Consolidated into main Gemini nodes
+- **LLMStudioOptions** - Consolidated into LM Studio structured nodes
+- **VideoPreview** - Use enhanced native video preview functionality
+
+#### Renamed Nodes
+
+The following nodes have been renamed for clarity (functionality unchanged):
+
+- **LLMStudioVideoDescribe** → **LM Studio Structured Video Describe**
+- **LLMStudioPictureDescribe** → **LM Studio Structured Picture Describe**
+- **LLMStudioOptions** → Removed (consolidated into main nodes)
+
+#### Enhancements
+
+- **LM Studio Structured Nodes**: 
+  - Added dynamic model selection with automatic fetching from LM Studio API
+  - Separate system_prompt and user_prompt fields for better control
+  - Improved error handling and timeout management
+
+- **Documentation**: 
+  - Comprehensive reorganization and consolidation
+  - Single source of truth for each node
+  - Improved troubleshooting guides
+
+#### Migration Guide
+
+1. **Before upgrading**: Export your workflows to preserve node configurations
+2. **After upgrading**: 
+   - Replace removed nodes with recommended alternatives
+   - Update any references to renamed nodes
+   - LM Studio nodes will automatically detect available models
+3. **Configuration**: No changes required to existing settings
+
+**Note**: Workflows using removed nodes will need manual updates. Renamed nodes maintain compatibility through display name mapping.
+
 ## Quick Start with Dev Container (Recommended)
 
 The fastest way to get started is using the provided dev container with GPU support:

@@ -1,4 +1,4 @@
-# LLM Studio Structured Describe Nodes - Usage Guide
+# LM Studio Structured Describe Nodes - Usage Guide
 
 ## Overview
 
@@ -6,7 +6,7 @@ Two new nodes that use LM Studio's JSON Schema structured output feature for gua
 
 ## New Nodes
 
-### 1. LLM Studio Structured Describe (Image)
+### 1. LM Studio Structured Describe (Image)
 
 **Node ID**: `LLMStudioStructuredDescribe`
 
@@ -31,7 +31,7 @@ Analyzes single images with structured JSON output.
 -   `field_4` - Fourth field value (e.g., "scene")
 -   `field_5` - Fifth field value (e.g., "visual_style")
 
-### 2. LLM Studio Structured Describe (Video)
+### 2. LM Studio Structured Describe (Video)
 
 **Node ID**: `LLMStudioStructuredVideoDescribe`
 
@@ -113,7 +113,7 @@ Character-focused analysis:
              │
              ▼
 ┌────────────────────────────────────┐
-│ LLM Studio Structured Describe     │
+│ LM Studio Structured Describe     │
 │                                    │
 │ Schema: video_description          │
 │ Model: qwen3-vl-8b-thinking-mlx   │
@@ -201,7 +201,7 @@ This should NOT happen with structured output. If it does:
 ## Files Created
 
 -   `nodes/media_describe/llm_studio_structured.py` - Node implementation
--   `docs/nodes/llm-studio-describe/STRUCTURED_OUTPUT_IMPLEMENTATION.md` - This file
+-   `docs/nodes/lm-studio-describe/STRUCTURED_OUTPUT_IMPLEMENTATION.md` - This file
 -   `/tmp/test_lmstudio_structured.py` - Test script
 
 ## Related Documentation
