@@ -8,6 +8,7 @@ Reusable UI components and custom widgets for ComfyUI-SwissArmyKnife nodes.
 
 - **[CONTROL_PANEL.md](CONTROL_PANEL.md)** - Dashboard widget for monitoring and displaying workflow data
 - **[DIMENSIONS_DISPLAY.md](DIMENSIONS_DISPLAY.md)** - Media dimension display widget with troubleshooting
+- **[RESOURCE_MONITOR.md](RESOURCE_MONITOR.md)** - Resource monitor with restart button in top bar (Crystools-style placement)
 - **[SEED_WIDGET.md](SEED_WIDGET.md)** - Randomization seed widget for reproducible workflows
 - **[UPLOAD_WIDGETS.md](UPLOAD_WIDGETS.md)** - Interactive upload buttons for media files
 - **[WIDGET_FIXES.md](WIDGET_FIXES.md)** - General widget fixes, visibility management, and state persistence
@@ -37,6 +38,14 @@ Reusable UI components and custom widgets for ComfyUI-SwissArmyKnife nodes.
 - Smart visibility (shows only for "Randomize from Path" mode)
 - Reproducible file selection
 - Large integer range support (0 to 2^64-1)
+
+### Resource Monitor
+
+- Red restart button in top bar (next to Run button)
+- Crystools-style placement using direct DOM injection
+- Separate extension for resource monitoring features
+- Foundation for future CPU/RAM/GPU/VRAM monitors
+- No functionality yet (placeholder implementation)
 
 ### Upload Widgets
 
