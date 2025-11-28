@@ -82,12 +82,38 @@ No JavaScript errors are thrown when a capability is missing; the UI just render
 
 Because this is a pure JavaScript widget, no ComfyUI restart is required. Developers should perform a hard refresh (Ctrl/Cmd + Shift + R) whenever `resource_monitor.js` changes to force the new bundle to load and to re-inject the CSS.
 
-## Future Enhancements
+## Roadmap
+
+### Near-Term Enhancements
 
 - Clear VRAM button and backend endpoint wiring
 - Per-tile context menus (click to copy usage, open GPU inspector, etc.)
 - Visibility presets so laptop users can hide GPU tiles
 - Historical sparklines per metric
 - Settings surface for sampling interval + toast verbosity
+
+### ProfilerX Parity Plan
+
+To reach the level of workflow profiling offered by [ComfyUI ProfilerX](https://github.com/ryanontheinside/ComfyUI_ProfilerX), we will deliver the following phases:
+
+1. **Instrumentation Layer**
+   - Attach timing hooks to every node execution and aggregate per-workflow metrics (total time, per-node breakdown, cache hit/miss counters).
+   - Extend the backend monitor service to collect RAM/VRAM peaks per workflow, mirroring ProfilerX’s real-time memory telemetry.
+   - Normalize payloads so both the floating HUD and future dashboards consume the same schema.
+
+2. **Profiler Dashboard UI**
+   - Build a dedicated panel (top-right like ProfilerX) with sortable tables for node timings, cache stats, and workflow summaries.
+   - Add inline charts for execution duration, VRAM/RAM consumption, and cache efficiency that refresh automatically after each run.
+   - Provide zero-config defaults so profiling is always on, similar to ProfilerX’s “runs automatically” behavior.
+
+3. **Historical Storage & Analytics**
+   - Persist workflow runs locally with timestamps, tags, and hardware fingerprints to support time-range filtering and trend analysis.
+   - Surface comparison tools (e.g., last run vs. average) plus export options, matching ProfilerX’s archival features.
+   - Implement retention/cleanup policies and archive management commands so data volume stays manageable.
+
+4. **Advanced Execution Tracking**
+   - Offer an opt-in execution trace (akin to ProfilerX’s `ExecutionTracker`) that records method-level timings for deep debugging.
+   - Stream summarized traces to the UI, allowing developers to drill into slow internals without digging through JSON files.
+   - Wire toggles into the Swiss Army Knife settings panel so operators can enable/disable tracking without editing Python files.
 
 Keep the file-level documentation synchronized with each feature drop so operators know which telemetry to expect.
