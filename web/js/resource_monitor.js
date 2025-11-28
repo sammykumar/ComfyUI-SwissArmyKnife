@@ -245,16 +245,14 @@ function injectRestartButtonStyles() {
             opacity: 0.6;
         }
 
-        /* Monitor Display */
+        /* Monitor Display - Individual Metrics Container */
         .swissarmyknife-monitor {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 20px;
-            height: 48px;
-            background: rgba(255, 255, 255, 0.03);
             position: relative;
-            transition: background 0.3s ease;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            overflow: hidden;
         }
         
         .swissarmyknife-monitor:not(:last-child)::after {
