@@ -267,14 +267,16 @@ function injectRestartButtonStyles() {
             background-color: transparent;
         }
         
+        /* Divider - Separator between monitors */
         .swissarmyknife-monitor:not(:last-child)::after {
             content: '';
             position: absolute;
             right: 0;
-            top: 25%;
-            bottom: 25%;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2rem;
             width: 1px;
-            background: rgba(255, 255, 255, 0.15);
+            background-color: rgba(255, 255, 255, 0.1);
         }
         
         .swissarmyknife-monitor-content {
