@@ -328,10 +328,6 @@ app.registerExtension({
         buttonGroup.id = "swissarmyknife-resource-monitor";
         buttonGroup.className = "comfyui-button-group"; // Same class as Crystools
         
-        // Add restart button to the button group
-        const restartButton = createRestartButton();
-        buttonGroup.appendChild(restartButton);
-        
         // Fetch initial status to determine what monitors to create
         try {
             const response = await fetch("/swissarmyknife/monitor/status");
@@ -377,6 +373,10 @@ app.registerExtension({
         } catch (error) {
             console.error("[SwissArmyKnife][ResourceMonitor] Error fetching initial status:", error);
         }
+        
+        // Add restart button at the end (after monitors)
+        const restartButton = createRestartButton();
+        buttonGroup.appendChild(restartButton);
         
         // Insert before settingsGroup (same as Crystools: app.menu?.settingsGroup.element.before())
         if (app.menu?.settingsGroup?.element) {
