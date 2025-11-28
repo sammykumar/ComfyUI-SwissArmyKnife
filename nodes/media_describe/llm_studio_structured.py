@@ -1,5 +1,5 @@
 """
-LLM Studio Structured Output Nodes
+LM Studio Structured Output Nodes
 
 This module contains nodes for using LM Studio with JSON Schema structured output.
 Provides guaranteed valid JSON responses without manual parsing or cleanup.
@@ -649,6 +649,6 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "LLMStudioStructuredDescribe": "LLM Studio Structured Describe (Image)",
-    "LLMStudioStructuredVideoDescribe": "LLM Studio Structured Describe (Video)"
+    "LLMStudioStructuredDescribe": "LM Studio Structured Describe (Image)",
+    "LLMStudioStructuredVideoDescribe": "LM Studio Structured Describe (Video)"
 }
