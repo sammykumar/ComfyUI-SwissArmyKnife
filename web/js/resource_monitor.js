@@ -37,8 +37,14 @@ function createRestartButton() {
 
     const button = document.createElement("button");
     button.id = "swissarmyknife-restart-button";
-    button.className = "swissarmyknife-monitor";
-    button.textContent = "Restart";
+    button.className = "comfyui-button";
+    button.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+    `;
     button.title = "Restart ComfyUI Server";
     
     // Add click handler with restart functionality
@@ -48,9 +54,10 @@ function createRestartButton() {
         try {
             debugLog("Sending restart request...");
             
-            // Disable button to prevent double-clicks
+            // Disable button to prevent double-clicks and show loading state
             button.disabled = true;
-            button.textContent = "Restarting...";
+            button.style.opacity = "0.6";
+            button.title = "Restarting...";
             
             // Show notification immediately
             if (app.extensionManager?.toast?.add) {
@@ -174,7 +181,13 @@ function createProfilerButton() {
     const button = document.createElement("button");
     button.id = "swissarmyknife-profiler-button";
     button.className = "comfyui-button";
-    button.innerHTML = "📊";
+    button.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+    `;
     button.title = "View Workflow Profiler";
     
     // Create popup container
@@ -740,6 +753,108 @@ function injectResourceMonitorStyles() {
 
         .profiler-tab-panel.active {
             display: block;
+        }
+
+        /* Action Button Group - Separate floating container for Profiler and Restart */
+        #swissarmyknife-action-buttons {
+            position: fixed;
+            bottom: 20px;
+            left: calc(63% + 12%);
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0;
+            padding: 0;
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            z-index: 9999;
+            height: 3rem;
+        }
+
+        /* Action buttons - shared styles */
+        #swissarmyknife-action-buttons .comfyui-button {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1rem;
+            height: 100%;
+            background-color: transparent;
+            color: rgba(255, 255, 255, 0.8);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #swissarmyknife-action-buttons .comfyui-button svg {
+            display: block;
+        }
+
+        #swissarmyknife-action-buttons .comfyui-button:hover {
+            color: rgba(255, 255, 255, 1);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #swissarmyknife-action-buttons .comfyui-button:active {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        #swissarmyknife-action-buttons .comfyui-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* Separator between action buttons */
+        #swissarmyknife-action-buttons .comfyui-button:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2rem;
+            width: 1px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Override profiler button styles when in action group */
+        #swissarmyknife-action-buttons #swissarmyknife-profiler-button {
+            background-color: transparent;
+            font-size: 1rem;
+        }
+
+        #swissarmyknife-action-buttons #swissarmyknife-profiler-button::before {
+            display: none;
+        }
+
+        #swissarmyknife-action-buttons #swissarmyknife-profiler-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #swissarmyknife-action-buttons #swissarmyknife-profiler-button:active {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Override restart button styles when in action group */
+        #swissarmyknife-action-buttons #swissarmyknife-restart-button {
+            background-color: transparent;
+        }
+
+        #swissarmyknife-action-buttons #swissarmyknife-restart-button::before {
+            display: none;
+        }
+
+        #swissarmyknife-action-buttons #swissarmyknife-restart-button:hover {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: rgba(255, 255, 255, 1);
+        }
+
+        #swissarmyknife-action-buttons #swissarmyknife-restart-button:active {
+            background-color: rgba(220, 53, 69, 0.3);
         }
     `;
 
@@ -1361,17 +1476,26 @@ app.registerExtension({
             console.error("[SwissArmyKnife][ResourceMonitor] Error fetching initial status:", error);
         }
         
-        // Add profiler button (between monitors and restart)
-        const profilerButton = createProfilerButton();
-        buttonGroup.appendChild(profilerButton);
-        
-        // Add restart button at the end (after profiler)
-        const restartButton = createRestartButton();
-        buttonGroup.appendChild(restartButton);
-        
-        // Append to body as floating element
+        // Append monitors to body as floating element
         document.body.appendChild(buttonGroup);
         debugLog("Resource monitor inserted as floating bar");
+        
+        // Create separate button group for profiler and restart
+        const actionButtonGroup = document.createElement("div");
+        actionButtonGroup.id = "swissarmyknife-action-buttons";
+        actionButtonGroup.className = "comfyui-button-group";
+        
+        // Add profiler button
+        const profilerButton = createProfilerButton();
+        actionButtonGroup.appendChild(profilerButton);
+        
+        // Add restart button
+        const restartButton = createRestartButton();
+        actionButtonGroup.appendChild(restartButton);
+        
+        // Append action buttons to body as separate floating element
+        document.body.appendChild(actionButtonGroup);
+        debugLog("Action buttons inserted as separate floating bar");
         
         // Listen for monitor updates via WebSocket
         api.addEventListener("swissarmyknife.monitor", (event) => {

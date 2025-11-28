@@ -37,7 +37,7 @@ def inject_profiling():
             logger.warning("PromptExecutor.execute not found, skipping that hook")
 
         # Wrap execution.execute for per-node profiling
-        def execute_with_profiling(server, dynprompt, caches, current_item, extra_data, executed, prompt_id, execution_list, pending_subgraph_results):
+        def execute_with_profiling(server, dynprompt, caches, current_item, extra_data, executed, prompt_id, execution_list, pending_subgraph_results, pending_async_nodes, ui_node_outputs):
             """Wrap node execution to capture profiling data"""
 
             # Extract node info
@@ -52,7 +52,7 @@ def inject_profiling():
 
             try:
                 # Execute original function
-                result = original_execute(server, dynprompt, caches, current_item, extra_data, executed, prompt_id, execution_list, pending_subgraph_results)
+                result = original_execute(server, dynprompt, caches, current_item, extra_data, executed, prompt_id, execution_list, pending_subgraph_results, pending_async_nodes, ui_node_outputs)
 
                 # End node profiling with outputs
                 outputs = result if result else None
