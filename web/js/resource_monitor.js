@@ -205,42 +205,42 @@ function injectRestartButtonStyles() {
             font-weight: 500;
         }
 
+        /* Restart Button */
         #swissarmyknife-restart-button {
+            position: relative;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
             background-color: #dc3545;
             color: white;
             font-weight: 600;
             border: none;
-            padding: 10px 20px;
             cursor: pointer;
-            font-size: 12px;
             transition: all 0.2s ease;
-            position: relative;
         }
         
         #swissarmyknife-restart-button::before {
             content: '';
             position: absolute;
             left: 0;
-            top: 25%;
-            bottom: 25%;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 2rem;
             width: 1px;
-            background: rgba(255, 255, 255, 0.15);
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
         #swissarmyknife-restart-button:hover {
             background-color: #c82333;
-            border-color: #bd2130;
         }
 
         #swissarmyknife-restart-button:active {
             background-color: #bd2130;
-            border-color: #b21f2d;
-            transform: scale(0.98);
         }
 
         #swissarmyknife-restart-button:disabled {
             background-color: #6c757d;
-            border-color: #5a6268;
             cursor: not-allowed;
             opacity: 0.6;
         }
