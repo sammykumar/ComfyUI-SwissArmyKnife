@@ -112,6 +112,31 @@ VERSION = get_version()
 # Load DEBUG setting from environment
 DEBUG = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
 
+# Initialize profiler (must happen before execution starts)
+try:
+    from .nodes.utils.resource_monitor.prestartup import inject_profiling
+    from .nodes.utils.resource_monitor.profiler_core import ProfilerManager
+    from .nodes.utils.resource_monitor.profiler_api import register_profiler_routes, set_profiler_manager
+    
+    # Inject profiling hooks into ComfyUI execution
+    if inject_profiling():
+        # Get profiler instance
+        profiler_manager = ProfilerManager.get_instance()
+        set_profiler_manager(profiler_manager)
+        
+        # Register profiler API routes
+        try:
+            from server import PromptServer
+            server = PromptServer.instance
+            register_profiler_routes(server)
+            print("[SwissArmyKnife] Profiler initialized successfully")
+        except Exception as e:
+            print(f"[SwissArmyKnife] Warning: Could not register profiler API routes: {e}")
+    else:
+        print("[SwissArmyKnife] Warning: Profiler initialization failed")
+except Exception as e:
+    print(f"[SwissArmyKnife] Warning: Could not initialize profiler: {e}")
+
 # Initialize resource monitor service
 try:
     from .nodes.monitor_api import register_monitor_routes, set_monitor_service
