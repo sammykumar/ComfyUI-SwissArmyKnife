@@ -112,4 +112,30 @@ VERSION = get_version()
 # Load DEBUG setting from environment
 DEBUG = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
 
+# Initialize resource monitor service
+try:
+    from .nodes.monitor_api import register_monitor_routes, set_monitor_service
+    from .nodes.utils.resource_monitor import MonitorService
+    from .nodes.restart_api import register_restart_routes
+    
+    # Import PromptServer
+    try:
+        from server import PromptServer
+        
+        # Register API routes
+        server = PromptServer.instance
+        register_monitor_routes(server)
+        register_restart_routes(server)
+        
+        # Create and start monitor service
+        monitor_service = MonitorService(server, interval=2.0)
+        set_monitor_service(monitor_service)
+        monitor_service.start()
+        
+        print("[SwissArmyKnife] Resource monitor initialized successfully")
+    except Exception as e:
+        print(f"[SwissArmyKnife] Warning: Could not initialize resource monitor: {e}")
+except ImportError as e:
+    print(f"[SwissArmyKnife] Warning: Resource monitor dependencies not available: {e}")
+
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY", "VERSION", "DEBUG"]
