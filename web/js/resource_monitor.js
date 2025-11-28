@@ -104,7 +104,7 @@ function injectRestartButtonStyles() {
     const style = document.createElement("style");
     style.id = styleId;
     style.textContent = `
-        /* Swiss Army Knife - Restart Button in Top Bar */
+        /* Swiss Army Knife - Resource Monitor in Top Bar */
         #swissarmyknife-resource-monitor {
             display: flex;
             align-items: center;
@@ -141,6 +141,49 @@ function injectRestartButtonStyles() {
             cursor: not-allowed;
             opacity: 0.6;
         }
+
+        /* Monitor Display */
+        .swissarmyknife-monitor {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            min-width: 60px;
+        }
+        
+        .swissarmyknife-monitor-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .swissarmyknife-monitor-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffffff;
+            transition: color 0.3s ease;
+        }
+        
+        /* Color coding for resource levels */
+        .swissarmyknife-monitor-value.level-low {
+            color: #28a745; /* Green - healthy */
+        }
+        
+        .swissarmyknife-monitor-value.level-medium {
+            color: #ffc107; /* Yellow - moderate */
+        }
+        
+        .swissarmyknife-monitor-value.level-high {
+            color: #fd7e14; /* Orange - high */
+        }
+        
+        .swissarmyknife-monitor-value.level-critical {
+            color: #dc3545; /* Red - critical */
+        }
     `;
 
     document.head.appendChild(style);
@@ -148,48 +191,133 @@ function injectRestartButtonStyles() {
 }
 
 /**
- * Resource Monitor class - matches Crystools pattern
+ * Create a monitor display element
  */
-class SwissArmyKnifeResourceMonitor {
-    constructor() {
-        this.buttonGroup = null;
-    }
+function createMonitorDisplay(label, id) {
+    const monitor = document.createElement("div");
+    monitor.className = "swissarmyknife-monitor";
+    monitor.id = `swissarmyknife-monitor-${id}`;
+    
+    const labelEl = document.createElement("div");
+    labelEl.className = "swissarmyknife-monitor-label";
+    labelEl.textContent = label;
+    
+    const valueEl = document.createElement("div");
+    valueEl.className = "swissarmyknife-monitor-value";
+    valueEl.id = `swissarmyknife-monitor-value-${id}`;
+    valueEl.textContent = "--";
+    
+    monitor.appendChild(labelEl);
+    monitor.appendChild(valueEl);
+    
+    return monitor;
+}
 
-    /**
-     * Setup function called by ComfyUI extension system
-     * This matches the Crystools pattern exactly - using plain DOM
-     */
-    setup = async () => {
-        debugLog("Resource Monitor extension setup started");
+/**
+ * Update monitor value with color coding based on percentage
+ */
+function updateMonitorValue(id, value, percent = null) {
+    const valueEl = document.getElementById(`swissarmyknife-monitor-value-${id}`);
+    if (!valueEl) return;
+    
+    valueEl.textContent = value;
+    
+    // Color code based on percentage if provided
+    if (percent !== null) {
+        valueEl.classList.remove("level-low", "level-medium", "level-high", "level-critical");
         
-        // Inject styles first
-        injectRestartButtonStyles();
-        
-        // Create button group DIV (plain DOM, no deprecated imports)
-        this.buttonGroup = document.createElement("div");
-        this.buttonGroup.id = "swissarmyknife-resource-monitor";
-        this.buttonGroup.className = "comfyui-button-group"; // Same class as Crystools
-        
-        // Add restart button to the button group
-        const restartButton = createRestartButton();
-        this.buttonGroup.appendChild(restartButton);
-        
-        // Insert before settingsGroup (same as Crystools: app.menu?.settingsGroup.element.before())
-        if (app.menu?.settingsGroup?.element) {
-            app.menu.settingsGroup.element.before(this.buttonGroup);
-            debugLog("Resource monitor inserted before settings group");
+        if (percent < 50) {
+            valueEl.classList.add("level-low");
+        } else if (percent < 70) {
+            valueEl.classList.add("level-medium");
+        } else if (percent < 90) {
+            valueEl.classList.add("level-high");
         } else {
-            console.error("[SwissArmyKnife][ResourceMonitor] Could not find app.menu.settingsGroup.element");
+            valueEl.classList.add("level-critical");
         }
-        
-        debugLog("Resource Monitor extension setup completed");
+    }
+}
+
+/**
+ * Format bytes to GB
+ */
+function formatGB(bytes) {
+    if (bytes === null || bytes === undefined) return "N/A";
+    const gb = bytes / (1024 ** 3);
+    return gb.toFixed(1) + "GB";
+}
+
+/**
+ * Format percentage
+ */
+function formatPercent(percent) {
+    if (percent === null || percent === undefined) return "N/A";
+    return Math.round(percent) + "%";
+}
+
+/**
+ * Format temperature
+ */
+function formatTemp(temp) {
+    if (temp === null || temp === undefined) return "N/A";
+    return Math.round(temp) + "°";
+}
+
+/**
+ * Handle monitor data update
+ */
+function handleMonitorUpdate(data) {
+    debugLog("Monitor update received:", data);
+    
+    const { hardware, gpu } = data;
+    
+    // Update CPU
+    if (hardware?.cpu_percent !== null && hardware?.cpu_percent !== undefined) {
+        updateMonitorValue("cpu", formatPercent(hardware.cpu_percent), hardware.cpu_percent);
+    }
+    
+    // Update RAM
+    if (hardware?.memory) {
+        const mem = hardware.memory;
+        const value = `${formatPercent(mem.percent)}`;
+        updateMonitorValue("ram", value, mem.percent);
+    }
+    
+    // Update CPU temperature
+    if (hardware?.cpu_temp !== null && hardware?.cpu_temp !== undefined) {
+        updateMonitorValue("cpu-temp", formatTemp(hardware.cpu_temp));
+    }
+    
+    // Update GPU info
+    if (gpu?.devices && gpu.devices.length > 0) {
+        gpu.devices.forEach((device, index) => {
+            if (!device.available) return;
+            
+            // Update GPU utilization
+            if (device.utilization !== null && device.utilization !== undefined) {
+                updateMonitorValue(`gpu${index}`, formatPercent(device.utilization), device.utilization);
+            }
+            
+            // Update VRAM
+            if (device.vram) {
+                const vram = device.vram;
+                const value = `${formatPercent(vram.percent)}`;
+                updateMonitorValue(`vram${index}`, value, vram.percent);
+            }
+            
+            // Update GPU temperature
+            if (device.temperature !== null && device.temperature !== undefined) {
+                updateMonitorValue(`gpu${index}-temp`, formatTemp(device.temperature));
+            }
+        });
     }
 }
 
 // Register extension - instance creation deferred to setup
 app.registerExtension({
     name: EXTENSION_NAME,
-    setup() {
+    
+    async setup() {
         debugLog("Resource Monitor extension setup started");
         
         // Inject styles first
@@ -204,6 +332,52 @@ app.registerExtension({
         const restartButton = createRestartButton();
         buttonGroup.appendChild(restartButton);
         
+        // Fetch initial status to determine what monitors to create
+        try {
+            const response = await fetch("/swissarmyknife/monitor/status");
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                const { hardware, gpu } = result.data;
+                
+                // Add CPU monitor
+                if (hardware?.available) {
+                    buttonGroup.appendChild(createMonitorDisplay("CPU", "cpu"));
+                    buttonGroup.appendChild(createMonitorDisplay("RAM", "ram"));
+                    
+                    // Add CPU temp if available
+                    if (hardware.cpu_temp !== null) {
+                        buttonGroup.appendChild(createMonitorDisplay("Temp", "cpu-temp"));
+                    }
+                }
+                
+                // Add GPU monitors
+                if (gpu?.devices && gpu.devices.length > 0) {
+                    gpu.devices.forEach((device, index) => {
+                        if (!device.available) return;
+                        
+                        // Add GPU utilization monitor if pynvml available
+                        if (gpu.pynvml_available) {
+                            buttonGroup.appendChild(createMonitorDisplay(`GPU ${index}`, `gpu${index}`));
+                        }
+                        
+                        // Add VRAM monitor
+                        buttonGroup.appendChild(createMonitorDisplay(`VRAM ${index}`, `vram${index}`));
+                        
+                        // Add GPU temp if available
+                        if (device.temperature !== null && device.temperature !== undefined) {
+                            buttonGroup.appendChild(createMonitorDisplay(`Temp ${index}`, `gpu${index}-temp`));
+                        }
+                    });
+                }
+                
+                // Update with initial data
+                handleMonitorUpdate(result.data);
+            }
+        } catch (error) {
+            console.error("[SwissArmyKnife][ResourceMonitor] Error fetching initial status:", error);
+        }
+        
         // Insert before settingsGroup (same as Crystools: app.menu?.settingsGroup.element.before())
         if (app.menu?.settingsGroup?.element) {
             app.menu.settingsGroup.element.before(buttonGroup);
@@ -211,6 +385,11 @@ app.registerExtension({
         } else {
             console.error("[SwissArmyKnife][ResourceMonitor] Could not find app.menu.settingsGroup.element");
         }
+        
+        // Listen for monitor updates via WebSocket
+        api.addEventListener("swissarmyknife.monitor", (event) => {
+            handleMonitorUpdate(event.detail);
+        });
         
         debugLog("Resource Monitor extension setup completed");
     }
