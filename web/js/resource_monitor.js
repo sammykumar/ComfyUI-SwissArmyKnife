@@ -37,7 +37,7 @@ function createRestartButton() {
 
     const button = document.createElement("button");
     button.id = "swissarmyknife-restart-button";
-    button.className = "comfyui-button";
+    button.className = "swissarmyknife-monitor";
     button.textContent = "Restart";
     button.title = "Restart ComfyUI Server";
     
