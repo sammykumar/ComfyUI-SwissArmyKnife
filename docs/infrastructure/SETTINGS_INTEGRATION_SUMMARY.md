@@ -23,7 +23,7 @@ This implementation replaces text input widgets for API keys with ComfyUI's nati
     - Updated `register_config_routes()` to include new endpoint
     - Added logging for debugging
 
-- **`nodes/nodes.py`**
+- **`nodes/utils/lora_info_extractor.py`**
     - Removed `civitai_api_key` from LoRAInfoExtractor INPUT_TYPES
     - Updated `extract_lora_info()` method signature (removed `civitai_api_key` parameter)
     - Added logic to retrieve CivitAI API key from settings

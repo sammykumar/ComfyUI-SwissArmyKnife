@@ -210,7 +210,7 @@ The following files still contain hardcoded debug logging that should be migrate
 
 ### Python Files (Not Yet Migrated)
 
-- `nodes/nodes.py` - LoRA extraction debug logs
+- `nodes/utils/lora_info_extractor.py` - LoRA extraction debug logs
 - `nodes/civitai_service.py` - CivitAI API debug logs
 - `nodes/lora_hash_cache.py` - Cache operation logs
 - `nodes/cache.py` - Cache file logs

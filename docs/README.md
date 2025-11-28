@@ -14,6 +14,7 @@ Core custom nodes that extend ComfyUI functionality:
 - **[media-selection](nodes/media-selection/)** - Media source selection and management
 - **[control-panel](nodes/control-panel/)** - Workflow information dashboard display
 - **[prompt-builder](nodes/prompt-builder/)** - Compose MediaDescribe overrides with previewable prompt strings
+- **[lora-info-extractor](nodes/lora-info-extractor/)** - Hash LoRA stacks, query CivitAI, and emit structured metadata
 
 ### 🏗️ Infrastructure (`/infrastructure`)
 

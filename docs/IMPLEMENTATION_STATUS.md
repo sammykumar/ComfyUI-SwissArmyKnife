@@ -15,7 +15,7 @@
     - `web/js/swiss-army-knife.js` - Settings registration and sync
     - `nodes/config_api.py` - Settings caching API
     - `nodes/media_describe/gemini_util_options.py` - Removed API key widget
-    - `nodes/nodes.py` - LoRAInfoExtractor updated
+    - `nodes/utils/lora_info_extractor.py` - LoRAInfoExtractor updated
 - **Documentation**: `docs/infrastructure/SETTINGS_INTEGRATION.md`
 
 ### 2. Python Backend Implementation

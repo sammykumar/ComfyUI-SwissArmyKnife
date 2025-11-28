@@ -15,7 +15,7 @@ The codebase had two separate CivitAI service implementations:
     - Integrated with hash caching system (`lora_hash_cache`)
     - Supported multiple hash types (SHA256, AutoV1, AutoV2, Blake3, CRC32)
     - Had retry logic and rate limiting handling
-    - Used by `nodes/nodes.py` for LoRA metadata extraction
+    - Used by `nodes/utils/lora_info_extractor.py` for LoRA metadata extraction
 
 2. **`nodes/lora_manager/civitai_service.py`** - Simpler implementation
     - Used `aiohttp` for HTTP requests
@@ -82,7 +82,7 @@ Deleted `nodes/lora_manager/civitai_service.py` as it's no longer needed.
 
 ## API Compatibility
 
-### For `nodes/nodes.py` (No Changes Required)
+### For `nodes/utils/lora_info_extractor.py` (No Changes Required)
 
 ```python
 from .civitai_service import CivitAIService

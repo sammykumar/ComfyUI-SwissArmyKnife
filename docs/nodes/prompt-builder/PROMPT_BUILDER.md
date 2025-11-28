@@ -1,66 +1,61 @@
 # Prompt Builder Node
 
-Builds paragraph-level overrides for Gemini-based MediaDescribe pipelines. The node gathers optional sections (subject, visual style, clothing, scene, action) plus a prefix, outputs a formatted preview string, and emits the `OVERRIDES` dictionary that MediaDescribe expects. Empty inputs simply fall back to Gemini's generated paragraphs, so you only have to touch the sections you want to customize.
+Builds paragraph-level overrides for Gemini-based workflows. The node gathers optional sections (subject, clothing, action, scene, visual style) plus a prefix, outputs a formatted preview string, and leaves any blank field untouched so Gemini output can fill the gap downstream.
 
 ## Features
 
-- **Paragraph granularity** – Override any combination of MediaDescribe paragraphs without rewriting the whole description
-- **Preview output** – `prompt_text` mirrors exactly what will be sent downstream for quick review/logging
+- **Paragraph granularity** – Override any combination of paragraphs without rewriting the whole description
+- **Preview output** – `positive_prompt` mirrors exactly what will be sent downstream for quick review/logging
 - **Non-destructive overrides** – Empty inputs remain untouched so Gemini output passes through unchanged
-- **MediaDescribe compatible** – Uses the same `OVERRIDES` schema as the existing Media Describe Overrides node
 - **Workflow-friendly** – All inputs accept upstream `STRING` connections, letting you feed prompt fragments from other nodes or templates
 
 ## Inputs
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `prompt_prefix` | STRING | Optional text inserted before every overridden paragraph (i.e., setup instructions) |
-| `override_subject` | STRING | Replacement for the SUBJECT paragraph |
-| `override_visual_style` | STRING | Replacement for VISUAL STYLE paragraph (cinematic/stylization/tone) |
-| `override_clothing` | STRING | Replacement for CLOTHING paragraph |
-| `override_scene` | STRING | Replacement for SCENE paragraph (video only) |
-| `override_action` | STRING | Replacement for ACTION paragraph (video only). Emits the legacy `override_movement` key as well for backward compatibility. |
+| `prefix` | STRING | Optional text inserted before every overridden paragraph (i.e., setup instructions) |
+| `subject` | STRING | Replacement for the SUBJECT paragraph |
+| `clothing` | STRING | Replacement for CLOTHING paragraph |
+| `action` | STRING | Replacement for ACTION paragraph (video only). Still emits the legacy `override_movement` key for backward compatibility. |
+| `scene` | STRING | Replacement for SCENE paragraph (video only) |
+| `visual_style` | STRING | Replacement for VISUAL STYLE paragraph (cinematic/stylization/tone) |
 
 All inputs default to blank strings and are fully optional.
 
-## Outputs
+## Output
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `prompt_text` | STRING | Preview string that concatenates prefix + populated sections separated by blank lines |
-| `overrides` | OVERRIDES | Dictionary ready to connect directly into MediaDescribe's `overrides` input |
+| `positive_prompt` | STRING | Preview string that concatenates populated sections with single newline separators |
 
 ## Usage
 
 1. Drop the **Prompt Builder** node anywhere in your workflow (under `Swiss Army Knife 🔪/Prompt Tools`).
 2. Enter any sections you wish to override. Leave fields blank to keep Gemini output untouched.
 3. Optionally wire upstream `STRING` nodes (e.g., templates, metadata) into any field to automate overrides.
-4. Connect the `overrides` output to the `overrides` input on the MediaDescribe node.
-5. (Optional) Use `prompt_text` to feed dashboards, logs, or filename generators for transparency.
+4. (Optional) Use `positive_prompt` to feed dashboards, logs, conditioning inputs, or filename generators for transparency.
 
 ## Prompt Assembly Logic
 
-- Prefix is trimmed and appended first if present.
-- Each override field is trimmed; non-empty values are appended downstream separated by blank lines.
+- Prefix is trimmed and added first if present.
+- Each override field is trimmed; non-empty values are appended downstream separated by single newline characters.
 - The preview string mirrors this ordering, giving you a deterministic representation of what will be sent to Gemini/LLM nodes.
-- The OVERRIDES dictionary preserves raw (untrimmed) strings so downstream nodes can decide how to handle whitespace.
 
 ## Troubleshooting
 
 | Issue | Resolution |
 | --- | --- |
-| Override not taking effect | Ensure the field is non-empty and the `overrides` output connects directly to MediaDescribe. Check the Control Panel JSON for final override state. |
 | Blank preview string | All fields are empty; populate at least one section or prefix. |
-| Unexpected newline formatting | Preview output inserts double newlines between populated sections. Trim/replace in downstream nodes if you need custom spacing. |
+| Unexpected newline formatting | Preview output inserts single newlines between populated sections. Trim/replace in downstream nodes if you need custom spacing. |
 
 ## Integration Notes
 
-- Compatible with both MediaDescribe image and video variants since it reuses the shared OVERRIDES structure.
-- Works alongside the Control Panel node—`prompt_text` can be surfaced in dashboards or metadata logs.
-- You can chain multiple Prompt Builders by wiring `prompt_text` into another builder's field for layered templating.
+- Feed `positive_prompt` into any downstream `STRING` input such as conditioning nodes, Control Panel displays, or logging helpers.
+- Works alongside the Control Panel node—`positive_prompt` can be surfaced in dashboards or metadata logs.
+- You can chain multiple Prompt Builders by wiring `positive_prompt` into another builder's field for layered templating.
 
 ## Related Documentation
 
-- [Media Describe Node](../media-describe/MEDIA_DESCRIBE.md) – Full details on how overrides are consumed
+- [Media Describe Node](../media-describe/MEDIA_DESCRIBE.md) – Understand how Gemini paragraphs are structured downstream
 - [Control Panel Node](../control-panel/CONTROL_PANEL.md) – Display prompt summaries alongside render metadata
 - [Web Help Page](../../web/docs/PromptBuilder.md) – In-app summary shown inside ComfyUI

@@ -6,21 +6,20 @@ Assemble paragraph-level overrides for MediaDescribe outputs or any other prompt
 
 1. Connect upstream text inputs (manually typed or from nodes).
 2. Fill only the sections you want to override; leave others blank to keep Gemini output.
-3. Use `prompt_text` for preview/logging and connect `overrides` to MediaDescribe.
+3. Use `positive_prompt` anywhere you need a final assembled prompt (Control Panel, loggers, conditioning nodes, etc.).
 
 ## Inputs
 
-- `prompt_prefix` – Text prepended before other sections
-- `override_subject` – Replacement for SUBJECT paragraph
-- `override_visual_style` – Replacement for VISUAL STYLE paragraph
-- `override_clothing` – Replacement for CLOTHING paragraph
-- `override_scene` – Replacement for SCENE paragraph (video)
-- `override_action` – Replacement for ACTION paragraph (video)
+- `prefix` – Text prepended before other sections
+- `subject` – Replacement for SUBJECT paragraph
+- `clothing` – Replacement for CLOTHING paragraph
+- `action` – Replacement for ACTION paragraph (video)
+- `scene` – Replacement for SCENE paragraph (video)
+- `visual_style` – Replacement for VISUAL STYLE paragraph
 
-## Outputs
+## Output
 
-- `prompt_text` (`STRING`) – Preview-ready prompt string
-- `overrides` (`OVERRIDES`) – Dictionary compatible with MediaDescribe
+- `positive_prompt` (`STRING`) – Preview-ready prompt string with newline separators
 
 ## Full Documentation
 

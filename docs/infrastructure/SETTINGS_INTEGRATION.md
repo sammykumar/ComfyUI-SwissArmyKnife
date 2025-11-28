@@ -104,7 +104,7 @@ This ensures backward compatibility and graceful degradation.
 ### Python
 
 - `nodes/config_api.py` - Settings caching and API endpoints
-- `nodes/nodes.py` - Removed CivitAI API key widget from LoRAInfoExtractor
+- `nodes/utils/lora_info_extractor.py` - Removed CivitAI API key widget from LoRAInfoExtractor
 
 ## Troubleshooting
 
