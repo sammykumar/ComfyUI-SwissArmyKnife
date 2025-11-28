@@ -251,6 +251,9 @@ class ProfilerManager:
         node_profile = profile.nodes[node_id]
         node_profile.end_time = time.time()
         node_profile.cache_hit = cache_hit
+        
+        execution_time_ms = (node_profile.end_time - node_profile.start_time) * 1000
+        print(f"[SwissArmyKnife][Profiler] Node {node_profile.node_type} (ID: {node_id}) took {execution_time_ms:.2f}ms")
 
         # Update cache stats
         if cache_hit:

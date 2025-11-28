@@ -221,12 +221,12 @@ function createProfilerButton() {
                 console.error("[SwissArmyKnife][Profiler] Error fetching profiler data:", error);
             }
             
-            // Position and show popup
+            // Position and show popup above the profiler button
             const rect = button.getBoundingClientRect();
-            const monitorRect = document.getElementById("swissarmyknife-resource-monitor").getBoundingClientRect();
+            const actionButtonsRect = document.getElementById("swissarmyknife-action-buttons").getBoundingClientRect();
             
-            popup.style.left = `${monitorRect.left + monitorRect.width / 2}px`;
-            popup.style.bottom = `${window.innerHeight - monitorRect.top + 12}px`;
+            popup.style.left = `${actionButtonsRect.left + actionButtonsRect.width / 2}px`;
+            popup.style.bottom = `${window.innerHeight - actionButtonsRect.top + 12}px`;
             popup.style.display = "block";
             
             debugLog("Profiler popup opened");
@@ -919,18 +919,6 @@ function createProfilerPopup() {
             <button class="profiler-popup-close">✕</button>
         </div>
         
-        <div class="profiler-gauge-container">
-            <svg class="profiler-gauge-svg" viewBox="0 0 120 120">
-                <circle class="profiler-gauge-circle-bg" cx="60" cy="60" r="52"></circle>
-                <circle class="profiler-gauge-circle-progress" cx="60" cy="60" r="52" 
-                    stroke-dasharray="326.73" stroke-dashoffset="326.73"></circle>
-            </svg>
-            <div class="profiler-gauge-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-                <div id="profiler-gauge-value" style="font-size: 1.5rem; font-weight: 700; text-align: center;">--</div>
-            </div>
-            <div class="profiler-gauge-label">Latest Workflow Time</div>
-        </div>
-        
         <div class="profiler-stats-grid" id="profiler-stats-grid">
             <!-- Stats cards will be inserted here -->
         </div>
@@ -1009,21 +997,6 @@ function updateProfilerPopupContent(popup, data) {
     }
     
     const latest = data.latest;
-    
-    // Update gauge
-    const gaugeValue = popup.querySelector("#profiler-gauge-value");
-    const gaugeCircle = popup.querySelector(".profiler-gauge-circle-progress");
-    
-    if (latest.executionTime) {
-        gaugeValue.textContent = formatMs(latest.executionTime);
-        
-        // Calculate percentage (assume max 10s for full circle)
-        const maxTime = 10000;
-        const percent = Math.min((latest.executionTime / maxTime) * 100, 100);
-        const circumference = 326.73;
-        const offset = circumference - (percent / 100) * circumference;
-        gaugeCircle.style.strokeDashoffset = offset;
-    }
     
     // Update stats grid
     const statsGrid = popup.querySelector("#profiler-stats-grid");
