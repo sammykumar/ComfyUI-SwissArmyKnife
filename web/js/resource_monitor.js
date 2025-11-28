@@ -200,8 +200,8 @@ function injectRestartButtonStyles() {
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             overflow: hidden;
             z-index: 9999;
-            font-size: 0.875rem;
-            line-height: 1.25rem;
+            font-size: 0.919rem;
+            line-height: 1.313rem;
             font-weight: 500;
         }
 
