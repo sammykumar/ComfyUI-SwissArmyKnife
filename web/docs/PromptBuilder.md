@@ -1,24 +1,23 @@
 # Prompt Builder
 
 ## Summary
-Prompt Builder assembles paragraph-level overrides for MediaDescribe. Fill in whichever sections you want to replace, leave the rest blank, and the node emits both a preview string and the `OVERRIDES` dictionary MediaDescribe expects.
+Prompt Builder assembles paragraph-level overrides for Gemini prompts. Fill in whichever sections you want to replace, leave the rest blank, and the node emits a preview-ready string you can route to any downstream `STRING` input.
 
 ## Inputs
-- `prompt_prefix` – Optional text placed before all other sections
-- `override_subject` – Replacement SUBJECT paragraph
-- `override_visual_style` – Replacement VISUAL STYLE paragraph
-- `override_clothing` – Replacement CLOTHING paragraph
-- `override_scene` – Replacement SCENE paragraph (video)
-- `override_action` – Replacement ACTION paragraph (video)
+- `prefix` – Optional text placed before all other sections
+- `subject` – Replacement SUBJECT paragraph
+- `clothing` – Replacement CLOTHING paragraph
+- `action` – Replacement ACTION paragraph (video)
+- `scene` – Replacement SCENE paragraph (video)
+- `visual_style` – Replacement VISUAL STYLE paragraph
 
-## Outputs
-- `prompt_text` (`STRING`) – Preview-ready string built from populated sections
-- `overrides` (`OVERRIDES`) – Dictionary that plugs into MediaDescribe's `overrides` input
+## Output
+- `positive_prompt` (`STRING`) – Preview-ready string built from populated sections with newline separators
 
 ## Usage Tips
 - Leave fields blank to keep Gemini output for that section
 - Wire upstream `STRING` nodes for dynamic overrides (templates, metadata, etc.)
-- Display `prompt_text` in Control Panel or logs to verify overrides before rendering
+- Display `positive_prompt` in Control Panel or logs to verify overrides before rendering
 - Works for both image and video MediaDescribe variants
 
 ## Documentation
