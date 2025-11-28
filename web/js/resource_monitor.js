@@ -255,6 +255,18 @@ function injectRestartButtonStyles() {
             overflow: hidden;
         }
         
+        /* Background Progress Bar - Percentage Reactive */
+        .swissarmyknife-monitor-bg {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            width: 0%;
+            transition: all 500ms;
+            background-color: transparent;
+        }
+        
         .swissarmyknife-monitor:not(:last-child)::after {
             content: '';
             position: absolute;
@@ -294,12 +306,17 @@ function injectRestartButtonStyles() {
 }
 
 /**
- * Create a monitor display element with inline label
+ * Create a monitor display element with inline label and background bar
  */
 function createMonitorDisplay(label, id) {
     const monitor = document.createElement("div");
     monitor.className = "swissarmyknife-monitor";
     monitor.id = `swissarmyknife-monitor-${id}`;
+    
+    // Background progress bar (absolute positioned)
+    const bgBar = document.createElement("div");
+    bgBar.className = "swissarmyknife-monitor-bg";
+    bgBar.id = `swissarmyknife-monitor-bg-${id}`;
     
     const contentWrapper = document.createElement("div");
     contentWrapper.className = "swissarmyknife-monitor-content";
@@ -317,6 +334,7 @@ function createMonitorDisplay(label, id) {
     contentWrapper.appendChild(document.createTextNode(" "));
     contentWrapper.appendChild(valueEl);
     
+    monitor.appendChild(bgBar);
     monitor.appendChild(contentWrapper);
     
     return monitor;
@@ -331,27 +349,29 @@ function updateMonitorValue(id, value, percent = null) {
     
     valueEl.textContent = value;
     
-    const monitorEl = document.getElementById(`swissarmyknife-monitor-${id}`);
-    if (!monitorEl) return;
+    const bgBar = document.getElementById(`swissarmyknife-monitor-bg-${id}`);
+    if (!bgBar) return;
     
-    // Set gradient background based on percentage
+    // Set gradient background bar based on percentage
     if (percent !== null) {
-        // Determine color based on percentage
+        // Determine color based on percentage thresholds
         let color;
-        if (percent < 50) {
-            color = "34, 197, 94"; // Green
-        } else if (percent < 70) {
-            color = "234, 179, 8"; // Yellow
-        } else if (percent < 90) {
-            color = "249, 115, 22"; // Orange
+        if (percent < 40) {
+            color = "34, 197, 94"; // Green 0-40%
+        } else if (percent < 60) {
+            color = "234, 179, 8"; // Yellow 40-60%
+        } else if (percent < 80) {
+            color = "249, 115, 22"; // Orange 60-80%
         } else {
-            color = "239, 68, 68"; // Red
+            color = "239, 68, 68"; // Red 80-100%
         }
         
-        // Create gradient that fills based on percentage
-        monitorEl.style.background = `linear-gradient(to right, rgba(${color}, 0.25) 0%, rgba(${color}, 0.25) ${percent}%, rgba(255, 255, 255, 0.03) ${percent}%, rgba(255, 255, 255, 0.03) 100%)`;
+        // Set width and color
+        bgBar.style.width = `${percent}%`;
+        bgBar.style.backgroundColor = `rgba(${color}, 0.2)`;
     } else {
-        monitorEl.style.background = "rgba(255, 255, 255, 0.03)";
+        bgBar.style.width = "0%";
+        bgBar.style.backgroundColor = "transparent";
     }
 }
 
