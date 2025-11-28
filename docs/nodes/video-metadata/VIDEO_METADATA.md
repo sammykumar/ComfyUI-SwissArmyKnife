@@ -47,7 +47,6 @@ The Update Video Metadata node enables adding and appending metadata to video fi
 
 - **artist**: (STRING) - Artist/Creator metadata
 - **comment**: (STRING, multiline) - Additional comments metadata
-- **lora_json**: (STRING) - LoRA JSON data from LoRAInfoExtractor (contains structured LoRA metadata)
 - **overwrite_original**: (Yes/No) - Whether to overwrite the original file or create a new one with '_metadata' suffix
 
 ## Output
@@ -68,19 +67,6 @@ The Update Video Metadata node enables adding and appending metadata to video fi
 2. Optionally add artist and comment metadata
 3. Choose whether to overwrite original or create new file
 4. The output `filenames` can be connected to other nodes or used as final output
-
-### LoRA-Enhanced Workflow (Recommended)
-
-```
-[LoRA Selection] → [LoRAInfoExtractor] → [Video Processing] → [VHS_VideoCombine] → [Update Video Metadata] → [Output]
-                              ↓
-                        [lora_json] ────────────────────────────────────────────┘
-```
-
-1. Connect LoRA selector to LoRAInfoExtractor
-2. Connect `lora_json` output from LoRAInfoExtractor to `lora_json` input of Update Video Metadata
-3. Connect `Filenames` output from VHS_VideoCombine to `filenames` input
-4. The node automatically generates title, description, and keywords from LoRA data
 
 ### Multi-Stage Processing
 
@@ -132,53 +118,6 @@ lora_json: "{...full LoRA JSON...}"
 - **Title, Description, Comment**: Separated with double newlines (`\n\n`) for readability
 - **Artist**: Appended with double newlines
 - **Keywords**: Comma-separated for better keyword handling
-- **LoRA JSON**: Stored as custom metadata field (not appended)
-
-## LoRA JSON Integration
-
-The node processes structured LoRA JSON data from the LoRAInfoExtractor node:
-
-### Automatic Metadata Generation
-
-- **lora_json**: JSON string containing detailed LoRA metadata
-  - **Automatic Title**: Uses `combined_display` field as video title
-  - **Automatic Description**: Generates bullet-pointed description from individual LoRA info
-  - **Automatic Keywords**: Creates keywords from LoRA names
-  - **Raw JSON Storage**: Stores complete JSON as custom metadata
-
-### LoRA JSON Example
-
-```json
-{
-  "loras": [
-    {
-      "name": "Style LoRA",
-      "strength": 0.8,
-      "source": "local"
-    },
-    {
-      "name": "Detail LoRA",
-      "strength": 0.6,
-      "source": "civitai",
-      "creator": "Artist Name"
-    }
-  ],
-  "count": 2,
-  "combined_display": "Style + Detail LoRAs"
-}
-```
-
-### Generated Metadata from LoRA JSON
-
-- **Title**: `"Style + Detail LoRAs"` (from `combined_display`)
-- **Description**: 
-  ```
-  LoRA Information:
-  • Local: Style LoRA (strength: 0.8)
-  • CivitAI: Detail LoRA by Artist Name (strength: 0.6)
-  ```
-- **Keywords**: `"LoRA: Style LoRA, Detail LoRA"`
-- **lora_json**: Full JSON stored as custom metadata
 
 ## VHS VideoCombine Compatibility
 
@@ -450,7 +389,6 @@ Supports all video formats that FFmpeg can handle:
 
 - [Video Preview Node](../video-preview/VIDEO_PREVIEW.md) - For displaying videos
 - [Media Describe Node](../media-describe/MEDIA_DESCRIBE.md) - For AI-powered video analysis
-- [LoRA Loader Node](../lora-loader/LORA_LOADER.md) - For LoRA metadata extraction
 - [VHS VideoCombine](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) - Video combination node
 
 ## Installation Notes

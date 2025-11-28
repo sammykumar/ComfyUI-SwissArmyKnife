@@ -86,7 +86,7 @@ Widgets should:
 ## 📚 Related Documentation
 
 - [Video Preview](../nodes/video-preview/) - Advanced widget example
-- [LoRA Loader](../nodes/lora-loader/) - Complex UI implementation
+
 - [Debug System](../infrastructure/debug/) - For widget debugging
 
 ---

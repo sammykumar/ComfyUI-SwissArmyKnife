@@ -57,7 +57,7 @@ const debugLog = (...args) => {
 ### Component Tags
 
 - `[VideoPreview]` - Video preview widget debug
-- `[LoRALoader]` - LoRA loading debug
+
 - `[MediaDescribe]` - Gemini API debug
 - `[CivitAI]` - CivitAI integration debug
 - `[Cache]` - Caching system debug

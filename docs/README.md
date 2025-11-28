@@ -11,7 +11,6 @@ Core custom nodes that extend ComfyUI functionality:
 - **[video-preview](nodes/video-preview/)** - Video preview widget for comparing multiple videos side-by-side
 - **[video-metadata](nodes/video-metadata/)** - Video metadata extraction and manipulation with append functionality
 - **[media-describe](nodes/media-describe/)** - AI-powered media description using Gemini API
-- **[lora-loader](nodes/lora-loader/)** - Advanced LoRA loading with metadata integration
 - **[reddit-media](nodes/reddit-media/)** - Reddit and RedGifs media extraction and processing
 - **[media-selection](nodes/media-selection/)** - Media source selection and management
 - **[control-panel](nodes/control-panel/)** - Workflow information dashboard display
@@ -88,7 +87,7 @@ Each node should have a single comprehensive markdown file that includes:
 ### By Topic
 
 - **Video Processing**: Check `/nodes/video-preview/` and `/nodes/video-metadata/`
-- **AI/ML Features**: See `/nodes/media-describe/` and `/nodes/lora-loader/`
+- **AI/ML Features**: See `/nodes/media-describe/`
 - **External APIs**: Look in `/integrations/`
 - **Performance**: Check `/infrastructure/caching/`
 - **Debugging**: See `/infrastructure/debug/`

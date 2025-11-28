@@ -59,7 +59,7 @@ python test_cache_verification.py
 ## 📚 Related Documentation
 
 - [Debug System](../debug/) - For cache debugging
-- [LoRA Loader](../../nodes/lora-loader/) - For LoRA hash caching
+
 - [Media Describe](../../nodes/media-describe/) - For description caching
 
 ---

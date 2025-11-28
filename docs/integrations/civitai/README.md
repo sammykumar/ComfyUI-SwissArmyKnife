@@ -48,7 +48,7 @@ Set CivitAI API key via:
 
 ## 📚 Related Documentation
 
-- [LoRA Loader](../../nodes/lora-loader/) - Main user of CivitAI integration
+
 - [Caching](../../infrastructure/caching/) - For caching CivitAI responses
 
 ---
