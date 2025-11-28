@@ -22,6 +22,28 @@ ComfyUI-SwissArmyKnife is a ComfyUI extension that consists of two essential com
 - Core business logic and AI integration
 - Requires ComfyUI server restart when modified
 
+**CRITICAL: Auto-Restart Development Server After Python Changes**
+
+After modifying ANY Python files in this repository (`.py` files in `nodes/`, `__init__.py`, etc.), you **MUST** automatically restart the development ComfyUI server:
+
+```bash
+# Run this command after ANY Python file modification
+cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-comfyui
+```
+
+**When to restart:**
+- After editing Python node files in `nodes/`
+- After modifying `__init__.py` or any Python configuration
+- After installing new Python packages with pip
+- After any Python code change that needs to take effect
+
+**Example workflow:**
+1. Edit Python file (e.g., `nodes/media_describe/llm_studio_structured.py`)
+2. Verify syntax with `ruff check .`
+3. **Immediately restart server:** `cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-comfyui`
+4. Wait for server to restart (~5-10 seconds)
+5. Test changes in ComfyUI web interface
+
 ### Web Extension (JavaScript Widgets)
 
 - Plain JavaScript widgets in `./web/js/` for enhanced ComfyUI interaction
@@ -287,6 +309,9 @@ ruff check .
 
 # Fix auto-fixable linting issues
 ruff check --fix .
+
+# CRITICAL: After ANY Python file modification, restart the dev server
+cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-comfyui
 ```
 
 ### Web Extension (JavaScript) Development
@@ -706,6 +731,9 @@ ruff check .  # Accept unused import warnings as normal
 
 # 3. Verify system dependencies
 ffmpeg -version | head -1  # Should show FFmpeg version
+
+# 4. CRITICAL: Restart dev server after Python modifications
+cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-comfyui
 ```
 
 #### React UI Validation _(DISABLED)_
@@ -896,7 +924,7 @@ Set appropriate timeouts: 60+ seconds for npm install, 300+ seconds for Python M
 
 ## Development Tips
 
-- **Backend changes**: Restart ComfyUI server after modifying Python files in `nodes/`
+- **Backend changes**: Restart ComfyUI server after modifying Python files in `nodes/` using: `cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-comfyui`
 - **Web extension changes**: Refresh browser cache after modifying JavaScript files in `web/js/`
 - JavaScript widgets require no build step (plain JS files)
 - Use Playwright tests in `web/tests/` to validate functionality against hosted ComfyUI server
