@@ -49,6 +49,7 @@ cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-
 - Plain JavaScript widgets in `./web/js/` for enhanced ComfyUI interaction
 - UI components and client-side functionality
 - Requires browser cache refresh when modified
+- **Chrome DevTools MCP Tool (Required for UI changes):** Whenever you work on anything that touches the ComfyUI browser experience or files under `web/`, spin up the Chrome DevTools MCP tool and inspect DOM/layout changes through it instead of guessing from memory. Use it to capture screenshots, review network logs, and confirm widget wiring before writing or modifying code. Treat any UI-oriented task (CSS tweaks, widget bugs, layout fixes) as blocked until you have gathered evidence via the dev tools call.
 
 ### Additional Components
 
@@ -309,6 +310,8 @@ cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-
 ```
 
 ### Web Extension (JavaScript) Development
+
+**Chrome DevTools MCP requirement:** UI bugs or enhancements must start with a Chrome DevTools MCP call. Launch the tool, capture screenshots/DOM details, and confirm widget behavior before editing anything under `web/`. Repeat after code changes to validate the actual ComfyUI UI instead of guessing.
 
 ```bash
 # JavaScript widgets are located in ./web/js/
