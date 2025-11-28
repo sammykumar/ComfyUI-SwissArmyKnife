@@ -8,7 +8,6 @@ Welcome to the ComfyUI-SwissArmyKnife documentation! This directory contains com
 
 Core custom nodes that extend ComfyUI functionality:
 
-- **[video-preview](nodes/video-preview/)** - Video preview widget for comparing multiple videos side-by-side
 - **[video-metadata](nodes/video-metadata/)** - Video metadata extraction and manipulation with append functionality
 - **[media-describe](nodes/media-describe/)** - AI-powered media description using Gemini API
 - **[reddit-media](nodes/reddit-media/)** - Reddit and RedGifs media extraction and processing
@@ -86,7 +85,7 @@ Each node should have a single comprehensive markdown file that includes:
 
 ### By Topic
 
-- **Video Processing**: Check `/nodes/video-preview/` and `/nodes/video-metadata/`
+- **Video Processing**: Check `/nodes/video-metadata/`
 - **AI/ML Features**: See `/nodes/media-describe/`
 - **External APIs**: Look in `/integrations/`
 - **Performance**: Check `/infrastructure/caching/`

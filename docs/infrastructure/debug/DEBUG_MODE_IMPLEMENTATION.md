@@ -160,7 +160,7 @@ Or simply omit the `DEBUG` setting entirely (defaults to `false`).
 
     - Enable debug mode via ComfyUI Settings
     - Open browser console
-    - Should see debug logs with `[SwissArmyKnife]`, `[VideoPreview]`, `[CivitAI]` prefixes
+    - Should see debug logs with `[SwissArmyKnife]` and `[CivitAI]` prefixes
     - Disable debug mode
     - Debug logs should stop immediately
 

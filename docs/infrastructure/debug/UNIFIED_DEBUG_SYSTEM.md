@@ -71,7 +71,6 @@ async function loadDebugConfig() {
 **Files Updated:**
 
 - `web/js/swiss-army-knife.js` - Main extension debug system
-- `web/js/video_preview/video_preview.js` - Video preview widget debug logging
 
 ## Configuration
 
@@ -146,14 +145,9 @@ After restarting the server, **hard refresh your browser** to load the new debug
 ### JavaScript Debug Output
 
 ```
-Video Preview Debug Mode: ENABLED
-[VideoPreview] reference_vid raw value: /comfyui-nvidia/temp/video.mp4 string
-[VideoPreview] Loaded reference_vid:
-  Extracted: /comfyui-nvidia/temp/video.mp4
-  Type: temp
-  Subfolder: (none)
-  Filename: video.mp4
-  URL: /api/view?filename=video.mp4&type=temp&subfolder=
+[SwissArmyKnife] Debug mode enabled
+[SwissArmyKnife] MediaSelection: resolved upload /comfyui-nvidia/temp/example.mp4
+[SwissArmyKnife] ControlPanel: refreshed dashboard state
 ```
 
 ## Migration Guide
@@ -220,7 +214,6 @@ The following files still contain hardcoded debug logging that should be migrate
 - `nodes/civitai_service.py` - CivitAI API debug logs
 - `nodes/lora_hash_cache.py` - Cache operation logs
 - `nodes/cache.py` - Cache file logs
-- `nodes/utils/video_preview.py` - Video preview logs
 - `nodes/utils/control_panel.py` - Control panel logs
 - `nodes/lora_manager/*.py` - LoRA manager debug logs
 
@@ -228,7 +221,7 @@ The following files still contain hardcoded debug logging that should be migrate
 
 1. **High Priority**: Core nodes (`nodes.py`, `civitai_service.py`)
 2. **Medium Priority**: Utility modules (`cache.py`, `lora_hash_cache.py`)
-3. **Low Priority**: Utility nodes (`control_panel.py`, `video_preview.py`)
+3. **Low Priority**: Utility nodes (`control_panel.py`, dashboard widgets)
 
 ## Troubleshooting
 
@@ -240,7 +233,6 @@ The following files still contain hardcoded debug logging that should be migrate
 2. **Restart ComfyUI server** (required)
 3. **Hard refresh browser** (Cmd+Shift+R)
 4. Check console for: `Swiss Army Knife Debug Mode: ENABLED`
-5. Check console for: `Video Preview Debug Mode: ENABLED`
 
 ### Environment variable not loading
 

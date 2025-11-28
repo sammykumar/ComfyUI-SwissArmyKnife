@@ -682,7 +682,7 @@ console.log(
 
 ## Related Documentation
 
-- [Video Preview Implementation](../video-preview/)
+- [Video Metadata Implementation](../video-metadata/)
 - [Gemini Media Describe](../media-describe/)
 - [Control Panel Overview](./CONTROL_PANEL_OVERVIEW.md)
 

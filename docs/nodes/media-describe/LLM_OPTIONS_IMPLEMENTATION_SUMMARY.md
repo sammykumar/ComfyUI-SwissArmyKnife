@@ -38,7 +38,7 @@ Enhanced the `MediaDescribe` node to support multiple LLM providers (Gemini API 
 
 #### Parameter Renaming
 
-- **Old**: `gemini_options` (GEMINI_OPTIONS type)
+- **Old (legacy)**: `gemini_options` (GEMINI_OPTIONS type)
 - **New**: `llm_options` (accepts both GEMINI_OPTIONS and LLM_STUDIO_OPTIONS types)
 
 ✅ **Fully backward compatible** - existing workflows continue to work
@@ -91,7 +91,7 @@ else:
 
 **Import**:
 ```python
-from .media_describe import (GeminiUtilOptions, LLMStudioOptions, MediaDescribe, ...)
+from .media_describe import (LLMStudioOptions, MediaDescribe, ...)
 ```
 
 **Registration**:
@@ -207,7 +207,7 @@ Both providers return the same output structure:
 ✅ **100% Backward Compatible**
 
 - Existing workflows using Gemini Options work without changes
-- Parameter name change (`gemini_options` → `llm_options`) transparent to users
+- Parameter name change (`gemini_options` → `llm_options`) transparent to users (legacy workflows); new installs use settings for Gemini and `llm_studio_options` for local providers
 - Default behavior unchanged (Gemini processing)
 - No breaking changes
 
@@ -242,7 +242,7 @@ When testing in a full ComfyUI environment with all dependencies:
 
 ### Test 1: Gemini Options (Backward Compatibility)
 1. Add MediaDescribe node
-2. Connect Gemini Util - Options node to `llm_options` input
+2. Configure Gemini credentials via ComfyUI settings (no separate node needed)
 3. Provide test media
 4. Verify processing works as before
 

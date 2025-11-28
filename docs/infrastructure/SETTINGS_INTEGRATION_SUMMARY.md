@@ -12,12 +12,7 @@ This implementation replaces text input widgets for API keys with ComfyUI's nati
     - Added settings registration for `swiss_army_knife.gemini.api_key` and `swiss_army_knife.civitai.api_key`
     - Added helper functions `getGeminiApiKey()` and `getCivitaiApiKey()`
     - Added automatic settings sync to backend via `syncApiKeysToBackend()`
-    - Updated GeminiUtilOptions handling (removed API key widget logic)
     - Added onChange handlers for automatic sync when settings change
-
-- **`web/js/gemini_options_security.js`**
-    - Disabled extension (no longer needed since we don't use API key widgets)
-    - Added comments explaining the change
 
 #### Python Backend
 
@@ -28,17 +23,12 @@ This implementation replaces text input widgets for API keys with ComfyUI's nati
     - Updated `register_config_routes()` to include new endpoint
     - Added logging for debugging
 
-- **`nodes/media_describe/gemini_util_options.py`**
-    - Removed `gemini_api_key` from INPUT_TYPES (no longer a widget)
-    - Updated `create_options()` method signature (removed `gemini_api_key` parameter)
-    - Added import of `get_setting_value` from config_api
-    - Updated to retrieve API key from settings instead of widget
-
 - **`nodes/nodes.py`**
     - Removed `civitai_api_key` from LoRAInfoExtractor INPUT_TYPES
     - Updated `extract_lora_info()` method signature (removed `civitai_api_key` parameter)
     - Added logic to retrieve CivitAI API key from settings
     - Added logging for debugging
+    - Dropped the legacy `GeminiUtilOptions` node registration (Gemini key now comes from settings automatically)
 
 #### Documentation
 

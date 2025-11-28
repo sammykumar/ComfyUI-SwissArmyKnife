@@ -224,7 +224,7 @@ Planned improvements:
 ## Related Nodes
 
 - **MediaDescribe**: Main node that uses these options
-- **Gemini Util - Options**: Alternative cloud-based option provider
+- **ComfyUI Settings**: Configure Gemini API keys (replaces the legacy Gemini Util - Options node)
 - **LM Studio Video Describe**: Direct video description (standalone)
 - **LM Studio Picture Describe**: Direct image description (standalone)
 - **Media Describe - Overrides**: Override specific output fields

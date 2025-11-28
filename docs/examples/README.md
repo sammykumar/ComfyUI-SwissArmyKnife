@@ -15,12 +15,6 @@ Example workflows and demonstrations for ComfyUI-SwissArmyKnife nodes.
 - Describe with Gemini AI
 - Process and output
 
-### Video Comparison
-
-- Load multiple video versions
-- Display in Video Preview node
-- Compare side-by-side
-
 ### LoRA Workflow
 
 - Load LoRA from CivitAI

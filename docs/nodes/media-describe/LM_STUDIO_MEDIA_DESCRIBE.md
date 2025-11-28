@@ -315,7 +315,7 @@ Files are automatically cleaned up after processing.
 ## Related Nodes
 
 - **Media Describe** - Gemini-based video analysis
-- **Video Preview** - Video playback and frame visualization
+- **Control Panel** - Inspect structured outputs and overrides
 - **Video Metadata** - Extract video technical metadata
 
 ## References

@@ -317,12 +317,11 @@ The widget is added dynamically after execution, so it appears below existing wi
 1. **Clear cache** (Cmd+Shift+R / Ctrl+Shift+R)
 2. **Open console** (F12)
 3. **Add MediaDescribe node** to workflow
-4. **Connect** gemini_options input
-5. **Set** media_source to "Reddit Post" (or upload media)
-6. **Enter** a Reddit URL (or upload file)
-7. **Execute** the workflow (Queue Prompt)
-8. **Watch console** for the log messages above
-9. **Check node** for the 📐 widget
+4. **Set** media_source to "Reddit Post" (or upload media)
+5. **Enter** a Reddit URL (or upload file)
+6. **Execute** the workflow (Queue Prompt)
+7. **Watch console** for the log messages above
+8. **Check node** for the 📐 widget
 
 ### Expected Behavior
 

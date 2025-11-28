@@ -256,7 +256,7 @@ Renamed the Python class from `GeminiMediaDescribe` to `MediaDescribe` to better
 
 3. **Node Registration**
     - File: `nodes/nodes.py`
-    - Import: `from .media_describe import GeminiUtilOptions, MediaDescribe`
+    - Import: `from .media_describe import MediaDescribe`
     - Mapping: `"GeminiUtilMediaDescribe": MediaDescribe` (node ID unchanged for compatibility)
 
 ### JavaScript Code
@@ -881,241 +881,10 @@ Potential improvements for future consideration:
 
 ---
 
-# Gemini Utils Extension Refactoring Plan
+# Gemini Utils Extension
 
-## Date: October 1, 2025
+> **Legacy Note:** The Gemini Utils extension documentation is retained for history. The separate Gemini Util Options node was removed in October 2025, so new workflows should rely on ComfyUI settings instead of this legacy node.
 
-## Overview
-
-Refactor `web/js/swiss-army-knife.js` (1160+ lines) into a modular structure similar to the `lora_manager` folder for better organization, maintainability, and developer experience.
-
-## Current State
-
-**File: `web/js/swiss-army-knife.js`** (1160+ lines)
-
--   Single monolithic file handling 3 different node types
--   `GeminiUtilOptions` node (~10 lines)
--   `FilenameGenerator` node (~180 lines)
--   `GeminiUtilMediaDescribe` node (~1000+ lines)
--   Complex state management, upload handling, serialization
-
-## Proposed Structure
-
-```
-web/js/
-├── lora_manager/
-│   ├── extension.js           # LoRA management (existing)
-│   └── README.md
-├── gemini_utils/              # NEW FOLDER
-│   ├── extension.js           # Main registration (~50 lines)
-│   ├── media_describe.js      # GeminiUtilMediaDescribe (~1000+ lines)
-│   ├── filename_generator.js  # FilenameGenerator (~180 lines)
-│   ├── options.js             # GeminiUtilOptions (~10 lines)
-│   ├── shared_utils.js        # Common utilities (if needed)
-│   └── README.md              # Documentation
-└── swiss-army-knife.js        # DEPRECATED (keep temporarily for compatibility)
-```
-
-## Refactoring Steps
-
-### Phase 1: Create New Structure
-
-1. **Create folder**
-
-    ```bash
-    mkdir -p web/js/gemini_utils
-    ```
-
-2. **Create extension.js (main entry point)**
-
-    - Import handlers from separate files
-    - Register all three node types
-    - Delegate to specific handlers
-
-3. **Extract media_describe.js**
-
-    - Move `GeminiUtilMediaDescribe` logic
-    - Export `registerMediaDescribeNode()` function
-    - Export helper functions (upload handlers, state management)
-
-4. **Extract filename_generator.js**
-
-    - Move `FilenameGenerator` logic
-    - Export `registerFilenameGeneratorNode()` function
-    - Include filename generation logic
-
-5. **Extract options.js**
-
-    - Move `GeminiUtilOptions` logic
-    - Export `registerOptionsNode()` function
-
-6. **Create shared_utils.js (if needed)**
-    - Common utilities used across multiple files
-    - File upload helpers
-    - Widget management utilities
-
-### Phase 2: Implementation Details
-
-#### File: `gemini_utils/extension.js`
-
-```javascript
-console.log('Loading Gemini Utils extension');
-
-import {
-    registerMediaDescribeNode,
-    handleMediaDescribeLoaded,
-} from './media_describe.js';
-import { registerFilenameGeneratorNode } from './filename_generator.js';
-import { registerOptionsNode } from './options.js';
-
-app.registerExtension({
-    name: 'comfyui_swissarmyknife.gemini_utils',
-
-    async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeData.name === 'GeminiUtilMediaDescribe') {
-            console.log('Registering GeminiUtilMediaDescribe node');
-            registerMediaDescribeNode(nodeType, nodeData, app);
-        } else if (nodeData.name === 'FilenameGenerator') {
-            console.log('Registering FilenameGenerator node');
-            registerFilenameGeneratorNode(nodeType, nodeData, app);
-        } else if (nodeData.name === 'GeminiUtilOptions') {
-            console.log('Registering GeminiUtilOptions node');
-            registerOptionsNode(nodeType, nodeData, app);
-        }
-    },
-
-    loadedGraphNode(node, app) {
-        if (node.comfyClass === 'GeminiUtilMediaDescribe') {
-            handleMediaDescribeLoaded(node, app);
-        }
-    },
-});
-```
-
-#### File: `gemini_utils/media_describe.js`
-
-```javascript
-/**
- * GeminiUtilMediaDescribe Node Handler
- * Handles media upload, state persistence, and Reddit integration
- */
-
-export function registerMediaDescribeNode(nodeType, nodeData, app) {
-    // All the current GeminiUtilMediaDescribe logic
-    const onNodeCreated = nodeType.prototype.onNodeCreated;
-    nodeType.prototype.onNodeCreated = function () {
-        // ... existing implementation ...
-    };
-
-    // Add serialization
-    const onSerialize = nodeType.prototype.onSerialize;
-    nodeType.prototype.onSerialize = function (o) {
-        // ... existing implementation ...
-    };
-
-    // Add configuration
-    const onConfigure = nodeType.prototype.onConfigure;
-    nodeType.prototype.onConfigure = function (o) {
-        // ... existing implementation ...
-    };
-}
-
-export function handleMediaDescribeLoaded(node, app) {
-    // loadedGraphNode logic for GeminiUtilMediaDescribe
-    console.log('[LOADED] loadedGraphNode called for GeminiUtilMediaDescribe');
-    // ... existing implementation ...
-}
-
-// Helper functions
-export function clearAllMediaState() {
-    /* ... */
-}
-export function updateMediaWidgets() {
-    /* ... */
-}
-// ... other helpers ...
-```
-
-#### File: `gemini_utils/filename_generator.js`
-
-```javascript
-/**
- * FilenameGenerator Node Handler
- * Generates dynamic filenames based on workflow parameters
- */
-
-export function registerFilenameGeneratorNode(nodeType, nodeData, app) {
-    console.log('Registering FilenameGenerator node');
-
-    const onNodeCreated = nodeType.prototype.onNodeCreated;
-    nodeType.prototype.onNodeCreated = function () {
-        const result = onNodeCreated?.apply(this, arguments);
-
-        // Add preview widget
-        this.addWidget(/* ... */);
-
-        // Update filename preview function
-        this.updateFilenamePreview = function () {
-            // ... existing implementation ...
-        };
-
-        // Set up listeners
-        // ... existing implementation ...
-
-        return result;
-    };
-}
-```
-
-#### File: `gemini_utils/options.js`
-
-```javascript
-/**
- * GeminiUtilOptions Node Handler
- * Configuration options for Gemini API
- */
-
-export function registerOptionsNode(nodeType, nodeData, app) {
-    console.log('Registering GeminiUtilOptions node');
-
-    // This node doesn't need special widgets
-    // The existing ComfyUI widgets are sufficient
-}
-```
-
-### Phase 3: Testing & Migration
-
-1. **Update Python to load new extension**
-
-    ```python
-    # In __init__.py or nodes.py
-    WEB_DIRECTORY = "./web/js"
-
-    # Ensure both extensions are loaded:
-    # - lora_manager/extension.js
-    # - gemini_utils/extension.js
-    ```
-
-2. **Test each node type**
-
-    - [ ] GeminiUtilMediaDescribe upload functionality
-    - [ ] GeminiUtilMediaDescribe state persistence
-    - [ ] GeminiUtilMediaDescribe Reddit integration
-    - [ ] FilenameGenerator preview updates
-    - [ ] GeminiUtilOptions configuration
-
-3. **Deprecate old file**
-    - Keep `swiss-army-knife.js` temporarily with deprecation notice
-    - Add console warning directing to new location
-    - Remove after confirming no issues
-
-### Phase 4: Documentation
-
-Create comprehensive documentation:
-
-#### File: `gemini_utils/README.md`
-
-```markdown
 # Gemini Utils Extension
 
 JavaScript widgets for Gemini AI integration in ComfyUI Swiss Army Knife.
@@ -1125,7 +894,7 @@ JavaScript widgets for Gemini AI integration in ComfyUI Swiss Army Knife.
 -   **extension.js**: Main entry point, registers all node types
 -   **media_describe.js**: Media upload and description generation (1000+ lines)
 -   **filename_generator.js**: Dynamic filename generation widget (180 lines)
--   **options.js**: Configuration options widget (10 lines)
+    *(Legacy)* `options.js`: Previously used for Gemini Util Options (now removed)
 
 ## Node Types
 
@@ -1152,9 +921,6 @@ Generate structured filenames based on workflow parameters.
 -   Date-based organization
 -   Parameter-based naming
 
-### GeminiUtilOptions
-
-Configure Gemini API options.
 
 ## Development
 
@@ -1373,7 +1139,7 @@ Added `MediaDescribeOverrides` to exports:
 ```python
 from .media_describe_overrides import MediaDescribeOverrides
 
-__all__ = ['GeminiUtilOptions', 'MediaDescribe', 'MediaDescribeOverrides']
+__all__ = ['MediaDescribe', 'MediaDescribeOverrides']
 ```
 
 ### 4. Registered New Node
@@ -1383,7 +1149,7 @@ __all__ = ['GeminiUtilOptions', 'MediaDescribe', 'MediaDescribeOverrides']
 Added to imports:
 
 ```python
-from .media_describe import GeminiUtilOptions, MediaDescribe, MediaDescribeOverrides
+from .media_describe import MediaDescribe, MediaDescribeOverrides
 ```
 
 Added to NODE_CLASS_MAPPINGS:
@@ -1438,7 +1204,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 │ Inputs:                             │
 │  - media_source                     │
 │  - media_type                       │
-│  - gemini_options                   │
 │  - override_subject                 │
 │  - override_cinematic_aesthetic     │
 │  - override_stylization_tone        │
@@ -1475,7 +1240,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 │ Inputs:                      │
 │  - media_source              │
 │  - media_type                │
-│  - gemini_options            │
 │  - overrides ←───────────────┘
 │  - ... (other inputs)        │
 └──────────────────────────────┘
@@ -1528,15 +1292,13 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 ### Pattern 1: Basic Usage (No Overrides)
 
 ```
-[Gemini Util - Options] → [MediaDescribe] → [Outputs]
+[MediaDescribe] → [Outputs]
 ```
 
 ### Pattern 2: With Overrides
 
 ```
-[Media Describe - Overrides] ─┐
-                               ├→ [MediaDescribe] → [Outputs]
-[Gemini Util - Options] ───────┘
+[Media Describe - Overrides] ─→ [MediaDescribe] → [Outputs]
 ```
 
 ### Pattern 3: Shared Overrides
@@ -1599,8 +1361,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
 ### Node Count
 
--   **Before**: 2 nodes (MediaDescribe, GeminiUtilOptions)
--   **After**: 3 nodes (MediaDescribe, GeminiUtilOptions, MediaDescribeOverrides)
+-   **Before**: 1 node (MediaDescribe)
+-   **After**: 2 nodes (MediaDescribe, MediaDescribeOverrides)
 
 ## Next Steps (Optional Future Enhancements)
 
@@ -1696,74 +1458,7 @@ def _parse_paragraphs(self, description, override_subject="",
     """
 ```
 
-### 4. Updated Function Signatures
-
-#### `describe_media()`
-
-Added 6 new parameters:
-
-```python
-def describe_media(self, media_source, media_type, seed, gemini_options=None,
-                   media_path="", uploaded_image_file="", uploaded_video_file="",
-                   frame_rate=24.0, max_duration=0.0, reddit_url="", subreddit_url="",
-                   override_subject="", override_cinematic_aesthetic="",
-                   override_stylization_tone="", override_clothing="",
-                   override_scene="", override_movement=""):
-```
-
-#### `_process_image()`
-
-Added 4 new parameters:
-
-```python
-def _process_image(self, gemini_api_key, gemini_model, model_type,
-                   describe_clothing, change_clothing_color, describe_hair_style,
-                   describe_bokeh, describe_subject, prefix_text, image,
-                   selected_media_path, media_info_text,
-                   override_subject="", override_cinematic_aesthetic="",
-                   override_stylization_tone="", override_clothing=""):
-```
-
-#### `_process_video()`
-
-Added 6 new parameters:
-
-```python
-def _process_video(self, gemini_api_key, gemini_model, describe_clothing,
-                   change_clothing_color, describe_hair_style, describe_bokeh,
-                   describe_subject, replace_action_with_twerking, prefix_text,
-                   selected_media_path, frame_rate, max_duration, media_info_text,
-                   override_subject="", override_cinematic_aesthetic="",
-                   override_stylization_tone="", override_clothing="",
-                   override_scene="", override_movement=""):
-```
-
-### 5. Updated Return Statements
-
-Modified 4 return statements (2 in `_process_image`, 2 in `_process_video`):
-
-**Before:**
-
-```python
-return (description, media_info_text, gemini_status, processed_media_path,
-        final_string, output_height, output_width, all_data)
-```
-
-**After:**
-
-```python
-# Parse paragraphs and apply overrides
-subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement, final_description = \
-    self._parse_paragraphs(description, override_subject, override_cinematic_aesthetic,
-                          override_stylization_tone, override_clothing,
-                          override_scene, override_movement)
-
-return (final_description, media_info_text, gemini_status, processed_media_path,
-        final_string, output_height, output_width, all_data,
-        subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement)
-```
-
-### 6. Updated Aggregated Output
+### 4. Updated Aggregated Output
 
 The `all_media_describe_data` JSON now includes individual paragraphs:
 
@@ -2495,7 +2190,6 @@ This approach is no longer needed, but still supported for backward compatibilit
 MediaDescribe:
   media_source: "Upload Media"
   media_type: "image"
-  gemini_options: [connected]
   override_subject: "A woman standing confidently"
   override_clothing: "Navy blazer, white shirt"
   (other overrides empty)
@@ -2514,7 +2208,6 @@ Media Describe - Overrides:
 MediaDescribe:
   media_source: "Upload Media"
   media_type: "image"
-  gemini_options: [connected]
   overrides: [connected from Media Describe - Overrides]
 ```
 
@@ -2948,7 +2641,6 @@ if (allDataJson) {
 ┌─────────────────────────────────┐
 │ Media Describe                  │
 ├─────────────────────────────────┤
-│ gemini_options: [dropdown]      │
 │ overrides: [connection]         │
 │ media_source: [dropdown]        │
 │ ...                             │
@@ -2976,7 +2668,6 @@ if (allDataJson) {
 ┌─────────────────────────────────┐
 │ Media Describe                  │
 ├─────────────────────────────────┤
-│ gemini_options: [dropdown]      │
 │ overrides: [connection]         │
 │ media_source: [dropdown]        │
 │ ...                             │
@@ -4500,7 +4191,7 @@ Created comprehensive documentation:
 ```
 [Media Describe - Overrides] ──┐
                                 ├→ [MediaDescribe]
-[Gemini Util - Options] ────────┘       ↓
+[ComfyUI Settings] ────────┘       ↓
                                  all_media_describe_data
                                          ↓
                           [Media Describe - Prompt Breakdown]
@@ -4749,7 +4440,7 @@ The node displays paragraphs with:
 ```
 [Media Describe - Overrides] ──┐
                                 ├→ [MediaDescribe]
-[Gemini Util - Options] ────────┘       ↓
+[ComfyUI Settings] ────────┘       ↓
                                  all_media_describe_data
                                          ↓
                           [Media Describe - Prompt Breakdown]
@@ -4888,7 +4579,7 @@ Review breakdowns to understand how the AI structures descriptions for different
 
 -   **[MediaDescribe](README.md)** - Main analysis node
 -   **[Media Describe - Overrides](MEDIA_DESCRIBE_OVERRIDES_NODE.md)** - Override paragraphs
--   **[Gemini Util - Options](gemini-prompts.md)** - Configure Gemini API
+-   **[Settings Integration Guide](../../infrastructure/SETTINGS_INTEGRATION.md)** - Configure Gemini API via ComfyUI settings
 
 ---
 
@@ -5164,7 +4855,7 @@ Users can scroll within the left panel to read the complete prompts.
 
 #### Configuration
 
--   **gemini_options**: Configuration from Gemini Util - Options node
+-   Gemini API keys are pulled from ComfyUI settings (no additional input required)
 
 #### Media Sources
 
@@ -5219,7 +4910,6 @@ Users can scroll within the left panel to read the complete prompts.
 │  └─ seed: 0                                                 │
 ├─────────────────────────────────────────────────────────────┤
 │  Optional:                                                   │
-│  ├─ gemini_options: ○ (connect to Gemini Util - Options)   │
 │  ├─ media_path: ""                                          │
 │  ├─ uploaded_image_file: ""                                 │
 │  ├─ uploaded_video_file: ""                                 │
@@ -5270,7 +4960,7 @@ Users can scroll within the left panel to read the complete prompts.
 ### Basic Usage (No Overrides)
 
 ```
-[Gemini Util - Options] ──(gemini_options)──→ [MediaDescribe]
+[ComfyUI Settings] ──(settings)──→ [MediaDescribe]
                                                       │
                                                       ├─(description)─→ [Display Text]
                                                       └─(final_string)─→ [Next Node]
@@ -5282,7 +4972,7 @@ Users can scroll within the left panel to read the complete prompts.
 [Custom Text Input] ──→ override_subject ──┐
 [Custom Text Input] ──→ override_clothing ─┤
                                             ├──→ [MediaDescribe]
-[Gemini Util - Options] ──(gemini_options)─┘          │
+[ComfyUI Settings] ──(settings)─┘          │
                                                        ├─(description)─→ [Uses custom + Gemini]
                                                        └─(subject)────→ [Shows custom text]
 ```
@@ -5758,76 +5448,6 @@ The system uses dynamic paragraph numbering based on enabled options:
 
 # LLM Options Support
 
-**Date**: October 15, 2025  
-**Status**: Completed
-
-## Overview
-
-The `MediaDescribe` node has been enhanced to support multiple LLM providers through the renamed `llm_options` input. This allows you to use either **Gemini API** (cloud-based) or **LM Studio** (local) for media analysis.
-
-## Key Changes
-
-### Input Parameter Renamed
-
--   **Old**: `gemini_options` (GEMINI_OPTIONS type)
--   **New**: `llm_options` (accepts both GEMINI_OPTIONS and LLM_STUDIO_OPTIONS types)
-
-### Backward Compatibility
-
-✅ **Fully backward compatible** - Existing workflows using Gemini Options continue to work without modification.
-
-## Supported LLM Providers
-
-### 1. Gemini API (Cloud-based)
-
-**Use Case**: High-quality structured output for text-to-image workflows
-
-**Setup**:
-
-1. Add "Gemini Util - Options" node
-2. Configure API key and model
-3. Connect to MediaDescribe `llm_options` input
-
-**Output**: Structured JSON with 6 fields (subject, clothing, movement, scene, cinematic_aesthetic, stylization_tone)
-
-**Documentation**: See existing Gemini Options documentation
-
-### 2. LM Studio (Local)
-
-**Use Case**: Privacy-focused local processing with vision models
-
-**Setup**:
-
-1. Start LM Studio with a vision model (e.g., Qwen3-VL)
-2. Add "LM Studio - Options" node
-3. Configure base URL and model name
-4. Connect to MediaDescribe `llm_options` input
-
-**Output**: Simple caption-based description
-
-**Documentation**: See [LM_STUDIO_OPTIONS.md](LM_STUDIO_OPTIONS.md)
-
-## How Provider Detection Works
-
-The MediaDescribe node automatically detects which provider to use based on the options object:
-
-```python
-# Detect provider from options
-provider = llm_options.get("provider", "gemini")  # Default to Gemini
-
-if provider == "llm_studio":
-    # Use LM Studio processing
-    return self._process_with_llm_studio(...)
-else:
-    # Use Gemini processing (default)
-    return self._process_image(...) or self._process_video(...)
-```
-
-**Provider Identifiers**:
-
--   Gemini Options: No explicit provider field (defaults to "gemini")
--   LM Studio Options: `"provider": "llm_studio"`
-
 ## LM Studio Processing Flow
 
 ### Image Processing
@@ -5924,26 +5544,6 @@ This mirrors the UX pattern already used by the dedicated `LLMStudioVideoDescrib
 -   ✅ Need general narrative descriptions
 -   ✅ Want full control over the vision model
 -   ✅ Working with custom/fine-tuned models
-
-## Migration Guide
-
-### Updating Existing Workflows
-
-**No changes required!** Existing workflows continue to work:
-
-1. **Old Parameter**: `gemini_options` → **New Parameter**: `llm_options`
-2. **Connection Type**: GEMINI_OPTIONS still accepted
-3. **Processing**: Automatic fallback to Gemini mode
-
-### Adding LM Studio Support
-
-To switch an existing workflow to LM Studio:
-
-1. **Remove**: Gemini Util - Options node
-2. **Add**: LM Studio - Options node
-3. **Connect**: Same connection point (`llm_options` input)
-4. **Configure**: Set base URL and model name
-5. **Run**: MediaDescribe automatically detects and uses LM Studio
 
 ## Error Handling
 
@@ -6321,7 +5921,7 @@ When testing this enhancement:
 
 ### October 15, 2025 - LLM Options Support
 
--   Renamed `gemini_options` input to `llm_options`
+-   Removed the legacy `gemini_options` input (Gemini API now uses settings while LM Studio relies on `llm_studio_options`)
 -   Added support for LLM_STUDIO_OPTIONS type
 -   Implemented automatic provider detection
 -   Added `_process_with_llm_studio()` method for local processing

@@ -72,7 +72,6 @@ Extract media from:
 
 ## 📚 Related Documentation
 
-- [Video Preview](../video-preview/) - For previewing extracted videos
 - [Video Metadata](../video-metadata/) - For extracting video information
 - [Features](../../features/) - For text extraction and processing
 

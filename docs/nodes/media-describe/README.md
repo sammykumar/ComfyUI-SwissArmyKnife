@@ -16,7 +16,6 @@ AI-powered media description using Google's Gemini API and local vLLM/LM Studio 
 - **LLMStudioVideoDescribe** - Video analysis with local LM Studio (OpenAI-compatible API)
 - **[Media Describe - Overrides](MEDIA_DESCRIBE_OVERRIDES_NODE.md)** - Paragraph override configuration node
 - **[Media Describe - Prompt Breakdown](PROMPT_BREAKDOWN_NODE.md)** - Display node for formatted paragraph breakdown
-- **Gemini Util - Options** - Gemini API configuration node
 - **LM Studio - Options** - LM Studio configuration node (NEW)
 
 ### Core Implementation
@@ -69,7 +68,7 @@ Main analysis node that processes images/videos with Gemini AI.
 
 - Media source configuration (upload, random, reddit)
 - Media type (image/video)
-- LLM options (from Gemini Util - Options or LM Studio - Options node)
+- LLM Studio options (optional, from LM Studio - Options node)
 - **Overrides** (optional, from Media Describe - Overrides node)
 
 **Outputs (8 total):**
@@ -139,9 +138,9 @@ Configuration node for paragraph-level customization.
 
 ```
 ┌─────────────────────────┐
-│ Gemini Util - Options   │
+│ ComfyUI Settings        │
 └─────────────────────────┘
-            │ (llm_options)
+            │ (Gemini API key)
             ▼
 ┌─────────────────────────┐
 │ MediaDescribe           │ ──→ Outputs
@@ -169,17 +168,15 @@ Configuration node for paragraph-level customization.
 │ Overrides                │
 └──────────────────────────┘
             │ (overrides)
-            ├──────────────────┐
-            ▼                  │
-┌─────────────────────────┐   │
-│ Gemini Util - Options   │   │
-│ OR                      │   │
-│ LM Studio - Options    │   │
-└─────────────────────────┘   │
-            │ (llm_options)    │
-            ▼                  │
-┌─────────────────────────┐   │
-│ MediaDescribe           │◄──┘
+            │
+            ▼
+┌─────────────────────────┐
+│ LM Studio - Options     │ (optional)
+└─────────────────────────┘
+            │ (llm_options)
+            ▼
+┌─────────────────────────┐
+│ MediaDescribe           │
 └─────────────────────────┘
             │
             ▼
@@ -191,7 +188,7 @@ Configuration node for paragraph-level customization.
 - **Python Backend**:
     - `nodes/media_describe/mediia_describe.py` - Main MediaDescribe node
     - `nodes/media_describe/media_describe_overrides.py` - Overrides node
-    - `nodes/media_describe/gemini_util_options.py` - Options node
+    - *(Gemini Util Options node removed – Gemini API keys now come directly from settings)*
 - **API Integration**: Google Generative AI SDK
 
 ### API Configuration

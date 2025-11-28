@@ -9,19 +9,16 @@ This guide documents the documentation consolidation process for ComfyUI-SwissAr
 
 ## Consolidation Status
 
-### ✅ Completed Nodes (2/7)
+### ✅ Completed Nodes (1/6)
 
-1. **video-preview** (7 files → 1 file)
-   - Consolidated into: `VIDEO_PREVIEW.md`
-   - Includes: Implementation, features, progressive loading, bug fixes, troubleshooting
-   - Size: ~12.5 KB
-
-2. **video-metadata** (5 files → 1 file)
+1. **video-metadata** (5 files → 1 file)
    - Consolidated into: `VIDEO_METADATA.md`
    - Includes: Append functionality, VHS compatibility, LoRA JSON integration, troubleshooting
    - Size: ~14.8 KB
 
-### 📋 Pending Consolidation (5/7)
+> **Note:** The legacy `video-preview` node has been retired, so its documentation set was removed rather than consolidated.
+
+### 📋 Pending Consolidation (5/6)
 
 1. **control-panel** - 3 files remaining
 2. **reddit-media** - 6 files remaining
@@ -148,7 +145,6 @@ Use this structure when consolidating node documentation:
 
 - **Consolidated file**: `[NODE_NAME].md` (all caps with underscores)
 - **Examples**: 
-  - `VIDEO_PREVIEW.md`
   - `VIDEO_METADATA.md`
   - `MEDIA_DESCRIBE.md`
   - `LORA_LOADER.md`
@@ -228,7 +224,7 @@ To complete the consolidation:
 4. Then **lora-loader** (15 files)
 5. Finally **media-describe** (22 files, largest)
 
-Each consolidated file should follow the pattern established by VIDEO_PREVIEW.md and VIDEO_METADATA.md.
+Each consolidated file should follow the pattern established by VIDEO_METADATA.md and MEDIA_DESCRIBE.md.
 
 ---
 

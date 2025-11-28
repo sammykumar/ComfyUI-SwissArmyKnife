@@ -96,7 +96,7 @@
     "video_flow": {
       "description": "Optical flow computation for video",
       "steps": [
-        "1. Load Video or Frame Extractor (to get multiple frames)",
+        "1. Load Video (extract frames externally if needed)",
         "2. Connect to VACE Flow Annotator (flow_direction: forward, resolution: 512)",
         "3. Save output flow maps"
       ]

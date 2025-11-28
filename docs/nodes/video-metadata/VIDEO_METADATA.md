@@ -387,7 +387,6 @@ Supports all video formats that FFmpeg can handle:
 
 ## Related Documentation
 
-- [Video Preview Node](../video-preview/VIDEO_PREVIEW.md) - For displaying videos
 - [Media Describe Node](../media-describe/MEDIA_DESCRIBE.md) - For AI-powered video analysis
 - [VHS VideoCombine](https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite) - Video combination node
 

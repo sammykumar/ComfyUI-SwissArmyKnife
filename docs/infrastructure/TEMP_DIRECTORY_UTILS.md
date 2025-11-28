@@ -89,11 +89,9 @@ This ensures compatibility with:
 
 All nodes that create temporary files have been updated:
 
-1. **Frame Extractor** (`nodes/media_selection/frame_extractor.py`)
-    - Uses `get_temp_subdirectory("comfyui_frames")` for frame extraction
-2. **Media Selection** (`nodes/media_selection/media_selection.py`)
+1. **Media Selection** (`nodes/media_selection/media_selection.py`)
     - Uses `get_temp_file_path(suffix='.mp4', subdir='videos')` for video trimming
-3. **Media Describe** (`nodes/media_describe/mediia_describe.py`)
+2. **Media Describe** (`nodes/media_describe/mediia_describe.py`)
     - Uses `get_temp_file_path(suffix=file_ext, subdir='downloads')` for Reddit downloads
     - Uses `get_temp_file_path(suffix='.mp4', subdir='videos')` for video trimming
 

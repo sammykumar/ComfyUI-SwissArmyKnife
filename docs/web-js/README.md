@@ -85,8 +85,6 @@ Widgets should:
 
 ## 📚 Related Documentation
 
-- [Video Preview](../nodes/video-preview/) - Advanced widget example
-
 - [Debug System](../infrastructure/debug/) - For widget debugging
 
 ---

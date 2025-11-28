@@ -47,7 +47,6 @@ Extract and manipulate video metadata including:
 
 ## 📚 Related Documentation
 
-- [Video Preview Node](../video-preview/) - For displaying videos with metadata
 - [Media Describe Node](../media-describe/) - For AI-generated video descriptions
 
 ---

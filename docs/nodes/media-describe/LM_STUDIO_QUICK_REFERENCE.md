@@ -91,7 +91,7 @@ See [LM_STUDIO_MEDIA_DESCRIBE.md](./LM_STUDIO_MEDIA_DESCRIBE.md) for complete do
 ## Related Nodes
 
 - **Media Describe** - Gemini-based analysis
-- **Video Preview** - View frames and video
+- **Control Panel** - View structured outputs and JSON data
 
 ## Last Updated
 

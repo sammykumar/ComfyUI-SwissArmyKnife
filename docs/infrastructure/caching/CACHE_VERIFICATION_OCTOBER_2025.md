@@ -233,7 +233,7 @@ Tests passed: 7/7
 
 ### Adding New Options
 
-When adding new options to `GeminiUtilOptions` or `MediaDescribe`:
+When adding new options to `MediaDescribe` (Gemini settings now come directly from ComfyUI settings):
 
 1. **Add to cache_options dictionary** in both `_process_image` and/or `_process_video` methods
 2. **Run the verification tests** to ensure the option affects cache keys
