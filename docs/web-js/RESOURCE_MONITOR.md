@@ -94,26 +94,32 @@ Because this is a pure JavaScript widget, no ComfyUI restart is required. Develo
 
 ### ProfilerX Parity Plan
 
-To reach the level of workflow profiling offered by [ComfyUI ProfilerX](https://github.com/ryanontheinside/ComfyUI_ProfilerX), we will deliver the following phases:
+To reach the level of workflow profiling offered by [ComfyUI ProfilerX](https://github.com/ryanontheinside/ComfyUI_ProfilerX), we will deliver the following phases with concrete implementation hooks learned from their codebase.
 
 1. **Instrumentation Layer**
-   - Attach timing hooks to every node execution and aggregate per-workflow metrics (total time, per-node breakdown, cache hit/miss counters).
-   - Extend the backend monitor service to collect RAM/VRAM peaks per workflow, mirroring ProfilerX’s real-time memory telemetry.
-   - Normalize payloads so both the floating HUD and future dashboards consume the same schema.
+   - Mirror ProfilerX’s `prestartup.py` shim: wrap `execution.execute`, `PromptExecutor.execute`, and `ExecutionList.__init__` so we can call a `ProfilerManager` analogue that records `start_workflow`, `start_node`, `end_node`, and `end_workflow` events.
+   - Track cache hits by checking `caches.outputs[current_item]` before/after execution just like ProfilerX’s wrappers do, and collect tensor shapes via helpers similar to `_get_tensor_sizes`.
+   - Reset CUDA peak stats per node (`torch.cuda.reset_peak_memory_stats`) to capture accurate VRAM deltas, persist RAM via `psutil.Process().memory_info().rss`, and roll running averages for nodes/workflows.
+   - Keep a short-lived `active_profiles` dict plus a disk-backed `history` array, batching writes (ProfilerX saves every 5 workflows) so we don’t thrash the filesystem.
 
-2. **Profiler Dashboard UI**
-   - Build a dedicated panel (top-right like ProfilerX) with sortable tables for node timings, cache stats, and workflow summaries.
-   - Add inline charts for execution duration, VRAM/RAM consumption, and cache efficiency that refresh automatically after each run.
-   - Provide zero-config defaults so profiling is always on, similar to ProfilerX’s “runs automatically” behavior.
+2. **Profiler API Surface**
+   - Expose REST endpoints modeled after ProfilerX’s `server.py`: `/swissarmyknife/profiler/stats`, `/archives`, `/archive/:id/load`, `/archive/:id` (DELETE). Responses should include `current`, `latest`, `node_averages`, `workflow_averages`, and a bounded `history`.
+   - Support archive rotation by dumping JSON snapshots into `data/archives/` and deleting them after loading—this matches ProfilerX’s `archive_history`, `load_archive`, and `delete_archive`.
+   - Emit monitor broadcasts (existing `swissarmyknife.monitor`) plus a new profiler-specific event whenever a workflow completes so the UI can refresh instantly.
 
-3. **Historical Storage & Analytics**
-   - Persist workflow runs locally with timestamps, tags, and hardware fingerprints to support time-range filtering and trend analysis.
-   - Surface comparison tools (e.g., last run vs. average) plus export options, matching ProfilerX’s archival features.
-   - Implement retention/cleanup policies and archive management commands so data volume stays manageable.
+3. **Profiler Dashboard UI**
+   - Attach a menu button the way ProfilerX does in `web/index.ts`: locate `.comfyui-menu-right`, create a `.comfyui-button-group`, and inject a button that toggles a detailed popup.
+   - Reuse their approach of listening to `app.addEventListener("executed")` and custom `profiler:historyLoaded` events so tabs stay in sync after archives load.
+   - Implement tabbed content similar to `web/ui/tabs.ts`, with menu-level mini stats, per-node sortable tables, cache hit/miss breakdown, and inline charts (SVG or canvas) fed from the REST payloads.
 
-4. **Advanced Execution Tracking**
-   - Offer an opt-in execution trace (akin to ProfilerX’s `ExecutionTracker`) that records method-level timings for deep debugging.
-   - Stream summarized traces to the UI, allowing developers to drill into slow internals without digging through JSON files.
-   - Wire toggles into the Swiss Army Knife settings panel so operators can enable/disable tracking without editing Python files.
+4. **Historical Storage & Analytics**
+   - Persist up to ~10k workflow entries on disk (same order-of-magnitude as ProfilerX’s `max_history`) with auto-archiving when limits are hit, plus asynchronous saves via a background executor.
+   - Augment each record with `executionOrder`, `averages`, tensor sizes, and `cacheHits/Misses` so we can compute the same aggregates ProfilerX exposes.
+   - Build archive management UI (list + load + delete) mirroring ProfilerX’s `profilerx-stats-popup` so operators can prune or revisit past runs without leaving the browser.
+
+5. **Advanced Execution Tracking**
+   - Once Profiler parity lands, add an opt-in tracker patterned after `execution_core.ExecutionTracker`: wrap internal ComfyUI methods with decorators that push method names, durations, and stack depth into `method_traces.json`.
+   - Stream summarized trace metadata to the UI so a “Deep Trace” tab can highlight slow internals without forcing users to open raw JSON files.
+   - Surface a settings toggle (Swiss Army Knife config) that sets `ExecutionTracker.ENABLED` instead of requiring code edits, matching ProfilerX’s optional tracing workflow.
 
 Keep the file-level documentation synchronized with each feature drop so operators know which telemetry to expect.

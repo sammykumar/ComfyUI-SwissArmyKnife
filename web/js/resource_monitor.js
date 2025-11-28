@@ -266,25 +266,26 @@ function injectRestartButtonStyles() {
         }
         
         .swissarmyknife-monitor-content {
-            display: flex;
-            align-items: center;
-            white-space: nowrap;
             position: relative;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            white-space: nowrap;
             z-index: 1;
         }
         
         .swissarmyknife-monitor-label {
-            font-size: 13px;
             color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 500;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
         }
         
         .swissarmyknife-monitor-value {
-            font-size: 13px;
+            color: rgb(255, 255, 255);
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.95);
+            font-variant-numeric: tabular-nums;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
         }
     `;
 
