@@ -182,24 +182,45 @@ function injectRestartButtonStyles() {
     const style = document.createElement("style");
     style.id = styleId;
     style.textContent = `
-        /* Swiss Army Knife - Resource Monitor in Top Bar */
+        /* Swiss Army Knife - Resource Monitor Floating Bar */
         #swissarmyknife-resource-monitor {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 4px 8px;
+            align-items: stretch;
+            gap: 0;
+            padding: 0;
+            background: rgba(15, 15, 20, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            z-index: 9999;
+            overflow: hidden;
         }
 
         #swissarmyknife-restart-button {
             background-color: #dc3545;
             color: white;
-            font-weight: bold;
-            border: 1px solid #c82333;
-            border-radius: 4px;
-            padding: 6px 12px;
+            font-weight: 600;
+            border: none;
+            padding: 10px 20px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
             transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        #swissarmyknife-restart-button::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 25%;
+            bottom: 25%;
+            width: 1px;
+            background: rgba(255, 255, 255, 0.15);
         }
 
         #swissarmyknife-restart-button:hover {
@@ -223,48 +244,44 @@ function injectRestartButtonStyles() {
         /* Monitor Display */
         .swissarmyknife-monitor {
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 8px 16px;
-            background-color: rgba(0, 0, 0, 0.3);
-            border-radius: 6px;
-            min-width: 80px;
-            min-height: 50px;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            position: relative;
+            transition: background 0.3s ease;
+        }
+        
+        .swissarmyknife-monitor:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 25%;
+            bottom: 25%;
+            width: 1px;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .swissarmyknife-monitor-content {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            position: relative;
+            z-index: 1;
         }
         
         .swissarmyknife-monitor-label {
-            font-size: 9px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 4px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            font-weight: 600;
+            letter-spacing: 0.5px;
+            font-weight: 500;
         }
         
         .swissarmyknife-monitor-value {
-            font-size: 16px;
-            font-weight: 700;
-            color: #ffffff;
-            transition: color 0.3s ease;
-            line-height: 1.2;
-        }
-        
-        /* Color coding for resource levels */
-        .swissarmyknife-monitor-value.level-low {
-            color: #4ade80; /* Green - healthy */
-        }
-        
-        .swissarmyknife-monitor-value.level-medium {
-            color: #fbbf24; /* Yellow - moderate */
-        }
-        
-        .swissarmyknife-monitor-value.level-high {
-            color: #fb923c; /* Orange - high */
-        }
-        
-        .swissarmyknife-monitor-value.level-critical {
-            color: #ef4444; /* Red - critical */
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
         }
     `;
 
@@ -273,30 +290,36 @@ function injectRestartButtonStyles() {
 }
 
 /**
- * Create a monitor display element
+ * Create a monitor display element with inline label
  */
 function createMonitorDisplay(label, id) {
     const monitor = document.createElement("div");
     monitor.className = "swissarmyknife-monitor";
     monitor.id = `swissarmyknife-monitor-${id}`;
     
-    const labelEl = document.createElement("div");
+    const contentWrapper = document.createElement("div");
+    contentWrapper.className = "swissarmyknife-monitor-content";
+    
+    const labelEl = document.createElement("span");
     labelEl.className = "swissarmyknife-monitor-label";
     labelEl.textContent = label;
     
-    const valueEl = document.createElement("div");
+    const valueEl = document.createElement("span");
     valueEl.className = "swissarmyknife-monitor-value";
     valueEl.id = `swissarmyknife-monitor-value-${id}`;
     valueEl.textContent = "--";
     
-    monitor.appendChild(labelEl);
-    monitor.appendChild(valueEl);
+    contentWrapper.appendChild(labelEl);
+    contentWrapper.appendChild(document.createTextNode(" "));
+    contentWrapper.appendChild(valueEl);
+    
+    monitor.appendChild(contentWrapper);
     
     return monitor;
 }
 
 /**
- * Update monitor value with color coding based on percentage
+ * Update monitor value with gradient background based on percentage
  */
 function updateMonitorValue(id, value, percent = null) {
     const valueEl = document.getElementById(`swissarmyknife-monitor-value-${id}`);
@@ -304,19 +327,27 @@ function updateMonitorValue(id, value, percent = null) {
     
     valueEl.textContent = value;
     
-    // Color code based on percentage if provided
+    const monitorEl = document.getElementById(`swissarmyknife-monitor-${id}`);
+    if (!monitorEl) return;
+    
+    // Set gradient background based on percentage
     if (percent !== null) {
-        valueEl.classList.remove("level-low", "level-medium", "level-high", "level-critical");
-        
+        // Determine color based on percentage
+        let color;
         if (percent < 50) {
-            valueEl.classList.add("level-low");
+            color = "34, 197, 94"; // Green
         } else if (percent < 70) {
-            valueEl.classList.add("level-medium");
+            color = "234, 179, 8"; // Yellow
         } else if (percent < 90) {
-            valueEl.classList.add("level-high");
+            color = "249, 115, 22"; // Orange
         } else {
-            valueEl.classList.add("level-critical");
+            color = "239, 68, 68"; // Red
         }
+        
+        // Create gradient that fills based on percentage
+        monitorEl.style.background = `linear-gradient(to right, rgba(${color}, 0.25) 0%, rgba(${color}, 0.25) ${percent}%, rgba(255, 255, 255, 0.03) ${percent}%, rgba(255, 255, 255, 0.03) 100%)`;
+    } else {
+        monitorEl.style.background = "rgba(255, 255, 255, 0.03)";
     }
 }
 
@@ -504,13 +535,9 @@ app.registerExtension({
         const restartButton = createRestartButton();
         buttonGroup.appendChild(restartButton);
         
-        // Insert before settingsGroup (same as Crystools: app.menu?.settingsGroup.element.before())
-        if (app.menu?.settingsGroup?.element) {
-            app.menu.settingsGroup.element.before(buttonGroup);
-            debugLog("Resource monitor inserted before settings group");
-        } else {
-            console.error("[SwissArmyKnife][ResourceMonitor] Could not find app.menu.settingsGroup.element");
-        }
+        // Append to body as floating element
+        document.body.appendChild(buttonGroup);
+        debugLog("Resource monitor inserted as floating bar");
         
         // Listen for monitor updates via WebSocket
         api.addEventListener("swissarmyknife.monitor", (event) => {

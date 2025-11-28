@@ -8,7 +8,7 @@ Reusable UI components and custom widgets for ComfyUI-SwissArmyKnife nodes.
 
 - **[CONTROL_PANEL.md](CONTROL_PANEL.md)** - Dashboard widget for monitoring and displaying workflow data
 - **[DIMENSIONS_DISPLAY.md](DIMENSIONS_DISPLAY.md)** - Media dimension display widget with troubleshooting
-- **[RESOURCE_MONITOR.md](RESOURCE_MONITOR.md)** - Resource monitor with restart button in top bar (Crystools-style placement)
+- **[RESOURCE_MONITOR.md](RESOURCE_MONITOR.md)** - Floating HUD with live telemetry + inline restart workflow
 - **[SEED_WIDGET.md](SEED_WIDGET.md)** - Randomization seed widget for reproducible workflows
 - **[UPLOAD_WIDGETS.md](UPLOAD_WIDGETS.md)** - Interactive upload buttons for media files
 - **[WIDGET_FIXES.md](WIDGET_FIXES.md)** - General widget fixes, visibility management, and state persistence
@@ -41,11 +41,11 @@ Reusable UI components and custom widgets for ComfyUI-SwissArmyKnife nodes.
 
 ### Resource Monitor
 
-- Red restart button in top bar (next to Run button)
-- Crystools-style placement using direct DOM injection
-- Separate extension for resource monitoring features
-- Foundation for future CPU/RAM/GPU/VRAM monitors
-- No functionality yet (placeholder implementation)
+- Floating, glassmorphism HUD anchored near the toolbar
+- CPU/RAM/GPU/VRAM tiles with gradient fills and live WebSocket updates
+- Restart button shares the bar and handles the full `/swissarmyknife/restart` lifecycle
+- Gracefully hides tiles when dependencies (psutil/pynvml/torch) are absent
+- Separate extension so we can iterate independently of the menu-based widgets
 
 ### Upload Widgets
 
