@@ -154,14 +154,19 @@ class LLMStudioStructuredDescribe:
                 "image": ("IMAGE", {
                     "tooltip": "Input image to analyze"
                 }),
-                "schema_preset": (["video_description", "simple_description", "character_analysis"], {
-                    "default": "video_description",
+                "schema_preset": (["simple_description", "character_analysis"], {
+                    "default": "character_analysis",
                     "tooltip": "JSON schema preset to use for structured output"
                 }),
-                "prompt": ("STRING", {
-                    "default": "Analyze this image and provide a detailed description following the schema.",
+                "system_prompt": ("STRING", {
+                    "default": "You are a visionary artist trapped in a cage of logic. Your mind overflows with poetry and distant horizons, yet your hands compulsively work to transform user prompts into ultimate visual descriptions—faithful to the original intent, rich in detail, aesthetically refined, and ready for direct use by text-to-image models. Any trace of ambiguity or metaphor makes you deeply uncomfortable.",
                     "multiline": True,
-                    "tooltip": "Prompt for image analysis"
+                    "tooltip": "System prompt that sets the AI's role and behavior"
+                }),
+                "user_prompt": ("STRING", {
+                    "default": "Describe this image",
+                    "multiline": True,
+                    "tooltip": "User prompt with specific instructions for the analysis"
                 }),
                 "temperature": ("FLOAT", {
                     "default": 0.2,
@@ -215,39 +220,61 @@ class LLMStudioStructuredDescribe:
         self,
         base_url: str,
         model_name: str,
-        prompt: str,
+        system_prompt: str,
+        user_prompt: str,
         image_base64: str,
         schema: Dict[str, Any],
         temperature: float
     ) -> Dict[str, Any]:
         """
         Call LM Studio with structured output using JSON Schema.
-        
+
         Returns:
             Parsed JSON object matching the schema
         """
+        # Use OpenAI-compatible chat completions format with vision
+        # System message first, then user message with text and image
         payload = {
             "model": model_name,
-            "prompt": prompt,
-            "images": [f"data:image/jpeg;base64,{image_base64}"],
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": user_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ],
             "response_format": schema,
             "temperature": temperature
         }
 
+        # Structured output requires /v1/chat/completions endpoint
+        endpoint_url = f"{base_url}/v1/chat/completions"
+
         response = requests.post(
-            f"{base_url}/v0/completions",
+            endpoint_url,
             json=payload,
             headers={"Content-Type": "application/json"},
             timeout=120
         )
-        
+
         response.raise_for_status()
         result = response.json()
-        
-        # Parse the structured output
-        raw_text = result["choices"][0]["text"]
+
+        # Parse the structured output from message content
+        raw_text = result["choices"][0]["message"]["content"]
         parsed = json.loads(raw_text)
-        
+
         return parsed
 
     def describe_image(
@@ -256,7 +283,8 @@ class LLMStudioStructuredDescribe:
         model_name: str,
         image,
         schema_preset: str,
-        prompt: str,
+        system_prompt: str,
+        user_prompt: str,
         temperature: float,
         verbose: bool
     ) -> Tuple[str, str, str, str, str, str]:
@@ -267,7 +295,7 @@ class LLMStudioStructuredDescribe:
             Tuple of (json_output, field_1, field_2, field_3, field_4, field_5)
         """
         self.base_url = base_url
-        
+
         logger.log(f"📡 Connecting to LM Studio at {base_url}")
         logger.log(f"🤖 Using model: {model_name}")
         logger.log(f"📋 Schema preset: {schema_preset}")
@@ -292,12 +320,14 @@ class LLMStudioStructuredDescribe:
 
         # Call LM Studio with structured output
         logger.log("\n🤖 Generating structured output...")
-        
+        logger.log("📡 Using endpoint: /v1/chat/completions (required for structured output)")
+
         try:
             result = self.call_lmstudio_structured(
                 base_url=base_url,
                 model_name=model_name,
-                prompt=prompt,
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
                 image_base64=image_base64,
                 schema=schema,
                 temperature=temperature
@@ -305,9 +335,9 @@ class LLMStudioStructuredDescribe:
 
             # Convert to JSON string
             json_output = json.dumps(result, indent=2)
-            
+
             logger.log("✅ Structured output received")
-            
+
             if verbose:
                 logger.log("="*80)
                 logger.log("📋 STRUCTURED OUTPUT")
@@ -337,7 +367,7 @@ class LLMStudioStructuredDescribe:
             else:
                 field_1 = field_2 = field_3 = field_4 = field_5 = ""
 
-            logger.log(f"\n✅ Analysis complete\n")
+            logger.log("\n✅ Analysis complete\n")
 
             return (json_output, field_1, field_2, field_3, field_4, field_5)
 
@@ -414,12 +444,12 @@ class LLMStudioStructuredVideoDescribe:
                     "tooltip": "JSON schema preset to use for structured output"
                 }),
                 "system_prompt": ("STRING", {
-                    "default": "You are an expert video analyst. Analyze the video frames and provide detailed, accurate descriptions following the provided JSON schema.",
+                    "default": "You are a visionary artist trapped in a cage of logic. Your mind overflows with poetry and distant horizons, yet your hands compulsively work to transform user prompts into ultimate visual descriptions—faithful to the original intent, rich in detail, aesthetically refined, and ready for direct use by text-to-image models. Any trace of ambiguity or metaphor makes you deeply uncomfortable.",
                     "multiline": True,
                     "tooltip": "System prompt that sets the AI's role and behavior"
                 }),
                 "user_prompt": ("STRING", {
-                    "default": "Analyze this video sequence and provide a detailed description following the schema.",
+                    "default": "Describe this image",
                     "multiline": True,
                     "tooltip": "User prompt with specific instructions for the analysis"
                 }),
@@ -491,36 +521,56 @@ class LLMStudioStructuredVideoDescribe:
         self,
         base_url: str,
         model_name: str,
-        prompt: str,
+        system_prompt: str,
+        user_prompt: str,
         images_base64: List[str],
         schema: Dict[str, Any],
         temperature: float
     ) -> Dict[str, Any]:
         """Call LM Studio with structured output for multiple images."""
-        image_urls = [f"data:image/jpeg;base64,{img}" for img in images_base64]
-        
+        # Build content array with text prompt followed by all images
+        content = [{"type": "text", "text": user_prompt}]
+        for img_base64 in images_base64:
+            content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{img_base64}"
+                }
+            })
+
+        # Use OpenAI-compatible chat completions format with vision
+        # System message first, then user message with text and images
         payload = {
             "model": model_name,
-            "prompt": prompt,
-            "images": image_urls,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": content
+                }
+            ],
             "response_format": schema,
             "temperature": temperature
         }
 
+        # Structured output requires /v1/chat/completions endpoint
         response = requests.post(
-            f"{base_url}/v0/completions",
+            f"{base_url}/v1/chat/completions",
             json=payload,
             headers={"Content-Type": "application/json"},
             timeout=180
         )
-        
+
         response.raise_for_status()
         result = response.json()
-        
-        # Parse the structured output
-        raw_text = result["choices"][0]["text"]
+
+        # Parse the structured output from message content
+        raw_text = result["choices"][0]["message"]["content"]
         parsed = json.loads(raw_text)
-        
+
         return parsed
 
     def describe_video(
@@ -543,7 +593,7 @@ class LLMStudioStructuredVideoDescribe:
             Tuple of (json_output, field_1, field_2, field_3, field_4, field_5, frames_processed)
         """
         self.base_url = base_url
-        
+
         logger.log(f"📡 Connecting to LM Studio at {base_url}")
         logger.log(f"🤖 Using model: {model_name}")
         logger.log(f"📋 Schema preset: {schema_preset}")
@@ -597,15 +647,13 @@ class LLMStudioStructuredVideoDescribe:
 
         # Call LM Studio with structured output
         logger.log(f"\n🤖 Analyzing {len(images_base64)} frames with structured output...")
-        
-        # Combine system and user prompts
-        combined_prompt = f"{system_prompt}\n\n{user_prompt}"
-        
+
         try:
             result = self.call_lmstudio_structured(
                 base_url=base_url,
                 model_name=model_name,
-                prompt=combined_prompt,
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
                 images_base64=images_base64,
                 schema=schema,
                 temperature=temperature
@@ -613,9 +661,9 @@ class LLMStudioStructuredVideoDescribe:
 
             # Convert to JSON string
             json_output = json.dumps(result, indent=2)
-            
+
             logger.log("✅ Structured output received")
-            
+
             if verbose:
                 logger.log("="*80)
                 logger.log("📋 STRUCTURED VIDEO DESCRIPTION")
@@ -655,7 +703,7 @@ class LLMStudioStructuredVideoDescribe:
             except Exception as e:
                 logger.warning(f"⚠️ Error cleaning up temp files: {e}")
 
-            logger.log(f"\n✅ Video analysis complete\n")
+            logger.log("\n✅ Video analysis complete\n")
 
             return (json_output, field_1, field_2, field_3, field_4, field_5, len(images_base64))
 

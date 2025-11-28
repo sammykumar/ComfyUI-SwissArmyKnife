@@ -1745,6 +1745,144 @@ app.registerExtension({
         }
     },
 
+    async beforeRegisterNodeDef(nodeType, nodeData, app) {
+        // Handle LLMStudioStructuredDescribe node - dynamic output labels
+        if (nodeData.name === "LLMStudioStructuredDescribe") {
+            debugLog("Registering LLMStudioStructuredDescribe node with dynamic output labels");
+
+            // Define schema field mappings
+            const SCHEMA_OUTPUT_LABELS = {
+                "video_description": ["subject", "clothing", "movement", "scene", "visual_style"],
+                "simple_description": ["caption", "tags", "", "", ""],
+                "character_analysis": ["appearance", "expression", "pose", "clothing", ""]
+            };
+
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Function to update output labels based on schema preset
+                this.updateOutputLabels = function(schemaPreset) {
+                    const labels = SCHEMA_OUTPUT_LABELS[schemaPreset] || ["", "", "", "", ""];
+                    
+                    debugLog(`[LLMStudioStructured] Updating output labels for schema: ${schemaPreset}`);
+                    debugLog(`[LLMStudioStructured] New labels:`, labels);
+
+                    // Update output slot labels (outputs 1-5, skip 0 which is json_output)
+                    for (let i = 0; i < 5; i++) {
+                        const outputIndex = i + 1; // Skip first output (json_output)
+                        if (this.outputs && this.outputs[outputIndex]) {
+                            const label = labels[i] || `field_${i + 1}`;
+                            this.outputs[outputIndex].label = label;
+                            this.outputs[outputIndex].name = label;
+                            debugLog(`[LLMStudioStructured] Updated output ${outputIndex}: ${label}`);
+                        }
+                    }
+
+                    // Force visual update
+                    if (this.graph && this.graph.canvas) {
+                        this.setDirtyCanvas(true, true);
+                    }
+                };
+
+                // Find schema_preset widget and add callback
+                const schemaWidget = this.widgets?.find(w => w.name === "schema_preset");
+                if (schemaWidget) {
+                    debugLog("[LLMStudioStructured] Found schema_preset widget");
+                    
+                    // Update labels on initial creation
+                    this.updateOutputLabels(schemaWidget.value);
+
+                    // Store original callback
+                    const originalCallback = schemaWidget.callback;
+                    
+                    // Add our callback
+                    schemaWidget.callback = (value) => {
+                        debugLog(`[LLMStudioStructured] Schema preset changed to: ${value}`);
+                        this.updateOutputLabels(value);
+                        
+                        // Call original callback if exists
+                        if (originalCallback) {
+                            originalCallback.apply(schemaWidget, arguments);
+                        }
+                    };
+                } else {
+                    debugLog("[LLMStudioStructured] WARNING: schema_preset widget not found");
+                }
+
+                return result;
+            };
+        }
+
+        // Handle LLMStudioStructuredVideoDescribe node - dynamic output labels
+        else if (nodeData.name === "LLMStudioStructuredVideoDescribe") {
+            debugLog("Registering LLMStudioStructuredVideoDescribe node with dynamic output labels");
+
+            // Define schema field mappings (video has all schemas including video_description)
+            const SCHEMA_OUTPUT_LABELS = {
+                "video_description": ["subject", "clothing", "movement", "scene", "visual_style"],
+                "simple_description": ["caption", "tags", "", "", ""],
+                "character_analysis": ["appearance", "expression", "pose", "clothing", ""]
+            };
+
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Function to update output labels based on schema preset
+                this.updateOutputLabels = function(schemaPreset) {
+                    const labels = SCHEMA_OUTPUT_LABELS[schemaPreset] || ["", "", "", "", ""];
+                    
+                    debugLog(`[LLMStudioStructuredVideo] Updating output labels for schema: ${schemaPreset}`);
+                    debugLog(`[LLMStudioStructuredVideo] New labels:`, labels);
+
+                    // Update output slot labels (outputs 1-5, skip 0 which is json_output)
+                    for (let i = 0; i < 5; i++) {
+                        const outputIndex = i + 1; // Skip first output (json_output)
+                        if (this.outputs && this.outputs[outputIndex]) {
+                            const label = labels[i] || `field_${i + 1}`;
+                            this.outputs[outputIndex].label = label;
+                            this.outputs[outputIndex].name = label;
+                            debugLog(`[LLMStudioStructuredVideo] Updated output ${outputIndex}: ${label}`);
+                        }
+                    }
+
+                    // Force visual update
+                    if (this.graph && this.graph.canvas) {
+                        this.setDirtyCanvas(true, true);
+                    }
+                };
+
+                // Find schema_preset widget and add callback
+                const schemaWidget = this.widgets?.find(w => w.name === "schema_preset");
+                if (schemaWidget) {
+                    debugLog("[LLMStudioStructuredVideo] Found schema_preset widget");
+                    
+                    // Update labels on initial creation
+                    this.updateOutputLabels(schemaWidget.value);
+
+                    // Store original callback
+                    const originalCallback = schemaWidget.callback;
+                    
+                    // Add our callback
+                    schemaWidget.callback = (value) => {
+                        debugLog(`[LLMStudioStructuredVideo] Schema preset changed to: ${value}`);
+                        this.updateOutputLabels(value);
+                        
+                        // Call original callback if exists
+                        if (originalCallback) {
+                            originalCallback.apply(schemaWidget, arguments);
+                        }
+                    };
+                } else {
+                    debugLog("[LLMStudioStructuredVideo] WARNING: schema_preset widget not found");
+                }
+
+                return result;
+            };
+        }
+    },
+
     // Setup app-level execution handler for MediaDescribe and ControlPanel
     async setup() {
         // Hook into API events to catch execution results
