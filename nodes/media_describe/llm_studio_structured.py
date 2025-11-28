@@ -29,23 +29,23 @@ VIDEO_DESCRIPTION_SCHEMA = {
             "properties": {
                 "subject": {
                     "type": "string",
-                    "description": "Detailed description of the main subject including posture, gestures, facial expressions, and body positioning"
+                    "description": "Detailed description of the main subject"
                 },
                 "clothing": {
                     "type": "string",
-                    "description": "Detailed clothing and accessories with specific colors, materials, textures, fit, construction details"
+                    "description": "Clothing and style details"
                 },
                 "movement": {
                     "type": "string",
-                    "description": "Body-part-specific movement across frames with precise action verbs and transitions"
+                    "description": "Pose, gesture, or implied motion"
                 },
                 "scene": {
                     "type": "string",
-                    "description": "Physical environment details including walls, floors, furniture, lighting, spatial layout"
+                    "description": "Setting, environment, and background elements"
                 },
                 "visual_style": {
                     "type": "string",
-                    "description": "Combined lighting, camera techniques, color grading, mood, genre aesthetics"
+                    "description": "Combined lighting, camera details, rendering cues, mood/genre descriptors, and overall aesthetic direction"
                 }
             },
             "required": ["subject", "clothing", "movement", "scene", "visual_style"],
@@ -182,6 +182,13 @@ class LLMStudioStructuredDescribe:
                     "step": 0.1,
                     "tooltip": "Nucleus sampling probability threshold"
                 }),
+                "max_tokens": ("INT", {
+                    "default": 2000,
+                    "min": 1,
+                    "max": 32000,
+                    "step": 100,
+                    "tooltip": "Maximum number of tokens to generate"
+                }),
                 "verbose": ("BOOLEAN", {
                     "default": False,
                     "tooltip": "Show detailed processing information in console"
@@ -232,7 +239,8 @@ class LLMStudioStructuredDescribe:
         image_base64: str,
         schema: Dict[str, Any],
         temperature: float,
-        top_p: float
+        top_p: float,
+        max_tokens: int
     ) -> Dict[str, Any]:
         """
         Call LM Studio with structured output using JSON Schema.
@@ -264,7 +272,8 @@ class LLMStudioStructuredDescribe:
             ],
             "response_format": schema,
             "temperature": temperature,
-            "top_p": top_p
+            "top_p": top_p,
+            "max_tokens": max_tokens
         }
 
         # Structured output requires /v1/chat/completions endpoint
@@ -296,6 +305,7 @@ class LLMStudioStructuredDescribe:
         user_prompt: str,
         temperature: float,
         top_p: float,
+        max_tokens: int,
         verbose: bool
     ) -> Tuple[str, str, str, str, str, str]:
         """
@@ -341,7 +351,8 @@ class LLMStudioStructuredDescribe:
                 image_base64=image_base64,
                 schema=schema,
                 temperature=temperature,
-                top_p=top_p
+                top_p=top_p,
+                max_tokens=max_tokens
             )
 
             # Convert to JSON string
@@ -491,6 +502,13 @@ class LLMStudioStructuredVideoDescribe:
                     "step": 0.1,
                     "tooltip": "Nucleus sampling probability threshold"
                 }),
+                "max_tokens": ("INT", {
+                    "default": 2000,
+                    "min": 1,
+                    "max": 32000,
+                    "step": 100,
+                    "tooltip": "Maximum number of tokens to generate"
+                }),
                 "verbose": ("BOOLEAN", {
                     "default": False,
                     "tooltip": "Show detailed processing information"
@@ -557,7 +575,8 @@ class LLMStudioStructuredVideoDescribe:
         images_base64: List[str],
         schema: Dict[str, Any],
         temperature: float,
-        top_p: float
+        top_p: float,
+        max_tokens: int
     ) -> Dict[str, Any]:
         """Call LM Studio with structured output for multiple images."""
         # Build content array with text prompt followed by all images
@@ -586,7 +605,8 @@ class LLMStudioStructuredVideoDescribe:
             ],
             "response_format": schema,
             "temperature": temperature,
-            "top_p": top_p
+            "top_p": top_p,
+            "max_tokens": max_tokens
         }
 
         # Structured output requires /v1/chat/completions endpoint
@@ -618,6 +638,7 @@ class LLMStudioStructuredVideoDescribe:
         user_prompt: str,
         temperature: float,
         top_p: float,
+        max_tokens: int,
         verbose: bool
     ) -> Tuple[str, str, str, str, str, str, int]:
         """
@@ -691,7 +712,8 @@ class LLMStudioStructuredVideoDescribe:
                 images_base64=images_base64,
                 schema=schema,
                 temperature=temperature,
-                top_p=top_p
+                top_p=top_p,
+                max_tokens=max_tokens
             )
 
             # Convert to JSON string
