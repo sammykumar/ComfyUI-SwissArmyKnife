@@ -2,7 +2,7 @@
 Prompt Builder Node
 
 Allows users to assemble custom prompt sections (prefix, subject, style, clothing,
-scene, movement) and emits both a formatted prompt string plus an OVERRIDES
+scene, action) and emits both a formatted prompt string plus an OVERRIDES
 dictionary that MediaDescribe already understands.
 """
 
@@ -69,12 +69,12 @@ class PromptBuilder:
                         "tooltip": "Override text for SCENE paragraph (video only)",
                     },
                 ),
-                "override_movement": (
+                "override_action": (
                     "STRING",
                     {
                         "multiline": True,
                         "default": "",
-                        "tooltip": "Override text for MOVEMENT paragraph (video only)",
+                        "tooltip": "Override text for ACTION paragraph (video only)",
                     },
                 ),
             },
@@ -96,7 +96,7 @@ class PromptBuilder:
         override_visual_style: str = "",
         override_clothing: str = "",
         override_scene: str = "",
-        override_movement: str = "",
+        override_action: str = "",
     ):
         """
         Compose a prompt preview string and dictionary from the provided overrides.
@@ -107,7 +107,7 @@ class PromptBuilder:
             override_visual_style: Override text for VISUAL STYLE paragraph
             override_clothing: Override text for CLOTHING paragraph
             override_scene: Override text for SCENE paragraph (video only)
-            override_movement: Override text for MOVEMENT paragraph (video only)
+            override_action: Override text for ACTION paragraph (video only)
 
         Returns:
             Tuple of (prompt_text, overrides_dict)
@@ -119,7 +119,9 @@ class PromptBuilder:
             "override_visual_style": override_visual_style,
             "override_clothing": override_clothing,
             "override_scene": override_scene,
-            "override_movement": override_movement,
+            "override_action": override_action,
+            # Backwards compatibility for downstream nodes still reading the legacy key
+            "override_movement": override_action,
         }
 
         prompt_segments: List[str] = []
@@ -132,7 +134,7 @@ class PromptBuilder:
             override_visual_style,
             override_clothing,
             override_scene,
-            override_movement,
+            override_action,
         ):
             clean_text = text.strip()
             if clean_text:

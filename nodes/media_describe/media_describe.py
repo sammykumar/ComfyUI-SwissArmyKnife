@@ -149,7 +149,7 @@ class MediaDescribe:
         else:
             return f"{n}th"
 
-    def _parse_paragraphs(self, description, override_subject="", override_visual_style="", override_clothing="", override_scene="", override_movement=""):
+    def _parse_paragraphs(self, description, override_subject="", override_visual_style="", override_clothing="", override_scene="", override_action=""):
         """
         Parse description into individual paragraphs and apply overrides.
         Supports JSON format for both images and videos, with fallback to paragraph format.
@@ -248,8 +248,8 @@ class MediaDescribe:
             clothing = override_clothing.strip()
         if override_scene.strip():
             scene = override_scene.strip()
-        if override_movement.strip():
-            movement = override_movement.strip()
+        if override_action.strip():
+            movement = override_action.strip()
 
         # Rebuild final description from non-empty paragraphs
         final_parts = []
@@ -1356,7 +1356,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             # Re-raise the exception to stop workflow execution
             raise Exception(f"Image analysis failed: {str(e)}")
 
-    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text, override_subject="", override_visual_style="", override_clothing="", override_scene="", override_movement="", overrides=None):
+    def _process_video(self, gemini_api_key, gemini_model, describe_clothing, change_clothing_color, describe_hair_style, describe_bokeh, describe_subject, replace_action_with_twerking, prefix_text, selected_media_path, frame_rate, max_duration, media_info_text, override_subject="", override_visual_style="", override_clothing="", override_scene="", override_action="", overrides=None):
         """
         Process video using logic from GeminiVideoDescribe
         
@@ -1365,7 +1365,7 @@ Focus on vivid, focused scene details (e.g. bedroom props, lights, furniture or 
             override_visual_style: Override text for VISUAL STYLE paragraph (combining cinematic/aesthetic and stylization/tone)
             override_clothing: Override text for CLOTHING paragraph
             override_scene: Override text for SCENE paragraph
-            override_movement: Override text for MOVEMENT paragraph
+            override_action: Override text for ACTION paragraph
             overrides: Full overrides dictionary for building final JSON
         """
         try:
@@ -1710,7 +1710,7 @@ Example (structure only):
 
                 # Parse paragraphs and apply overrides (for videos)
                 subject, visual_style, clothing, scene, movement, final_description = self._parse_paragraphs(
-                    description, override_subject, override_visual_style, override_clothing, override_scene, override_movement
+                    description, override_subject, override_visual_style, override_clothing, override_scene, override_action
                 )
 
                 # Build final JSON with overrides applied
@@ -1799,7 +1799,7 @@ Example (structure only):
 
             # Parse paragraphs and apply overrides (for videos)
             subject, visual_style, clothing, scene, movement, final_description = self._parse_paragraphs(
-                description, override_subject, override_visual_style, override_clothing, override_scene, override_movement
+                description, override_subject, override_visual_style, override_clothing, override_scene, override_action
             )
 
             # Build final JSON with overrides applied
@@ -1844,7 +1844,7 @@ Example (structure only):
 
     def _process_with_llm_studio(self, media_path, media_type, llm_options, media_info_text,
                                   override_subject, override_visual_style, override_clothing, 
-                                  override_scene, override_movement, overrides,
+                                  override_scene, override_action, overrides,
                                   use_custom_prompts, custom_system_prompt, custom_user_prompt):
         """
         Process media using LLM Studio (local vision model).
@@ -2198,8 +2198,8 @@ User Prompt:
             llm_json["subject"] = override_subject.strip()
         if override_clothing.strip():
             llm_json["clothing"] = override_clothing.strip()
-        if override_movement.strip():
-            llm_json["movement"] = override_movement.strip()
+        if override_action.strip():
+            llm_json["movement"] = override_action.strip()
         if override_scene.strip():
             llm_json["scene"] = override_scene.strip()
         if override_visual_style.strip():
@@ -2356,7 +2356,9 @@ User Prompt:
         override_visual_style = overrides.get("override_visual_style", "")
         override_clothing = overrides.get("override_clothing", "")
         override_scene = overrides.get("override_scene", "")
-        override_movement = overrides.get("override_movement", "")
+        override_action = overrides.get("override_action", "")
+        if not override_action:
+            override_action = overrides.get("override_movement", "")
 
         try:
             # Determine media type from file extension
@@ -2376,7 +2378,7 @@ User Prompt:
                 override_visual_style,
                 override_clothing,
                 override_scene,
-                override_movement,
+                override_action,
                 overrides,
                 use_custom_prompts,
                 custom_system_prompt,

@@ -48,10 +48,10 @@ class MediaDescribeOverrides:
                     "default": "",
                     "tooltip": "Override text for SCENE paragraph (video only - if provided, uses this instead of Gemini's output)"
                 }),
-                "override_movement": ("STRING", {
+                "override_action": ("STRING", {
                     "multiline": True,
                     "default": "",
-                    "tooltip": "Override text for MOVEMENT paragraph (video only - if provided, uses this instead of Gemini's output)"
+                    "tooltip": "Override text for ACTION paragraph (video only - if provided, uses this instead of Gemini's output)"
                 }),
             }
         }
@@ -61,12 +61,12 @@ class MediaDescribeOverrides:
     FUNCTION = "create_overrides"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
     DESCRIPTION = (
-        "Let users override individual MediaDescribe paragraphs (subject, visual style, clothing, scene, movement) and prepend "
+        "Let users override individual MediaDescribe paragraphs (subject, visual style, clothing, scene, action) and prepend "
         "custom text before the generated description."
     )
 
     def create_overrides(self, prompt_prefix="", override_subject="", override_visual_style="",
-                        override_clothing="", override_scene="", override_movement=""):
+                        override_clothing="", override_scene="", override_action=""):
         """
         Create an overrides dictionary from the input fields.
 
@@ -76,7 +76,7 @@ class MediaDescribeOverrides:
             override_visual_style: Override text for VISUAL STYLE paragraph (combines cinematic/aesthetic and stylization/tone)
             override_clothing: Override text for CLOTHING paragraph
             override_scene: Override text for SCENE paragraph (video only)
-            override_movement: Override text for MOVEMENT paragraph (video only)
+            override_action: Override text for ACTION paragraph (video only)
 
         Returns:
             Dictionary containing all override values
@@ -87,7 +87,9 @@ class MediaDescribeOverrides:
             "override_visual_style": override_visual_style,
             "override_clothing": override_clothing,
             "override_scene": override_scene,
-            "override_movement": override_movement
+            "override_action": override_action,
+            # Backwards compatibility with previous key name
+            "override_movement": override_action
         }
 
         return (overrides,)
