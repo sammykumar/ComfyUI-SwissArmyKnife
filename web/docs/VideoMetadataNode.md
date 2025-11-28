@@ -4,7 +4,7 @@ Append artist/comments/LoRA metadata to rendered videos using FFmpeg without re-
 ## Inputs
 - `filenames` – VHS_VideoCombine output (VHS_FILENAMES).
 - `comment` – multiline note that becomes a metadata tag.
-- `lora_json` – structured data from `LoRAInfoExtractor` for richer metadata.
+
 - `overwrite_original` – choose between in-place update or creating a `_metadata` copy.
 
 ## Outputs
