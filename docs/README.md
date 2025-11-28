@@ -13,6 +13,7 @@ Core custom nodes that extend ComfyUI functionality:
 - **[reddit-media](nodes/reddit-media/)** - Reddit and RedGifs media extraction and processing
 - **[media-selection](nodes/media-selection/)** - Media source selection and management
 - **[control-panel](nodes/control-panel/)** - Workflow information dashboard display
+- **[prompt-builder](nodes/prompt-builder/)** - Compose MediaDescribe overrides with previewable prompt strings
 
 ### 🏗️ Infrastructure (`/infrastructure`)
 

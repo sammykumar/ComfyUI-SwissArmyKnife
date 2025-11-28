@@ -1084,7 +1084,9 @@ Successfully refactored the paragraph override functionality from the MediaDescr
 -   `override_stylization_tone` (STRING, multiline)
 -   `override_clothing` (STRING, multiline)
 -   `override_scene` (STRING, multiline)
--   `override_movement` (STRING, multiline)
+-   `override_action` (STRING, multiline)
+
+> **Compatibility note:** The overrides dictionary still includes the legacy `override_movement` key so older workflows keep functioning, but the UI now surfaces the field as `override_action`.
 
 **Output**:
 
@@ -1209,7 +1211,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 │  - override_stylization_tone        │
 │  - override_clothing                │
 │  - override_scene                   │
-│  - override_movement                │
+│  - override_action                │
 │  - ... (other inputs)               │
 └─────────────────────────────────────┘
 ```
@@ -1226,7 +1228,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 │  - override_stylization...   │
 │  - override_clothing         │
 │  - override_scene            │
-│  - override_movement         │
+│  - override_action         │
 │                              │
 │ Output:                      │
 │  → overrides (OVERRIDES)     │
@@ -1420,7 +1422,7 @@ Added optional multiline text inputs to `INPUT_TYPES`:
 "override_stylization_tone": ("STRING", ...),
 "override_clothing": ("STRING", ...),
 "override_scene": ("STRING", ...),  # Video only
-"override_movement": ("STRING", ...)  # Video only
+"override_action": ("STRING", ...)  # Video only
 ```
 
 ### 2. New Output Fields (6 Individual Paragraph Outputs)
@@ -1450,7 +1452,7 @@ def _parse_paragraphs(self, description, override_subject="",
                       override_cinematic_aesthetic="",
                       override_stylization_tone="",
                       override_clothing="", override_scene="",
-                      override_movement=""):
+                      override_action=""):
     """
     Parse description into individual paragraphs and apply overrides.
     Returns: (subject, cinematic_aesthetic, stylization_tone,
@@ -1759,7 +1761,7 @@ All inputs are **optional** multiline text fields. Leave any field empty to use 
 | `override_stylization_tone`    | STRING (multiline) | Images & Videos | Override text for STYLIZATION & TONE paragraph          |
 | `override_clothing`            | STRING (multiline) | Images & Videos | Override text for CLOTHING paragraph                    |
 | `override_scene`               | STRING (multiline) | Videos Only     | Override text for SCENE paragraph                       |
-| `override_movement`            | STRING (multiline) | Videos Only     | Override text for MOVEMENT paragraph                    |
+| `override_action`            | STRING (multiline) | Videos Only     | Override text for ACTION paragraph (video only)         |
 
 ## Output
 
@@ -1844,14 +1846,14 @@ This workflow applies the same cinematic style and mood to multiple different im
 ```python
 def create_overrides(self, override_subject="", override_cinematic_aesthetic="",
                     override_stylization_tone="", override_clothing="",
-                    override_scene="", override_movement=""):
+                    override_scene="", override_action=""):
     overrides = {
         "override_subject": override_subject,
         "override_cinematic_aesthetic": override_cinematic_aesthetic,
         "override_stylization_tone": override_stylization_tone,
         "override_clothing": override_clothing,
         "override_scene": override_scene,
-        "override_movement": override_movement
+        "override_action": override_action
     }
     return (overrides,)
 ```
@@ -1927,7 +1929,7 @@ Media Describe - Overrides:
 
 ### Video-Specific Fields
 
--   `override_scene` and `override_movement` only apply to videos
+-   `override_scene` and `override_action` only apply to videos
 -   For images, these fields are ignored (safe to leave with values)
 -   Video workflows benefit most from movement overrides
 
@@ -2032,7 +2034,7 @@ MediaDescribe node had 6 override input fields directly:
 - override_stylization_tone
 - override_clothing
 - override_scene
-- override_movement
+- override_action
 ```
 
 ### After (New Architecture)
@@ -2047,7 +2049,7 @@ New Media Describe - Overrides node has 6 input fields:
 - override_stylization_tone
 - override_clothing
 - override_scene
-- override_movement
+- override_action
 ```
 
 ## Backward Compatibility
@@ -2848,7 +2850,7 @@ All override fields are optional text inputs in the separate **Media Describe - 
 | `override_stylization_tone`    | STRING (multiline) | Override text for STYLIZATION & TONE paragraph          | Images & Videos |
 | `override_clothing`            | STRING (multiline) | Override text for CLOTHING paragraph                    | Images & Videos |
 | `override_scene`               | STRING (multiline) | Override text for SCENE paragraph                       | Videos Only     |
-| `override_movement`            | STRING (multiline) | Override text for MOVEMENT paragraph                    | Videos Only     |
+| `override_action`            | STRING (multiline) | Override text for ACTION paragraph                      | Videos Only     |
 
 ## Output Fields
 
@@ -2948,7 +2950,7 @@ override_clothing = "A fitted navy blue blazer with peak lapels, crisp white dre
 For videos, override the movement paragraph to describe specific choreography:
 
 ```
-override_movement = "The subject begins with a subtle hip sway on the downbeat, then transitions into a full body wave, lifting the right arm upward while the torso tilts left. Weight shifts from left to right foot as the camera slowly pans to follow."
+override_action = "The subject begins with a subtle hip sway on the downbeat, then transitions into a full body wave, lifting the right arm upward while the torso tilts left. Weight shifts from left to right foot as the camera slowly pans to follow."
 ```
 
 ### Use Case 5: Selective Override Workflow
@@ -3014,7 +3016,7 @@ def _parse_paragraphs(self, description, override_subject="",
                       override_cinematic_aesthetic="",
                       override_stylization_tone="",
                       override_clothing="", override_scene="",
-                      override_movement=""):
+                      override_action=""):
     # Split by blank lines
     paragraphs = [p.strip() for p in description.split('\n\n') if p.strip()]
 
@@ -4874,7 +4876,7 @@ Users can scroll within the left panel to read the complete prompts.
 -   **override_stylization_tone**: 🎨 Custom stylization & tone paragraph (multiline text)
 -   **override_clothing**: 👔 Custom clothing paragraph (multiline text)
 -   **override_scene**: 🏞️ Custom scene paragraph (multiline text, video only)
--   **override_movement**: 💃 Custom movement paragraph (multiline text, video only)
+-   **override_action**: 💃 Custom movement paragraph (multiline text, video only)
 
 ## Node Outputs
 
@@ -4931,7 +4933,7 @@ Users can scroll within the left panel to read the complete prompts.
 │  ├─ override_stylization_tone: (multiline)                │
 │  ├─ override_clothing: (multiline)                        │
 │  ├─ override_scene: (multiline, video only)               │
-│  └─ override_movement: (multiline, video only)            │
+│  └─ override_action: (multiline, video only)            │
 └─────────────────────────────────────────────────────────────┘
                           │
                           ▼

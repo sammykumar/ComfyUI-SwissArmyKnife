@@ -128,7 +128,7 @@ Configuration node for paragraph-level customization.
 - override_stylization_tone
 - override_clothing
 - override_scene (video only)
-- override_movement (video only)
+- override_action (video only, replaces the previous `override_movement` key)
 
 **Output:**
 
