@@ -171,6 +171,7 @@ class ProfilerManager:
         profile = WorkflowProfile(prompt_id)
         profile.start_time = time.time()
         self.active_profiles[prompt_id] = profile
+        print(f"[SwissArmyKnife][Profiler] Started workflow profiling: {prompt_id}")
         logger.debug(f"Started workflow profiling: {prompt_id}")
 
     def end_workflow(self, prompt_id: str):
@@ -181,6 +182,7 @@ class ProfilerManager:
 
         profile = self.active_profiles[prompt_id]
         profile.end_time = time.time()
+        print(f"[SwissArmyKnife][Profiler] Ended workflow profiling: {prompt_id}, duration: {profile.end_time - profile.start_time:.2f}s")
 
         # Add to history
         workflow_dict = profile.to_dict()

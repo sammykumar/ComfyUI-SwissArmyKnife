@@ -203,20 +203,22 @@ function createProfilerButton() {
         const isVisible = popup.style.display === "block";
         
         if (!isVisible) {
-            // Fetch latest data if not cached
-            if (!button._profilerData) {
-                try {
-                    debugLog("Fetching profiler data...");
-                    const response = await fetchWithRetry("/swissarmyknife/profiler/stats");
-                    const result = await response.json();
-                    
-                    if (result.success && result.data) {
-                        button._profilerData = result.data;
-                        updateProfilerPopupContent(popup, result.data);
-                    }
-                } catch (error) {
-                    console.error("[SwissArmyKnife][Profiler] Error fetching profiler data:", error);
+            // Always fetch latest data on open
+            try {
+                debugLog("Fetching profiler data...");
+                const response = await fetchWithRetry("/swissarmyknife/profiler/stats");
+                const result = await response.json();
+                
+                debugLog("Profiler data received:", result);
+                
+                if (result.success && result.data) {
+                    button._profilerData = result.data;
+                    updateProfilerPopupContent(popup, result.data);
+                } else {
+                    console.warn("[SwissArmyKnife][Profiler] No data in response:", result);
                 }
+            } catch (error) {
+                console.error("[SwissArmyKnife][Profiler] Error fetching profiler data:", error);
             }
             
             // Position and show popup
