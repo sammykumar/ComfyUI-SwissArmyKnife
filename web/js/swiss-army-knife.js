@@ -1757,9 +1757,133 @@ app.registerExtension({
                 "character_analysis": ["appearance", "expression", "pose", "clothing", ""]
             };
 
+            // Add resize handler to adjust DOM widget width
+            const onResize = nodeType.prototype.onResize;
+            nodeType.prototype.onResize = function (size) {
+                const result = onResize?.call(this, size);
+                if (this._json_display_dom) {
+                    this._json_display_dom.style.width = this.size[0] - 20 + "px";
+                }
+                return result;
+            };
+
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 const result = onNodeCreated?.apply(this, arguments);
+
+                // Create DOM display widget for JSON output
+                if (!this._json_display_dom) {
+                    // Create main container
+                    const dom = document.createElement("div");
+                    dom.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontSize = "11px";
+                    dom.style.lineHeight = "1.35";
+                    dom.style.overflow = "auto";
+                    dom.style.maxHeight = "300px";
+                    dom.style.padding = "8px";
+                    dom.style.borderRadius = "6px";
+                    dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
+                    dom.style.border = "1px solid var(--border-color, #333)";
+                    dom.style.color = "var(--fg-color, #d4d4d4)";
+
+                    // Create content div
+                    const content = document.createElement("div");
+                    content.style.whiteSpace = "pre-wrap";
+                    content.style.wordBreak = "break-word";
+                    content.style.overflow = "auto";
+                    content.style.flex = "1";
+                    content.textContent = "Awaiting execution...";
+
+                    dom.appendChild(content);
+
+                    // Add DOM widget
+                    const widget = this.addDOMWidget("json_display", "json_display", dom, {
+                        serialize: false,
+                        hideOnZoom: false,
+                    });
+
+                    // Store references
+                    this._json_display_dom = dom;
+                    this._json_display_content = content;
+                    this._json_display_widget = widget;
+
+                    debugLog("Created JSON display widget for LLMStudioStructuredDescribe");
+                }
+
+                // Function to update JSON display from execution output
+                this.updateJsonDisplay = function(jsonString) {
+                    console.log("[SwissArmyKnife][updateJsonDisplay] Called with data:", jsonString);
+                    console.log("[SwissArmyKnife][updateJsonDisplay] Has content div:", !!this._json_display_content);
+                    debugLog("[updateJsonDisplay] Called with data:", jsonString);
+                    debugLog("[updateJsonDisplay] Has content div:", !!this._json_display_content);
+                    
+                    if (!this._json_display_content) {
+                        console.error("[SwissArmyKnife][updateJsonDisplay] No content div found!");
+                        return;
+                    }
+                    
+                    try {
+                        // Parse JSON string
+                        debugLog("[updateJsonDisplay] Type of input:", typeof jsonString);
+                        const jsonData = typeof jsonString === "string" 
+                            ? JSON.parse(jsonString) 
+                            : jsonString;
+                        
+                        debugLog("[updateJsonDisplay] Parsed JSON data:", jsonData);
+                        debugLog("[updateJsonDisplay] JSON keys:", Object.keys(jsonData));
+                        
+                        // Build formatted output with each key-value pair
+                        const lines = [];
+                        for (const [key, value] of Object.entries(jsonData)) {
+                            // Capitalize first letter of key for display
+                            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+                            
+                            // Format value (handle strings, arrays, objects)
+                            let displayValue;
+                            if (typeof value === "string") {
+                                displayValue = value;
+                            } else if (Array.isArray(value)) {
+                                displayValue = value.join(', ');
+                            } else if (typeof value === "object" && value !== null) {
+                                displayValue = JSON.stringify(value, null, 2);
+                            } else {
+                                displayValue = String(value);
+                            }
+                            
+                            lines.push(`${displayKey}: ${displayValue}`);
+                        }
+                        
+                        const finalText = lines.join('\n\n');
+                        debugLog("[updateJsonDisplay] Final text length:", finalText.length);
+                        debugLog("[updateJsonDisplay] Final text preview:", finalText.substring(0, 200));
+                        
+                        this._json_display_content.textContent = finalText;
+                        debugLog("[updateJsonDisplay] ✅ Successfully updated display");
+                    } catch (error) {
+                        const errorMsg = `Error parsing JSON: ${error.message}`;
+                        this._json_display_content.textContent = errorMsg;
+                        console.error("[updateJsonDisplay] Failed to parse JSON:", error);
+                        console.error("[updateJsonDisplay] Input was:", jsonString);
+                    }
+                };
+
+                // Hook onExecuted to capture execution results
+                const originalOnExecuted = this.onExecuted;
+                this.onExecuted = function (message) {
+                    debugLog("LLMStudioStructuredDescribe onExecuted called", message);
+                    
+                    if (message && message.json_output) {
+                        // Extract json_output (first element if array)
+                        const jsonOutput = Array.isArray(message.json_output)
+                            ? message.json_output[0]
+                            : message.json_output;
+                        
+                        debugLog("Received json_output:", jsonOutput);
+                        this.updateJsonDisplay(jsonOutput);
+                    }
+                    
+                    return originalOnExecuted?.call(this, message);
+                };
 
                 // Function to update output labels based on schema preset
                 this.updateOutputLabels = function(schemaPreset) {
@@ -1885,25 +2009,65 @@ app.registerExtension({
 
     // Setup app-level execution handler for MediaDescribe and ControlPanel
     async setup() {
-        // Hook into API events to catch execution results
+        // Log ALL API events to debug
+        const originalAddEventListener = api.addEventListener.bind(api);
+        console.log("[SwissArmyKnife] Setting up API event listeners...");
+        
+        // Listen for execution_cached events - this fires when nodes use cached results
+        // The onExecuted hook will still receive the cached ui data, so no special handling needed
+        api.addEventListener("execution_cached", ({ detail }) => {
+            console.log("[SwissArmyKnife][API] execution_cached event:", detail);
+            // Cached nodes will still trigger onExecuted with their ui field data
+        });
+        
+        // Listen for 'executing' event for logging
+        api.addEventListener("executing", ({ detail }) => {
+            const nodeId = detail;
+            if (nodeId !== null && nodeId !== undefined) {
+                const node = app.graph.getNodeById(parseInt(nodeId));
+                console.log("[SwissArmyKnife][API] Executing node:", nodeId, "type:", node?.type, "comfyClass:", node?.comfyClass);
+            } else {
+                console.log("[SwissArmyKnife][API] Execution complete for current node");
+            }
+        });
+        
+        // Listen for execution complete
+        api.addEventListener("execution_success", ({ detail }) => {
+            console.log("[SwissArmyKnife][API] Workflow execution completed successfully", detail);
+            // onExecuted hooks have already received the ui data and updated displays
+        });
+        
+        // Listen for execution start to update LLMStudioStructuredDescribe nodes to "Pending response..."
+        api.addEventListener("execution_start", ({ detail }) => {
+            console.log("[SwissArmyKnife] [API] Workflow execution started", detail);
+            debugLog("[API] Workflow execution started", detail);
+            
+            // Find all LLMStudioStructuredDescribe nodes in the current graph and update to pending state
+            if (app.graph && app.graph._nodes) {
+                for (const node of app.graph._nodes) {
+                    if (node.comfyClass === "LLMStudioStructuredDescribe" && node._json_display_content) {
+                        const currentContent = node._json_display_content.textContent;
+                        if (currentContent === "Awaiting execution...") {
+                            node._json_display_content.textContent = "Pending response...";
+                            debugLog("[API] Updated LLMStudioStructuredDescribe node to pending state");
+                        }
+                    }
+                }
+            }
+        });
+
+        // Hook into API executed events for logging
         api.addEventListener("executed", ({ detail }) => {
             const { node: nodeId, output } = detail;
+            const node = app.graph.getNodeById(parseInt(nodeId));
 
+            console.log("[SwissArmyKnife][API] Execution event received for node:", nodeId);
+            console.log("[SwissArmyKnife][API] Output data:", output);
+            console.log("[SwissArmyKnife][API] Node type:", node?.type, "comfyClass:", node?.comfyClass);
+            
             debugLog("[API] Execution event received for node:", nodeId);
             debugLog("[API] Output data:", output);
-            debugLog("[API] Output keys:", output ? Object.keys(output) : "null");
-
-            // Find the node by ID
-            const node = app.graph.getNodeById(parseInt(nodeId));
             debugLog("[API] Node found:", !!node, "comfyClass:", node?.comfyClass);
-
-            // Log ALL execution events to see what's happening
-            debugLog(
-                "[API] All execution event - nodeId:",
-                nodeId,
-                "comfyClass:",
-                node?.comfyClass
-            );
 
             // Handle MediaDescribe execution
             if (node && node.comfyClass === "MediaDescribe") {
@@ -1930,6 +2094,40 @@ app.registerExtension({
                     }
                 } else {
                     debugLog("[API] ⚠️ No height/width in output. Output structure:", output);
+                }
+            }
+            // Handle LLMStudioStructuredDescribe execution
+            // Check both comfyClass and type to be sure we catch it
+            else if (node && (node.comfyClass === "LLMStudioStructuredDescribe" || node.type === "LLMStudioStructuredDescribe")) {
+                console.log("[SwissArmyKnife][API] ✅ Found LLMStudioStructuredDescribe execution result");
+                console.log("[SwissArmyKnife][API] Node comfyClass:", node.comfyClass, "type:", node.type);
+                console.log("[SwissArmyKnife][API] Full output structure:", JSON.stringify(output, null, 2));
+                debugLog("[API] ✅ Found LLMStudioStructuredDescribe execution result");
+                debugLog("[API] Full output structure:", JSON.stringify(output, null, 2));
+
+                // Extract json_output from output
+                if (output && output.json_output) {
+                    const jsonOutput = Array.isArray(output.json_output)
+                        ? output.json_output[0]
+                        : output.json_output;
+                    
+                    console.log("[SwissArmyKnife][API] Extracted json_output:", jsonOutput);
+                    debugLog("[API] Extracted json_output:", jsonOutput);
+                    
+                    // Update the display using the node's method
+                    if (node.updateJsonDisplay) {
+                        console.log("[SwissArmyKnife][API] Calling updateJsonDisplay...");
+                        node.updateJsonDisplay(jsonOutput);
+                        console.log("[SwissArmyKnife][API] ✅ Updated JSON display via global listener");
+                        debugLog("[API] ✅ Updated JSON display via global listener");
+                    } else {
+                        console.error("[SwissArmyKnife][API] ⚠️ updateJsonDisplay method not found on node!");
+                        console.error("[SwissArmyKnife][API] Node properties:", Object.keys(node));
+                        debugLog("[API] ⚠️ updateJsonDisplay method not found on node!");
+                    }
+                } else {
+                    console.warn("[SwissArmyKnife][API] ⚠️ No json_output in output. Output structure:", output);
+                    debugLog("[API] ⚠️ No json_output in output. Output structure:", output);
                 }
             }
             // Handle ControlPanel execution

@@ -369,20 +369,33 @@ class LLMStudioStructuredDescribe:
 
             logger.log("\n✅ Analysis complete\n")
 
-            return (json_output, field_1, field_2, field_3, field_4, field_5)
+            # Return both ui field (for JavaScript display) and result tuple (for node outputs)
+            return {
+                "ui": {"json_output": [json_output]},
+                "result": (json_output, field_1, field_2, field_3, field_4, field_5)
+            }
 
         except requests.exceptions.RequestException as e:
             error_msg = f"Failed to connect to LM Studio: {e}"
             logger.error(f"❌ {error_msg}")
-            return (error_msg, "", "", "", "", "")
+            return {
+                "ui": {"json_output": [error_msg]},
+                "result": (error_msg, "", "", "", "", "")
+            }
         except json.JSONDecodeError as e:
             error_msg = f"Failed to parse JSON response: {e}"
             logger.error(f"❌ {error_msg}")
-            return (error_msg, "", "", "", "", "")
+            return {
+                "ui": {"json_output": [error_msg]},
+                "result": (error_msg, "", "", "", "", "")
+            }
         except Exception as e:
             error_msg = f"Error: {e}"
             logger.error(f"❌ {error_msg}")
-            return (error_msg, "", "", "", "", "")
+            return {
+                "ui": {"json_output": [error_msg]},
+                "result": (error_msg, "", "", "", "", "")
+            }
 
 
 class LLMStudioStructuredVideoDescribe:
