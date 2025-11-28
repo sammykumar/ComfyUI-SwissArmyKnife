@@ -126,6 +126,19 @@ class LLMStudioStructuredDescribe:
         self.base_url = None
 
     @classmethod
+    def get_available_models(cls, base_url: str = "http://192.168.50.41:1234") -> List[str]:
+        """Fetch available models from LM Studio."""
+        try:
+            response = requests.get(f"{base_url}/v1/models", timeout=5)
+            response.raise_for_status()
+            models_data = response.json()
+            model_ids = [model["id"] for model in models_data.get("data", [])]
+            return model_ids if model_ids else ["qwen3-vl-8b-thinking-mlx"]
+        except Exception as e:
+            logger.warning(f"⚠️ Could not fetch models from {base_url}: {e}")
+            return ["qwen3-vl-8b-thinking-mlx"]
+
+    @classmethod
     def INPUT_TYPES(cls):
         """Define input parameters for the node."""
         return {
@@ -135,10 +148,8 @@ class LLMStudioStructuredDescribe:
                     "multiline": False,
                     "tooltip": "LM Studio server URL (e.g. http://192.168.50.41:1234)"
                 }),
-                "model_name": ("STRING", {
-                    "default": "qwen3-vl-8b-thinking-mlx",
-                    "multiline": False,
-                    "tooltip": "Model name in LM Studio (e.g. qwen3-vl-8b-thinking-mlx)"
+                "model_name": (cls.get_available_models(), {
+                    "tooltip": "Model name in LM Studio"
                 }),
                 "image": ("IMAGE", {
                     "tooltip": "Input image to analyze"
@@ -354,6 +365,19 @@ class LLMStudioStructuredVideoDescribe:
         self.base_url = None
 
     @classmethod
+    def get_available_models(cls, base_url: str = "http://192.168.50.41:1234") -> List[str]:
+        """Fetch available models from LM Studio."""
+        try:
+            response = requests.get(f"{base_url}/v1/models", timeout=5)
+            response.raise_for_status()
+            models_data = response.json()
+            model_ids = [model["id"] for model in models_data.get("data", [])]
+            return model_ids if model_ids else ["qwen3-vl-8b-thinking-mlx"]
+        except Exception as e:
+            logger.warning(f"⚠️ Could not fetch models from {base_url}: {e}")
+            return ["qwen3-vl-8b-thinking-mlx"]
+
+    @classmethod
     def INPUT_TYPES(cls):
         """Define input parameters for the node."""
         return {
@@ -363,10 +387,8 @@ class LLMStudioStructuredVideoDescribe:
                     "multiline": False,
                     "tooltip": "LM Studio server URL (e.g. http://192.168.50.41:1234)"
                 }),
-                "model_name": ("STRING", {
-                    "default": "qwen3-vl-8b-thinking-mlx",
-                    "multiline": False,
-                    "tooltip": "Model name in LM Studio (e.g. qwen3-vl-8b-thinking-mlx)"
+                "model_name": (cls.get_available_models(), {
+                    "tooltip": "Model name in LM Studio"
                 }),
                 "video_path": ("STRING", {
                     "default": "",
@@ -391,10 +413,15 @@ class LLMStudioStructuredVideoDescribe:
                     "default": "video_description",
                     "tooltip": "JSON schema preset to use for structured output"
                 }),
-                "prompt": ("STRING", {
+                "system_prompt": ("STRING", {
+                    "default": "You are an expert video analyst. Analyze the video frames and provide detailed, accurate descriptions following the provided JSON schema.",
+                    "multiline": True,
+                    "tooltip": "System prompt that sets the AI's role and behavior"
+                }),
+                "user_prompt": ("STRING", {
                     "default": "Analyze this video sequence and provide a detailed description following the schema.",
                     "multiline": True,
-                    "tooltip": "Prompt for video analysis"
+                    "tooltip": "User prompt with specific instructions for the analysis"
                 }),
                 "temperature": ("FLOAT", {
                     "default": 0.2,
@@ -504,7 +531,8 @@ class LLMStudioStructuredVideoDescribe:
         sample_rate: float,
         max_duration: float,
         schema_preset: str,
-        prompt: str,
+        system_prompt: str,
+        user_prompt: str,
         temperature: float,
         verbose: bool
     ) -> Tuple[str, str, str, str, str, str, int]:
@@ -570,11 +598,14 @@ class LLMStudioStructuredVideoDescribe:
         # Call LM Studio with structured output
         logger.log(f"\n🤖 Analyzing {len(images_base64)} frames with structured output...")
         
+        # Combine system and user prompts
+        combined_prompt = f"{system_prompt}\n\n{user_prompt}"
+        
         try:
             result = self.call_lmstudio_structured(
                 base_url=base_url,
                 model_name=model_name,
-                prompt=prompt,
+                prompt=combined_prompt,
                 images_base64=images_base64,
                 schema=schema,
                 temperature=temperature
