@@ -7,10 +7,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .civitai_service import CivitAIService
 from .lora_hash_cache import get_cache as get_lora_hash_cache
-from .media_describe import (GeminiUtilOptions, LLMStudioOptions, MediaDescribe, MediaDescribeOverrides, 
+from .media_describe import (LLMStudioOptions, MediaDescribe, MediaDescribeOverrides, 
                               LLMStudioVideoDescribe, LLMStudioPictureDescribe,
                               LLMStudioStructuredDescribe, LLMStudioStructuredVideoDescribe)
-from .utils.video_preview import VideoPreview
 from .debug_utils import Logger
 
 logger = Logger("Nodes")
@@ -340,7 +339,6 @@ class VideoMetadataNode:
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
     "MediaDescribe": MediaDescribe,
-    "GeminiUtilOptions": GeminiUtilOptions,
     "LLMStudioOptions": LLMStudioOptions,
     "MediaDescribeOverrides": MediaDescribeOverrides,
     "LLMStudioVideoDescribe": LLMStudioVideoDescribe,
@@ -348,14 +346,12 @@ NODE_CLASS_MAPPINGS = {
     "LLMStudioStructuredDescribe": LLMStudioStructuredDescribe,
     "LLMStudioStructuredVideoDescribe": LLMStudioStructuredVideoDescribe,
     "FilenameGenerator": FilenameGenerator,
-    "VideoMetadataNode": VideoMetadataNode,
-    "VideoPreview": VideoPreview
+    "VideoMetadataNode": VideoMetadataNode
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "MediaDescribe": "Media Describe",
-    "GeminiUtilOptions": "Gemini Util - Options",
     "LLMStudioOptions": "LLM Studio - Options",
     "MediaDescribeOverrides": "Media Describe - Overrides",
     "LLMStudioVideoDescribe": "LLM Studio Video Describe",
@@ -363,6 +359,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "LLMStudioStructuredDescribe": "LM Studio Structured Describe (Image)",
     "LLMStudioStructuredVideoDescribe": "LM Studio Structured Describe (Video)",
     "FilenameGenerator": "Filename Generator",
-    "VideoMetadataNode": "Update Video Metadata",
-    "VideoPreview": "🎬 Video Preview"
+    "VideoMetadataNode": "Update Video Metadata"
 }

@@ -1,12 +1,9 @@
 """
-Media Selection and Frame Extraction Nodes
+Media Selection Nodes
 
-This module provides nodes for handling media input and frame extraction,
-decoupling these concerns from AI-based description generation.
+This module exposes the MediaSelection node for handling media input from multiple sources.
 """
 
 from .media_selection import MediaSelection
-from .frame_extractor import FrameExtractor
-from .multi_caption_combiner import MultiCaptionCombiner
 
-__all__ = ['MediaSelection', 'FrameExtractor', 'MultiCaptionCombiner']
+__all__ = ["MediaSelection"]
