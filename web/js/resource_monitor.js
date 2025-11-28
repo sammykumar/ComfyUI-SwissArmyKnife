@@ -76,8 +76,8 @@ function createRestartButton() {
             // Wait a moment then try to reconnect
             setTimeout(() => {
                 debugLog("Reloading page...");
-                window.location.reload();
-            }, 2000);
+                window.location.reload(true); // true = hard reload (bypass cache)
+            }, 5000);
             
         } catch (error) {
             console.error("[SwissArmyKnife][ResourceMonitor] Error restarting server:", error);
