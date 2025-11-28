@@ -189,16 +189,20 @@ function injectRestartButtonStyles() {
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            align-items: stretch;
+            align-items: center;
             gap: 0;
             padding: 0;
-            background: rgba(15, 15, 20, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 16px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            z-index: 9999;
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9999px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             overflow: hidden;
+            z-index: 9999;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            font-weight: 500;
         }
 
         #swissarmyknife-restart-button {
@@ -246,7 +250,8 @@ function injectRestartButtonStyles() {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 10px 16px;
+            padding: 0 20px;
+            height: 48px;
             background: rgba(255, 255, 255, 0.03);
             position: relative;
             transition: background 0.3s ease;
