@@ -179,7 +179,7 @@ class LLMStudioStructuredDescribe:
                     "default": 0.8,
                     "min": 0.0,
                     "max": 1.0,
-                    "step": 0.05,
+                    "step": 0.1,
                     "tooltip": "Nucleus sampling probability threshold"
                 }),
                 "verbose": ("BOOLEAN", {
@@ -488,7 +488,7 @@ class LLMStudioStructuredVideoDescribe:
                     "default": 0.8,
                     "min": 0.0,
                     "max": 1.0,
-                    "step": 0.05,
+                    "step": 0.1,
                     "tooltip": "Nucleus sampling probability threshold"
                 }),
                 "verbose": ("BOOLEAN", {
