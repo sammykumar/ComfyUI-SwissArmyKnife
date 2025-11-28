@@ -58,7 +58,6 @@ docs/
 │   │   ├── README.md           # Quick reference
 │   │   └── VIDEO_METADATA.md   # Complete documentation
 │   ├── media-describe/         # Gemini AI Media Description
-│   ├── lora-loader/            # LoRA Loader node
 │   ├── reddit-media/           # Reddit Media Extraction
 │   ├── media-selection/        # Media Selection node
 │   └── control-panel/          # Control Panel Display
@@ -199,7 +198,6 @@ docs/
 │   │   ├── README.md           # Quick reference
 │   │   └── VIDEO_METADATA.md   # Complete consolidated documentation
 │   ├── media-describe/         # Gemini AI Media Description docs
-│   ├── lora-loader/            # LoRA Loader node docs
 │   ├── reddit-media/           # Reddit Media Extraction docs
 │   ├── media-selection/        # Media Selection node docs
 │   └── control-panel/          # Control Panel Display docs
@@ -829,7 +827,6 @@ comfyui_swissarmyknife/
 │   │   │   ├── README.md             # Quick reference
 │   │   │   └── VIDEO_METADATA.md     # Complete documentation
 │   │   ├── media-describe/           # Gemini AI Media Description docs
-│   │   ├── lora-loader/              # LoRA Loader node docs
 │   │   ├── reddit-media/             # Reddit Media Extraction docs
 │   │   ├── media-selection/          # Media Selection node docs
 │   │   └── control-panel/            # Control Panel Display docs
