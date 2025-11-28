@@ -73,9 +73,6 @@ docs/
 ├── IMPLEMENTATION_STATUS.md     # Overall project status
 │
 ├── nodes/                       # Node-specific documentation (ONE file per node)
-│   ├── video-preview/          # Video Preview node
-│   │   ├── README.md           # Quick reference
-│   │   └── VIDEO_PREVIEW.md    # Complete documentation
 │   ├── video-metadata/         # Video Metadata node
 │   │   ├── README.md           # Quick reference
 │   │   └── VIDEO_METADATA.md   # Complete documentation
@@ -213,9 +210,6 @@ docs/
 ├── README.md                    # Main documentation index
 ├── IMPLEMENTATION_STATUS.md     # Overall project status
 ├── nodes/                       # Node-specific documentation (ONE file per node)
-│   ├── video-preview/
-│   │   ├── README.md           # Quick reference
-│   │   └── VIDEO_PREVIEW.md    # Complete consolidated documentation
 │   ├── video-metadata/
 │   │   ├── README.md           # Quick reference
 │   │   └── VIDEO_METADATA.md   # Complete consolidated documentation
@@ -255,7 +249,7 @@ touch docs/integrations/[service]/NEW_INTEGRATION.md
 
 **Documentation file naming convention:**
 
-- **Nodes**: Use descriptive all-caps names: `VIDEO_PREVIEW.md`, `MEDIA_DESCRIBE.md`
+- **Nodes**: Use descriptive all-caps names: `VIDEO_METADATA.md`, `MEDIA_DESCRIBE.md`
 - **ONE file per node**: Consolidate all information about a node into a single comprehensive file
 - Node docs go in `docs/nodes/[node-name]/`
 - Infrastructure docs go in `docs/infrastructure/[category]/`
@@ -825,7 +819,6 @@ ls -la docs/web-js/          # Web JavaScript widget documentation
 ls -la docs/examples/        # Example workflows
 
 # View node documentation
-cat docs/nodes/video-preview/VIDEO_PREVIEW.md     # Complete video preview docs
 cat docs/nodes/video-metadata/VIDEO_METADATA.md   # Complete video metadata docs
 
 # Common documentation patterns:
@@ -848,9 +841,6 @@ comfyui_swissarmyknife/
 │   ├── README.md                      # Main documentation index
 │   ├── IMPLEMENTATION_STATUS.md       # Overall project status
 │   ├── nodes/                         # Node-specific documentation (ONE file per node)
-│   │   ├── video-preview/            # Video Preview node docs
-│   │   │   ├── README.md             # Quick reference
-│   │   │   └── VIDEO_PREVIEW.md      # Complete documentation
 │   │   ├── video-metadata/           # Video Metadata node docs
 │   │   │   ├── README.md             # Quick reference
 │   │   │   └── VIDEO_METADATA.md     # Complete documentation
@@ -869,7 +859,6 @@ comfyui_swissarmyknife/
 │   └── examples/                      # Example workflows
 ├── nodes/nodes.py                      # Main Python custom nodes
 ├── web/js/                            # JavaScript widgets
-│   ├── video_preview/                # Video preview widget
 │   ├── gemini_widgets.js             # Gemini widgets
 │   └── ...
 └── ui-react_backup/                   # React UI extension (DISABLED)

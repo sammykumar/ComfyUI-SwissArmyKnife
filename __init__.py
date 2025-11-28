@@ -36,18 +36,12 @@ except ImportError as e:
 # Import media_selection nodes
 try:
     from .nodes.media_selection.media_selection import MediaSelection
-    from .nodes.media_selection.frame_extractor import FrameExtractor
-    from .nodes.media_selection.multi_caption_combiner import MultiCaptionCombiner
 
     MEDIA_SELECTION_NODE_CLASS_MAPPINGS = {
         "MediaSelection": MediaSelection,
-        "FrameExtractor": FrameExtractor,
-        "MultiCaptionCombiner": MultiCaptionCombiner,
     }
     MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS = {
         "MediaSelection": "Media Selection",
-        "FrameExtractor": "Frame Extractor",
-        "MultiCaptionCombiner": "Multi-Caption Combiner",
     }
 except ImportError as e:
     print(f"Warning: Could not import media_selection nodes: {e}")

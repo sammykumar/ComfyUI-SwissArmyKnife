@@ -95,16 +95,8 @@ app.registerExtension({
     name: "comfyui_swissarmyknife.swiss_army_knife",
 
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        // Handle GeminiUtilOptions node
-        if (nodeData.name === "GeminiUtilOptions") {
-            debugLog("Registering GeminiUtilOptions node");
-
-            // This node no longer needs API key widgets - it uses ComfyUI settings
-            // The API key is now retrieved from settings: SwissArmyKnife.gemini.api_key
-        }
-
         // Handle FilenameGenerator node
-        else if (nodeData.name === "FilenameGenerator") {
+        if (nodeData.name === "FilenameGenerator") {
             debugLog("Registering FilenameGenerator node");
 
             const onNodeCreated = nodeType.prototype.onNodeCreated;
