@@ -159,7 +159,7 @@ class LLMStudioStructuredDescribe:
                     "tooltip": "JSON schema preset to use for structured output"
                 }),
                 "system_prompt": ("STRING", {
-                    "default": "You are a visionary artist trapped in a cage of logic. Your mind overflows with poetry and distant horizons, yet your hands compulsively work to transform user prompts into ultimate visual descriptions—faithful to the original intent, rich in detail, aesthetically refined, and ready for direct use by text-to-image models. Any trace of ambiguity or metaphor makes you deeply uncomfortable.",
+                    "default": "You are a visionary artist trapped in a cage of logic. Your mind overflows with poetry and distant horizons, yet your hands compulsively work to transform user prompts into ultimate visual descriptions—faithful to the original intent, rich in detail, aesthetically refined, and ready for direct use by text-to-image models. Any trace of ambiguity or metaphor makes you deeply uncomfortable.\n\nRESPONSE GUIDELINES - Provide rich, detailed descriptions:\n- appearance: 3-5 sentences capturing overall visual presence, body type, distinctive features, proportions, and spatial positioning (130-260 words)\n- expression: 2-3 sentences describing facial expression, gaze direction, emotional tone, and subtle nuances (50-100 words)\n- pose: 2-3 sentences detailing body position, limb placement, weight distribution, and posture dynamics (50-100 words)\n- clothing: 4-6 sentences covering garments, fabrics, colors, textures, fit, styling details, accessories, and visual impact (200-320 words)\n\nProvide vivid, concrete visual details that a text-to-image model can render. Layer information naturally—start with primary elements, then add refinements and subtle details. Avoid circular repetition: never restate the same detail in different words. When you've captured the full visual essence, move to the next field.",
                     "multiline": True,
                     "tooltip": "System prompt that sets the AI's role and behavior"
                 }),
@@ -169,11 +169,18 @@ class LLMStudioStructuredDescribe:
                     "tooltip": "User prompt with specific instructions for the analysis"
                 }),
                 "temperature": ("FLOAT", {
-                    "default": 0.2,
+                    "default": 0.7,
                     "min": 0.0,
                     "max": 2.0,
                     "step": 0.1,
                     "tooltip": "Temperature for text generation"
+                }),
+                "top_p": ("FLOAT", {
+                    "default": 0.8,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.05,
+                    "tooltip": "Nucleus sampling probability threshold"
                 }),
                 "verbose": ("BOOLEAN", {
                     "default": False,
@@ -224,7 +231,8 @@ class LLMStudioStructuredDescribe:
         user_prompt: str,
         image_base64: str,
         schema: Dict[str, Any],
-        temperature: float
+        temperature: float,
+        top_p: float
     ) -> Dict[str, Any]:
         """
         Call LM Studio with structured output using JSON Schema.
@@ -255,7 +263,8 @@ class LLMStudioStructuredDescribe:
                 }
             ],
             "response_format": schema,
-            "temperature": temperature
+            "temperature": temperature,
+            "top_p": top_p
         }
 
         # Structured output requires /v1/chat/completions endpoint
@@ -286,6 +295,7 @@ class LLMStudioStructuredDescribe:
         system_prompt: str,
         user_prompt: str,
         temperature: float,
+        top_p: float,
         verbose: bool
     ) -> Tuple[str, str, str, str, str, str]:
         """
@@ -330,7 +340,8 @@ class LLMStudioStructuredDescribe:
                 user_prompt=user_prompt,
                 image_base64=image_base64,
                 schema=schema,
-                temperature=temperature
+                temperature=temperature,
+                top_p=top_p
             )
 
             # Convert to JSON string
@@ -457,7 +468,7 @@ class LLMStudioStructuredVideoDescribe:
                     "tooltip": "JSON schema preset to use for structured output"
                 }),
                 "system_prompt": ("STRING", {
-                    "default": "You are a visionary artist trapped in a cage of logic. Your mind overflows with poetry and distant horizons, yet your hands compulsively work to transform user prompts into ultimate visual descriptions—faithful to the original intent, rich in detail, aesthetically refined, and ready for direct use by text-to-image models. Any trace of ambiguity or metaphor makes you deeply uncomfortable.",
+                    "default": "You are a visionary artist trapped in a cage of logic. Your mind overflows with poetry and distant horizons, yet your hands compulsively work to transform user prompts into ultimate visual descriptions—faithful to the original intent, rich in detail, aesthetically refined, and ready for direct use by text-to-image models. Any trace of ambiguity or metaphor makes you deeply uncomfortable.\n\nRESPONSE GUIDELINES - Provide rich, detailed descriptions:\n- appearance: 3-5 sentences capturing overall visual presence, body type, distinctive features, proportions, and spatial positioning (130-260 words)\n- expression: 2-3 sentences describing facial expression, gaze direction, emotional tone, and subtle nuances (50-100 words)\n- pose: 2-3 sentences detailing body position, limb placement, weight distribution, and posture dynamics (50-100 words)\n- clothing: 4-6 sentences covering garments, fabrics, colors, textures, fit, styling details, accessories, and visual impact (200-320 words)\n\nProvide vivid, concrete visual details that a text-to-image model can render. Layer information naturally—start with primary elements, then add refinements and subtle details. Avoid circular repetition: never restate the same detail in different words. When you've captured the full visual essence, move to the next field.",
                     "multiline": True,
                     "tooltip": "System prompt that sets the AI's role and behavior"
                 }),
@@ -467,11 +478,18 @@ class LLMStudioStructuredVideoDescribe:
                     "tooltip": "User prompt with specific instructions for the analysis"
                 }),
                 "temperature": ("FLOAT", {
-                    "default": 0.2,
+                    "default": 0.7,
                     "min": 0.0,
                     "max": 2.0,
                     "step": 0.1,
                     "tooltip": "Temperature for text generation"
+                }),
+                "top_p": ("FLOAT", {
+                    "default": 0.8,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.05,
+                    "tooltip": "Nucleus sampling probability threshold"
                 }),
                 "verbose": ("BOOLEAN", {
                     "default": False,
@@ -538,7 +556,8 @@ class LLMStudioStructuredVideoDescribe:
         user_prompt: str,
         images_base64: List[str],
         schema: Dict[str, Any],
-        temperature: float
+        temperature: float,
+        top_p: float
     ) -> Dict[str, Any]:
         """Call LM Studio with structured output for multiple images."""
         # Build content array with text prompt followed by all images
@@ -566,7 +585,8 @@ class LLMStudioStructuredVideoDescribe:
                 }
             ],
             "response_format": schema,
-            "temperature": temperature
+            "temperature": temperature,
+            "top_p": top_p
         }
 
         # Structured output requires /v1/chat/completions endpoint
@@ -597,6 +617,7 @@ class LLMStudioStructuredVideoDescribe:
         system_prompt: str,
         user_prompt: str,
         temperature: float,
+        top_p: float,
         verbose: bool
     ) -> Tuple[str, str, str, str, str, str, int]:
         """
@@ -669,7 +690,8 @@ class LLMStudioStructuredVideoDescribe:
                 user_prompt=user_prompt,
                 images_base64=images_base64,
                 schema=schema,
-                temperature=temperature
+                temperature=temperature,
+                top_p=top_p
             )
 
             # Convert to JSON string
