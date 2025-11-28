@@ -48,13 +48,17 @@ function createRestartButton() {
         try {
             debugLog("Sending restart request...");
             
+            // Disable button to prevent double-clicks
+            button.disabled = true;
+            button.textContent = "Restarting...";
+            
             // Show notification immediately
             if (app.extensionManager?.toast?.add) {
                 app.extensionManager.toast.add({
                     severity: "warn",
                     summary: "Server Restarting",
-                    detail: "ComfyUI server is restarting...",
-                    life: 3000,
+                    detail: "Waiting for ComfyUI to become available...",
+                    life: 30000, // Keep visible longer during restart
                 });
             }
             
@@ -73,14 +77,88 @@ function createRestartButton() {
             
             debugLog("Server restart initiated");
             
-            // Wait a moment then try to reconnect
-            setTimeout(() => {
-                debugLog("Reloading page...");
-                window.location.reload(true); // true = hard reload (bypass cache)
-            }, 5000);
+            // Wait for initial shutdown (give server time to start shutting down)
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Poll for server availability with health check
+            const maxAttempts = 60; // Try for up to 60 seconds
+            const pollInterval = 1000; // Check every second
+            let attempts = 0;
+            let serverAvailable = false;
+            
+            debugLog("Starting health check polling...");
+            
+            while (attempts < maxAttempts && !serverAvailable) {
+                attempts++;
+                
+                try {
+                    // Try to fetch a simple endpoint to check if server is responding
+                    const response = await fetch("/system_stats", {
+                        method: "GET",
+                        cache: "no-cache"
+                    });
+                    
+                    if (response.ok) {
+                        debugLog(`Server is available after ${attempts} attempts (${attempts} seconds)`);
+                        serverAvailable = true;
+                        break;
+                    }
+                } catch (error) {
+                    // Server not ready yet, continue polling
+                    if (attempts % 5 === 0) {
+                        debugLog(`Health check attempt ${attempts}/${maxAttempts}...`);
+                    }
+                }
+                
+                // Wait before next attempt
+                await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+            
+            if (serverAvailable) {
+                debugLog("Server is back online, reloading page...");
+                
+                if (app.extensionManager?.toast?.add) {
+                    app.extensionManager.toast.add({
+                        severity: "success",
+                        summary: "Server Restarted",
+                        detail: "Reloading page now...",
+                        life: 2000
+                    });
+                }
+                
+                // Give a brief moment for the toast to show, then reload
+                setTimeout(() => {
+                    window.location.reload(true); // Hard reload (bypass cache)
+                }, 500);
+            } else {
+                debugLog("Server did not become available within timeout");
+                
+                if (app.extensionManager?.toast?.add) {
+                    app.extensionManager.toast.add({
+                        severity: "warn",
+                        summary: "Server Taking Longer Than Expected",
+                        detail: "Please refresh manually if needed",
+                        life: 10000
+                    });
+                }
+                
+                button.disabled = false;
+                button.textContent = "Restart";
+            }
             
         } catch (error) {
             console.error("[SwissArmyKnife][ResourceMonitor] Error restarting server:", error);
+            button.disabled = false;
+            button.textContent = "Restart";
+            
+            if (app.extensionManager?.toast?.add) {
+                app.extensionManager.toast.add({
+                    severity: "error",
+                    summary: "Restart Failed",
+                    detail: error.message,
+                    life: 5000
+                });
+            }
         }
     });
 
@@ -147,42 +225,46 @@ function injectRestartButtonStyles() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 4px 8px;
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-            min-width: 60px;
+            justify-content: center;
+            padding: 8px 16px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            min-width: 80px;
+            min-height: 50px;
         }
         
         .swissarmyknife-monitor-label {
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 2px;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 4px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            font-weight: 600;
         }
         
         .swissarmyknife-monitor-value {
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 16px;
+            font-weight: 700;
             color: #ffffff;
             transition: color 0.3s ease;
+            line-height: 1.2;
         }
         
         /* Color coding for resource levels */
         .swissarmyknife-monitor-value.level-low {
-            color: #28a745; /* Green - healthy */
+            color: #4ade80; /* Green - healthy */
         }
         
         .swissarmyknife-monitor-value.level-medium {
-            color: #ffc107; /* Yellow - moderate */
+            color: #fbbf24; /* Yellow - moderate */
         }
         
         .swissarmyknife-monitor-value.level-high {
-            color: #fd7e14; /* Orange - high */
+            color: #fb923c; /* Orange - high */
         }
         
         .swissarmyknife-monitor-value.level-critical {
-            color: #dc3545; /* Red - critical */
+            color: #ef4444; /* Red - critical */
         }
     `;
 
@@ -244,7 +326,16 @@ function updateMonitorValue(id, value, percent = null) {
 function formatGB(bytes) {
     if (bytes === null || bytes === undefined) return "N/A";
     const gb = bytes / (1024 ** 3);
-    return gb.toFixed(1) + "GB";
+    return gb.toFixed(1) + " GB";
+}
+
+/**
+ * Format CPU frequency in GHz
+ */
+function formatGHz(mhz) {
+    if (mhz === null || mhz === undefined) return "N/A";
+    const ghz = mhz / 1000;
+    return ghz.toFixed(2) + " GHz";
 }
 
 /**
@@ -264,6 +355,38 @@ function formatTemp(temp) {
 }
 
 /**
+ * Extract compact GPU model name from full GPU name
+ * Examples:
+ *   "NVIDIA GeForce RTX 3090 Ti" -> "3090Ti"
+ *   "NVIDIA GeForce RTX 3080" -> "3080"
+ *   "NVIDIA RTX A6000" -> "A6000"
+ *   "AMD Radeon RX 7900 XTX" -> "7900XTX"
+ */
+function extractGPUModel(fullName) {
+    if (!fullName) return "GPU";
+    
+    // Remove common prefixes
+    let name = fullName
+        .replace(/NVIDIA\s+GeForce\s+/gi, "")
+        .replace(/NVIDIA\s+/gi, "")
+        .replace(/AMD\s+Radeon\s+/gi, "")
+        .replace(/AMD\s+/gi, "")
+        .replace(/RTX\s+/gi, "")
+        .replace(/GTX\s+/gi, "");
+    
+    // Extract the model number/name (e.g., "3090 Ti", "A6000", "7900 XTX")
+    const match = name.match(/([A-Z]?\d+\s*[A-Za-z]*)/);
+    if (match) {
+        // Remove spaces and capitalize properly (e.g., "3090 Ti" -> "3090Ti")
+        return match[1].replace(/\s+/g, "");
+    }
+    
+    // Fallback to first meaningful word
+    const words = name.trim().split(/\s+/);
+    return words[0] || "GPU";
+}
+
+/**
  * Handle monitor data update
  */
 function handleMonitorUpdate(data) {
@@ -271,15 +394,15 @@ function handleMonitorUpdate(data) {
     
     const { hardware, gpu } = data;
     
-    // Update CPU
+    // Update CPU - show percentage
     if (hardware?.cpu_percent !== null && hardware?.cpu_percent !== undefined) {
         updateMonitorValue("cpu", formatPercent(hardware.cpu_percent), hardware.cpu_percent);
     }
     
-    // Update RAM
+    // Update RAM - show used GB
     if (hardware?.memory) {
         const mem = hardware.memory;
-        const value = `${formatPercent(mem.percent)}`;
+        const value = formatGB(mem.used);
         updateMonitorValue("ram", value, mem.percent);
     }
     
@@ -298,10 +421,10 @@ function handleMonitorUpdate(data) {
                 updateMonitorValue(`gpu${index}`, formatPercent(device.utilization), device.utilization);
             }
             
-            // Update VRAM
+            // Update VRAM - show used GB
             if (device.vram) {
                 const vram = device.vram;
-                const value = `${formatPercent(vram.percent)}`;
+                const value = formatGB(vram.used);
                 updateMonitorValue(`vram${index}`, value, vram.percent);
             }
             
@@ -352,17 +475,20 @@ app.registerExtension({
                     gpu.devices.forEach((device, index) => {
                         if (!device.available) return;
                         
+                        // Extract compact GPU model name
+                        const gpuModel = extractGPUModel(device.name);
+                        
                         // Add GPU utilization monitor if pynvml available
                         if (gpu.pynvml_available) {
-                            buttonGroup.appendChild(createMonitorDisplay(`GPU ${index}`, `gpu${index}`));
+                            buttonGroup.appendChild(createMonitorDisplay(`GPU ${index} (${gpuModel})`, `gpu${index}`));
                         }
                         
-                        // Add VRAM monitor
-                        buttonGroup.appendChild(createMonitorDisplay(`VRAM ${index}`, `vram${index}`));
+                        // Add VRAM monitor with model name
+                        buttonGroup.appendChild(createMonitorDisplay(`VRAM ${index} (${gpuModel})`, `vram${index}`));
                         
-                        // Add GPU temp if available
+                        // Add GPU temp if available with model name
                         if (device.temperature !== null && device.temperature !== undefined) {
-                            buttonGroup.appendChild(createMonitorDisplay(`Temp ${index}`, `gpu${index}-temp`));
+                            buttonGroup.appendChild(createMonitorDisplay(`TEMP ${index} (${gpuModel})`, `gpu${index}-temp`));
                         }
                     });
                 }
