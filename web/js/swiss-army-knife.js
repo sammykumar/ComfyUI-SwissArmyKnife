@@ -1966,20 +1966,180 @@ app.registerExtension({
             };
         }
 
-        // Handle LLMStudioStructuredVideoDescribe node - dynamic output labels
+        // Handle LLMStudioStructuredVideoDescribe node - dynamic output labels and JSON display
         else if (nodeData.name === "LLMStudioStructuredVideoDescribe") {
-            debugLog("Registering LLMStudioStructuredVideoDescribe node with dynamic output labels");
+            debugLog("Registering LLMStudioStructuredVideoDescribe node with dynamic output labels and JSON display");
 
             // Define schema field mappings (video has all schemas including video_description)
             const SCHEMA_OUTPUT_LABELS = {
-                "video_description": ["subject", "clothing", "movement", "scene", "visual_style"],
+                "video_description": ["subject", "clothing", "action", "scene", "visual_style"],
                 "simple_description": ["caption", "tags", "", "", ""],
                 "character_analysis": ["appearance", "expression", "pose", "clothing", ""]
+            };
+
+            // Add resize handler to adjust DOM widget width
+            const onResize = nodeType.prototype.onResize;
+            nodeType.prototype.onResize = function (size) {
+                const result = onResize?.call(this, size);
+                if (this._json_display_dom) {
+                    this._json_display_dom.style.width = this.size[0] - 20 + "px";
+                    // Trigger recompute after width change to handle content reflow
+                    requestAnimationFrame(() => {
+                        const sz = this.computeSize();
+                        if (sz[0] < this.size[0]) sz[0] = this.size[0];
+                        if (sz[1] < this.size[1]) sz[1] = this.size[1];
+                        this.onResize?.(sz);
+                        if (this.graph) {
+                            this.graph.setDirtyCanvas(true, false);
+                        }
+                    });
+                }
+                return result;
             };
 
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 const result = onNodeCreated?.apply(this, arguments);
+
+                // Create DOM display widget for JSON output
+                if (!this._json_display_dom) {
+                    // Create main container
+                    const dom = document.createElement("div");
+                    dom.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontSize = "11px";
+                    dom.style.lineHeight = "1.35";
+                    dom.style.overflow = "auto";
+                    dom.style.minHeight = "300px";
+                    dom.style.padding = "8px";
+                    dom.style.borderRadius = "6px";
+                    dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
+                    dom.style.border = "1px solid var(--border-color, #333)";
+                    dom.style.color = "var(--fg-color, #d4d4d4)";
+
+                    // Create content div
+                    const content = document.createElement("div");
+                    content.style.whiteSpace = "pre-wrap";
+                    content.style.wordBreak = "break-word";
+                    content.style.overflow = "auto";
+                    content.style.flex = "1";
+                    content.textContent = "Awaiting execution...";
+
+                    dom.appendChild(content);
+
+                    // Add DOM widget
+                    const widget = this.addDOMWidget("json_display", "json_display", dom, {
+                        serialize: false,
+                        hideOnZoom: false,
+                    });
+
+                    // Add custom computeSize to measure actual content height
+                    widget.computeSize = function(width) {
+                        if (!dom) return [width || 400, 300];
+                        
+                        // Measure actual content height (scrollHeight includes all content)
+                        const contentHeight = dom.scrollHeight;
+                        const minHeight = 100;
+                        const maxHeight = 800;  // Max 800px height
+                        
+                        // Clamp between min and max, add padding
+                        const finalHeight = Math.max(minHeight, Math.min(maxHeight, contentHeight + 16));
+                        
+                        return [width || 400, finalHeight];
+                    };
+
+                    // Store references
+                    this._json_display_dom = dom;
+                    this._json_display_content = content;
+                    this._json_display_widget = widget;
+
+                    debugLog("Created JSON display widget for LLMStudioStructuredVideoDescribe");
+                }
+
+                // Function to update JSON display from execution output
+                this.updateJsonDisplay = function(jsonString) {
+                    console.log("[SwissArmyKnife][updateJsonDisplay] Called with data:", jsonString);
+                    console.log("[SwissArmyKnife][updateJsonDisplay] Has content div:", !!this._json_display_content);
+                    debugLog("[updateJsonDisplay] Called with data:", jsonString);
+                    debugLog("[updateJsonDisplay] Has content div:", !!this._json_display_content);
+                    
+                    if (!this._json_display_content) {
+                        console.error("[SwissArmyKnife][updateJsonDisplay] No content div found!");
+                        return;
+                    }
+                    
+                    try {
+                        // Parse JSON string
+                        debugLog("[updateJsonDisplay] Type of input:", typeof jsonString);
+                        const jsonData = typeof jsonString === "string" 
+                            ? JSON.parse(jsonString) 
+                            : jsonString;
+                        
+                        debugLog("[updateJsonDisplay] Parsed JSON data:", jsonData);
+                        debugLog("[updateJsonDisplay] JSON keys:", Object.keys(jsonData));
+                        
+                        // Build formatted output with each key-value pair
+                        const lines = [];
+                        for (const [key, value] of Object.entries(jsonData)) {
+                            // Capitalize first letter of key for display
+                            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+                            
+                            // Format value (handle strings, arrays, objects)
+                            let displayValue;
+                            if (typeof value === "string") {
+                                displayValue = value;
+                            } else if (Array.isArray(value)) {
+                                displayValue = value.join(', ');
+                            } else if (typeof value === "object" && value !== null) {
+                                displayValue = JSON.stringify(value, null, 2);
+                            } else {
+                                displayValue = String(value);
+                            }
+                            
+                            lines.push(`${displayKey}: ${displayValue}`);
+                        }
+                        
+                        const finalText = lines.join('\n\n');
+                        debugLog("[updateJsonDisplay] Final text length:", finalText.length);
+                        debugLog("[updateJsonDisplay] Final text preview:", finalText.substring(0, 200));
+                        
+                        this._json_display_content.textContent = finalText;
+                        debugLog("[updateJsonDisplay] ✅ Successfully updated display");
+                        
+                        // Trigger node resize after content update (wait for browser reflow)
+                        requestAnimationFrame(() => {
+                            const sz = this.computeSize();
+                            if (sz[0] < this.size[0]) sz[0] = this.size[0];
+                            if (sz[1] < this.size[1]) sz[1] = this.size[1];
+                            this.onResize?.(sz);
+                            if (this.graph) {
+                                this.graph.setDirtyCanvas(true, false);
+                            }
+                        });
+                    } catch (error) {
+                        const errorMsg = `Error parsing JSON: ${error.message}`;
+                        this._json_display_content.textContent = errorMsg;
+                        console.error("[updateJsonDisplay] Failed to parse JSON:", error);
+                        console.error("[updateJsonDisplay] Input was:", jsonString);
+                    }
+                };
+
+                // Hook onExecuted to capture execution results
+                const originalOnExecuted = this.onExecuted;
+                this.onExecuted = function (message) {
+                    debugLog("LLMStudioStructuredVideoDescribe onExecuted called", message);
+                    
+                    if (message && message.json_output) {
+                        // Extract json_output (first element if array)
+                        const jsonOutput = Array.isArray(message.json_output)
+                            ? message.json_output[0]
+                            : message.json_output;
+                        
+                        debugLog("Received json_output:", jsonOutput);
+                        this.updateJsonDisplay(jsonOutput);
+                    }
+                    
+                    return originalOnExecuted?.call(this, message);
+                };
 
                 // Function to update output labels based on schema preset
                 this.updateOutputLabels = function(schemaPreset) {
@@ -2065,19 +2225,19 @@ app.registerExtension({
             // onExecuted hooks have already received the ui data and updated displays
         });
         
-        // Listen for execution start to update LLMStudioStructuredDescribe nodes to "Pending response..."
+        // Listen for execution start to update LLMStudioStructuredDescribe and Video nodes to "Pending response..."
         api.addEventListener("execution_start", ({ detail }) => {
             console.log("[SwissArmyKnife] [API] Workflow execution started", detail);
             debugLog("[API] Workflow execution started", detail);
             
-            // Find all LLMStudioStructuredDescribe nodes in the current graph and update to pending state
+            // Find all LLMStudioStructuredDescribe and LLMStudioStructuredVideoDescribe nodes in the current graph and update to pending state
             if (app.graph && app.graph._nodes) {
                 for (const node of app.graph._nodes) {
-                    if (node.comfyClass === "LLMStudioStructuredDescribe" && node._json_display_content) {
+                    if ((node.comfyClass === "LLMStudioStructuredDescribe" || node.comfyClass === "LLMStudioStructuredVideoDescribe") && node._json_display_content) {
                         const currentContent = node._json_display_content.textContent;
                         if (currentContent === "Awaiting execution...") {
                             node._json_display_content.textContent = "Pending response...";
-                            debugLog("[API] Updated LLMStudioStructuredDescribe node to pending state");
+                            debugLog(`[API] Updated ${node.comfyClass} node to pending state`);
                         }
                     }
                 }

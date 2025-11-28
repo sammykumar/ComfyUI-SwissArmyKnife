@@ -183,7 +183,7 @@ class LLMStudioStructuredDescribe:
                     "tooltip": "Nucleus sampling probability threshold"
                 }),
                 "max_tokens": ("INT", {
-                    "default": 2000,
+                    "default": 12000,
                     "min": 1,
                     "max": 32000,
                     "step": 100,
@@ -371,7 +371,7 @@ class LLMStudioStructuredDescribe:
             if schema_preset == "video_description":
                 field_1 = result.get("subject", "")
                 field_2 = result.get("clothing", "")
-                field_3 = result.get("movement", "")
+                field_3 = result.get("action", "")
                 field_4 = result.get("scene", "")
                 field_5 = result.get("visual_style", "")
             elif schema_preset == "simple_description":
@@ -503,7 +503,7 @@ class LLMStudioStructuredVideoDescribe:
                     "tooltip": "Nucleus sampling probability threshold"
                 }),
                 "max_tokens": ("INT", {
-                    "default": 2000,
+                    "default": 12000,
                     "min": 1,
                     "max": 32000,
                     "step": 100,
@@ -732,7 +732,7 @@ class LLMStudioStructuredVideoDescribe:
             if schema_preset == "video_description":
                 field_1 = result.get("subject", "")
                 field_2 = result.get("clothing", "")
-                field_3 = result.get("movement", "")
+                field_3 = result.get("action", "")
                 field_4 = result.get("scene", "")
                 field_5 = result.get("visual_style", "")
             elif schema_preset == "simple_description":
@@ -762,20 +762,33 @@ class LLMStudioStructuredVideoDescribe:
 
             logger.log("\n✅ Video analysis complete\n")
 
-            return (json_output, field_1, field_2, field_3, field_4, field_5, len(images_base64))
+            # Return both ui field (for JavaScript display) and result tuple (for node outputs)
+            return {
+                "ui": {"json_output": [json_output]},
+                "result": (json_output, field_1, field_2, field_3, field_4, field_5, len(images_base64))
+            }
 
         except requests.exceptions.RequestException as e:
             error_msg = f"Failed to connect to LM Studio: {e}"
             logger.error(f"❌ {error_msg}")
-            return (error_msg, "", "", "", "", "", len(frame_paths))
+            return {
+                "ui": {"json_output": [error_msg]},
+                "result": (error_msg, "", "", "", "", "", len(frame_paths))
+            }
         except json.JSONDecodeError as e:
             error_msg = f"Failed to parse JSON response: {e}"
             logger.error(f"❌ {error_msg}")
-            return (error_msg, "", "", "", "", "", len(frame_paths))
+            return {
+                "ui": {"json_output": [error_msg]},
+                "result": (error_msg, "", "", "", "", "", len(frame_paths))
+            }
         except Exception as e:
             error_msg = f"Error: {e}"
             logger.error(f"❌ {error_msg}")
-            return (error_msg, "", "", "", "", "", len(frame_paths))
+            return {
+                "ui": {"json_output": [error_msg]},
+                "result": (error_msg, "", "", "", "", "", len(frame_paths))
+            }
 
 
 # Node registration
