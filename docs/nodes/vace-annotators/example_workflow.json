@@ -1,0 +1,124 @@
+{
+  "workflow": {
+    "title": "VACE Annotators - Example Workflow",
+    "description": "Demonstrates using VACE Annotator nodes for depth, flow, and scribble generation",
+    "nodes": [
+      {
+        "id": 1,
+        "type": "LoadImage",
+        "outputs": {
+          "IMAGE": "images"
+        },
+        "description": "Load input image or video frames"
+      },
+      {
+        "id": 2,
+        "type": "VACEDepthAnnotator",
+        "inputs": {
+          "images": "node:1:IMAGE",
+          "model_type": "midas",
+          "resolution": 512
+        },
+        "outputs": {
+          "depth_maps": "depth_output"
+        },
+        "description": "Generate depth maps using MiDaS model"
+      },
+      {
+        "id": 3,
+        "type": "VACEFlowAnnotator",
+        "inputs": {
+          "images": "node:1:IMAGE",
+          "resolution": 512,
+          "flow_direction": "forward"
+        },
+        "outputs": {
+          "flow_maps": "flow_output"
+        },
+        "description": "Generate optical flow maps (requires 2+ frames)",
+        "note": "Only use with video frames, not single images"
+      },
+      {
+        "id": 4,
+        "type": "VACEScribbleAnnotator",
+        "inputs": {
+          "images": "node:1:IMAGE",
+          "style": "anime",
+          "resolution": 512
+        },
+        "outputs": {
+          "scribble_maps": "scribble_output"
+        },
+        "description": "Generate anime-style scribble maps"
+      },
+      {
+        "id": 5,
+        "type": "SaveImage",
+        "inputs": {
+          "images": "node:2:depth_maps"
+        },
+        "description": "Save depth maps"
+      },
+      {
+        "id": 6,
+        "type": "SaveImage",
+        "inputs": {
+          "images": "node:3:flow_maps"
+        },
+        "description": "Save flow maps"
+      },
+      {
+        "id": 7,
+        "type": "SaveImage",
+        "inputs": {
+          "images": "node:4:scribble_maps"
+        },
+        "description": "Save scribble maps"
+      }
+    ],
+    "notes": [
+      "This workflow demonstrates all three VACE annotator nodes",
+      "For depth and scribble: Can use single image or batch of frames",
+      "For flow: Must use batch of at least 2 frames",
+      "Models must be downloaded and placed in models/vace_annotators/ directory",
+      "See README.md for model download instructions"
+    ]
+  },
+  "examples": {
+    "simple_depth": {
+      "description": "Simple depth map generation from single image",
+      "steps": [
+        "1. Load Image",
+        "2. Connect to VACE Depth Annotator (model_type: midas, resolution: 512)",
+        "3. Save output depth map"
+      ]
+    },
+    "video_flow": {
+      "description": "Optical flow computation for video",
+      "steps": [
+        "1. Load Video (extract frames externally if needed)",
+        "2. Connect to VACE Flow Annotator (flow_direction: forward, resolution: 512)",
+        "3. Save output flow maps"
+      ]
+    },
+    "anime_scribble": {
+      "description": "Anime-style edge extraction",
+      "steps": [
+        "1. Load Anime Image/Video",
+        "2. Connect to VACE Scribble Annotator (style: anime)",
+        "3. Save output scribble maps",
+        "4. Optional: Use scribble maps as control signal for generation"
+      ]
+    },
+    "multi_modal": {
+      "description": "Generate multiple control signals from same input",
+      "steps": [
+        "1. Load Image/Video",
+        "2. Connect to VACE Depth Annotator → depth maps",
+        "3. Connect to VACE Flow Annotator → flow maps",
+        "4. Connect to VACE Scribble Annotator → scribble maps",
+        "5. Combine control signals for video generation pipeline"
+      ]
+    }
+  }
+}

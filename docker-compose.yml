@@ -4,18 +4,19 @@ services:
             context: .
             dockerfile: Dockerfile
         ports:
-            - '8188:8188'
+            - "8188:8188"
         volumes:
             # Mount your custom node directory
             - .:/workspace/ComfyUI/custom_nodes/ComfyUI-SwissArmyKnife
             # Mount user settings and workflows for persistence
             - ./.comfyui/user:/workspace/ComfyUI/user
             - ./.comfyui/models/loras:/workspace/ComfyUI/models/loras
+            - /Users/samkumar/ubuntu_nfs/gen-ai-image/comfyui-containers/reference-vids:/reference-vids
         environment:
             # Pass through your Gemini API key
             - GEMINI_API_KEY=${GEMINI_API_KEY}
             - CIVITAI_API_KEY=${CIVITAI_API_KEY}
         working_dir: /workspace/ComfyUI
-        command: python main.py --listen 0.0.0.0 --port 8188 --cpu
+        command: python main.py --listen 0.0.0.0 --port 8188 --cpu --base-directory /workspace/ComfyUI
         stdin_open: true
         tty: true

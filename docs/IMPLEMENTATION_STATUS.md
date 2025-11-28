@@ -1,13 +1,29 @@
-# GeminiMediaDescribe Implementation Summary
+# MediaDescribe Implementation Summary
 
 ## ✅ COMPLETED SUCCESSFULLY
 
-### 1. Python Backend Implementation
+### 1. ComfyUI Settings Integration (v2.8.11+)
 
-- **File**: `utils/nodes.py`
+- **Status**: ✅ Complete
+- **Features**:
+    - Native ComfyUI settings for API keys
+    - Automatic sync between frontend and backend
+    - Secure storage (no API keys in workflow files)
+    - Settings: `swiss_army_knife.gemini.api_key`, `swiss_army_knife.civitai.api_key`
+    - Fallback to environment variables
+- **Files Updated**:
+    - `web/js/swiss-army-knife.js` - Settings registration and sync
+    - `nodes/config_api.py` - Settings caching API
+    - `nodes/media_describe/gemini_util_options.py` - Removed API key widget
+    - `nodes/nodes.py` - LoRAInfoExtractor updated
+- **Documentation**: `docs/infrastructure/SETTINGS_INTEGRATION.md`
+
+### 2. Python Backend Implementation
+
+- **File**: `nodes/nodes.py`
 - **Status**: ✅ Working correctly
 - **Features**:
-    - Clean GeminiMediaDescribe class with proper INPUT_TYPES structure
+    - Clean MediaDescribe class with proper INPUT_TYPES structure
     - Support for media_source: "Upload Media" vs "Randomize Media from Path"
     - Support for media_type: "image" vs "video"
     - Proper error handling for missing inputs
@@ -62,7 +78,7 @@ The node returns 3 outputs:
 
 ## 🎯 CURRENT STATUS: READY FOR TESTING
 
-The consolidated GeminiMediaDescribe node is now fully implemented and ready for UI testing in ComfyUI. The implementation supports:
+The consolidated MediaDescribe node (GeminiUtilMediaDescribe) is now fully implemented and ready for UI testing in ComfyUI. The implementation supports:
 
 1. **Upload Media Mode**: Users can upload images/videos via widgets
 2. **Randomize Media from Path Mode**: Users can specify a directory path and the node will randomly select a file
@@ -130,7 +146,7 @@ All features tested and documented. Full compatibility achieved with:
 
 ## 📁 Files Modified
 
-- `utils/nodes.py` - Clean implementation with all three node classes
+- `nodes/nodes.py` - Clean implementation with all three node classes
 - `web/js/gemini_widgets.js` - Dynamic UI widgets (already working)
-- `utils/nodes_corrupted_backup.py` - Backup of broken version
-- `utils/nodes_clean.py` - Clean working version (used to restore nodes.py)
+- `nodes/nodes_corrupted_backup.py` - Backup of broken version
+- `nodes/nodes_clean.py` - Clean working version (used to restore nodes.py)

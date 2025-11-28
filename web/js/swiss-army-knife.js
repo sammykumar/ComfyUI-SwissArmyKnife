@@ -2,8 +2,91 @@ import { app } from "../../../scripts/app.js";
 import { api } from "../../../scripts/api.js";
 
 // Version and cache busting info
-const EXTENSION_VERSION = "1.4.0"; // Should match pyproject.toml version
+const EXTENSION_VERSION = "3.0.0"; // Should match pyproject.toml version
 const LOAD_TIMESTAMP = new Date().toISOString();
+
+// DEBUG mode - check setting dynamically
+const isDebugEnabled = () => {
+    try {
+        return app.extensionManager?.setting?.get("SwissArmyKnife.debug_mode") || false;
+    } catch (error) {
+        return false;
+    }
+};
+
+// Conditional logging wrapper - checks setting dynamically
+const debugLog = (...args) => {
+    if (isDebugEnabled()) {
+        console.log("[SwissArmyKnife]", ...args);
+    }
+};
+
+// Helper functions for accessing API keys from settings
+const getGeminiApiKey = () => {
+    try {
+        return app.extensionManager.setting.get("SwissArmyKnife.gemini.api_key") || "";
+    } catch (error) {
+        console.warn("Failed to get Gemini API key from settings:", error);
+        return "";
+    }
+};
+
+const getCivitaiApiKey = () => {
+    try {
+        return app.extensionManager.setting.get("SwissArmyKnife.civitai.api_key") || "";
+    } catch (error) {
+        console.warn("Failed to get CivitAI API key from settings:", error);
+        return "";
+    }
+};
+
+const getAzureStorageConnectionString = () => {
+    try {
+        const value =
+            app.extensionManager.setting.get("SwissArmyKnife.azure_storage.connection_string") ||
+            "";
+        debugLog(`getAzureStorageConnectionString called, value length: ${value.length}`);
+        return value;
+    } catch (error) {
+        console.warn("Failed to get Azure Storage connection string from settings:", error);
+        return "";
+    }
+};
+
+// Function to sync API keys to backend
+const syncApiKeysToBackend = async () => {
+    debugLog("syncApiKeysToBackend called");
+    try {
+        const geminiKey = getGeminiApiKey();
+        const civitaiKey = getCivitaiApiKey();
+        const azureConnectionString = getAzureStorageConnectionString();
+        const debugMode = isDebugEnabled();
+
+        debugLog("Azure connection string length:", azureConnectionString.length);
+        debugLog("Debug mode:", debugMode);
+
+        const response = await fetch("/swissarmyknife/set_api_keys", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                gemini_api_key: geminiKey,
+                civitai_api_key: civitaiKey,
+                azure_storage_connection_string: azureConnectionString,
+                debug_mode: debugMode,
+            }),
+        });
+
+        if (response.ok) {
+            debugLog("[Settings] API keys and settings synced to backend successfully");
+        } else {
+            console.warn("[Settings] Failed to sync API keys to backend:", response.status);
+        }
+    } catch (error) {
+        console.warn("[Settings] Error syncing API keys to backend:", error);
+    }
+};
 
 console.log(`Loading swiss-army-knife.js extension v${EXTENSION_VERSION} at ${LOAD_TIMESTAMP}`);
 
@@ -12,17 +95,9 @@ app.registerExtension({
     name: "comfyui_swissarmyknife.swiss_army_knife",
 
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        // Handle GeminiUtilOptions node
-        if (nodeData.name === "GeminiUtilOptions") {
-            console.log("Registering GeminiUtilOptions node");
-
-            // This node doesn't need special widgets - it just provides configuration
-            // The existing ComfyUI widgets are sufficient for this node
-        }
-
         // Handle FilenameGenerator node
-        else if (nodeData.name === "FilenameGenerator") {
-            console.log("Registering FilenameGenerator node");
+        if (nodeData.name === "FilenameGenerator") {
+            debugLog("Registering FilenameGenerator node");
 
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
@@ -205,39 +280,651 @@ app.registerExtension({
             };
         }
 
-        // Handle GeminiUtilMediaDescribe node
-        else if (nodeData.name === "GeminiUtilMediaDescribe") {
-            console.log("Registering GeminiUtilMediaDescribe node with dynamic media widgets");
+        // Handle Control Panel node
+        else if (nodeData.name === "ControlPanelOverview") {
+            debugLog("Registering ControlPanelOverview node");
+
+            // On resize, keep DOM width sensible
+            const onResize = nodeType.prototype.onResize;
+            nodeType.prototype.onResize = function (size) {
+                const result = onResize?.call(this, size);
+                if (this._cp_dom) {
+                    this._cp_dom.style.width = this.size[0] - 20 + "px";
+                }
+                return result;
+            };
+
+            // Node creation
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Create a DOM widget area with three-column layout
+                if (!this._cp_dom) {
+                    // Main container
+                    const dom = document.createElement("div");
+                    dom.style.fontFamily =
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontSize = "11px";
+                    dom.style.lineHeight = "1.35";
+                    dom.style.overflow = "auto";
+                    dom.style.maxHeight = "100%";
+                    dom.style.padding = "8px";
+                    dom.style.borderRadius = "6px";
+                    dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
+                    dom.style.border = "1px solid var(--border-color, #333)";
+                    dom.style.color = "var(--fg-color, #d4d4d4)";
+                    dom.style.display = "flex";
+                    dom.style.gap = "12px";
+
+                    // Left column (final_prompt)
+                    const leftColumn = document.createElement("div");
+                    leftColumn.style.flex = "1";
+                    leftColumn.style.minWidth = "0"; // Allow flex to shrink below content size
+                    leftColumn.style.overflow = "auto";
+                    leftColumn.style.borderRight = "1px solid var(--border-color, #333)";
+                    leftColumn.style.paddingRight = "8px";
+                    leftColumn.style.display = "flex";
+                    leftColumn.style.flexDirection = "column";
+
+                    const leftHeading = document.createElement("h3");
+                    leftHeading.textContent = "Final Prompt";
+                    leftHeading.style.margin = "0 0 8px 0";
+                    leftHeading.style.fontSize = "14px";
+                    leftHeading.style.fontWeight = "600";
+                    leftHeading.style.color = "var(--fg-color, #d4d4d4)";
+                    leftHeading.style.borderBottom = "2px solid var(--border-color, #333)";
+                    leftHeading.style.paddingBottom = "4px";
+
+                    const leftContent = document.createElement("div");
+                    leftContent.style.whiteSpace = "pre-wrap";
+                    leftContent.style.wordBreak = "break-word";
+                    leftContent.style.overflow = "auto";
+                    leftContent.style.flex = "1";
+
+                    leftColumn.appendChild(leftHeading);
+                    leftColumn.appendChild(leftContent);
+
+                    // Middle column (gemini_status)
+                    const middleColumn = document.createElement("div");
+                    middleColumn.style.flex = "1";
+                    middleColumn.style.minWidth = "0"; // Allow flex to shrink below content size
+                    middleColumn.style.overflow = "auto";
+                    middleColumn.style.borderRight = "1px solid var(--border-color, #333)";
+                    middleColumn.style.paddingRight = "8px";
+                    middleColumn.style.display = "flex";
+                    middleColumn.style.flexDirection = "column";
+
+                    const middleHeading = document.createElement("h3");
+                    middleHeading.textContent = "Gemini Status";
+                    middleHeading.style.margin = "0 0 8px 0";
+                    middleHeading.style.fontSize = "14px";
+                    middleHeading.style.fontWeight = "600";
+                    middleHeading.style.color = "var(--fg-color, #d4d4d4)";
+                    middleHeading.style.borderBottom = "2px solid var(--border-color, #333)";
+                    middleHeading.style.paddingBottom = "4px";
+
+                    const middleContent = document.createElement("div");
+                    middleContent.style.whiteSpace = "pre-wrap";
+                    middleContent.style.wordBreak = "break-word";
+                    middleContent.style.overflow = "auto";
+                    middleContent.style.flex = "1";
+
+                    middleColumn.appendChild(middleHeading);
+                    middleColumn.appendChild(middleContent);
+
+                    // Right column (media_info, height, width)
+                    const rightColumn = document.createElement("div");
+                    rightColumn.style.flex = "1";
+                    rightColumn.style.minWidth = "0"; // Allow flex to shrink below content size
+                    rightColumn.style.overflow = "auto";
+                    rightColumn.style.display = "flex";
+                    rightColumn.style.flexDirection = "column";
+
+                    const rightHeading = document.createElement("h3");
+                    rightHeading.textContent = "Media Info";
+                    rightHeading.style.margin = "0 0 8px 0";
+                    rightHeading.style.fontSize = "14px";
+                    rightHeading.style.fontWeight = "600";
+                    rightHeading.style.color = "var(--fg-color, #d4d4d4)";
+                    rightHeading.style.borderBottom = "2px solid var(--border-color, #333)";
+                    rightHeading.style.paddingBottom = "4px";
+
+                    const rightContent = document.createElement("div");
+                    rightContent.style.whiteSpace = "pre-wrap";
+                    rightContent.style.wordBreak = "break-word";
+                    rightContent.style.overflow = "auto";
+                    rightContent.style.flex = "1";
+
+                    rightColumn.appendChild(rightHeading);
+                    rightColumn.appendChild(rightContent);
+
+                    dom.appendChild(leftColumn);
+                    dom.appendChild(middleColumn);
+                    dom.appendChild(rightColumn);
+
+                    // Add a DOM widget
+                    const widget = this.addDOMWidget("ControlPanelOverview", "cp_display", dom, {
+                        serialize: false,
+                        hideOnZoom: false,
+                    });
+
+                    // Store references to content divs
+                    this._cp_dom = dom;
+                    this._cp_leftColumn = leftContent;
+                    this._cp_middleColumn = middleContent;
+                    this._cp_rightColumn = rightContent;
+                    this._cp_widget = widget;
+
+                    // Initialize with waiting message
+                    this._cp_leftColumn.textContent = "Awaiting execution...";
+                    this._cp_middleColumn.textContent = "Awaiting execution...";
+                    this._cp_rightColumn.textContent = "Awaiting execution...";
+                }
+
+                // Function to update with execution data
+                this.updateControlPanelData = function (data) {
+                    debugLog("🔍 [ControlPanelOverview DEBUG] updateControlPanelData called");
+                    debugLog("🔍 [ControlPanelOverview DEBUG] data received:", data);
+                    debugLog("🔍 [ControlPanelOverview DEBUG] data keys:", Object.keys(data || {}));
+
+                    if (
+                        !this._cp_leftColumn ||
+                        !this._cp_middleColumn ||
+                        !this._cp_rightColumn ||
+                        !data
+                    ) {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] Missing columns or data, returning"
+                        );
+                        return;
+                    }
+
+                    debugLog("[ControlPanelOverview] Received data:", data);
+
+                    // Extract all_media_describe_data - TRY MULTIPLE SOURCES
+                    let mediaData = null;
+                    let rawData = null;
+
+                    // Try all possible locations for the data
+                    if (data.all_media_describe_data) {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] Found data.all_media_describe_data"
+                        );
+                        rawData = Array.isArray(data.all_media_describe_data)
+                            ? data.all_media_describe_data[0]
+                            : data.all_media_describe_data;
+                    } else if (data.all_media_describe_data_copy) {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] Found data.all_media_describe_data_copy"
+                        );
+                        rawData = Array.isArray(data.all_media_describe_data_copy)
+                            ? data.all_media_describe_data_copy[0]
+                            : data.all_media_describe_data_copy;
+                    } else {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] No all_media_describe_data found in:",
+                            Object.keys(data)
+                        );
+                    }
+
+                    debugLog("🔍 [ControlPanelOverview DEBUG] rawData:", rawData);
+                    debugLog("🔍 [ControlPanelOverview DEBUG] rawData type:", typeof rawData);
+
+                    if (rawData) {
+                        try {
+                            // Parse JSON if it's a string
+                            mediaData = typeof rawData === "string" ? JSON.parse(rawData) : rawData;
+                            debugLog(
+                                "🔍 [ControlPanelOverview DEBUG] Parsed mediaData:",
+                                mediaData
+                            );
+                            debugLog("[ControlPanelOverview] Parsed media data:", mediaData);
+                        } catch (e) {
+                            console.error("🔍 [ControlPanelOverview DEBUG] Error parsing JSON:", e);
+                            debugLog("[ControlPanelOverview] Error parsing JSON:", e);
+                            this._cp_leftColumn.textContent = "Error parsing data";
+                            this._cp_middleColumn.textContent = "Error parsing data";
+                            this._cp_rightColumn.textContent = "Error parsing data";
+                            return;
+                        }
+                    }
+
+                    if (!mediaData) {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] No mediaData, showing 'no data available'"
+                        );
+                        this._cp_leftColumn.textContent = "(No data available)";
+                        this._cp_middleColumn.textContent = "(No data available)";
+                        this._cp_rightColumn.textContent = "(No data available)";
+                        return;
+                    }
+
+                    debugLog(
+                        "🔍 [ControlPanelOverview DEBUG] mediaData keys:",
+                        Object.keys(mediaData)
+                    );
+
+                    // Helper function to format field display
+                    const formatValue = (value, maxLength = 500) => {
+                        let valueStr = String(value);
+                        if (valueStr.length > maxLength) {
+                            valueStr = valueStr.substring(0, maxLength) + "... (truncated)";
+                        }
+                        return valueStr;
+                    };
+
+                    // Left column: Positive Prompt (check both field names for backwards compatibility)
+                    const finalText =
+                        mediaData.positive_prompt ||
+                        mediaData.final_prompt ||
+                        mediaData.description;
+                    if (finalText) {
+                        debugLog(
+                            "🔍 [ControlPanel DEBUG] Setting positive prompt:",
+                            finalText.substring(0, 50)
+                        );
+                        this._cp_leftColumn.textContent = formatValue(finalText, 2000);
+                    } else {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] No positive_prompt/final_prompt/description in mediaData"
+                        );
+                        this._cp_leftColumn.textContent = "(No final text in data)";
+                    }
+
+                    // Middle column: Gemini Status
+                    if (mediaData.gemini_status) {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] Setting gemini_status:",
+                            mediaData.gemini_status.substring(0, 50)
+                        );
+                        this._cp_middleColumn.textContent = formatValue(
+                            mediaData.gemini_status,
+                            2000
+                        );
+                    } else {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] No gemini_status in mediaData"
+                        );
+                        this._cp_middleColumn.textContent = "(No gemini_status in data)";
+                    }
+
+                    // Right column: Media Info (including height, width, other metadata)
+                    const rightLines = [];
+
+                    if (mediaData.media_info) {
+                        rightLines.push(`📊 Media Info:\n${formatValue(mediaData.media_info)}\n`);
+                    }
+
+                    if (mediaData.height !== undefined) {
+                        rightLines.push(`📐 Height: ${mediaData.height}\n`);
+                    }
+
+                    if (mediaData.width !== undefined) {
+                        rightLines.push(`📐 Width: ${mediaData.width}\n`);
+                    }
+
+                    // Stop here - only show media_info, height, and width
+                    // Removed loop that displayed additional fields (subject, cinematic_aesthetic, etc.)
+
+                    if (rightLines.length === 0) {
+                        debugLog("🔍 [ControlPanelOverview DEBUG] No right column data");
+                        this._cp_rightColumn.textContent = "(No media info in data)";
+                    } else {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] Setting right column with",
+                            rightLines.length,
+                            "lines"
+                        );
+                        this._cp_rightColumn.textContent = rightLines.join("\n");
+                    }
+
+                    debugLog("🔍 [ControlPanelOverview DEBUG] Display update complete");
+                    debugLog("[ControlPanelOverview] Updated display with execution data");
+                };
+
+                // Add onExecuted handler to update display with execution results
+                const originalOnExecuted = this.onExecuted;
+                this.onExecuted = function (message) {
+                    debugLog("🔍 [ControlPanelOverview DEBUG] onExecuted called");
+                    debugLog("🔍 [ControlPanelOverview DEBUG] Full message object:", message);
+                    debugLog(
+                        "🔍 [ControlPanelOverview DEBUG] message keys:",
+                        Object.keys(message || {})
+                    );
+
+                    if (message) {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] message.output:",
+                            message.output
+                        );
+                        if (message.output) {
+                            debugLog(
+                                "🔍 [ControlPanelOverview DEBUG] message.output keys:",
+                                Object.keys(message.output)
+                            );
+                        }
+                    }
+
+                    debugLog("[ControlPanelOverview] onExecuted called with message:", message);
+
+                    // Try multiple data sources - data might be at root or in output
+                    if (message && message.output) {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] Calling updateControlPanelData with message.output:",
+                            message.output
+                        );
+                        this.updateControlPanelData(message.output);
+                    } else if (
+                        message &&
+                        (message.all_media_describe_data || message.all_media_describe_data_copy)
+                    ) {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] Calling updateControlPanelData with message (root level):",
+                            message
+                        );
+                        this.updateControlPanelData(message);
+                    } else {
+                        debugLog(
+                            "🔍 [ControlPanelOverview DEBUG] No data found in message.output or message root"
+                        );
+                    }
+
+                    // Call original onExecuted if it exists
+                    return originalOnExecuted?.call(this, message);
+                };
+
+                return result;
+            };
+        }
+
+        // Handle ControlPanelPromptBreakdown node
+        else if (nodeData.name === "ControlPanelPromptBreakdown") {
+            debugLog("Registering ControlPanelPromptBreakdown node");
+
+            // On resize, keep DOM width sensible
+            const onResize = nodeType.prototype.onResize;
+            nodeType.prototype.onResize = function (size) {
+                const result = onResize?.call(this, size);
+                if (this._cpb_dom) {
+                    this._cpb_dom.style.width = this.size[0] - 20 + "px";
+                }
+                return result;
+            };
+
+            // Node creation
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Create a DOM widget area with 5-column layout for prompt breakdown
+                if (!this._cpb_dom) {
+                    // Main container
+                    const dom = document.createElement("div");
+                    dom.style.fontFamily =
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontSize = "11px";
+                    dom.style.lineHeight = "1.35";
+                    dom.style.overflow = "auto";
+                    dom.style.maxHeight = "100%";
+                    dom.style.padding = "8px";
+                    dom.style.borderRadius = "6px";
+                    dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
+                    dom.style.border = "1px solid var(--border-color, #333)";
+                    dom.style.color = "var(--fg-color, #d4d4d4)";
+                    dom.style.display = "flex";
+                    dom.style.gap = "8px";
+
+                    // Helper function to create a column
+                    const createColumn = (heading) => {
+                        const column = document.createElement("div");
+                        column.style.flex = "1";
+                        column.style.minWidth = "150px";
+                        column.style.overflow = "auto";
+                        column.style.borderRight = "1px solid var(--border-color, #333)";
+                        column.style.paddingRight = "8px";
+                        column.style.display = "flex";
+                        column.style.flexDirection = "column";
+
+                        const columnHeading = document.createElement("h3");
+                        columnHeading.textContent = heading;
+                        columnHeading.style.margin = "0 0 8px 0";
+                        columnHeading.style.fontSize = "12px";
+                        columnHeading.style.fontWeight = "600";
+                        columnHeading.style.color = "var(--fg-color, #d4d4d4)";
+                        columnHeading.style.borderBottom = "2px solid var(--border-color, #333)";
+                        columnHeading.style.paddingBottom = "4px";
+
+                        const columnContent = document.createElement("div");
+                        columnContent.style.whiteSpace = "pre-wrap";
+                        columnContent.style.wordBreak = "break-word";
+                        columnContent.style.overflow = "auto";
+                        columnContent.style.flex = "1";
+                        columnContent.textContent = "Awaiting execution...";
+
+                        column.appendChild(columnHeading);
+                        column.appendChild(columnContent);
+
+                        return { column, content: columnContent };
+                    };
+
+                    // Create 5 columns
+                    const subjectCol = createColumn("Subject");
+                    const clothingCol = createColumn("Clothing");
+                    const movementCol = createColumn("Movement");
+                    const sceneCol = createColumn("Scene");
+                    const visualStyleCol = createColumn("Visual Style");
+
+                    // Remove border from last column
+                    visualStyleCol.column.style.borderRight = "none";
+
+                    dom.appendChild(subjectCol.column);
+                    dom.appendChild(clothingCol.column);
+                    dom.appendChild(movementCol.column);
+                    dom.appendChild(sceneCol.column);
+                    dom.appendChild(visualStyleCol.column);
+
+                    // Add a DOM widget
+                    const widget = this.addDOMWidget(
+                        "ControlPanelPromptBreakdown",
+                        "cpb_display",
+                        dom,
+                        {
+                            serialize: false,
+                            hideOnZoom: false,
+                        }
+                    );
+
+                    // Store references
+                    this._cpb_dom = dom;
+                    this._cpb_subject = subjectCol.content;
+                    this._cpb_clothing = clothingCol.content;
+                    this._cpb_movement = movementCol.content;
+                    this._cpb_scene = sceneCol.content;
+                    this._cpb_visual_style = visualStyleCol.content;
+                    this._cpb_widget = widget;
+                }
+
+                // Function to update with execution data
+                this.updatePromptBreakdownData = function (data) {
+                    debugLog(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] updatePromptBreakdownData called"
+                    );
+                    debugLog("🔍 [ControlPanelPromptBreakdown DEBUG] data received:", data);
+                    debugLog(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] data keys:",
+                        Object.keys(data || {})
+                    );
+
+                    debugLog("[ControlPanelPromptBreakdown] updatePromptBreakdownData called");
+                    debugLog("[ControlPanelPromptBreakdown] data received:", data);
+
+                    if (!this._cpb_subject || !data) {
+                        debugLog(
+                            "[ControlPanelPromptBreakdown DEBUG] Missing columns or data, returning"
+                        );
+                        debugLog(
+                            "[ControlPanelPromptBreakdown] Missing columns or data, returning"
+                        );
+                        return;
+                    }
+
+                    // Extract prompt_breakdown data
+                    let promptBreakdown = null;
+                    let rawData = null;
+
+                    // First try prompt_breakdown field (legacy)
+                    if (data.prompt_breakdown) {
+                        debugLog(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.prompt_breakdown"
+                        );
+                        rawData = Array.isArray(data.prompt_breakdown)
+                            ? data.prompt_breakdown[0]
+                            : data.prompt_breakdown;
+                    }
+                    // Then try all_media_describe_data (current format from MediaDescribe node)
+                    else if (data.all_media_describe_data) {
+                        debugLog(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.all_media_describe_data"
+                        );
+                        rawData = Array.isArray(data.all_media_describe_data)
+                            ? data.all_media_describe_data[0]
+                            : data.all_media_describe_data;
+                    }
+                    // Finally try all_media_describe_data_copy (backup)
+                    else if (data.all_media_describe_data_copy) {
+                        debugLog(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.all_media_describe_data_copy"
+                        );
+                        rawData = Array.isArray(data.all_media_describe_data_copy)
+                            ? data.all_media_describe_data_copy[0]
+                            : data.all_media_describe_data_copy;
+                    }
+
+                    debugLog("🔍 [ControlPanelPromptBreakdown DEBUG] rawData:", rawData);
+                    debugLog(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] rawData type:",
+                        typeof rawData
+                    );
+
+                    if (rawData) {
+                        try {
+                            promptBreakdown =
+                                typeof rawData === "string" ? JSON.parse(rawData) : rawData;
+                            debugLog(
+                                "🔍 [ControlPanelPromptBreakdown DEBUG] Parsed breakdown:",
+                                promptBreakdown
+                            );
+                            debugLog(
+                                "[ControlPanelPromptBreakdown] Parsed breakdown:",
+                                promptBreakdown
+                            );
+                        } catch (e) {
+                            console.error(
+                                "🔍 [ControlPanelPromptBreakdown DEBUG] Error parsing JSON:",
+                                e
+                            );
+                            debugLog("[ControlPanelPromptBreakdown] Error parsing JSON:", e);
+                            this._cpb_subject.textContent = "Error parsing data";
+                            this._cpb_clothing.textContent = "Error parsing data";
+                            this._cpb_movement.textContent = "Error parsing data";
+                            this._cpb_scene.textContent = "Error parsing data";
+                            this._cpb_visual_style.textContent = "Error parsing data";
+                            return;
+                        }
+                    }
+
+                    if (!promptBreakdown) {
+                        debugLog(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] No promptBreakdown, showing 'no data available'"
+                        );
+                        this._cpb_subject.textContent = "(No data available)";
+                        this._cpb_clothing.textContent = "(No data available)";
+                        this._cpb_movement.textContent = "(No data available)";
+                        this._cpb_scene.textContent = "(No data available)";
+                        this._cpb_visual_style.textContent = "(No data available)";
+                        return;
+                    }
+
+                    debugLog(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] Updating columns with data"
+                    );
+
+                    // Update each column
+                    this._cpb_subject.textContent = promptBreakdown.subject || "(empty)";
+                    this._cpb_clothing.textContent = promptBreakdown.clothing || "(empty)";
+                    this._cpb_movement.textContent = promptBreakdown.movement || "(empty)";
+                    this._cpb_scene.textContent = promptBreakdown.scene || "(empty)";
+                    this._cpb_visual_style.textContent =
+                        promptBreakdown.visual_style ||
+                        // Fallback: combine old fields for backward compatibility
+                        (
+                            (promptBreakdown.cinematic_aesthetic || "") +
+                            " " +
+                            (promptBreakdown.stylization_tone || "")
+                        ).trim() ||
+                        "(empty)";
+
+                    debugLog("🔍 [ControlPanelPromptBreakdown DEBUG] Display update complete");
+                    debugLog("[ControlPanelPromptBreakdown] Display update complete");
+                };
+
+                // Add onExecuted handler
+                const originalOnExecuted = this.onExecuted;
+                this.onExecuted = function (message) {
+                    debugLog("🔍 [ControlPanelPromptBreakdown DEBUG] onExecuted called");
+                    debugLog(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] Full message object:",
+                        message
+                    );
+                    debugLog(
+                        "🔍 [ControlPanelPromptBreakdown DEBUG] message keys:",
+                        Object.keys(message || {})
+                    );
+
+                    debugLog("[ControlPanelPromptBreakdown] onExecuted called");
+
+                    if (message && message.output) {
+                        debugLog(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Calling updatePromptBreakdownData with message.output"
+                        );
+                        this.updatePromptBreakdownData(message.output);
+                    } else if (message && message.prompt_breakdown) {
+                        debugLog(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Calling updatePromptBreakdownData with message (root level)"
+                        );
+                        this.updatePromptBreakdownData(message);
+                    } else if (
+                        message &&
+                        (message.all_media_describe_data || message.all_media_describe_data_copy)
+                    ) {
+                        debugLog(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] Calling updatePromptBreakdownData with all_media_describe_data"
+                        );
+                        this.updatePromptBreakdownData(message);
+                    } else {
+                        debugLog(
+                            "🔍 [ControlPanelPromptBreakdown DEBUG] No data found in message.output, message.prompt_breakdown, or all_media_describe_data"
+                        );
+                    }
+
+                    return originalOnExecuted?.call(this, message);
+                };
+
+                return result;
+            };
+        }
+
+        // Handle MediaSelection node
+        else if (nodeData.name === "MediaSelection") {
+            debugLog("Registering MediaSelection node with dynamic media widgets");
+
+            // nodeType.prototype.size = [500, 500];
 
             // Add custom widget after the node is created
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 const result = onNodeCreated?.apply(this, arguments);
-
-                // Hide the optional input widgets that shouldn't be directly visible
-                // These will be managed by our dynamic widget system
-                this.hideOptionalInputWidgets = function () {
-                    const widgetsToHide = [
-                        "media_path",
-                        "uploaded_image_file",
-                        "uploaded_video_file",
-                        "seed",
-                        "reddit_url",
-                    ];
-
-                    for (const widgetName of widgetsToHide) {
-                        const widget = this.widgets.find((w) => w.name === widgetName);
-                        if (widget) {
-                            // Hide the widget by setting its type to 'hidden'
-                            widget.type = "hidden";
-                            widget.computeSize = () => [0, -4]; // Make it take no space
-                            console.log(`[WIDGET] Hidden optional input widget: ${widgetName}`);
-                        }
-                    }
-                };
-
-                // Hide the optional input widgets immediately
-                this.hideOptionalInputWidgets();
 
                 // Find the media_source widget
                 this.mediaSourceWidget = this.widgets.find((w) => w.name === "media_source");
@@ -245,113 +932,191 @@ app.registerExtension({
                 // Find the media_type widget
                 this.mediaTypeWidget = this.widgets.find((w) => w.name === "media_type");
 
-                // Method to clear all media state (images, videos, previews, file data)
-                this.clearAllMediaState = function () {
-                    console.log("[DEBUG] clearAllMediaState called");
-                    console.log("[DEBUG] _pendingFileRestore exists:", !!this._pendingFileRestore);
+                // Find the resize_mode widget
+                this.resizeModeWidget = this.widgets.find((w) => w.name === "resize_mode");
 
-                    // Clear video state and preview
-                    this.clearVideoPreview();
-                    this.uploadedVideoFile = null;
-                    this.uploadedVideoSubfolder = null;
+                // Function to update resize widgets based on resize_mode
+                this.updateResizeWidgets = function () {
+                    const resizeMode = this.resizeModeWidget?.value || "None";
 
-                    // Clear image state
-                    this.uploadedImageFile = null;
-                    this.uploadedImageSubfolder = null;
+                    debugLog(`[MediaSelection] ========== updateResizeWidgets CALLED ==========`);
+                    debugLog(`[MediaSelection] Current resize_mode value: "${resizeMode}"`);
 
-                    // Reset widget values to defaults (only upload-related widgets)
-                    // FIXED: Only clear if widgets exist and we're not in restoration mode
-                    if (this.videoInfoWidget && !this._pendingFileRestore) {
-                        console.log("[DEBUG] Clearing videoInfoWidget");
-                        this.videoInfoWidget.value = "No video selected";
-                    } else if (this.videoInfoWidget && this._pendingFileRestore) {
-                        console.log(
-                            "[DEBUG] Skipping videoInfoWidget clear due to pending restore"
+                    // Find the resize widgets
+                    const resizeWidthWidget = this.widgets.find((w) => w.name === "resize_width");
+                    const resizeHeightWidget = this.widgets.find((w) => w.name === "resize_height");
+
+                    debugLog(`[MediaSelection] Found resize_width widget: ${!!resizeWidthWidget}`);
+                    debugLog(
+                        `[MediaSelection] Found resize_height widget: ${!!resizeHeightWidget}`
+                    );
+
+                    if (resizeWidthWidget) {
+                        debugLog(
+                            `[MediaSelection] resize_width current type: "${resizeWidthWidget.type}", value: ${resizeWidthWidget.value}`
+                        );
+                    }
+                    if (resizeHeightWidget) {
+                        debugLog(
+                            `[MediaSelection] resize_height current type: "${resizeHeightWidget.type}", value: ${resizeHeightWidget.value}`
                         );
                     }
 
-                    if (this.imageInfoWidget && !this._pendingFileRestore) {
-                        console.log("[DEBUG] Clearing imageInfoWidget");
-                        this.imageInfoWidget.value = "No image selected";
-                    } else if (this.imageInfoWidget && this._pendingFileRestore) {
-                        console.log(
-                            "[DEBUG] Skipping imageInfoWidget clear due to pending restore"
+                    // Show/hide based on resize_mode
+                    if (resizeMode === "Custom") {
+                        // Show width and height widgets
+                        debugLog(
+                            `[MediaSelection] MODE IS CUSTOM - Showing resize width and height widgets`
                         );
-                    }
-
-                    // Don't clear media_path as it's not related to upload state
-                    // if (this.mediaPathWidget) {
-                    //     this.mediaPathWidget.value = "";
-                    // }
-
-                    // Clear hidden widgets that store file paths for Python node
-                    if (this.videoFileWidget && !this._pendingFileRestore) {
-                        console.log("[DEBUG] Clearing videoFileWidget");
-                        this.videoFileWidget.value = "";
-                    } else if (this.videoFileWidget && this._pendingFileRestore) {
-                        console.log(
-                            "[DEBUG] Skipping videoFileWidget clear due to pending restore"
-                        );
-                    }
-
-                    if (this.imageFileWidget && !this._pendingFileRestore) {
-                        console.log("[DEBUG] Clearing imageFileWidget");
-                        this.imageFileWidget.value = "";
-                    } else if (this.imageFileWidget && this._pendingFileRestore) {
-                        console.log(
-                            "[DEBUG] Skipping imageFileWidget clear due to pending restore"
-                        );
-                    }
-
-                    // Also clear the original input widgets if not restoring
-                    if (!this._pendingFileRestore) {
-                        const originalUploadedImageWidget = this.widgets.find(
-                            (w) => w.name === "uploaded_image_file"
-                        );
-                        const originalUploadedVideoWidget = this.widgets.find(
-                            (w) => w.name === "uploaded_video_file"
-                        );
-
-                        if (originalUploadedImageWidget) {
-                            console.log("[DEBUG] Clearing uploaded_image_file widget");
-                            originalUploadedImageWidget.value = "";
+                        if (resizeWidthWidget) {
+                            resizeWidthWidget.type = "number";
+                            resizeWidthWidget.computeSize =
+                                resizeWidthWidget.constructor.prototype.computeSize;
+                            resizeWidthWidget.hidden = false;
+                            if (resizeWidthWidget.options) {
+                                resizeWidthWidget.options.serialize = true;
+                            }
+                            debugLog(`[MediaSelection] Set resize_width visible`);
                         }
-                        if (originalUploadedVideoWidget) {
-                            console.log("[DEBUG] Clearing uploaded_video_file widget");
-                            originalUploadedVideoWidget.value = "";
+                        if (resizeHeightWidget) {
+                            resizeHeightWidget.type = "number";
+                            resizeHeightWidget.computeSize =
+                                resizeHeightWidget.constructor.prototype.computeSize;
+                            resizeHeightWidget.hidden = false;
+                            if (resizeHeightWidget.options) {
+                                resizeHeightWidget.options.serialize = true;
+                            }
+                            debugLog(`[MediaSelection] Set resize_height visible`);
                         }
                     } else {
-                        console.log(
-                            "[DEBUG] Skipping original widget clear due to pending restore"
+                        // Hide width and height widgets for "None" and "Auto (by orientation)"
+                        debugLog(
+                            `[MediaSelection] MODE IS "${resizeMode}" - Hiding resize width and height widgets`
                         );
-                    }
-
-                    console.log("[DEBUG] clearAllMediaState completed");
-                };
-
-                // Function to safely remove a widget
-                this.removeWidgetSafely = function (widget) {
-                    if (widget) {
-                        const index = this.widgets.indexOf(widget);
-                        if (index !== -1) {
-                            this.widgets.splice(index, 1);
+                        if (resizeWidthWidget) {
+                            resizeWidthWidget.type = "hidden";
+                            resizeWidthWidget.computeSize = () => [0, -4];
+                            resizeWidthWidget.hidden = true;
+                            if (resizeWidthWidget.options) {
+                                resizeWidthWidget.options.serialize = false;
+                            }
+                            debugLog(
+                                `[MediaSelection] Set resize_width hidden (type: ${resizeWidthWidget.type}, hidden: ${resizeWidthWidget.hidden})`
+                            );
+                        }
+                        if (resizeHeightWidget) {
+                            resizeHeightWidget.type = "hidden";
+                            resizeHeightWidget.computeSize = () => [0, -4];
+                            resizeHeightWidget.hidden = true;
+                            if (resizeHeightWidget.options) {
+                                resizeHeightWidget.options.serialize = false;
+                            }
+                            debugLog(
+                                `[MediaSelection] Set resize_height hidden (type: ${resizeHeightWidget.type}, hidden: ${resizeHeightWidget.hidden})`
+                            );
                         }
                     }
+
+                    debugLog(`[MediaSelection] Calling setSize to recalculate node size`);
+                    // Force node to recalculate size and refresh UI
+                    const newSize = this.computeSize();
+                    debugLog(`[MediaSelection] Computed size: [${newSize[0]}, ${newSize[1]}]`);
+                    this.setSize(newSize);
+
+                    // Additional UI refresh
+                    if (this.graph && this.graph.setDirtyCanvas) {
+                        this.graph.setDirtyCanvas(true, true);
+                        debugLog(`[MediaSelection] Called setDirtyCanvas to refresh UI`);
+                    }
+
+                    // Force canvas redraw
+                    if (this.setDirtyCanvas) {
+                        this.setDirtyCanvas(true, true);
+                    }
+
+                    debugLog(`[MediaSelection] ========== updateResizeWidgets COMPLETE ==========`);
                 };
 
-                // Function to update widgets based on media_source and media_type
+                // Function to update widgets based on media_source
+                // Helper function to safely remove a widget from the node
+                this.removeWidgetSafely = function (widget) {
+                    if (!widget) return;
+
+                    const widgetIndex = this.widgets.indexOf(widget);
+                    if (widgetIndex > -1) {
+                        this.widgets.splice(widgetIndex, 1);
+                        debugLog(`🔍 [MediaSelection] Removed widget: ${widget.name}`);
+                    }
+
+                    // Remove DOM element if it exists
+                    if (widget.element && widget.element.parentNode) {
+                        widget.element.parentNode.removeChild(widget.element);
+                        debugLog(`🔍 [MediaSelection] Removed DOM element for: ${widget.name}`);
+                    }
+                };
+
                 this.updateMediaWidgets = function () {
-                    const mediaSource = this.mediaSourceWidget?.value || "Upload Media";
-                    const mediaType = this.mediaTypeWidget?.value || "image";
+                    const mediaSource = this.mediaSourceWidget?.value || "Reddit Post";
 
-                    console.log(
-                        `[STATE] Updating widgets: mediaSource=${mediaSource}, mediaType=${mediaType}`
+                    debugLog(
+                        `🔍 [MediaSelection UPLOAD DEBUG] ========== updateMediaWidgets START ==========`
                     );
-                    console.log("[DEBUG] _pendingFileRestore exists:", !!this._pendingFileRestore);
+                    debugLog(`🔍 [MediaSelection UPLOAD DEBUG] mediaSource: "${mediaSource}"`);
+                    debugLog(
+                        `🔍 [MediaSelection UPLOAD DEBUG] Total widgets before update: ${
+                            this.widgets?.length || 0
+                        }`
+                    );
 
-                    // Find the original input widgets that we want to control
+                    debugLog(`[MediaSelection] Updating widgets: mediaSource=${mediaSource}`);
+
+                    // CRITICAL FIX: Remove upload buttons completely when not in Upload Media mode
+                    // This follows the working version's approach of creating/removing rather than hiding/showing
+                    const existingImageButton = this.widgets.find(
+                        (w) => w.name === "upload_image_button"
+                    );
+                    const existingVideoButton = this.widgets.find(
+                        (w) => w.name === "upload_video_button"
+                    );
+
+                    debugLog(
+                        `🔍 [MediaSelection UPLOAD DEBUG] Found existing buttons: image=${!!existingImageButton}, video=${!!existingVideoButton}`
+                    );
+
+                    // If NOT in Upload Media mode, remove all upload buttons completely
+                    if (mediaSource !== "Upload Media") {
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] � NOT in Upload Media mode - removing all upload buttons`
+                        );
+
+                        if (existingImageButton) {
+                            this.removeWidgetSafely(existingImageButton);
+                            debugLog(
+                                `🔍 [MediaSelection UPLOAD DEBUG] 🗑️ Removed imageUploadButton`
+                            );
+                        }
+                        if (existingVideoButton) {
+                            this.removeWidgetSafely(existingVideoButton);
+                            debugLog(
+                                `🔍 [MediaSelection UPLOAD DEBUG] �️ Removed videoUploadButton`
+                            );
+                        }
+
+                        // Reset references
+                        this.imageUploadButton = null;
+                        this.videoUploadButton = null;
+                    }
+
+                    // Find the widgets we need to control
                     const originalMediaPathWidget = this.widgets.find(
                         (w) => w.name === "media_path"
+                    );
+                    const originalSeedWidget = this.widgets.find((w) => w.name === "seed");
+                    const originalRedditUrlWidget = this.widgets.find(
+                        (w) => w.name === "reddit_url"
+                    );
+                    const originalSubredditUrlWidget = this.widgets.find(
+                        (w) => w.name === "subreddit_url"
                     );
                     const originalUploadedImageWidget = this.widgets.find(
                         (w) => w.name === "uploaded_image_file"
@@ -359,123 +1124,41 @@ app.registerExtension({
                     const originalUploadedVideoWidget = this.widgets.find(
                         (w) => w.name === "uploaded_video_file"
                     );
-                    const originalSeedWidget = this.widgets.find((w) => w.name === "seed");
 
-                    console.log("[DEBUG] Found widgets:");
-                    console.log("  originalMediaPathWidget:", !!originalMediaPathWidget);
-                    console.log(
-                        "  originalUploadedImageWidget:",
-                        !!originalUploadedImageWidget,
-                        originalUploadedImageWidget?.value
-                    );
-                    console.log(
-                        "  originalUploadedVideoWidget:",
-                        !!originalUploadedVideoWidget,
-                        originalUploadedVideoWidget?.value
-                    );
-                    console.log("  originalSeedWidget:", !!originalSeedWidget);
-
-                    // Clear all previous media state when switching configurations
-                    console.log("[STATE] About to call clearAllMediaState");
-                    this.clearAllMediaState();
-
-                    // Remove all upload-related widgets first to ensure clean state
-                    console.log("[STATE] Removing existing widgets...");
-                    this.removeWidgetSafely(this.imageUploadWidget);
-                    this.removeWidgetSafely(this.imageInfoWidget);
-                    this.removeWidgetSafely(this.videoUploadWidget);
-                    this.removeWidgetSafely(this.videoInfoWidget);
-                    // Don't remove the original media_path widget, just manage its visibility
-                    // this.removeWidgetSafely(this.mediaPathWidget);
-
-                    // Reset widget references
-                    console.log("[STATE] Resetting widget references");
-                    this.imageUploadWidget = null;
-                    this.imageInfoWidget = null;
-                    this.videoUploadWidget = null;
-                    this.videoInfoWidget = null;
-                    // this.mediaPathWidget = null;
-
-                    // Find the reddit_url widget
-                    const originalRedditUrlWidget = this.widgets.find(
-                        (w) => w.name === "reddit_url"
-                    );
-                    console.log(
-                        `[DEBUG] originalRedditUrlWidget found: ${!!originalRedditUrlWidget}`
-                    );
-                    if (originalRedditUrlWidget) {
-                        console.log(
-                            `[DEBUG] Reddit URL widget current type: ${originalRedditUrlWidget.type}, value: "${originalRedditUrlWidget.value}"`
-                        );
-                    }
-
-                    // Debug: List all widget names
-                    console.log(
-                        `[DEBUG] All widget names: ${this.widgets.map((w) => w.name).join(", ")}`
-                    );
-
-                    // Manage visibility of original input widgets
+                    // Manage visibility based on media_source
                     if (mediaSource === "Randomize Media from Path") {
-                        console.log("[STATE] Showing media path widget");
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] === RANDOMIZE MEDIA FROM PATH MODE ===`
+                        );
+                        debugLog("[MediaSelection] Showing media path widget");
 
-                        // Show the original media_path widget
+                        // Show media_path
                         if (originalMediaPathWidget) {
                             originalMediaPathWidget.type = "text";
                             originalMediaPathWidget.computeSize =
                                 originalMediaPathWidget.constructor.prototype.computeSize;
-                            this.mediaPathWidget = originalMediaPathWidget; // Reference the original
                         }
 
-                        // Show the seed widget for randomization
+                        // Show seed for randomization
                         if (originalSeedWidget) {
                             originalSeedWidget.type = "number";
                             originalSeedWidget.computeSize =
                                 originalSeedWidget.constructor.prototype.computeSize;
-                            console.log("[STATE] Showing seed widget for randomization");
                         }
 
-                        // Completely remove Reddit URL widget from DOM for randomize mode
+                        // Hide reddit_url
                         if (originalRedditUrlWidget) {
-                            // Store widget for potential restoration
-                            this._hiddenRedditWidget = originalRedditUrlWidget;
-
-                            // Completely remove the widget from the widgets array
-                            const widgetIndex = this.widgets.indexOf(originalRedditUrlWidget);
-                            if (widgetIndex > -1) {
-                                this.widgets.splice(widgetIndex, 1);
-                                console.log(
-                                    "[STATE] Completely removed Reddit URL widget from widgets array"
-                                );
-                            }
-
-                            // Remove DOM element if it exists
-                            if (
-                                originalRedditUrlWidget.element &&
-                                originalRedditUrlWidget.element.parentNode
-                            ) {
-                                originalRedditUrlWidget.element.parentNode.removeChild(
-                                    originalRedditUrlWidget.element
-                                );
-                                console.log("[STATE] Removed Reddit URL widget DOM element");
-                            }
-
-                            // Force node to recompute size and refresh
-                            if (this.setSize) {
-                                setTimeout(() => {
-                                    this.setSize(this.computeSize());
-                                }, 10);
-                            }
-
-                            console.log(
-                                "[STATE] Completely removed Reddit URL widget for randomize mode"
-                            );
-                        } else {
-                            console.log(
-                                "[DEBUG] Reddit URL widget not found for hiding in randomize mode"
-                            );
+                            originalRedditUrlWidget.type = "hidden";
+                            originalRedditUrlWidget.computeSize = () => [0, -4];
                         }
 
-                        // Hide upload file widgets
+                        // Hide subreddit_url
+                        if (originalSubredditUrlWidget) {
+                            originalSubredditUrlWidget.type = "hidden";
+                            originalSubredditUrlWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide upload widgets
                         if (originalUploadedImageWidget) {
                             originalUploadedImageWidget.type = "hidden";
                             originalUploadedImageWidget.computeSize = () => [0, -4];
@@ -484,62 +1167,91 @@ app.registerExtension({
                             originalUploadedVideoWidget.type = "hidden";
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
-                    } else if (mediaSource === "Reddit Post") {
-                        console.log("[STATE] Reddit Post mode - showing Reddit URL widget");
 
-                        // Show the Reddit URL widget (restore if it was removed)
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] Randomize Mode - upload buttons already removed`
+                        );
+                        // Upload buttons are automatically removed by the logic above since mediaSource !== "Upload Media"
+                    } else if (mediaSource === "Randomize from Subreddit") {
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] === RANDOMIZE FROM SUBREDDIT MODE ===`
+                        );
+                        debugLog(
+                            "[MediaSelection] Randomize from Subreddit mode - showing Subreddit URL widget"
+                        );
+
+                        // Show subreddit_url
+                        if (originalSubredditUrlWidget) {
+                            originalSubredditUrlWidget.type = "text";
+                            originalSubredditUrlWidget.computeSize =
+                                originalSubredditUrlWidget.constructor.prototype.computeSize;
+                        }
+
+                        // Show seed for randomization
+                        if (originalSeedWidget) {
+                            originalSeedWidget.type = "number";
+                            originalSeedWidget.computeSize =
+                                originalSeedWidget.constructor.prototype.computeSize;
+                        }
+
+                        // Hide media_path
+                        if (originalMediaPathWidget) {
+                            originalMediaPathWidget.type = "hidden";
+                            originalMediaPathWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide reddit_url
+                        if (originalRedditUrlWidget) {
+                            originalRedditUrlWidget.type = "hidden";
+                            originalRedditUrlWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide upload widgets
+                        if (originalUploadedImageWidget) {
+                            originalUploadedImageWidget.type = "hidden";
+                            originalUploadedImageWidget.computeSize = () => [0, -4];
+                        }
+                        if (originalUploadedVideoWidget) {
+                            originalUploadedVideoWidget.type = "hidden";
+                            originalUploadedVideoWidget.computeSize = () => [0, -4];
+                        }
+
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] Subreddit Mode - upload buttons already removed`
+                        );
+                        // Upload buttons are automatically removed by the logic above since mediaSource !== "Upload Media"
+                    } else if (mediaSource === "Reddit Post") {
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] === REDDIT POST MODE (DEFAULT) ===`
+                        );
+                        debugLog("[MediaSelection] Reddit Post mode - showing Reddit URL widget");
+
+                        // Show reddit_url
                         if (originalRedditUrlWidget) {
                             originalRedditUrlWidget.type = "text";
                             originalRedditUrlWidget.computeSize =
                                 originalRedditUrlWidget.constructor.prototype.computeSize;
-                            this.redditUrlWidget = originalRedditUrlWidget; // Reference the original
-                            // Ensure the widget is fully visible (reverse ultra-aggressive hiding)
-                            if (originalRedditUrlWidget.element) {
-                                originalRedditUrlWidget.element.style.display = "";
-                                originalRedditUrlWidget.element.style.visibility = "";
-                                originalRedditUrlWidget.element.style.height = "";
-                                originalRedditUrlWidget.element.style.overflow = "";
-                                // Restore parent visibility if it was hidden
-                                if (originalRedditUrlWidget.element.parentNode) {
-                                    originalRedditUrlWidget.element.parentNode.style.display = "";
-                                }
-                            }
-                            originalRedditUrlWidget.options = originalRedditUrlWidget.options || {};
-                            originalRedditUrlWidget.options.serialize = true;
-                            console.log(
-                                "[STATE] Showing Reddit URL widget for Reddit Post mode (with display reset)"
-                            );
-                        } else if (this._hiddenRedditWidget) {
-                            // Restore widget that was completely removed
-                            this.widgets.push(this._hiddenRedditWidget);
-                            this._hiddenRedditWidget.type = "text";
-                            this._hiddenRedditWidget.computeSize =
-                                this._hiddenRedditWidget.constructor.prototype.computeSize;
-                            this.redditUrlWidget = this._hiddenRedditWidget;
-                            this._hiddenRedditWidget.options =
-                                this._hiddenRedditWidget.options || {};
-                            this._hiddenRedditWidget.options.serialize = true;
-                            console.log(
-                                "[STATE] Restored previously removed Reddit URL widget for Reddit Post mode"
-                            );
-                            // Clear the stored reference
-                            this._hiddenRedditWidget = null;
-                        } else {
-                            console.log(
-                                "[DEBUG] Reddit URL widget not found for showing in Reddit Post mode"
-                            );
                         }
 
-                        // Hide other widgets
+                        // Hide media_path
                         if (originalMediaPathWidget) {
                             originalMediaPathWidget.type = "hidden";
                             originalMediaPathWidget.computeSize = () => [0, -4];
                         }
+
+                        // Hide seed (not needed for single Reddit post)
                         if (originalSeedWidget) {
                             originalSeedWidget.type = "hidden";
                             originalSeedWidget.computeSize = () => [0, -4];
-                            console.log("[STATE] Hiding seed widget for Reddit mode");
                         }
+
+                        // Hide subreddit_url
+                        if (originalSubredditUrlWidget) {
+                            originalSubredditUrlWidget.type = "hidden";
+                            originalSubredditUrlWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Hide upload widgets
                         if (originalUploadedImageWidget) {
                             originalUploadedImageWidget.type = "hidden";
                             originalUploadedImageWidget.computeSize = () => [0, -4];
@@ -548,144 +1260,340 @@ app.registerExtension({
                             originalUploadedVideoWidget.type = "hidden";
                             originalUploadedVideoWidget.computeSize = () => [0, -4];
                         }
-                    } else {
-                        // Upload Media mode - Show appropriate upload widgets based on media_type
-                        console.log("[STATE] Upload Media mode - hiding media_path widget");
 
-                        // Hide the original media_path widget
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] Reddit Post Mode - upload buttons already removed`
+                        );
+                        // Upload buttons are automatically removed by the logic above since mediaSource !== "Upload Media"
+                    } else {
+                        // Upload Media mode
+                        debugLog(`🔍 [MediaSelection UPLOAD DEBUG] === UPLOAD MEDIA MODE ===`);
+                        debugLog("[MediaSelection] Upload Media mode - setting up upload widgets");
+
+                        const mediaType = this.mediaTypeWidget?.value || "image";
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] Upload mode - mediaType: ${mediaType}`
+                        );
+
+                        // Hide media_path
                         if (originalMediaPathWidget) {
                             originalMediaPathWidget.type = "hidden";
                             originalMediaPathWidget.computeSize = () => [0, -4];
                         }
 
-                        // Hide the seed widget when not randomizing
+                        // Hide seed (not needed for upload)
                         if (originalSeedWidget) {
                             originalSeedWidget.type = "hidden";
                             originalSeedWidget.computeSize = () => [0, -4];
-                            console.log("[STATE] Hiding seed widget for upload mode");
                         }
 
-                        // Completely remove Reddit URL widget from DOM for upload mode
+                        // Hide reddit_url
                         if (originalRedditUrlWidget) {
-                            // Store widget for potential restoration
-                            this._hiddenRedditWidget = originalRedditUrlWidget;
-
-                            // Completely remove the widget from the widgets array
-                            const widgetIndex = this.widgets.indexOf(originalRedditUrlWidget);
-                            if (widgetIndex > -1) {
-                                this.widgets.splice(widgetIndex, 1);
-                                console.log(
-                                    "[STATE] Completely removed Reddit URL widget from widgets array"
-                                );
-                            }
-
-                            // Remove DOM element if it exists
-                            if (
-                                originalRedditUrlWidget.element &&
-                                originalRedditUrlWidget.element.parentNode
-                            ) {
-                                originalRedditUrlWidget.element.parentNode.removeChild(
-                                    originalRedditUrlWidget.element
-                                );
-                                console.log("[STATE] Removed Reddit URL widget DOM element");
-                            }
-
-                            console.log(
-                                "[STATE] Completely removed Reddit URL widget for upload mode"
-                            );
-                        } else {
-                            console.log(
-                                "[DEBUG] Reddit URL widget not found for hiding in upload mode"
-                            );
+                            originalRedditUrlWidget.type = "hidden";
+                            originalRedditUrlWidget.computeSize = () => [0, -4];
                         }
 
+                        // Hide subreddit_url
+                        if (originalSubredditUrlWidget) {
+                            originalSubredditUrlWidget.type = "hidden";
+                            originalSubredditUrlWidget.computeSize = () => [0, -4];
+                        }
+
+                        // Show/hide upload widgets based on media_type
                         if (mediaType === "image") {
-                            console.log("[STATE] Creating image upload widgets");
+                            debugLog("[MediaSelection] Showing image upload widget");
 
-                            // Hide the video upload widget, show image upload widget reference
-                            if (originalUploadedVideoWidget) {
-                                originalUploadedVideoWidget.type = "hidden";
-                                originalUploadedVideoWidget.computeSize = () => [0, -4];
-                            }
-                            if (originalUploadedImageWidget) {
-                                originalUploadedImageWidget.type = "hidden"; // Keep hidden, we'll use a custom widget
-                                originalUploadedImageWidget.computeSize = () => [0, -4];
-                            }
-
-                            // Add image upload widgets
-                            this.imageUploadWidget = this.addWidget(
-                                "button",
-                                "📁 Choose Image to Upload",
-                                "upload_image",
-                                () => {
-                                    this.onImageUploadButtonPressed();
-                                }
-                            );
-                            this.imageUploadWidget.serialize = false;
-
-                            // Add a widget to display the selected image info
-                            this.imageInfoWidget = this.addWidget(
-                                "text",
-                                "image_file",
-                                "No image selected",
-                                () => {},
-                                {}
-                            );
-                            this.imageInfoWidget.serialize = false;
-                        } else if (mediaType === "video") {
-                            console.log("[STATE] Creating video upload widgets");
-
-                            // Hide the image upload widget, show video upload widget reference
+                            // Keep the original uploaded_image_file widget hidden for storing the file path
                             if (originalUploadedImageWidget) {
                                 originalUploadedImageWidget.type = "hidden";
                                 originalUploadedImageWidget.computeSize = () => [0, -4];
                             }
+
+                            // Check if we already have an upload button, if not create one
+                            let imageUploadButton = this.widgets.find(
+                                (w) => w.name === "upload_image_button"
+                            );
+
+                            debugLog(
+                                `🔍 [MediaSelection UPLOAD DEBUG] Image mode - imageUploadButton exists: ${!!imageUploadButton}`
+                            );
+
+                            if (!imageUploadButton) {
+                                debugLog(
+                                    `🔍 [MediaSelection UPLOAD DEBUG] 🆕 Creating new imageUploadButton`
+                                );
+                                // Create a separate upload button widget
+                                imageUploadButton = this.addWidget(
+                                    "button",
+                                    "upload_image_button",
+                                    "📁 Choose Image",
+                                    () => {
+                                        const input = document.createElement("input");
+                                        input.type = "file";
+                                        input.accept = "image/*";
+                                        input.onchange = async (e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                debugLog(
+                                                    "[MediaSelection] Image file selected:",
+                                                    file.name
+                                                );
+
+                                                try {
+                                                    // Use ComfyUI's built-in upload system
+                                                    const uploadResponse = await api.uploadImage(
+                                                        file
+                                                    );
+                                                    debugLog(
+                                                        "[MediaSelection] Image uploaded:",
+                                                        uploadResponse
+                                                    );
+
+                                                    // Update button text to show selected file
+                                                    imageUploadButton.value = `📁 ${file.name}`;
+
+                                                    // Store the uploaded file path in the hidden text widget
+                                                    if (originalUploadedImageWidget) {
+                                                        originalUploadedImageWidget.value =
+                                                            uploadResponse.name;
+                                                    }
+
+                                                    // Mark the node as changed so ComfyUI knows to re-execute
+                                                    this.setDirtyCanvas(true);
+                                                } catch (error) {
+                                                    console.error(
+                                                        "[MediaSelection] Image upload failed:",
+                                                        error
+                                                    );
+                                                    imageUploadButton.value = "📁 Upload Failed";
+                                                }
+                                            }
+                                        };
+                                        input.click();
+                                    }
+                                );
+
+                                // Set the button properties
+                                imageUploadButton.type = "button";
+                                imageUploadButton.options = imageUploadButton.options || {};
+                                imageUploadButton.options.serialize = false; // Don't serialize the button state
+
+                                debugLog(
+                                    `🔍 [MediaSelection UPLOAD DEBUG] ✅ Created imageUploadButton with type: ${imageUploadButton.type}`
+                                );
+                            } else {
+                                debugLog(
+                                    `🔍 [MediaSelection UPLOAD DEBUG] ♻️ Making existing imageUploadButton visible`
+                                );
+                                // Make sure existing button is visible
+                                imageUploadButton.type = "button";
+                                imageUploadButton.computeSize =
+                                    imageUploadButton.constructor.prototype.computeSize;
+
+                                debugLog(
+                                    `🔍 [MediaSelection UPLOAD DEBUG] ✅ Made existing imageUploadButton visible with type: ${imageUploadButton.type}`
+                                );
+                            }
+
+                            // Store reference to the image button
+                            this.imageUploadButton = imageUploadButton;
+
+                            // Remove video upload button if it exists (since we're in image mode)
+                            const existingVideoButton = this.widgets.find(
+                                (w) => w.name === "upload_video_button"
+                            );
+                            if (existingVideoButton) {
+                                this.removeWidgetSafely(existingVideoButton);
+                                this.videoUploadButton = null;
+                                debugLog(
+                                    `🔍 [MediaSelection UPLOAD DEBUG] 🗑️ Removed videoUploadButton (image mode)`
+                                );
+                            }
+
+                            // Hide video upload widget
                             if (originalUploadedVideoWidget) {
-                                originalUploadedVideoWidget.type = "hidden"; // Keep hidden, we'll use a custom widget
+                                originalUploadedVideoWidget.type = "hidden";
+                                originalUploadedVideoWidget.computeSize = () => [0, -4];
+                            }
+                        } else {
+                            debugLog("[MediaSelection] Showing video upload widget");
+
+                            // Keep the original uploaded_video_file widget hidden for storing the file path
+                            if (originalUploadedVideoWidget) {
+                                originalUploadedVideoWidget.type = "hidden";
                                 originalUploadedVideoWidget.computeSize = () => [0, -4];
                             }
 
-                            // Add video upload widgets
-                            this.videoUploadWidget = this.addWidget(
-                                "button",
-                                "📁 Choose Video to Upload",
-                                "upload_video",
-                                () => {
-                                    this.onVideoUploadButtonPressed();
-                                }
+                            // Check if we already have an upload button, if not create one
+                            let videoUploadButton = this.widgets.find(
+                                (w) => w.name === "upload_video_button"
                             );
-                            this.videoUploadWidget.serialize = false;
+                            if (!videoUploadButton) {
+                                // Create a separate upload button widget
+                                videoUploadButton = this.addWidget(
+                                    "button",
+                                    "upload_video_button",
+                                    "📹 Choose Video",
+                                    () => {
+                                        const input = document.createElement("input");
+                                        input.type = "file";
+                                        input.accept = "video/*";
+                                        input.onchange = async (e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                debugLog(
+                                                    "[MediaSelection] Video file selected:",
+                                                    file.name
+                                                );
 
-                            // Add a widget to display the selected video info
-                            this.videoInfoWidget = this.addWidget(
-                                "text",
-                                "video_file",
-                                "No video selected",
-                                () => {},
-                                {}
+                                                try {
+                                                    // For videos, we'll use the general upload endpoint
+                                                    // since api.uploadImage is specifically for images
+                                                    const formData = new FormData();
+                                                    formData.append("image", file); // ComfyUI uses "image" param for all uploads
+                                                    formData.append("overwrite", "false");
+                                                    formData.append("type", "input");
+
+                                                    const response = await fetch("/upload/image", {
+                                                        method: "POST",
+                                                        body: formData,
+                                                    });
+
+                                                    if (!response.ok) {
+                                                        throw new Error(
+                                                            `Upload failed: ${response.status}`
+                                                        );
+                                                    }
+
+                                                    const uploadResponse = await response.json();
+                                                    debugLog(
+                                                        "[MediaSelection] Video uploaded:",
+                                                        uploadResponse
+                                                    );
+
+                                                    // Update button text to show selected file
+                                                    videoUploadButton.value = `📹 ${file.name}`;
+
+                                                    // Store the uploaded file path in the hidden text widget
+                                                    if (originalUploadedVideoWidget) {
+                                                        originalUploadedVideoWidget.value =
+                                                            uploadResponse.name;
+                                                    }
+
+                                                    // Mark the node as changed so ComfyUI knows to re-execute
+                                                    this.setDirtyCanvas(true);
+                                                } catch (error) {
+                                                    console.error(
+                                                        "[MediaSelection] Video upload failed:",
+                                                        error
+                                                    );
+                                                    videoUploadButton.value = "📹 Upload Failed";
+                                                }
+                                            }
+                                        };
+                                        input.click();
+                                    }
+                                );
+
+                                // Set the button properties
+                                videoUploadButton.type = "button";
+                                videoUploadButton.options = videoUploadButton.options || {};
+                                videoUploadButton.options.serialize = false; // Don't serialize the button state
+                            } else {
+                                // Make sure existing button is visible
+                                videoUploadButton.type = "button";
+                                videoUploadButton.computeSize =
+                                    videoUploadButton.constructor.prototype.computeSize;
+                            }
+
+                            // Store reference to the video button
+                            this.videoUploadButton = videoUploadButton;
+
+                            // Remove image upload button if it exists (since we're in video mode)
+                            const existingImageButton = this.widgets.find(
+                                (w) => w.name === "upload_image_button"
                             );
-                            this.videoInfoWidget.serialize = false;
+                            if (existingImageButton) {
+                                this.removeWidgetSafely(existingImageButton);
+                                this.imageUploadButton = null;
+                                debugLog(
+                                    `🔍 [MediaSelection UPLOAD DEBUG] 🗑️ Removed imageUploadButton (video mode)`
+                                );
+                            }
+
+                            // Hide image upload widget
+                            if (originalUploadedImageWidget) {
+                                originalUploadedImageWidget.type = "hidden";
+                                originalUploadedImageWidget.computeSize = () => [0, -4];
+                            }
                         }
                     }
 
-                    console.log(
-                        `[STATE] Widget update complete. Total widgets: ${
+                    // Verification: Check final state of upload buttons
+                    debugLog(
+                        `🔍 [MediaSelection UPLOAD DEBUG] VERIFICATION for mode "${mediaSource}"`
+                    );
+
+                    // Final state logging
+                    const finalImageButton = this.widgets.find(
+                        (w) => w.name === "upload_image_button"
+                    );
+                    const finalVideoButton = this.widgets.find(
+                        (w) => w.name === "upload_video_button"
+                    );
+
+                    debugLog(
+                        `🔍 [MediaSelection UPLOAD DEBUG] ========== FINAL STATE ==========`
+                    );
+                    debugLog(`🔍 [MediaSelection UPLOAD DEBUG] mediaSource: "${mediaSource}"`);
+                    debugLog(
+                        `🔍 [MediaSelection UPLOAD DEBUG] Total widgets: ${
+                            this.widgets?.length || 0
+                        }`
+                    );
+                    debugLog(
+                        `🔍 [MediaSelection UPLOAD DEBUG] Final imageUploadButton exists: ${!!finalImageButton}`
+                    );
+                    debugLog(
+                        `🔍 [MediaSelection UPLOAD DEBUG] Final videoUploadButton exists: ${!!finalVideoButton}`
+                    );
+
+                    if (mediaSource === "Upload Media") {
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] ✅ Upload Media mode - buttons should exist`
+                        );
+                    } else {
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] ✅ Non-Upload mode - buttons should be removed`
+                        );
+                        if (finalImageButton || finalVideoButton) {
+                            debugLog(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ⚠️ ERROR: Upload buttons still exist in non-upload mode!`
+                            );
+                        } else {
+                            debugLog(
+                                `🔍 [MediaSelection UPLOAD DEBUG] ✅ SUCCESS: No upload buttons found in non-upload mode`
+                            );
+                        }
+                    }
+
+                    debugLog(
+                        `🔍 [MediaSelection UPLOAD DEBUG] ========== updateMediaWidgets END ==========`
+                    );
+
+                    debugLog(
+                        `[MediaSelection] Widget update complete. Total widgets: ${
                             this.widgets?.length || 0
                         }`
                     );
 
-                    // Final debug check for Reddit URL widget state
-                    const finalRedditUrlWidget = this.widgets.find((w) => w.name === "reddit_url");
-                    if (finalRedditUrlWidget) {
-                        console.log(
-                            `[DEBUG] Final Reddit URL widget state - type: ${finalRedditUrlWidget.type}, visible: ${finalRedditUrlWidget.type !== "hidden"}, value: "${finalRedditUrlWidget.value}"`
-                        );
-                    }
+                    // Update resize widgets to ensure proper visibility
+                    this.updateResizeWidgets();
 
-                    // Force node to recalculate size and refresh UI (aggressive refresh)
+                    // Force node to recalculate size and refresh UI
                     this.setSize(this.computeSize());
 
-                    // Additional UI refresh signals
+                    // Additional UI refresh
                     if (this.graph && this.graph.setDirtyCanvas) {
                         this.graph.setDirtyCanvas(true, true);
                     }
@@ -699,600 +1607,734 @@ app.registerExtension({
                     }, 10);
                 };
 
-                // Initial setup
+                // Initial setup - call updateResizeWidgets first, then updateMediaWidgets
+                // (updateMediaWidgets will call updateResizeWidgets at the end)
+                debugLog(
+                    `🔍 [MediaSelection UPLOAD DEBUG] ========== INITIAL SETUP START ==========`
+                );
+                debugLog(
+                    `🔍 [MediaSelection UPLOAD DEBUG] Default media_source: ${
+                        this.mediaSourceWidget?.value || "undefined"
+                    }`
+                );
+
+                debugLog(`[MediaSelection] onNodeCreated - Running initial setup`);
+                this.updateResizeWidgets();
                 this.updateMediaWidgets();
+
+                debugLog(
+                    `🔍 [MediaSelection UPLOAD DEBUG] ========== INITIAL SETUP COMPLETE ==========`
+                );
 
                 // Hook into media_source widget changes
                 if (this.mediaSourceWidget) {
                     const originalSourceCallback = this.mediaSourceWidget.callback;
                     this.mediaSourceWidget.callback = (value) => {
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] ========== MEDIA_SOURCE CHANGED ==========`
+                        );
+                        debugLog(
+                            `🔍 [MediaSelection UPLOAD DEBUG] Changed from "${this.mediaSourceWidget.value}" to "${value}"`
+                        );
+
+                        debugLog(`[MediaSelection] media_source changed to: "${value}"`);
                         if (originalSourceCallback)
                             originalSourceCallback.call(this.mediaSourceWidget, value);
                         this.updateMediaWidgets();
                     };
                 }
 
-                // Hook into media_type widget changes
+                // Hook into media_type widget changes to update upload widgets
                 if (this.mediaTypeWidget) {
                     const originalTypeCallback = this.mediaTypeWidget.callback;
                     this.mediaTypeWidget.callback = (value) => {
+                        debugLog(`[MediaSelection] media_type changed to: "${value}"`);
                         if (originalTypeCallback)
                             originalTypeCallback.call(this.mediaTypeWidget, value);
-                        this.updateMediaWidgets();
+                        this.updateMediaWidgets(); // Update widgets when media type changes
                     };
                 }
 
-                return result;
-            };
-
-            // Add onSerialize method to save UI state
-            const onSerialize = nodeType.prototype.onSerialize;
-            nodeType.prototype.onSerialize = function (o) {
-                const result = onSerialize?.apply(this, arguments);
-
-                console.log("[DEBUG] onSerialize called - collecting state data");
-                console.log("[DEBUG] uploadedVideoFile:", this.uploadedVideoFile);
-                console.log("[DEBUG] uploadedVideoSubfolder:", this.uploadedVideoSubfolder);
-                console.log("[DEBUG] videoInfoWidget value:", this.videoInfoWidget?.value);
-                console.log("[DEBUG] uploadedImageFile:", this.uploadedImageFile);
-                console.log("[DEBUG] uploadedImageSubfolder:", this.uploadedImageSubfolder);
-                console.log("[DEBUG] imageInfoWidget value:", this.imageInfoWidget?.value);
-
-                // Save current widget state for persistence
-                o.widgets_values = o.widgets_values || [];
-                o.ui_state = {
-                    media_source: this.mediaSourceWidget?.value || "Upload Media",
-                    media_type: this.mediaTypeWidget?.value || "image",
-                    // Add uploaded file persistence
-                    uploaded_file_info: {
-                        image: {
-                            file: this.uploadedImageFile,
-                            subfolder: this.uploadedImageSubfolder,
-                            display: this.imageInfoWidget?.value,
-                        },
-                        video: {
-                            file: this.uploadedVideoFile,
-                            subfolder: this.uploadedVideoSubfolder,
-                            display: this.videoInfoWidget?.value,
-                        },
-                    },
-                };
-
-                console.log("[SERIALIZE] Saving UI state:", JSON.stringify(o.ui_state, null, 2));
-
-                // Also check the actual widget values in widgets_values array
-                console.log("[DEBUG] widgets_values array:", o.widgets_values);
-
-                // Check if any widgets have video file info
-                if (this.widgets) {
-                    const videoWidget = this.widgets.find((w) => w.name === "uploaded_video_file");
-                    const imageWidget = this.widgets.find((w) => w.name === "uploaded_image_file");
-                    console.log("[DEBUG] uploaded_video_file widget value:", videoWidget?.value);
-                    console.log("[DEBUG] uploaded_image_file widget value:", imageWidget?.value);
+                // Hook into resize_mode widget changes
+                if (this.resizeModeWidget) {
+                    const originalResizeModeCallback = this.resizeModeWidget.callback;
+                    this.resizeModeWidget.callback = (value) => {
+                        debugLog(`[MediaSelection] resize_mode changed to: "${value}"`);
+                        if (originalResizeModeCallback)
+                            originalResizeModeCallback.call(this.resizeModeWidget, value);
+                        this.updateResizeWidgets();
+                    };
                 }
 
+                debugLog(`[MediaSelection] onNodeCreated complete`);
                 return result;
             };
 
-            // Add onConfigure method to restore UI state
+            // Add onConfigure to handle widget visibility when loading from a saved workflow
             const onConfigure = nodeType.prototype.onConfigure;
-            nodeType.prototype.onConfigure = function (o) {
-                const result = onConfigure?.apply(this, arguments);
+            nodeType.prototype.onConfigure = function (info) {
+                debugLog("[MediaSelection] ========== onConfigure CALLED ==========");
+                debugLog("[MediaSelection] Config info:", info);
 
-                console.log("[DEBUG] onConfigure called with data:", o);
-                console.log("[DEBUG] ui_state found:", !!o.ui_state);
-                console.log("[DEBUG] widgets_values found:", !!o.widgets_values);
+                const result = onConfigure?.call(this, info);
 
-                // Restore UI state after widgets are created
-                if (o.ui_state) {
-                    console.log(
-                        "[CONFIGURE] Restoring UI state:",
-                        JSON.stringify(o.ui_state, null, 2)
-                    );
+                debugLog(
+                    "[MediaSelection] onConfigure - updating widget visibility after config load"
+                );
 
-                    // Set widget values if they exist
-                    if (this.mediaSourceWidget && o.ui_state.media_source) {
-                        console.log(
-                            "[DEBUG] Setting mediaSourceWidget to:",
-                            o.ui_state.media_source
-                        );
-                        this.mediaSourceWidget.value = o.ui_state.media_source;
+                // Update widget visibility after configuration is loaded
+                // Use setTimeout to ensure widgets are fully restored first
+                setTimeout(() => {
+                    debugLog("[MediaSelection] onConfigure setTimeout - updating widgets now");
+                    if (this.updateResizeWidgets) {
+                        this.updateResizeWidgets();
                     }
-                    if (this.mediaTypeWidget && o.ui_state.media_type) {
-                        console.log("[DEBUG] Setting mediaTypeWidget to:", o.ui_state.media_type);
-                        this.mediaTypeWidget.value = o.ui_state.media_type;
-                    }
-
-                    // Store upload file info for later restoration (after updateMediaWidgets clears state)
-                    this._pendingFileRestore = o.ui_state.uploaded_file_info;
-                    console.log(
-                        "[DEBUG] Stored _pendingFileRestore:",
-                        JSON.stringify(this._pendingFileRestore, null, 2)
-                    );
-
-                    // Update UI to match restored state
-                    setTimeout(() => {
-                        console.log("[DEBUG] First timeout - calling updateMediaWidgets");
+                    if (this.updateMediaWidgets) {
                         this.updateMediaWidgets();
+                    }
+                    debugLog("[MediaSelection] onConfigure setTimeout - updates complete");
+                }, 10);
 
-                        // FIXED: Restore uploaded file information after updateMediaWidgets has run
-                        // Need a second timeout to ensure widgets are fully created
-                        setTimeout(() => {
-                            console.log("[DEBUG] Second timeout - starting file restoration");
-                            console.log(
-                                "[DEBUG] _pendingFileRestore still exists:",
-                                !!this._pendingFileRestore
-                            );
-
-                            if (this._pendingFileRestore) {
-                                const fileInfo = this._pendingFileRestore;
-                                console.log(
-                                    "[DEBUG] Processing fileInfo:",
-                                    JSON.stringify(fileInfo, null, 2)
-                                );
-
-                                // Debug: List all current widgets
-                                console.log(
-                                    "[DEBUG] Current widgets:",
-                                    this.widgets.map((w) => ({
-                                        name: w.name,
-                                        type: w.type,
-                                        value: w.value,
-                                    }))
-                                );
-
-                                // Restore image upload state
-                                if (fileInfo.image?.file) {
-                                    console.log("[DEBUG] Restoring image state:", fileInfo.image);
-                                    this.uploadedImageFile = fileInfo.image.file;
-                                    this.uploadedImageSubfolder = fileInfo.image.subfolder;
-                                    if (this.imageInfoWidget && fileInfo.image.display) {
-                                        this.imageInfoWidget.value = fileInfo.image.display;
-                                        console.log(
-                                            "[DEBUG] Updated imageInfoWidget:",
-                                            this.imageInfoWidget.value
-                                        );
-                                    }
-
-                                    // Update the hidden widget with file path
-                                    const originalUploadedImageWidget = this.widgets.find(
-                                        (w) => w.name === "uploaded_image_file"
-                                    );
-                                    if (originalUploadedImageWidget) {
-                                        originalUploadedImageWidget.value = `${this.uploadedImageSubfolder}/${this.uploadedImageFile}`;
-                                        console.log(
-                                            `[CONFIGURE] Restored image file: ${originalUploadedImageWidget.value}`
-                                        );
-                                    } else {
-                                        console.log(
-                                            "[DEBUG] WARNING: uploaded_image_file widget not found!"
-                                        );
-                                    }
-                                }
-
-                                // FIXED: Restore video upload state with proper widget handling
-                                if (fileInfo.video?.file) {
-                                    console.log("[DEBUG] Restoring video state:", fileInfo.video);
-                                    this.uploadedVideoFile = fileInfo.video.file;
-                                    this.uploadedVideoSubfolder = fileInfo.video.subfolder;
-
-                                    console.log(
-                                        "[DEBUG] Set uploadedVideoFile:",
-                                        this.uploadedVideoFile
-                                    );
-                                    console.log(
-                                        "[DEBUG] Set uploadedVideoSubfolder:",
-                                        this.uploadedVideoSubfolder
-                                    );
-
-                                    // Ensure video info widget exists and update it
-                                    if (this.videoInfoWidget) {
-                                        if (fileInfo.video.display) {
-                                            this.videoInfoWidget.value = fileInfo.video.display;
-                                        } else {
-                                            // Fallback display if display info is missing
-                                            this.videoInfoWidget.value = `${this.uploadedVideoFile} (restored)`;
-                                        }
-                                        console.log(
-                                            `[CONFIGURE] Restored video info widget: ${this.videoInfoWidget.value}`
-                                        );
-                                    } else {
-                                        console.log("[DEBUG] WARNING: videoInfoWidget not found!");
-                                    }
-
-                                    // Update the hidden widget with file path
-                                    const originalUploadedVideoWidget = this.widgets.find(
-                                        (w) => w.name === "uploaded_video_file"
-                                    );
-                                    if (originalUploadedVideoWidget) {
-                                        const filePath = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
-                                        originalUploadedVideoWidget.value = filePath;
-                                        console.log(
-                                            `[CONFIGURE] Restored video file widget: ${originalUploadedVideoWidget.value}`
-                                        );
-                                    } else {
-                                        console.log(
-                                            "[DEBUG] WARNING: uploaded_video_file widget not found!"
-                                        );
-                                    }
-
-                                    // Also ensure the videoFileWidget is updated if it exists
-                                    if (this.videoFileWidget) {
-                                        this.videoFileWidget.value = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
-                                        console.log(
-                                            `[CONFIGURE] Updated videoFileWidget: ${this.videoFileWidget.value}`
-                                        );
-                                    } else {
-                                        console.log(
-                                            "[DEBUG] videoFileWidget not found (this might be OK)"
-                                        );
-                                    }
-                                } else {
-                                    console.log("[DEBUG] No video file info to restore");
-                                }
-
-                                // Clean up temporary storage
-                                delete this._pendingFileRestore;
-                                console.log("[DEBUG] Cleaned up _pendingFileRestore");
-                            } else {
-                                console.log(
-                                    "[DEBUG] No _pendingFileRestore found in second timeout"
-                                );
-                            }
-
-                            console.log("[CONFIGURE] File state restoration complete");
-                        }, 50); // Small delay to ensure widget creation is complete
-
-                        console.log("[CONFIGURE] UI state restored and widgets updated");
-                    }, 0);
-                } else {
-                    console.log("[CONFIGURE] No UI state found, using defaults");
-                    // Ensure initial state is applied even without saved state
-                    setTimeout(() => {
-                        this.updateMediaWidgets();
-                    }, 0);
-                }
-
+                debugLog("[MediaSelection] ========== onConfigure COMPLETE ==========");
                 return result;
-            };
-
-            // Add onExecuted method to update the final_string widget
-            const onExecutedMedia = nodeType.prototype.onExecuted;
-            nodeType.prototype.onExecuted = function (message) {
-                const result = onExecutedMedia?.apply(this, arguments);
-                return result;
-            };
-
-            // Method to clear current media type state only
-            nodeType.prototype.clearCurrentMediaState = function () {
-                const mediaType = this.mediaTypeWidget?.value || "image";
-
-                if (mediaType === "video") {
-                    // Clear video state
-                    this.clearVideoPreview();
-                    this.uploadedVideoFile = null;
-                    this.uploadedVideoSubfolder = null;
-
-                    if (this.videoInfoWidget) {
-                        this.videoInfoWidget.value = "No video selected";
-                    }
-                    if (this.videoFileWidget) {
-                        this.videoFileWidget.value = "";
-                    }
-                } else if (mediaType === "image") {
-                    // Clear image state
-                    this.uploadedImageFile = null;
-                    this.uploadedImageSubfolder = null;
-
-                    if (this.imageInfoWidget) {
-                        this.imageInfoWidget.value = "No image selected";
-                    }
-                    if (this.imageFileWidget) {
-                        this.imageFileWidget.value = "";
-                    }
-                }
-            };
-
-            // Add image upload handler
-            nodeType.prototype.onImageUploadButtonPressed = function () {
-                console.log("Image upload button pressed!");
-
-                // Clear current image state before starting new upload
-                this.clearCurrentMediaState();
-
-                // Create file input element
-                const fileInput = document.createElement("input");
-                fileInput.type = "file";
-                fileInput.accept = "image/*";
-                fileInput.style.display = "none";
-
-                fileInput.onchange = async (event) => {
-                    const file = event.target.files[0];
-                    if (!file) {
-                        return;
-                    }
-
-                    // Validate file type
-                    if (!file.type.startsWith("image/")) {
-                        app.ui.dialog.show("Please select a valid image file.");
-                        return;
-                    }
-
-                    // Show loading state
-                    this.imageInfoWidget.value = "Uploading image...";
-
-                    try {
-                        // Upload the image file
-                        const formData = new FormData();
-                        formData.append("image", file);
-                        formData.append("subfolder", "swiss_army_knife_images");
-                        formData.append("type", "input");
-
-                        const uploadResponse = await fetch("/upload/image", {
-                            method: "POST",
-                            body: formData,
-                        });
-
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-                        }
-
-                        const uploadResult = await uploadResponse.json();
-
-                        // Update the image info widget
-                        this.imageInfoWidget.value = `${file.name} (${(
-                            file.size /
-                            1024 /
-                            1024
-                        ).toFixed(2)} MB)`;
-
-                        // Store image info for processing
-                        this.uploadedImageFile = uploadResult.name;
-                        this.uploadedImageSubfolder =
-                            uploadResult.subfolder || "swiss_army_knife_images";
-
-                        // Use the original uploaded_image_file widget to store the file path
-                        const originalUploadedImageWidget = this.widgets.find(
-                            (w) => w.name === "uploaded_image_file"
-                        );
-                        if (originalUploadedImageWidget) {
-                            originalUploadedImageWidget.value = `${this.uploadedImageSubfolder}/${this.uploadedImageFile}`;
-                            console.log(
-                                `[UPLOAD] Updated original uploaded_image_file widget: ${originalUploadedImageWidget.value}`
-                            );
-                        } else {
-                            // Fallback: create a hidden widget if the original doesn't exist
-                            if (!this.imageFileWidget) {
-                                this.imageFileWidget = this.addWidget(
-                                    "text",
-                                    "uploaded_image_file",
-                                    "",
-                                    () => {},
-                                    {}
-                                );
-                                this.imageFileWidget.serialize = true;
-                                this.imageFileWidget.type = "hidden";
-                            }
-                            this.imageFileWidget.value = `${this.uploadedImageSubfolder}/${this.uploadedImageFile}`;
-                        }
-
-                        // Show success notification
-                        app.extensionManager?.toast?.add({
-                            severity: "success",
-                            summary: "Image Upload",
-                            detail: `Successfully uploaded ${file.name}`,
-                            life: 3000,
-                        });
-
-                        console.log("Image uploaded:", uploadResult);
-                    } catch (error) {
-                        console.error("Upload error:", error);
-
-                        // Clear everything on error
-                        this.imageInfoWidget.value = "Upload failed";
-                        this.uploadedImageFile = null;
-                        this.uploadedImageSubfolder = null;
-
-                        if (this.imageFileWidget) {
-                            this.imageFileWidget.value = "";
-                        }
-
-                        app.ui.dialog.show(`Upload failed: ${error.message}`);
-                    }
-
-                    // Clean up
-                    document.body.removeChild(fileInput);
-                };
-
-                // Trigger file selection
-                document.body.appendChild(fileInput);
-                fileInput.click();
-            };
-
-            // Add video upload handler (reuse from existing video node)
-            nodeType.prototype.onVideoUploadButtonPressed = function () {
-                console.log("Video upload button pressed!");
-
-                // Clear current video state before starting new upload
-                this.clearCurrentMediaState();
-
-                // Create file input element
-                const fileInput = document.createElement("input");
-                fileInput.type = "file";
-                fileInput.accept = "video/*";
-                fileInput.style.display = "none";
-
-                fileInput.onchange = async (event) => {
-                    const file = event.target.files[0];
-                    if (!file) {
-                        // User cancelled, keep cleared state
-                        return;
-                    }
-
-                    // Validate file type
-                    if (!file.type.startsWith("video/")) {
-                        app.ui.dialog.show("Please select a valid video file.");
-                        return;
-                    }
-
-                    // Show loading state
-                    this.videoInfoWidget.value = "Uploading video...";
-
-                    try {
-                        // Upload the video file
-                        const formData = new FormData();
-                        formData.append("image", file);
-                        formData.append("subfolder", "swiss_army_knife_videos");
-                        formData.append("type", "input");
-
-                        const uploadResponse = await fetch("/upload/image", {
-                            method: "POST",
-                            body: formData,
-                        });
-
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-                        }
-
-                        const uploadResult = await uploadResponse.json();
-
-                        console.log("[DEBUG] Video upload successful, result:", uploadResult);
-
-                        // Update the video info widget
-                        this.videoInfoWidget.value = `${file.name} (${(
-                            file.size /
-                            1024 /
-                            1024
-                        ).toFixed(2)} MB)`;
-
-                        // Store video info for processing
-                        this.uploadedVideoFile = uploadResult.name;
-                        this.uploadedVideoSubfolder =
-                            uploadResult.subfolder || "swiss_army_knife_videos";
-
-                        console.log("[DEBUG] Set uploadedVideoFile to:", this.uploadedVideoFile);
-                        console.log(
-                            "[DEBUG] Set uploadedVideoSubfolder to:",
-                            this.uploadedVideoSubfolder
-                        );
-                        console.log("[DEBUG] Set videoInfoWidget to:", this.videoInfoWidget.value);
-
-                        // Use the original uploaded_video_file widget to store the file path
-                        const originalUploadedVideoWidget = this.widgets.find(
-                            (w) => w.name === "uploaded_video_file"
-                        );
-                        if (originalUploadedVideoWidget) {
-                            originalUploadedVideoWidget.value = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
-                            console.log(
-                                `[UPLOAD] Updated original uploaded_video_file widget: ${originalUploadedVideoWidget.value}`
-                            );
-                        } else {
-                            console.log(
-                                "[DEBUG] WARNING: uploaded_video_file widget not found during upload!"
-                            );
-                            // Fallback: create a hidden widget if the original doesn't exist
-                            if (!this.videoFileWidget) {
-                                this.videoFileWidget = this.addWidget(
-                                    "text",
-                                    "uploaded_video_file",
-                                    "",
-                                    () => {},
-                                    {}
-                                );
-                                this.videoFileWidget.serialize = true;
-                                this.videoFileWidget.type = "hidden";
-                                console.log("[DEBUG] Created fallback videoFileWidget");
-                            }
-                            this.videoFileWidget.value = `${this.uploadedVideoSubfolder}/${this.uploadedVideoFile}`;
-                            console.log(
-                                "[DEBUG] Updated fallback videoFileWidget:",
-                                this.videoFileWidget.value
-                            );
-                        }
-
-                        // Debug: Show all widget states after upload
-                        console.log("[DEBUG] All widgets after upload:");
-                        this.widgets.forEach((w) => {
-                            console.log(`  ${w.name}: ${w.value} (type: ${w.type})`);
-                        });
-
-                        // Show success notification
-                        app.extensionManager?.toast?.add({
-                            severity: "success",
-                            summary: "Video Upload",
-                            detail: `Successfully uploaded ${file.name}`,
-                            life: 3000,
-                        });
-
-                        console.log("Video uploaded:", uploadResult);
-                    } catch (error) {
-                        console.error("Upload error:", error);
-
-                        // Clear everything on error
-                        this.clearVideoPreview();
-                        this.videoInfoWidget.value = "Upload failed";
-                        this.uploadedVideoFile = null;
-                        this.uploadedVideoSubfolder = null;
-
-                        if (this.videoFileWidget) {
-                            this.videoFileWidget.value = "";
-                        }
-
-                        app.ui.dialog.show(`Upload failed: ${error.message}`);
-                    }
-
-                    // Clean up
-                    document.body.removeChild(fileInput);
-                };
-
-                // Trigger file selection
-                document.body.appendChild(fileInput);
-                fileInput.click();
-            };
-
-            // Add video preview clearing method (minimal version for media node)
-            nodeType.prototype.clearVideoPreview = function () {
-                // For the media node, we don't have complex video preview
-                // This is just a placeholder method
-                console.log("Video preview cleared for media node");
             };
         }
+
+        // CivitMetadataHelper node - no custom widgets needed
     },
 
     // Hook to handle workflow loading
     loadedGraphNode(node, app) {
-        if (node.comfyClass === "GeminiUtilMediaDescribe") {
-            console.log("[LOADED] loadedGraphNode called for GeminiUtilMediaDescribe");
+        if (node.comfyClass === "MediaDescribe") {
+            debugLog("[LOADED] loadedGraphNode called for MediaDescribe");
 
             // Check if this node has saved UI state with uploaded file data
             const hasSavedVideoData = node.ui_state?.uploaded_file_info?.video?.file;
             const hasSavedImageData = node.ui_state?.uploaded_file_info?.image?.file;
 
-            console.log(
+            debugLog(
                 "[LOADED] hasSavedVideoData:",
                 !!hasSavedVideoData,
                 "hasSavedImageData:",
                 !!hasSavedImageData
             );
-            console.log("[LOADED] Saved video file:", hasSavedVideoData);
-            console.log("[LOADED] Saved image file:", hasSavedImageData);
+            debugLog("[LOADED] Saved video file:", hasSavedVideoData);
+            debugLog("[LOADED] Saved image file:", hasSavedImageData);
 
             // Only call updateMediaWidgets if we don't have any saved uploaded file data
             // If we have saved data, onConfigure will handle the restoration
             if (!hasSavedVideoData && !hasSavedImageData && node.updateMediaWidgets) {
-                console.log(
-                    "[LOADED] No saved uploaded file data found, applying default UI state"
-                );
+                debugLog("[LOADED] No saved uploaded file data found, applying default UI state");
                 setTimeout(() => {
                     node.updateMediaWidgets();
-                    console.log("[LOADED] Applied default UI state for loaded workflow node");
+                    debugLog("[LOADED] Applied default UI state for loaded workflow node");
                 }, 100); // Small delay to ensure all widgets are properly initialized
             } else {
-                console.log(
+                debugLog(
                     "[LOADED] Saved uploaded file data found, skipping updateMediaWidgets to preserve onConfigure restoration"
                 );
             }
         }
+    },
+
+    async beforeRegisterNodeDef(nodeType, nodeData, app) {
+        // Handle LLMStudioStructuredDescribe node - dynamic output labels
+        if (nodeData.name === "LLMStudioStructuredDescribe") {
+            debugLog("Registering LLMStudioStructuredDescribe node with dynamic output labels");
+
+            // Define schema field mappings
+            const SCHEMA_OUTPUT_LABELS = {
+                "video_description": ["subject", "clothing", "movement", "scene", "visual_style"],
+                "simple_description": ["caption", "tags", "", "", ""],
+                "character_analysis": ["appearance", "expression", "pose", "clothing", ""]
+            };
+
+            // Add resize handler to adjust DOM widget width
+            const onResize = nodeType.prototype.onResize;
+            nodeType.prototype.onResize = function (size) {
+                const result = onResize?.call(this, size);
+                if (this._json_display_dom) {
+                    this._json_display_dom.style.width = this.size[0] - 20 + "px";
+                    // Trigger recompute after width change to handle content reflow
+                    requestAnimationFrame(() => {
+                        const sz = this.computeSize();
+                        if (sz[0] < this.size[0]) sz[0] = this.size[0];
+                        if (sz[1] < this.size[1]) sz[1] = this.size[1];
+                        this.onResize?.(sz);
+                        if (this.graph) {
+                            this.graph.setDirtyCanvas(true, false);
+                        }
+                    });
+                }
+                return result;
+            };
+
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Create DOM display widget for JSON output
+                if (!this._json_display_dom) {
+                    // Create main container
+                    const dom = document.createElement("div");
+                    dom.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontSize = "11px";
+                    dom.style.lineHeight = "1.35";
+                    dom.style.overflow = "auto";
+                    dom.style.minHeight = "300px";
+                    dom.style.padding = "8px";
+                    dom.style.borderRadius = "6px";
+                    dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
+                    dom.style.border = "1px solid var(--border-color, #333)";
+                    dom.style.color = "var(--fg-color, #d4d4d4)";
+
+                    // Create content div
+                    const content = document.createElement("div");
+                    content.style.whiteSpace = "pre-wrap";
+                    content.style.wordBreak = "break-word";
+                    content.style.overflow = "auto";
+                    content.style.flex = "1";
+                    content.textContent = "Awaiting execution...";
+
+                    dom.appendChild(content);
+
+                    // Add DOM widget
+                    const widget = this.addDOMWidget("json_display", "json_display", dom, {
+                        serialize: false,
+                        hideOnZoom: false,
+                    });
+
+                    // Add custom computeSize to measure actual content height
+                    widget.computeSize = function(width) {
+                        if (!dom) return [width || 400, 300];
+                        
+                        // Measure actual content height (scrollHeight includes all content)
+                        const contentHeight = dom.scrollHeight;
+                        const minHeight = 100;
+                        const maxHeight = 800;  // Max 800px height
+                        
+                        // Clamp between min and max, add padding
+                        const finalHeight = Math.max(minHeight, Math.min(maxHeight, contentHeight + 16));
+                        
+                        return [width || 400, finalHeight];
+                    };
+
+                    // Store references
+                    this._json_display_dom = dom;
+                    this._json_display_content = content;
+                    this._json_display_widget = widget;
+
+                    debugLog("Created JSON display widget for LLMStudioStructuredDescribe");
+                }
+
+                // Function to update JSON display from execution output
+                this.updateJsonDisplay = function(jsonString) {
+                    console.log("[SwissArmyKnife][updateJsonDisplay] Called with data:", jsonString);
+                    console.log("[SwissArmyKnife][updateJsonDisplay] Has content div:", !!this._json_display_content);
+                    debugLog("[updateJsonDisplay] Called with data:", jsonString);
+                    debugLog("[updateJsonDisplay] Has content div:", !!this._json_display_content);
+                    
+                    if (!this._json_display_content) {
+                        console.error("[SwissArmyKnife][updateJsonDisplay] No content div found!");
+                        return;
+                    }
+                    
+                    try {
+                        // Parse JSON string
+                        debugLog("[updateJsonDisplay] Type of input:", typeof jsonString);
+                        const jsonData = typeof jsonString === "string" 
+                            ? JSON.parse(jsonString) 
+                            : jsonString;
+                        
+                        debugLog("[updateJsonDisplay] Parsed JSON data:", jsonData);
+                        debugLog("[updateJsonDisplay] JSON keys:", Object.keys(jsonData));
+                        
+                        // Build formatted output with each key-value pair
+                        const lines = [];
+                        for (const [key, value] of Object.entries(jsonData)) {
+                            // Capitalize first letter of key for display
+                            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+                            
+                            // Format value (handle strings, arrays, objects)
+                            let displayValue;
+                            if (typeof value === "string") {
+                                displayValue = value;
+                            } else if (Array.isArray(value)) {
+                                displayValue = value.join(', ');
+                            } else if (typeof value === "object" && value !== null) {
+                                displayValue = JSON.stringify(value, null, 2);
+                            } else {
+                                displayValue = String(value);
+                            }
+                            
+                            lines.push(`${displayKey}: ${displayValue}`);
+                        }
+                        
+                        const finalText = lines.join('\n\n');
+                        debugLog("[updateJsonDisplay] Final text length:", finalText.length);
+                        debugLog("[updateJsonDisplay] Final text preview:", finalText.substring(0, 200));
+                        
+                        this._json_display_content.textContent = finalText;
+                        debugLog("[updateJsonDisplay] ✅ Successfully updated display");
+                        
+                        // Trigger node resize after content update (wait for browser reflow)
+                        requestAnimationFrame(() => {
+                            const sz = this.computeSize();
+                            if (sz[0] < this.size[0]) sz[0] = this.size[0];
+                            if (sz[1] < this.size[1]) sz[1] = this.size[1];
+                            this.onResize?.(sz);
+                            if (this.graph) {
+                                this.graph.setDirtyCanvas(true, false);
+                            }
+                        });
+                    } catch (error) {
+                        const errorMsg = `Error parsing JSON: ${error.message}`;
+                        this._json_display_content.textContent = errorMsg;
+                        console.error("[updateJsonDisplay] Failed to parse JSON:", error);
+                        console.error("[updateJsonDisplay] Input was:", jsonString);
+                    }
+                };
+
+                // Hook onExecuted to capture execution results
+                const originalOnExecuted = this.onExecuted;
+                this.onExecuted = function (message) {
+                    debugLog("LLMStudioStructuredDescribe onExecuted called", message);
+                    
+                    if (message && message.json_output) {
+                        // Extract json_output (first element if array)
+                        const jsonOutput = Array.isArray(message.json_output)
+                            ? message.json_output[0]
+                            : message.json_output;
+                        
+                        debugLog("Received json_output:", jsonOutput);
+                        this.updateJsonDisplay(jsonOutput);
+                    }
+                    
+                    return originalOnExecuted?.call(this, message);
+                };
+
+                // Function to update output labels based on schema preset
+                this.updateOutputLabels = function(schemaPreset) {
+                    const labels = SCHEMA_OUTPUT_LABELS[schemaPreset] || ["", "", "", "", ""];
+                    
+                    debugLog(`[LLMStudioStructured] Updating output labels for schema: ${schemaPreset}`);
+                    debugLog(`[LLMStudioStructured] New labels:`, labels);
+
+                    // Update output slot labels (outputs 1-5, skip 0 which is json_output)
+                    for (let i = 0; i < 5; i++) {
+                        const outputIndex = i + 1; // Skip first output (json_output)
+                        if (this.outputs && this.outputs[outputIndex]) {
+                            const label = labels[i] || `field_${i + 1}`;
+                            this.outputs[outputIndex].label = label;
+                            this.outputs[outputIndex].name = label;
+                            debugLog(`[LLMStudioStructured] Updated output ${outputIndex}: ${label}`);
+                        }
+                    }
+
+                    // Force visual update
+                    if (this.graph && this.graph.canvas) {
+                        this.setDirtyCanvas(true, true);
+                    }
+                };
+
+                // Find schema_preset widget and add callback
+                const schemaWidget = this.widgets?.find(w => w.name === "schema_preset");
+                if (schemaWidget) {
+                    debugLog("[LLMStudioStructured] Found schema_preset widget");
+                    
+                    // Update labels on initial creation
+                    this.updateOutputLabels(schemaWidget.value);
+
+                    // Store original callback
+                    const originalCallback = schemaWidget.callback;
+                    
+                    // Add our callback
+                    schemaWidget.callback = (value) => {
+                        debugLog(`[LLMStudioStructured] Schema preset changed to: ${value}`);
+                        this.updateOutputLabels(value);
+                        
+                        // Call original callback if exists
+                        if (originalCallback) {
+                            originalCallback.apply(schemaWidget, arguments);
+                        }
+                    };
+                } else {
+                    debugLog("[LLMStudioStructured] WARNING: schema_preset widget not found");
+                }
+
+                return result;
+            };
+        }
+
+        // Handle LLMStudioStructuredVideoDescribe node - dynamic output labels and JSON display
+        else if (nodeData.name === "LLMStudioStructuredVideoDescribe") {
+            debugLog("Registering LLMStudioStructuredVideoDescribe node with dynamic output labels and JSON display");
+
+            // Define schema field mappings (video has all schemas including video_description)
+            const SCHEMA_OUTPUT_LABELS = {
+                "video_description": ["subject", "clothing", "action", "scene", "visual_style"],
+                "simple_description": ["caption", "tags", "", "", ""],
+                "character_analysis": ["appearance", "expression", "pose", "clothing", ""]
+            };
+
+            // Add resize handler to adjust DOM widget width
+            const onResize = nodeType.prototype.onResize;
+            nodeType.prototype.onResize = function (size) {
+                const result = onResize?.call(this, size);
+                if (this._json_display_dom) {
+                    this._json_display_dom.style.width = this.size[0] - 20 + "px";
+                    // Trigger recompute after width change to handle content reflow
+                    requestAnimationFrame(() => {
+                        const sz = this.computeSize();
+                        if (sz[0] < this.size[0]) sz[0] = this.size[0];
+                        if (sz[1] < this.size[1]) sz[1] = this.size[1];
+                        this.onResize?.(sz);
+                        if (this.graph) {
+                            this.graph.setDirtyCanvas(true, false);
+                        }
+                    });
+                }
+                return result;
+            };
+
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                const result = onNodeCreated?.apply(this, arguments);
+
+                // Create DOM display widget for JSON output
+                if (!this._json_display_dom) {
+                    // Create main container
+                    const dom = document.createElement("div");
+                    dom.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontSize = "11px";
+                    dom.style.lineHeight = "1.35";
+                    dom.style.overflow = "auto";
+                    dom.style.minHeight = "300px";
+                    dom.style.padding = "8px";
+                    dom.style.borderRadius = "6px";
+                    dom.style.background = "var(--comfy-menu-bg, #1e1e1e)";
+                    dom.style.border = "1px solid var(--border-color, #333)";
+                    dom.style.color = "var(--fg-color, #d4d4d4)";
+
+                    // Create content div
+                    const content = document.createElement("div");
+                    content.style.whiteSpace = "pre-wrap";
+                    content.style.wordBreak = "break-word";
+                    content.style.overflow = "auto";
+                    content.style.flex = "1";
+                    content.textContent = "Awaiting execution...";
+
+                    dom.appendChild(content);
+
+                    // Add DOM widget
+                    const widget = this.addDOMWidget("json_display", "json_display", dom, {
+                        serialize: false,
+                        hideOnZoom: false,
+                    });
+
+                    // Add custom computeSize to measure actual content height
+                    widget.computeSize = function(width) {
+                        if (!dom) return [width || 400, 300];
+                        
+                        // Measure actual content height (scrollHeight includes all content)
+                        const contentHeight = dom.scrollHeight;
+                        const minHeight = 100;
+                        const maxHeight = 800;  // Max 800px height
+                        
+                        // Clamp between min and max, add padding
+                        const finalHeight = Math.max(minHeight, Math.min(maxHeight, contentHeight + 16));
+                        
+                        return [width || 400, finalHeight];
+                    };
+
+                    // Store references
+                    this._json_display_dom = dom;
+                    this._json_display_content = content;
+                    this._json_display_widget = widget;
+
+                    debugLog("Created JSON display widget for LLMStudioStructuredVideoDescribe");
+                }
+
+                // Function to update JSON display from execution output
+                this.updateJsonDisplay = function(jsonString) {
+                    console.log("[SwissArmyKnife][updateJsonDisplay] Called with data:", jsonString);
+                    console.log("[SwissArmyKnife][updateJsonDisplay] Has content div:", !!this._json_display_content);
+                    debugLog("[updateJsonDisplay] Called with data:", jsonString);
+                    debugLog("[updateJsonDisplay] Has content div:", !!this._json_display_content);
+                    
+                    if (!this._json_display_content) {
+                        console.error("[SwissArmyKnife][updateJsonDisplay] No content div found!");
+                        return;
+                    }
+                    
+                    try {
+                        // Parse JSON string
+                        debugLog("[updateJsonDisplay] Type of input:", typeof jsonString);
+                        const jsonData = typeof jsonString === "string" 
+                            ? JSON.parse(jsonString) 
+                            : jsonString;
+                        
+                        debugLog("[updateJsonDisplay] Parsed JSON data:", jsonData);
+                        debugLog("[updateJsonDisplay] JSON keys:", Object.keys(jsonData));
+                        
+                        // Build formatted output with each key-value pair
+                        const lines = [];
+                        for (const [key, value] of Object.entries(jsonData)) {
+                            // Capitalize first letter of key for display
+                            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+                            
+                            // Format value (handle strings, arrays, objects)
+                            let displayValue;
+                            if (typeof value === "string") {
+                                displayValue = value;
+                            } else if (Array.isArray(value)) {
+                                displayValue = value.join(', ');
+                            } else if (typeof value === "object" && value !== null) {
+                                displayValue = JSON.stringify(value, null, 2);
+                            } else {
+                                displayValue = String(value);
+                            }
+                            
+                            lines.push(`${displayKey}: ${displayValue}`);
+                        }
+                        
+                        const finalText = lines.join('\n\n');
+                        debugLog("[updateJsonDisplay] Final text length:", finalText.length);
+                        debugLog("[updateJsonDisplay] Final text preview:", finalText.substring(0, 200));
+                        
+                        this._json_display_content.textContent = finalText;
+                        debugLog("[updateJsonDisplay] ✅ Successfully updated display");
+                        
+                        // Trigger node resize after content update (wait for browser reflow)
+                        requestAnimationFrame(() => {
+                            const sz = this.computeSize();
+                            if (sz[0] < this.size[0]) sz[0] = this.size[0];
+                            if (sz[1] < this.size[1]) sz[1] = this.size[1];
+                            this.onResize?.(sz);
+                            if (this.graph) {
+                                this.graph.setDirtyCanvas(true, false);
+                            }
+                        });
+                    } catch (error) {
+                        const errorMsg = `Error parsing JSON: ${error.message}`;
+                        this._json_display_content.textContent = errorMsg;
+                        console.error("[updateJsonDisplay] Failed to parse JSON:", error);
+                        console.error("[updateJsonDisplay] Input was:", jsonString);
+                    }
+                };
+
+                // Hook onExecuted to capture execution results
+                const originalOnExecuted = this.onExecuted;
+                this.onExecuted = function (message) {
+                    debugLog("LLMStudioStructuredVideoDescribe onExecuted called", message);
+                    
+                    if (message && message.json_output) {
+                        // Extract json_output (first element if array)
+                        const jsonOutput = Array.isArray(message.json_output)
+                            ? message.json_output[0]
+                            : message.json_output;
+                        
+                        debugLog("Received json_output:", jsonOutput);
+                        this.updateJsonDisplay(jsonOutput);
+                    }
+                    
+                    return originalOnExecuted?.call(this, message);
+                };
+
+                // Function to update output labels based on schema preset
+                this.updateOutputLabels = function(schemaPreset) {
+                    const labels = SCHEMA_OUTPUT_LABELS[schemaPreset] || ["", "", "", "", ""];
+                    
+                    debugLog(`[LLMStudioStructuredVideo] Updating output labels for schema: ${schemaPreset}`);
+                    debugLog(`[LLMStudioStructuredVideo] New labels:`, labels);
+
+                    // Update output slot labels (outputs 1-5, skip 0 which is json_output)
+                    for (let i = 0; i < 5; i++) {
+                        const outputIndex = i + 1; // Skip first output (json_output)
+                        if (this.outputs && this.outputs[outputIndex]) {
+                            const label = labels[i] || `field_${i + 1}`;
+                            this.outputs[outputIndex].label = label;
+                            this.outputs[outputIndex].name = label;
+                            debugLog(`[LLMStudioStructuredVideo] Updated output ${outputIndex}: ${label}`);
+                        }
+                    }
+
+                    // Force visual update
+                    if (this.graph && this.graph.canvas) {
+                        this.setDirtyCanvas(true, true);
+                    }
+                };
+
+                // Find schema_preset widget and add callback
+                const schemaWidget = this.widgets?.find(w => w.name === "schema_preset");
+                if (schemaWidget) {
+                    debugLog("[LLMStudioStructuredVideo] Found schema_preset widget");
+                    
+                    // Update labels on initial creation
+                    this.updateOutputLabels(schemaWidget.value);
+
+                    // Store original callback
+                    const originalCallback = schemaWidget.callback;
+                    
+                    // Add our callback
+                    schemaWidget.callback = (value) => {
+                        debugLog(`[LLMStudioStructuredVideo] Schema preset changed to: ${value}`);
+                        this.updateOutputLabels(value);
+                        
+                        // Call original callback if exists
+                        if (originalCallback) {
+                            originalCallback.apply(schemaWidget, arguments);
+                        }
+                    };
+                } else {
+                    debugLog("[LLMStudioStructuredVideo] WARNING: schema_preset widget not found");
+                }
+
+                return result;
+            };
+        }
+    },
+
+    // Setup app-level execution handler for MediaDescribe and ControlPanel
+    async setup() {
+        // Log ALL API events to debug
+        const originalAddEventListener = api.addEventListener.bind(api);
+        console.log("[SwissArmyKnife] Setting up API event listeners...");
+        
+        // Listen for execution_cached events - this fires when nodes use cached results
+        // The onExecuted hook will still receive the cached ui data, so no special handling needed
+        api.addEventListener("execution_cached", ({ detail }) => {
+            console.log("[SwissArmyKnife][API] execution_cached event:", detail);
+            // Cached nodes will still trigger onExecuted with their ui field data
+        });
+        
+        // Listen for 'executing' event for logging
+        api.addEventListener("executing", ({ detail }) => {
+            const nodeId = detail;
+            if (nodeId !== null && nodeId !== undefined) {
+                const node = app.graph.getNodeById(parseInt(nodeId));
+                console.log("[SwissArmyKnife][API] Executing node:", nodeId, "type:", node?.type, "comfyClass:", node?.comfyClass);
+            } else {
+                console.log("[SwissArmyKnife][API] Execution complete for current node");
+            }
+        });
+        
+        // Listen for execution complete
+        api.addEventListener("execution_success", ({ detail }) => {
+            console.log("[SwissArmyKnife][API] Workflow execution completed successfully", detail);
+            // onExecuted hooks have already received the ui data and updated displays
+        });
+        
+        // Listen for execution start to update LLMStudioStructuredDescribe and Video nodes to "Pending response..."
+        api.addEventListener("execution_start", ({ detail }) => {
+            console.log("[SwissArmyKnife] [API] Workflow execution started", detail);
+            debugLog("[API] Workflow execution started", detail);
+            
+            // Find all LLMStudioStructuredDescribe and LLMStudioStructuredVideoDescribe nodes in the current graph and update to pending state
+            if (app.graph && app.graph._nodes) {
+                for (const node of app.graph._nodes) {
+                    if ((node.comfyClass === "LLMStudioStructuredDescribe" || node.comfyClass === "LLMStudioStructuredVideoDescribe") && node._json_display_content) {
+                        const currentContent = node._json_display_content.textContent;
+                        if (currentContent === "Awaiting execution...") {
+                            node._json_display_content.textContent = "Pending response...";
+                            debugLog(`[API] Updated ${node.comfyClass} node to pending state`);
+                        }
+                    }
+                }
+            }
+        });
+
+        // Hook into API executed events for logging
+        api.addEventListener("executed", ({ detail }) => {
+            const { node: nodeId, output } = detail;
+            const node = app.graph.getNodeById(parseInt(nodeId));
+
+            console.log("[SwissArmyKnife][API] Execution event received for node:", nodeId);
+            console.log("[SwissArmyKnife][API] Output data:", output);
+            console.log("[SwissArmyKnife][API] Node type:", node?.type, "comfyClass:", node?.comfyClass);
+            
+            debugLog("[API] Execution event received for node:", nodeId);
+            debugLog("[API] Output data:", output);
+            debugLog("[API] Node found:", !!node, "comfyClass:", node?.comfyClass);
+
+            // Handle MediaDescribe execution
+            if (node && node.comfyClass === "MediaDescribe") {
+                debugLog("[API] ✅ Found MediaDescribe execution result");
+                debugLog("[API] Full output structure:", JSON.stringify(output, null, 2));
+
+                // Extract dimensions from output
+                // Output structure: {height: [1080], width: [1920], ...}
+                let height = null;
+                let width = null;
+
+                if (output && output.height && output.width) {
+                    height = Array.isArray(output.height) ? output.height[0] : output.height;
+                    width = Array.isArray(output.width) ? output.width[0] : output.width;
+                    debugLog("[API] Extracted dimensions from API event:", width, "x", height);
+
+                    // Update the dimensions display using the helper method
+                    if (node.updateDimensionsDisplay) {
+                        node.updateDimensionsDisplay(height, width);
+                    } else {
+                        debugLog(
+                            "[API] WARNING: updateDimensionsDisplay method not found on node!"
+                        );
+                    }
+                } else {
+                    debugLog("[API] ⚠️ No height/width in output. Output structure:", output);
+                }
+            }
+            // Handle LLMStudioStructuredDescribe execution
+            // Check both comfyClass and type to be sure we catch it
+            else if (node && (node.comfyClass === "LLMStudioStructuredDescribe" || node.type === "LLMStudioStructuredDescribe")) {
+                console.log("[SwissArmyKnife][API] ✅ Found LLMStudioStructuredDescribe execution result");
+                console.log("[SwissArmyKnife][API] Node comfyClass:", node.comfyClass, "type:", node.type);
+                console.log("[SwissArmyKnife][API] Full output structure:", JSON.stringify(output, null, 2));
+                debugLog("[API] ✅ Found LLMStudioStructuredDescribe execution result");
+                debugLog("[API] Full output structure:", JSON.stringify(output, null, 2));
+
+                // Extract json_output from output
+                if (output && output.json_output) {
+                    const jsonOutput = Array.isArray(output.json_output)
+                        ? output.json_output[0]
+                        : output.json_output;
+                    
+                    console.log("[SwissArmyKnife][API] Extracted json_output:", jsonOutput);
+                    debugLog("[API] Extracted json_output:", jsonOutput);
+                    
+                    // Update the display using the node's method
+                    if (node.updateJsonDisplay) {
+                        console.log("[SwissArmyKnife][API] Calling updateJsonDisplay...");
+                        node.updateJsonDisplay(jsonOutput);
+                        console.log("[SwissArmyKnife][API] ✅ Updated JSON display via global listener");
+                        debugLog("[API] ✅ Updated JSON display via global listener");
+                    } else {
+                        console.error("[SwissArmyKnife][API] ⚠️ updateJsonDisplay method not found on node!");
+                        console.error("[SwissArmyKnife][API] Node properties:", Object.keys(node));
+                        debugLog("[API] ⚠️ updateJsonDisplay method not found on node!");
+                    }
+                } else {
+                    console.warn("[SwissArmyKnife][API] ⚠️ No json_output in output. Output structure:", output);
+                    debugLog("[API] ⚠️ No json_output in output. Output structure:", output);
+                }
+            }
+            // Handle ControlPanel execution
+            else if (node && node.comfyClass === "ControlPanel") {
+                debugLog("[API] ✅ Found ControlPanel execution result");
+                debugLog("[API] Full output structure:", JSON.stringify(output, null, 2));
+
+                // Update the control panel display with execution data
+                if (node.updateControlPanelData && output) {
+                    node.updateControlPanelData(output);
+                } else {
+                    debugLog(
+                        "[API] WARNING: updateControlPanelData method not found or no output!"
+                    );
+                }
+            } else {
+                debugLog("[API] ❌ Not a MediaDescribe or ControlPanel node, skipping");
+            }
+        });
     },
 });
 
@@ -1302,9 +2344,7 @@ app.registerExtension({
 
     async setup() {
         // Log cache busting info for debugging
-        console.log(
-            `Swiss Army Knife Cache Info: v${EXTENSION_VERSION}, loaded at ${LOAD_TIMESTAMP}`
-        );
+        debugLog(`Swiss Army Knife Cache Info: v${EXTENSION_VERSION}, loaded at ${LOAD_TIMESTAMP}`);
 
         // Add cache busting utilities for development
         if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
@@ -1355,7 +2395,7 @@ app.registerExtension({
         const lastSeenVersion = localStorage.getItem("swissarmyknife_last_version");
 
         if (lastSeenVersion && lastSeenVersion !== EXTENSION_VERSION) {
-            console.log(
+            debugLog(
                 `Swiss Army Knife updated from v${lastSeenVersion} to v${EXTENSION_VERSION}`
             );
 
@@ -1375,142 +2415,179 @@ app.registerExtension({
     },
 });
 
-// LoRAInfoExtractor workflow serialization extension
+// Restart server button in topbar menu
 app.registerExtension({
-    name: "comfyui_swissarmyknife.lora_info_extractor",
+    name: "comfyui_swissarmyknife.restart_button",
 
     async setup() {
-        // Listen for execution results at the app level
-        const original_onExecuted = app.onExecuted;
-        app.onExecuted = function (nodeId, data) {
-            console.log("[DEBUG] App execution completed for node:", nodeId, "data:", data);
-
-            // Find the node by ID and check if it's LoRAInfoExtractor
-            const node = app.graph.getNodeById(nodeId);
-            if (node && node.comfyClass === "LoRAInfoExtractor") {
-                console.log("[DEBUG] Found LoRAInfoExtractor execution result");
-
-                // Try to extract lora_json from the execution data
-                if (data && data[0]) {
-                    // First output should be lora_json
-                    node._cached_lora_json = data[0];
-                    console.log(
-                        "[DEBUG] Cached lora_json from app execution:",
-                        data[0].substring(0, 100) + "..."
-                    );
-                }
+        // Inject CSS for red button styling
+        const style = document.createElement("style");
+        style.textContent = `
+            /* Swiss Army Knife - Restart Button Styling */
+            .comfyui-menu-mobile button[data-command-id="swissarmyknife.restart"],
+            .comfyui-menu button[data-command-id="swissarmyknife.restart"],
+            button[data-command-id="swissarmyknife.restart"],
+            [data-id="swissarmyknife.restart"],
+            .comfy-menu-item[data-id="swissarmyknife.restart"] {
+                background-color: #dc3545 !important;
+                color: white !important;
+                font-weight: bold !important;
+                border: 1px solid #c82333 !important;
             }
 
-            // Call original handler
-            return original_onExecuted?.call(this, nodeId, data);
-        };
+            .comfyui-menu-mobile button[data-command-id="swissarmyknife.restart"]:hover,
+            .comfyui-menu button[data-command-id="swissarmyknife.restart"]:hover,
+            button[data-command-id="swissarmyknife.restart"]:hover,
+            [data-id="swissarmyknife.restart"]:hover,
+            .comfy-menu-item[data-id="swissarmyknife.restart"]:hover {
+                background-color: #c82333 !important;
+                border-color: #bd2130 !important;
+            }
+
+            .comfyui-menu-mobile button[data-command-id="swissarmyknife.restart"]:active,
+            .comfyui-menu button[data-command-id="swissarmyknife.restart"]:active,
+            button[data-command-id="swissarmyknife.restart"]:active,
+            [data-id="swissarmyknife.restart"]:active,
+            .comfy-menu-item[data-id="swissarmyknife.restart"]:active {
+                background-color: #bd2130 !important;
+                border-color: #b21f2d !important;
+            }
+        `;
+        document.head.appendChild(style);
+
+        debugLog("Swiss Army Knife: Injected restart button styles");
     },
 
-    async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeData.name === "LoRAInfoExtractor") {
-            console.log("[DEBUG] Registering LoRAInfoExtractor widget extensions");
+    // Define the restart command
+    commands: [
+        {
+            id: "swissarmyknife.restart",
+            label: "🔴 Restart ComfyUI Server",
+            function: async () => {
+                // Show confirmation dialog
+                const confirmed = confirm(
+                    "Are you sure you want to restart the ComfyUI server?\n\n" +
+                        "This will disconnect all clients and restart the server process."
+                );
 
-            // Add onSerialize method to save lora_json output to workflow
-            const onSerialize = nodeType.prototype.onSerialize;
-            nodeType.prototype.onSerialize = function (o) {
-                const result = onSerialize?.apply(this, arguments);
-
-                console.log("[DEBUG] LoRAInfoExtractor onSerialize called for node:", this.id);
-                console.log("[DEBUG] Current cached lora_json:", !!this._cached_lora_json);
-                console.log("[DEBUG] Serialization object before:", JSON.stringify(o, null, 2));
-
-                // Save the cached lora_json output if available
-                if (this._cached_lora_json) {
-                    o.lora_json_output = this._cached_lora_json;
-                    console.log(
-                        "[SERIALIZE] Saved lora_json to workflow:",
-                        typeof this._cached_lora_json === "string"
-                            ? this._cached_lora_json.substring(0, 100) + "..."
-                            : JSON.stringify(this._cached_lora_json).substring(0, 100) + "..."
-                    );
-                } else {
-                    console.log("[SERIALIZE] No cached lora_json to save");
+                if (!confirmed) {
+                    return;
                 }
 
-                console.log("[DEBUG] Serialization object after:", JSON.stringify(o, null, 2));
-                return result;
-            };
+                try {
+                    console.log("Swiss Army Knife: Sending restart request...");
 
-            // Add onConfigure method to restore lora_json from workflow
-            const onConfigure = nodeType.prototype.onConfigure;
-            nodeType.prototype.onConfigure = function (o) {
-                const result = onConfigure?.apply(this, arguments);
+                    // Call the restart API endpoint
+                    const response = await fetch("/swissarmyknife/restart", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
 
-                console.log("[DEBUG] LoRAInfoExtractor onConfigure called");
+                    const data = await response.json();
 
-                // Restore the cached lora_json output if available
-                if (o.lora_json_output) {
-                    this._cached_lora_json = o.lora_json_output;
-                    console.log(
-                        "[CONFIGURE] Restored lora_json from workflow:",
-                        o.lora_json_output?.substring(0, 100) + "..."
-                    );
-                }
+                    if (data.success) {
+                        // Show notification
+                        if (app.extensionManager?.toast?.add) {
+                            app.extensionManager.toast.add({
+                                severity: "warn",
+                                summary: "Server Restarting",
+                                detail: "ComfyUI server is restarting...",
+                                life: 3000,
+                            });
+                        }
 
-                return result;
-            };
-        }
-    },
+                        console.log("Swiss Army Knife: Server restart initiated");
 
-    async nodeCreated(node) {
-        if (node.comfyClass === "LoRAInfoExtractor") {
-            console.log("[DEBUG] LoRAInfoExtractor node created, ID:", node.id);
-
-            // Listen for node execution results
-            const originalOnExecuted = node.onExecuted;
-            node.onExecuted = function (message) {
-                console.log("[DEBUG] LoRAInfoExtractor onExecuted called");
-                console.log("[DEBUG] Full message object:", JSON.stringify(message, null, 2));
-
-                // Try different possible message structures
-                let loraJsonValue = null;
-
-                // Try different paths where the lora_json might be
-                if (message && message.output) {
-                    console.log("[DEBUG] message.output exists:", message.output);
-
-                    // Check if it's directly in output
-                    if (message.output.lora_json) {
-                        console.log("[DEBUG] Found lora_json in message.output.lora_json");
-                        loraJsonValue = Array.isArray(message.output.lora_json)
-                            ? message.output.lora_json[0]
-                            : message.output.lora_json;
+                        // Wait a moment then try to reconnect
+                        setTimeout(() => {
+                            console.log("Swiss Army Knife: Reloading page...");
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        throw new Error(data.error || "Unknown error");
                     }
-                    // Check if it's in a different structure
-                    else if (message.output[0]) {
-                        console.log("[DEBUG] Found output[0]:", message.output[0]);
-                        loraJsonValue = message.output[0];
+                } catch (error) {
+                    console.error("Swiss Army Knife: Error restarting server:", error);
+
+                    if (app.extensionManager?.toast?.add) {
+                        app.extensionManager.toast.add({
+                            severity: "error",
+                            summary: "Restart Failed",
+                            detail: `Failed to restart server: ${error.message}`,
+                            life: 5000,
+                        });
+                    } else {
+                        alert(`Failed to restart server: ${error.message}`);
                     }
                 }
+            },
+        },
+    ],
 
-                // Also check if message itself has the data
-                if (!loraJsonValue && message.lora_json) {
-                    console.log("[DEBUG] Found lora_json in message.lora_json");
-                    loraJsonValue = Array.isArray(message.lora_json)
-                        ? message.lora_json[0]
-                        : message.lora_json;
-                }
+    // Add restart button to topbar menu
+    menuCommands: [
+        {
+            path: ["Swiss Army Knife"],
+            commands: ["swissarmyknife.restart"],
+        },
+    ],
+});
 
-                if (loraJsonValue) {
-                    this._cached_lora_json = loraJsonValue;
-                    console.log(
-                        "[DEBUG] Cached lora_json from execution:",
-                        typeof loraJsonValue === "string"
-                            ? loraJsonValue.substring(0, 100) + "..."
-                            : JSON.stringify(loraJsonValue).substring(0, 100) + "..."
-                    );
-                } else {
-                    console.log("[DEBUG] No lora_json found in execution message");
-                }
+app.registerExtension({
+    name: "ComfyUI-SwissArmyKnife",
+    settings: [
+        {
+            id: "SwissArmyKnife.gemini.api_key",
+            name: "Gemini API Key",
+            type: "text",
+            defaultValue: "",
+            tooltip: "Your Gemini API key for media description and processing",
+            onChange: (newVal, oldVal) => {
+                debugLog(`[Settings] Gemini API key changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "SwissArmyKnife.civitai.api_key",
+            name: "Civitai API Key",
+            type: "text",
+            defaultValue: "",
+            tooltip: "Your CivitAI API key for LoRA metadata lookup",
+            onChange: (newVal, oldVal) => {
+                debugLog(`[Settings] CivitAI API key changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "SwissArmyKnife.azure_storage.connection_string",
+            name: "Azure Storage Connection String",
+            type: "text",
+            defaultValue: "",
+            tooltip: "Your Azure Storage connection string (includes account name and key)",
+            onChange: (newVal, oldVal) => {
+                debugLog(`[Settings] Azure Storage connection string changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "SwissArmyKnife.debug_mode",
+            name: "Debug Mode",
+            type: "boolean",
+            defaultValue: false,
+            tooltip: "Enable debug mode for detailed logging",
+            onChange: (newVal, oldVal) => {
+                debugLog(`Debug mode changed from ${oldVal} to ${newVal}`);
+                syncApiKeysToBackend(); // Sync debug mode to backend
+            },
+        },
+    ],
 
-                // Call original onExecuted if it exists
-                return originalOnExecuted?.call(this, message);
-            };
-        }
+    async setup() {
+        // Initial sync of API keys to backend when extension loads
+        setTimeout(() => {
+            syncApiKeysToBackend();
+        }, 1000); // Small delay to ensure settings are loaded
     },
 });

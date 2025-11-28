@@ -9,7 +9,6 @@ Welcome to ComfyUI-SwissArmyKnife! This document provides guidelines for contrib
 The easiest way to get started is using the provided dev container with GPU support:
 
 1. **Prerequisites:**
-
     - Docker with NVIDIA GPU support
     - VS Code with Dev Containers extension
     - NVIDIA GPU drivers
@@ -60,11 +59,11 @@ If you prefer to set up locally:
 
 ### Python Backend Development
 
-The backend nodes are located in `utils/`:
+The backend nodes are located in `nodes/`:
 
--   `utils/nodes.py` - Main Gemini AI integration nodes
--   `utils/helper_nodes.py` - Helper/utility nodes
--   `utils/lora_manager/` - LoRA Manager (forked from nd-super-nodes)
+- `nodes/nodes.py` - Main Gemini AI integration nodes
+- `nodes/helper_nodes.py` - Helper/utility nodes
+- `nodes/lora_manager/` - LoRA Manager (forked from nd-super-nodes)
 
 **Development commands:**
 
@@ -83,15 +82,15 @@ mypy .
 pytest
 
 # Test imports work
-python -c "from utils.nodes import NODE_CLASS_MAPPINGS; print('Nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
+python -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('Nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
 ```
 
 ### JavaScript Web Extension Development
 
 The web extension consists of plain JavaScript widgets in `web/`:
 
--   `web/js/gemini_widgets.js` - Main widget implementation
--   `web/css/gemini_widgets.css` - Widget styling
+- `web/js/gemini_widgets.js` - Main widget implementation
+- `web/css/gemini_widgets.css` - Widget styling
 
 **No build step required** - files are loaded directly by ComfyUI.
 
@@ -150,17 +149,17 @@ npm test  # Run Playwright tests against hosted ComfyUI
 
 ### Python
 
--   Use `ruff` for linting (configured in `pyproject.toml`)
--   Use `black` for formatting
--   Follow type hints with `mypy`
--   Maximum line length: 140 characters
+- Use `ruff` for linting (configured in `pyproject.toml`)
+- Use `black` for formatting
+- Follow type hints with `mypy`
+- Maximum line length: 140 characters
 
 ### JavaScript
 
--   Use ESLint for linting
--   Use Prettier for formatting
--   Follow ComfyUI widget conventions
--   No build step - plain JavaScript files
+- Use ESLint for linting
+- Use Prettier for formatting
+- Follow ComfyUI widget conventions
+- No build step - plain JavaScript files
 
 ## Project Structure
 
@@ -170,7 +169,7 @@ comfyui_swissarmyknife/
 │   ├── devcontainer.json   # Main dev container config
 │   ├── postCreate.sh       # Setup script
 │   └── run-comfy.sh        # ComfyUI start script
-├── utils/                  # Python backend nodes
+├── nodes/                  # Python backend nodes
 │   ├── nodes.py           # Main Gemini AI nodes
 │   ├── helper_nodes.py    # Helper nodes
 │   └── lora_manager/      # LoRA Manager (forked from nd-super-nodes)
@@ -200,33 +199,33 @@ comfyui_swissarmyknife/
 
 ### Backend Nodes
 
--   Exported via `NODE_CLASS_MAPPINGS` and `NODE_DISPLAY_NAME_MAPPINGS` in `__init__.py`
--   Require ComfyUI server restart after changes
+- Exported via `NODE_CLASS_MAPPINGS` and `NODE_DISPLAY_NAME_MAPPINGS` in `__init__.py`
+- Require ComfyUI server restart after changes
 
 ### Web Extension
 
--   Loaded via `WEB_DIRECTORY = "./web"` in `__init__.py`
--   Changes require browser cache refresh only
+- Loaded via `WEB_DIRECTORY = "./web"` in `__init__.py`
+- Changes require browser cache refresh only
 
 ## CI/CD
 
 ### Continuous Integration
 
--   Automated linting and testing via GitHub Actions
--   **No GPU required** for CI - only static analysis
--   Runs on Python and JavaScript code changes
+- Automated linting and testing via GitHub Actions
+- **No GPU required** for CI - only static analysis
+- Runs on Python and JavaScript code changes
 
 ### Publishing
 
--   Automatic publishing to ComfyUI Registry via GitHub Actions
--   Triggered by `pyproject.toml` version updates
--   Requires `REGISTRY_ACCESS_TOKEN` secret
+- Automatic publishing to ComfyUI Registry via GitHub Actions
+- Triggered by `pyproject.toml` version updates
+- Requires `REGISTRY_ACCESS_TOKEN` secret
 
 ## Common Tasks
 
 ### Adding a New Python Node
 
-1. Add node class to `utils/nodes.py` or `utils/helper_nodes.py`
+1. Add node class to `nodes/nodes.py` or `nodes/helper_nodes.py`
 2. Export in `NODE_CLASS_MAPPINGS`
 3. Add tests in `tests/` directory
 4. Update documentation
@@ -243,14 +242,16 @@ comfyui_swissarmyknife/
 The LoRA Manager is a forked sub-module from [nd-super-nodes](https://github.com/HenkDz/nd-super-nodes). See [docs/LORA_MANAGER_INTEGRATION.md](docs/LORA_MANAGER_INTEGRATION.md) for detailed information.
 
 **Key files:**
-- Backend: `utils/lora_manager/*.py`
+
+- Backend: `nodes/lora_manager/*.py`
 - Frontend: `web/js/lora_manager/extension.js`
 - Styles: `web/css/lora_manager/style.css`
 
 **Testing lora_manager:**
+
 ```bash
 # Test imports
-python -c "from utils.lora_manager import NODE_CLASS_MAPPINGS; print('LoRA Manager nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
+python -c "from nodes.lora_manager import NODE_CLASS_MAPPINGS; print('LoRA Manager nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
 
 # With ComfyUI running, check console for:
 # "Swiss Army Knife LoRA Manager: API routes registered"
@@ -260,7 +261,7 @@ python -c "from utils.lora_manager import NODE_CLASS_MAPPINGS; print('LoRA Manag
 
 ```bash
 # Python
-python -c "from utils.nodes import NODE_CLASS_MAPPINGS; print('Available nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
+python -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('Available nodes:', list(NODE_CLASS_MAPPINGS.keys()))"
 ruff check .
 pytest
 
@@ -282,7 +283,7 @@ ruff check .
 ruff check --fix .
 
 # Testing imports (fast)
-python -c "from utils.nodes import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_MAPPINGS.keys()))"
+python -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print(list(NODE_CLASS_MAPPINGS.keys()))"
 
 # JavaScript linting
 cd web && npm run lint
@@ -294,25 +295,25 @@ cd web/tests && npm test
 
 ### Expected Timeouts
 
--   `ruff check .`: < 1 second
--   `pip install -e .`: ~12 seconds
--   `pip install opencv-python`: 2-3 minutes (large downloads)
--   `npm install`: ~40 seconds
--   `pytest`: < 30 seconds
+- `ruff check .`: < 1 second
+- `pip install -e .`: ~12 seconds
+- `pip install opencv-python`: 2-3 minutes (large downloads)
+- `npm install`: ~40 seconds
+- `pytest`: < 30 seconds
 
 ### Key Development Points
 
--   Backend changes require ComfyUI server restart
--   Web extension changes require browser cache refresh only
--   JavaScript widgets are plain JS files (no build step)
--   Focus on minimal, surgical changes
--   Use pre-commit hooks to maintain quality
+- Backend changes require ComfyUI server restart
+- Web extension changes require browser cache refresh only
+- JavaScript widgets are plain JS files (no build step)
+- Focus on minimal, surgical changes
+- Use pre-commit hooks to maintain quality
 
 ## Getting Help
 
--   Check existing issues on GitHub
--   Review ComfyUI custom node documentation: https://docs.comfy.org/custom-nodes/overview
--   Check the project's implementation status in `IMPLEMENTATION_STATUS.md`
+- Check existing issues on GitHub
+- Review ComfyUI custom node documentation: https://docs.comfy.org/custom-nodes/overview
+- Check the project's implementation status in `IMPLEMENTATION_STATUS.md`
 
 ## License
 
