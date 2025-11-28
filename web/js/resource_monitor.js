@@ -210,8 +210,9 @@ function injectRestartButtonStyles() {
             position: relative;
             display: flex;
             align-items: center;
-            padding-left: 1rem;
-            padding-right: 1rem;
+            justify-content: center;
+            padding: 0 1rem;
+            height: 100%;
             background-color: #dc3545;
             color: white;
             font-weight: 600;
