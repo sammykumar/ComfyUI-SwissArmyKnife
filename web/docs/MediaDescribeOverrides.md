@@ -1,9 +1,9 @@
 # MediaDescribeOverrides
-Override individual paragraphs (subject, visual style, clothing, scene, movement) that Gemini would normally author.
+Override individual paragraphs (subject, visual style, clothing, scene, action) that Gemini would normally author.
 
 ## Inputs
 - `prompt_prefix` – text that should appear before every generated description.
-- Paragraph override fields – supply custom subject/visual style/clothing/scene/movement strings only where needed.
+- Paragraph override fields – supply custom subject/visual style/clothing/scene/action strings only where needed.
 
 ## Outputs
 - `overrides` – dictionary wiring directly into MediaDescribe's overrides input.
