@@ -133,9 +133,23 @@ function createRestartButton() {
                     });
                 }
                 
-                // Give a brief moment for the toast to show, then reload
+                // Give a brief moment for the toast to show, then hard reload
                 setTimeout(() => {
-                    window.location.reload(true); // Hard reload (bypass cache)
+                    // Force a hard reload that bypasses the cache
+                    // Using multiple approaches for maximum browser compatibility
+                    
+                    // Method 1: Add cache-busting parameter
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('_reload', Date.now());
+                    
+                    // Method 2: Set cache control headers via meta tag
+                    const meta = document.createElement('meta');
+                    meta.httpEquiv = 'Cache-Control';
+                    meta.content = 'no-cache, no-store, must-revalidate';
+                    document.head.appendChild(meta);
+                    
+                    // Method 3: Use location.replace with cache-busting URL
+                    window.location.replace(url.href);
                 }, 500);
             } else {
                 debugLog("Server did not become available within timeout");
@@ -221,12 +235,14 @@ function createProfilerButton() {
                 console.error("[SwissArmyKnife][Profiler] Error fetching profiler data:", error);
             }
             
-            // Position and show popup above the profiler button
-            const rect = button.getBoundingClientRect();
+            // Position popup to the left of the action buttons
             const actionButtonsRect = document.getElementById("swissarmyknife-action-buttons").getBoundingClientRect();
             
-            popup.style.left = `${actionButtonsRect.left + actionButtonsRect.width / 2}px`;
-            popup.style.bottom = `${window.innerHeight - actionButtonsRect.top + 12}px`;
+            popup.style.right = `${window.innerWidth - actionButtonsRect.left + 12}px`;
+            popup.style.top = `50%`;
+            popup.style.transform = `translateY(-50%)`;
+            popup.style.left = 'auto';
+            popup.style.bottom = 'auto';
             popup.style.display = "block";
             
             debugLog("Profiler popup opened");
@@ -439,22 +455,21 @@ function injectResourceMonitorStyles() {
             border-radius: 16px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             z-index: 10000;
-            transform: translateX(-50%);
             padding: 1.5rem;
         }
 
-        /* Arrow pointer for popup */
+        /* Arrow pointer for popup - pointing to the right */
         #swissarmyknife-profiler-popup::after {
             content: '';
             position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
             width: 0;
             height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 8px solid rgba(0, 0, 0, 0.85);
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 8px solid rgba(0, 0, 0, 0.85);
         }
 
         /* Popup Header */
@@ -757,13 +772,14 @@ function injectResourceMonitorStyles() {
             display: block;
         }
 
-        /* Action Button Group - Separate floating container for Profiler and Restart */
+        /* Action Button Group - Vertical floating container for Profiler and Restart */
         #swissarmyknife-action-buttons {
             position: fixed;
-            bottom: 20px;
-            left: calc(63% + 12%);
-            transform: translateX(-50%);
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
             display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 0;
             padding: 0;
@@ -775,7 +791,7 @@ function injectResourceMonitorStyles() {
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             overflow: hidden;
             z-index: 9999;
-            height: 3rem;
+            width: 3rem;
         }
 
         /* Action buttons - shared styles */
@@ -784,8 +800,8 @@ function injectResourceMonitorStyles() {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 1rem;
-            height: 100%;
+            padding: 1rem 0;
+            width: 100%;
             background-color: transparent;
             color: rgba(255, 255, 255, 0.8);
             border: none;
@@ -815,11 +831,11 @@ function injectResourceMonitorStyles() {
         #swissarmyknife-action-buttons .comfyui-button:not(:last-child)::after {
             content: '';
             position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 2rem;
-            width: 1px;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2rem;
+            height: 1px;
             background-color: rgba(255, 255, 255, 0.1);
         }
 
