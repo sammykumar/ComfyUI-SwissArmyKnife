@@ -638,28 +638,131 @@ mm.soft_empty_cache()
 5. **Check Model Combinations**: Use OOM analysis to identify problematic combos
 6. **Archive OOM History**: Review patterns to optimize workflows
 
+## Phase 6.4: Frontend OOM UI Features
+
+### Visual OOM Indicators
+
+**Stats Card Warning Borders**
+- Stats cards in the profiler popup show warning borders when VRAM usage is high
+- ⚠️ **Yellow Border (85-95% VRAM)**: Warning threshold reached
+  - Border: 2px solid #f59e0b with glow shadow
+  - Applied to Time, VRAM Peak, and RAM Peak cards
+- 🔴 **Red Border (>95% VRAM)**: Critical threshold - OOM imminent
+  - Border: 2px solid #ef4444 with red glow shadow
+  - High risk of OOM in next node execution
+
+**Node Table 💥 Column**
+- New column in the "Top 10 Slowest Nodes" table shows OOM status
+- 💥 icon appears for nodes that experienced Out of Memory errors
+- Empty cell for nodes that executed successfully
+- Tooltip shows "Out of Memory Error" or "No OOM" on hover
+
+### 💥 OOM Analysis Tab
+
+The profiler modal now includes a dedicated "💥 OOM Analysis" tab showing comprehensive OOM statistics:
+
+**1. Summary Cards**
+- **💥 Total OOMs**: Count of all OOM events (red if >0)
+- **📈 Total Workflows**: Number of workflow executions tracked
+- **📉 OOM Rate**: Percentage of workflows with OOMs (yellow if >10%)
+
+**2. Recent OOM Events**
+- Chronological list of recent OOM occurrences
+- Each event shows:
+  - Node type that failed (e.g., "💥 WanVideoSampler")
+  - Timestamp of the OOM
+  - 🎮 VRAM at OOM and percentage used
+  - 📈 VRAM peak during execution
+  - ⏱️ Execution time before OOM
+  - 📦 Models loaded at time of OOM with VRAM usage
+  - ⚠️ Error message from the exception
+
+**3. Node Type Ranking**
+- Table showing which node types are most OOM-prone
+- Columns:
+  - **Node Type**: Name of the node
+  - **OOMs**: Total OOM count for this node type
+  - **Total Executions**: How many times the node ran
+  - **OOM Rate**: Percentage (color-coded: >50% red, >10% yellow)
+  - **Avg VRAM at OOM**: Average VRAM usage when OOMs occur
+  - **Last OOM**: Date of most recent OOM
+
+**4. Model Correlation**
+- Shows which model combinations correlate with OOMs
+- Identifies patterns like "BiRefNet + WanVideoSampler = OOM"
+- Displays:
+  - Node type
+  - Models loaded during OOM
+  - OOM count for this combination
+  - Total VRAM of the model set
+
+**5. Recommendations**
+- Auto-generated actionable recommendations based on OOM patterns
+- Severity-coded with icons:
+  - 🛑 **Critical**: Node OOM rate >50% - immediate action needed
+  - ⚠️ **Warning**: Model combination caused ≥2 OOMs
+  - 💡 **Info**: General recommendations for >10% OOM rate
+- Each recommendation includes:
+  - Title describing the issue
+  - Detailed message with specific actions
+
+### CSS Classes for OOM Styling
+
+```css
+/* Warning borders for stats cards */
+.profiler-stat-card-warning { /* Yellow border at 85% VRAM */ }
+.profiler-stat-card-critical { /* Red border at 95% VRAM */ }
+
+/* OOM icon column */
+.profiler-oom-icon { /* Center-aligned 💥 icon */ }
+
+/* OOM Analysis tab components */
+.oom-summary-cards { /* 3-column grid of summary cards */ }
+.oom-summary-error { /* Red text for OOM count */ }
+.oom-summary-warning { /* Yellow text for high OOM rate */ }
+.oom-recent-item { /* Red border for OOM event cards */ }
+.oom-table { /* Styled tables for rankings */ }
+.oom-rate-critical { /* Red text for >50% OOM rate */ }
+.oom-rate-warning { /* Yellow text for >10% OOM rate */ }
+.oom-rec-critical { /* Red left border for critical recommendations */ }
+.oom-rec-warning { /* Yellow left border for warnings */ }
+.oom-rec-info { /* Blue left border for info */ }
+.oom-success { /* Green success message when no OOMs */ }
+```
+
+### Accessing OOM Analysis
+
+1. **During Workflow**: Watch for warning borders on stats cards in profiler popup
+2. **After Execution**: Check 💥 column in node table to see which nodes failed
+3. **Full Analysis**: Click profiler button → Open modal → "💥 OOM Analysis" tab
+4. **Review History**: Analyze patterns across multiple workflows to identify problem nodes/models
+
 ### Implementation Phases
 
-**Phase 6.1: Backend OOM Detection**
-- [ ] Extend NodeProfile/WorkflowProfile with OOM fields
-- [ ] Add pre-OOM warnings in start_node() (85%/95% thresholds)
-- [ ] Implement OOM exception capture in map_node_with_profiling()
-- [ ] Add OOM event logging with model snapshots
+**Phase 6.1: Backend OOM Detection** ✅ COMPLETED
+- [x] Extend NodeProfile/WorkflowProfile with OOM fields
+- [x] Add pre-OOM warnings in start_node() (85%/95% thresholds)
+- [x] Implement OOM exception capture in map_node_with_profiling()
+- [x] Add OOM event logging with model snapshots
 
-**Phase 6.2: Historical OOM Tracking**
-- [ ] Add oom_history to ProfilerManager
-- [ ] Implement _update_oom_stats() method
-- [ ] Extend archive structure with OOM data
-- [ ] Create GET /swissarmyknife/profiler/oom_stats endpoint
+**Phase 6.2: Historical OOM Tracking** ✅ COMPLETED
+- [x] Add oom_history to ProfilerManager
+- [x] Implement _update_oom_stats() method
+- [x] Extend archive structure with OOM data
+- [x] Create GET /swissarmyknife/profiler/oom_stats endpoint
 
-**Phase 6.3: Model Recommendations**
-- [ ] Track model last-used timestamps
-- [ ] Implement unload recommendation algorithm
-- [ ] Add headroom calculation logic
+**Phase 6.3: Model Recommendations** 🚧 PARTIALLY COMPLETED
+- [x] Track model snapshots at OOM
+- [x] Implement basic recommendation algorithm
+- [ ] Track model last-used timestamps (future enhancement)
+- [ ] Implement advanced unload recommendation with staleness (future enhancement)
 
-**Phase 6.4: Frontend OOM UI**
-- [ ] Add pre-OOM warning indicators to stats cards
-- [ ] Add 💥 OOM column to node table
-- [ ] Create "💥 OOM Analysis" modal tab
-- [ ] Display model correlation and recommendations
-- [ ] Add OOM badge to archive list
+**Phase 6.4: Frontend OOM UI** ✅ COMPLETED
+- [x] Add pre-OOM warning indicators to stats cards (yellow at 85%, red at 95%)
+- [x] Add 💥 OOM column to node table in profiler popup
+- [x] Create "💥 OOM Analysis" modal tab
+- [x] Display OOM summary cards (total OOMs, rate, workflows)
+- [x] Show recent OOM events with VRAM context
+- [x] Display node type ranking by OOM frequency
+- [x] Display model correlation table
+- [x] Show recommendations with severity indicators

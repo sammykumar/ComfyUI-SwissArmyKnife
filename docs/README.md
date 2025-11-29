@@ -37,6 +37,7 @@ External service integrations:
 
 Web JavaScript widgets and UI components:
 
+- **[Resource Monitor](web-js/RESOURCE_MONITOR.md)** - ⭐ **NEW** Floating HUD with live CPU/RAM/GPU/VRAM monitoring, workflow profiler, and OOM (Out of Memory) detection & analysis
 - **[Control Panel](web-js/CONTROL_PANEL.md)** - Dashboard widget with JSON data handling and multi-column layout
 - **[Dimensions Display](web-js/DIMENSIONS_DISPLAY.md)** - Automatic media dimension display with troubleshooting
 - **[Seed Widget](web-js/SEED_WIDGET.md)** - Randomization seed for reproducible workflows
@@ -90,8 +91,9 @@ Each node should have a single comprehensive markdown file that includes:
 - **Video Processing**: Check `/nodes/video-metadata/`
 - **AI/ML Features**: See `/nodes/media-describe/`
 - **External APIs**: Look in `/integrations/`
-- **Performance**: Check `/infrastructure/caching/`
-- **Debugging**: See `/infrastructure/debug/`
+- **Performance & Monitoring**: Check `/web-js/RESOURCE_MONITOR.md` for profiling and OOM analysis
+- **Caching**: See `/infrastructure/caching/`
+- **Debugging**: Check `/infrastructure/debug/`
 - **Web Widgets**: Review `/web-js/` for JavaScript UI components
 
 ## 📝 Contributing Documentation
@@ -141,5 +143,5 @@ See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for overall project sta
 
 ---
 
-**Last Updated**: October 13, 2025
-**Documentation Structure Version**: 3.0
+**Last Updated**: November 29, 2025
+**Documentation Structure Version**: 3.1 (Added OOM Detection & Profiling System)

@@ -39,13 +39,22 @@ Reusable UI components and custom widgets for ComfyUI-SwissArmyKnife nodes.
 - Reproducible file selection
 - Large integer range support (0 to 2^64-1)
 
-### Resource Monitor
+### Resource Monitor ⭐ NEW: OOM Detection System
 
-- Floating, glassmorphism HUD anchored near the toolbar
-- CPU/RAM/GPU/VRAM tiles with gradient fills and live WebSocket updates
-- Restart button shares the bar and handles the full `/swissarmyknife/restart` lifecycle
-- Gracefully hides tiles when dependencies (psutil/pynvml/torch) are absent
-- Separate extension so we can iterate independently of the menu-based widgets
+- **Floating HUD**: Glassmorphism bar with live CPU/RAM/GPU/VRAM monitoring via WebSocket
+- **Workflow Profiler**: Popup showing execution stats, cache hits, VRAM peaks
+- **OOM Detection & Analysis**: ✅ **FULLY IMPLEMENTED & TESTED**
+  - Pre-OOM warnings at 85% (⚠️ yellow) and 95% (🔴 red) VRAM thresholds
+  - Visual warning indicators on stats cards in profiler popup
+  - 💥 OOM column in node execution table showing failed nodes
+  - Comprehensive "💥 OOM Analysis" modal tab with:
+    - Summary cards (Total OOMs, OOM Rate, Workflow Count)
+    - Recent OOM events with detailed context (VRAM, models, timing)
+    - Node type ranking by OOM frequency
+    - Model correlation analysis (problematic combinations)
+    - Auto-generated recommendations with severity indicators
+- **Restart Workflow**: Full `/swissarmyknife/restart` lifecycle with health polling
+- **Independent Extension**: Separate from menu-based widgets for modular development
 
 ### Upload Widgets
 
@@ -91,6 +100,21 @@ Widgets should:
 - Update UI on node execution
 - Handle user interactions
 - Clean up event listeners on removal
+
+## 🆕 Latest Updates
+
+### November 29, 2025 - OOM Detection System v1.4.0
+
+**Status**: ✅ **COMPLETE & TESTED**
+
+Comprehensive Out of Memory detection and analysis system:
+
+- **Backend**: Full OOM tracking with historical statistics (`profiler_core.py`)
+- **API**: REST endpoint at `/swissarmyknife/profiler/stats` returns `.data.oom_stats`
+- **Frontend**: Visual indicators, 💥 column, and dedicated OOM Analysis tab
+- **Testing**: User-verified working with live OOM data from WanVideoSampler workflows
+
+See [RESOURCE_MONITOR.md](RESOURCE_MONITOR.md) for complete implementation details.
 
 ## 📚 Related Documentation
 
