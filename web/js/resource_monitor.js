@@ -12,6 +12,9 @@ import { api } from "../../../scripts/api.js";
  * - Future: CPU/RAM/GPU/VRAM monitoring
  */
 
+// Version indicator - check console for this on page load
+console.log("%c[🔪SwissArmyKnife][ResourceMonitor] Version 2.0.0 - Loaded with colored logs and tooltip fixes", "color: #10b981; font-weight: bold; font-size: 14px;");
+
 const EXTENSION_NAME = "comfyui_swissarmyknife.resource_monitor";
 
 // Debug logging
@@ -657,6 +660,15 @@ ${JSON.stringify(data.node_averages, null, 2)}
  * Create GPU tooltip showing loaded models
  */
 function createGPUTooltip(gpuId) {
+    debugLog(`📝 Creating GPU tooltip element for GPU ${gpuId}`);
+    
+    // Check if tooltip already exists
+    const existingTooltip = document.getElementById(`swissarmyknife-gpu-tooltip-${gpuId}`);
+    if (existingTooltip) {
+        debugLog(`♻️ Tooltip for GPU ${gpuId} already exists, reusing it`);
+        return existingTooltip;
+    }
+    
     const tooltip = document.createElement("div");
     tooltip.className = "swissarmyknife-gpu-tooltip";
     tooltip.id = `swissarmyknife-gpu-tooltip-${gpuId}`;
@@ -670,14 +682,15 @@ function createGPUTooltip(gpuId) {
     `;
     
     document.body.appendChild(tooltip);
+    debugLog(`✅ GPU tooltip appended to body for GPU ${gpuId}`);
     return tooltip;
 }
 
 /**
  * Update GPU tooltip with loaded models data
  */
-async function updateGPUTooltip(gpuId, monitorElement) {
-    debugLog(`[updateGPUTooltip] Starting update for GPU ${gpuId}`);
+async function updateGPUTooltip(gpuId, monitorElement, actualVramUsedGB = null) {
+    debugLog(`[updateGPUTooltip] Starting update for GPU ${gpuId}, actual VRAM: ${actualVramUsedGB} GB`);
     try {
         const response = await fetchWithRetry("/swissarmyknife/profiler/loaded_models", 1);
         debugLog(`[updateGPUTooltip] Response status: ${response.status} ${response.ok ? 'OK' : 'FAILED'}`);
@@ -722,11 +735,20 @@ async function updateGPUTooltip(gpuId, monitorElement) {
         sortedModels.forEach(model => {
             const icon = getModelIcon(model.type);
             const vramGB = (model.vram_mb / 1024).toFixed(1);
+            
+            // Extract clean model name from display_name (remove type/size/layer info in parentheses)
+            // "Wan2_2-T2V-A14B-HIGH (checkpoint, 8.5 GB, 505 layers)" -> "Wan2_2-T2V-A14B-HIGH"
+            let displayName = model.name;
+            const parenIndex = displayName.indexOf(' (');
+            if (parenIndex > 0) {
+                displayName = displayName.substring(0, parenIndex);
+            }
+            
             modelsHTML += `
                 <div class="gpu-tooltip-model">
                     <div class="gpu-tooltip-model-info">
                         <span class="gpu-tooltip-model-icon">${icon}</span>
-                        <span class="gpu-tooltip-model-name" title="${model.name}">${model.name}</span>
+                        <span class="gpu-tooltip-model-name" title="${model.name}">${displayName}</span>
                     </div>
                     <div class="gpu-tooltip-model-vram">${vramGB} GB</div>
                 </div>
@@ -735,14 +757,34 @@ async function updateGPUTooltip(gpuId, monitorElement) {
         
         modelsHTML += '</div>';
         
-        // Add summary
-        const totalVRAM = (gpuData.total_vram_mb / 1024).toFixed(1);
+        // Add summary with breakdown
+        const totalModelVRAM = (gpuData.total_vram_mb / 1024).toFixed(1);
+        const totalModelVRAMNum = parseFloat(totalModelVRAM);
+        
         modelsHTML += `
             <div class="gpu-tooltip-summary">
                 <div class="gpu-tooltip-summary-item">
-                    <span>📊 Total Model VRAM:</span>
-                    <span class="gpu-tooltip-summary-value">${totalVRAM} GB</span>
+                    <span>📦 Model VRAM:</span>
+                    <span class="gpu-tooltip-summary-value">${totalModelVRAM} GB</span>
+                </div>`;
+        
+        // If we have actual VRAM usage from resource monitor, show the difference
+        if (actualVramUsedGB !== null && actualVramUsedGB > 0) {
+            const otherVRAM = Math.max(0, actualVramUsedGB - totalModelVRAMNum).toFixed(1);
+            const otherPercent = actualVramUsedGB > 0 ? ((parseFloat(otherVRAM) / actualVramUsedGB) * 100).toFixed(0) : 0;
+            
+            modelsHTML += `
+                <div class="gpu-tooltip-summary-item">
+                    <span>🖥️ System/Framework:</span>
+                    <span class="gpu-tooltip-summary-value">${otherVRAM} GB</span>
                 </div>
+                <div class="gpu-tooltip-summary-item" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 4px; padding-top: 4px;">
+                    <span><strong>💾 Total GPU VRAM:</strong></span>
+                    <span class="gpu-tooltip-summary-value"><strong>${actualVramUsedGB.toFixed(1)} GB</strong></span>
+                </div>`;
+        }
+        
+        modelsHTML += `
                 <div class="gpu-tooltip-summary-item">
                     <span>🔢 Model Count:</span>
                     <span class="gpu-tooltip-summary-value">${gpuData.model_count}</span>
@@ -818,34 +860,82 @@ function createMonitorDisplay(label, id, enableTooltip = false) {
         labelEl.textContent = label;
         contentWrapper.appendChild(labelEl);
         contentWrapper.appendChild(document.createTextNode(" "));
-        
-        // Add tooltip functionality for VRAM metrics
-        if (enableTooltip && id.includes("vram")) {
-            const gpuMatch = id.match(/vram(\d+)/);
-            if (gpuMatch) {
-                const gpuId = parseInt(gpuMatch[1]);
-                const tooltip = createGPUTooltip(gpuId);
+    }
+    
+    // Add tooltip functionality for VRAM metrics (works with or without label)
+    if (enableTooltip && id.includes("vram")) {
+        debugLog(`🔍 Tooltip enabled for ID: ${id}`);
+        const gpuMatch = id.match(/vram(\d+)/);
+        if (gpuMatch) {
+            const gpuId = parseInt(gpuMatch[1]);
+            debugLog(`✅ Creating tooltip for GPU ${gpuId} (ID: ${id})`);
+            const tooltip = createGPUTooltip(gpuId);
+            
+            let hideTimeout = null;
+            
+            // Show tooltip on hover
+            monitor.addEventListener("mouseenter", () => {
+                debugLog(`🖱️ Mouse entered VRAM monitor for GPU ${gpuId}`);
                 
-                // Show tooltip on hover
-                monitor.addEventListener("mouseenter", () => {
-                    tooltip.style.display = "block";
-                    updateGPUTooltip(gpuId, monitor);
-                    // Position after a brief delay to allow content to render
-                    setTimeout(() => positionTooltip(tooltip, monitor), 50);
-                });
+                // Clear any pending hide timeout
+                if (hideTimeout) {
+                    clearTimeout(hideTimeout);
+                    hideTimeout = null;
+                }
                 
-                monitor.addEventListener("mouseleave", () => {
-                    tooltip.style.display = "none";
-                });
+                tooltip.style.display = "block";
                 
-                // Update tooltip position on scroll/resize
-                window.addEventListener("scroll", () => {
-                    if (tooltip.style.display === "block") {
-                        positionTooltip(tooltip, monitor);
+                // Get actual VRAM usage from the monitor value
+                const valueEl = document.getElementById(`swissarmyknife-monitor-value-vram${gpuId}`);
+                let actualVramGB = null;
+                if (valueEl) {
+                    const match = valueEl.textContent.match(/([\d.]+)\s*GB/);
+                    if (match) {
+                        actualVramGB = parseFloat(match[1]);
+                        debugLog(`📊 Actual VRAM from monitor: ${actualVramGB} GB`);
                     }
-                });
-            }
+                }
+                
+                updateGPUTooltip(gpuId, monitor, actualVramGB);
+                // Position after a brief delay to allow content to render
+                setTimeout(() => positionTooltip(tooltip, monitor), 50);
+            });
+            
+            monitor.addEventListener("mouseleave", () => {
+                debugLog(`🖱️ Mouse left VRAM monitor for GPU ${gpuId}`);
+                
+                // Delay hiding to allow moving mouse to tooltip
+                hideTimeout = setTimeout(() => {
+                    tooltip.style.display = "none";
+                }, 200);
+            });
+            
+            // Keep tooltip visible when hovering over it
+            tooltip.addEventListener("mouseenter", () => {
+                debugLog(`🖱️ Mouse entered tooltip for GPU ${gpuId}`);
+                if (hideTimeout) {
+                    clearTimeout(hideTimeout);
+                    hideTimeout = null;
+                }
+            });
+            
+            // Hide tooltip when leaving it
+            tooltip.addEventListener("mouseleave", () => {
+                debugLog(`🖱️ Mouse left tooltip for GPU ${gpuId}`);
+                tooltip.style.display = "none";
+            });
+            
+            // Update tooltip position on scroll/resize
+            window.addEventListener("scroll", () => {
+                if (tooltip.style.display === "block") {
+                    positionTooltip(tooltip, monitor);
+                }
+            });
+        } else {
+            debugLog(`❌ Failed to match GPU ID from: ${id}`);
         }
+    } else {
+        debugLog(`⏭️ Skipping tooltip for ID: ${id} (enableTooltip: ${enableTooltip})`);
     }
     
     const valueEl = document.createElement("span");

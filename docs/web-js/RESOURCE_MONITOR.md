@@ -236,3 +236,430 @@ Profiler is enabled by default with:
 - Historical charts and sparklines
 - Advanced execution tracking (Phase 5)
 - Implement cache hit detection
+- OOM diagnosis and prevention (Phase 6)
+
+---
+
+## OOM Diagnosis & Prevention
+
+**Status**: 🚧 Phase 6 - Planned
+**Purpose**: Detect, capture, and prevent Out of Memory errors through unified profiler architecture
+
+### Overview
+
+The OOM diagnosis system extends the profiler with pre-OOM warnings, exception capture, historical analysis, and model unload recommendations. This prevents memory exhaustion failures by combining threshold-based alerts with actionable insights.
+
+### Key Capabilities
+
+- **Pre-OOM Detection**: Threshold warnings at 85% (⚠️ yellow) and 95% (🔴 red) VRAM usage
+- **OOM Event Capture**: Automatic detection with full context (VRAM state, loaded models, timeline)
+- **Historical Analysis**: Persistent tracking with node type ranking and model correlation
+- **Model Attribution**: Correlate OOM failures with specific loaded model combinations
+- **Unload Recommendations**: Suggest which models to unload based on size and usage patterns
+
+### Architecture Data Flow
+
+```
+1. PRE-NODE EXECUTION (start_node)
+   ↓ Check free VRAM via torch.cuda.mem_get_info()
+   ↓ Calculate vram_percent_before = (total-free)/total*100
+   ↓ Log ⚠️  if >85%, 🔴 if >95%
+   ↓ Store vram_free_before, vram_percent_before
+
+2. NODE EXECUTION (map_node_with_profiling)
+   ↓ Execute node with full profiling
+   ↓ Track VRAM delta, peak, timeline
+   ↓ Catch RuntimeError exceptions
+   ↓ (if OOM occurs)
+
+3. OOM CAPTURE (exception handler)
+   ↓ Detect "out of memory" in error message
+   ↓ Capture torch.cuda.memory_summary()
+   ↓ Snapshot loaded models via _scan_gpu_models()
+   ↓ Record vram_at_oom, models_at_oom, oom_error
+   ↓ Mark node.oom_occurred = True
+
+4. HISTORICAL TRACKING (end_workflow)
+   ↓ Append OOM event to oom_history list
+   ↓ Update OOM frequency stats per node type
+   ↓ Calculate model correlation patterns
+   ↓ Archive OOM data with workflow history
+
+5. ANALYSIS & RECOMMENDATIONS
+   ↓ GET /swissarmyknife/profiler/oom_stats
+   ↓ Node type OOM ranking (frequency, avg VRAM)
+   ↓ Model correlation (which models present at OOM)
+   ↓ Unload recommendations (by size + last-used)
+```
+
+### Extended Data Models
+
+#### NodeProfile OOM Fields
+
+```python
+class NodeProfile:
+    # Existing fields...
+    oom_occurred: bool = False              # True if this node caused OOM
+    oom_error: Optional[str] = None         # Full exception message
+    vram_free_before: Optional[int] = None  # Free VRAM before execution (bytes)
+    vram_percent_before: Optional[float] = None  # VRAM usage % before execution
+    vram_at_oom: Optional[int] = None       # Allocated VRAM when OOM occurred
+    models_at_oom: Optional[List[Dict]] = None   # Loaded models snapshot at OOM
+```
+
+#### WorkflowProfile OOM Fields
+
+```python
+class WorkflowProfile:
+    # Existing fields...
+    oom_occurred: bool = False           # True if any node OOM'd
+    oom_node_id: Optional[str] = None    # Which node caused OOM
+```
+
+#### ProfilerManager OOM Tracking
+
+```python
+class ProfilerManager:
+    # Existing fields...
+    oom_history: List[Dict] = []         # Separate OOM event log
+    oom_stats: Dict[str, Dict] = {}      # Per-node-type OOM statistics
+    max_oom_history: int = 1000          # Limit OOM history size
+```
+
+### Pre-OOM Threshold Warnings
+
+**Thresholds**:
+- **85% - ⚠️ Warning (Yellow)**: VRAM approaching limits, monitor closely
+- **95% - 🔴 Critical (Red)**: VRAM critically high, OOM highly likely
+
+**Implementation in `ProfilerManager.start_node()`**:
+
+```python
+# Get free VRAM before node execution
+free_vram, total_vram = torch.cuda.mem_get_info()
+node_profile.vram_free_before = free_vram
+node_profile.vram_percent_before = (total_vram - free_vram) / total_vram * 100
+
+# Threshold warnings
+if node_profile.vram_percent_before >= 95:
+    logger.error(f"🔴 CRITICAL: VRAM at {vram_percent:.1f}% before {node_type} - OOM likely!")
+elif node_profile.vram_percent_before >= 85:
+    logger.warning(f"⚠️  WARNING: VRAM at {vram_percent:.1f}% before {node_type}")
+```
+
+**Example Console Output**:
+```
+⚠️  WARNING: VRAM at 87.3% before WanVideoWrapper (free: 2.8 GB / 22.0 GB)
+🔴 CRITICAL: VRAM at 96.1% before WanVideoWrapper (free: 0.9 GB / 22.0 GB) - OOM likely!
+```
+
+### OOM Exception Capture
+
+**Detection in `map_node_with_profiling()` exception handler**:
+
+```python
+try:
+    result = await original_map_node_over_list(...)
+    profiler.end_node(prompt_id, unique_id, outputs=result)
+    return result
+except RuntimeError as e:
+    # Detect OOM specifically
+    is_oom = "out of memory" in str(e).lower()
+    
+    if is_oom and profiler_enabled:
+        node = profile.nodes[unique_id]
+        node.oom_occurred = True
+        node.oom_error = str(e)
+        node.vram_at_oom = torch.cuda.memory_allocated()
+        node.models_at_oom = profiler._scan_gpu_models()
+        
+        # Log models present at OOM
+        logger.error(f"💥 OOM in {class_type}: {vram_at_oom / 1024**3:.1f} GB allocated")
+        for gpu_id, models in node.models_at_oom.items():
+            for model in models:
+                logger.error(f"  - {model['name']} ({model['type']}): {model['vram_mb']} MB")
+    raise
+```
+
+**Captured Context**:
+- Exception message (full traceback)
+- VRAM allocated at OOM moment
+- GPU memory summary (PyTorch internal state)
+- Complete loaded models snapshot with VRAM per model
+- Node execution timeline
+- VRAM headroom before node started
+
+### OOM Event Structure
+
+```json
+{
+    "timestamp": "2025-11-29T14:23:45.123Z",
+    "prompt_id": "f8ad0b31-1717-4878-aad1-064d5df212d9",
+    "node_id": "42",
+    "node_type": "WanVideoWrapper",
+    "execution_time_before_oom": 135.41,
+    "vram_percent_before": 87.3,
+    "vram_free_before": 2899102720,
+    "vram_at_oom": 23622320128,
+    "models_at_oom": {
+        "0": [
+            {
+                "name": "Wan2_2-T2V-A14B-HIGH",
+                "type": "checkpoint",
+                "vram_mb": 8704
+            },
+            {
+                "name": "sd3_medium",
+                "type": "checkpoint",
+                "vram_mb": 6144
+            }
+        ]
+    },
+    "error_message": "torch.OutOfMemoryError: Allocation on device",
+    "total_models_vram_mb": 14848
+}
+```
+
+### New API Endpoint
+
+**`GET /swissarmyknife/profiler/oom_stats`**
+
+Returns OOM statistics and analysis:
+
+```json
+{
+    "success": true,
+    "data": {
+        "total_oom_count": 47,
+        "oom_rate": 12.3,
+        "node_type_ranking": [
+            {
+                "node_type": "WanVideoWrapper",
+                "oom_count": 23,
+                "oom_rate": 48.9,
+                "avg_vram_at_oom_gb": 21.8,
+                "avg_vram_percent_before": 92.1,
+                "common_models": ["Wan2_2-T2V-A14B-HIGH (8.5 GB)", "sd3_medium (6.0 GB)"]
+            }
+        ],
+        "recent_oom_events": [...],
+        "model_correlation": {
+            "Wan2_2-T2V-A14B-HIGH": {
+                "present_in_oom_count": 23,
+                "avg_vram_mb": 8704,
+                "correlation_score": 0.89
+            }
+        },
+        "recommendations": [
+            {
+                "type": "unload_model",
+                "priority": "high",
+                "message": "Consider unloading 'sd3_medium' (6.0 GB) before WanVideoWrapper nodes",
+                "models_to_unload": ["sd3_medium"],
+                "expected_vram_freed_gb": 6.0
+            }
+        ]
+    }
+}
+```
+
+### Frontend OOM UI Enhancements
+
+#### Pre-OOM Warning Indicators (Popup Stats Cards)
+
+```javascript
+// Show VRAM% with color-coded warnings
+const vramPercent = latest.vramPercentBefore || 0;
+let warningClass = vramPercent >= 95 ? 'stat-critical' : 
+                   vramPercent >= 85 ? 'stat-warning' : '';
+let warningIcon = vramPercent >= 95 ? '🔴' : 
+                  vramPercent >= 85 ? '⚠️' : '🎮';
+
+statsGrid.innerHTML += `
+    <div class="profiler-stat-card ${warningClass}">
+        <div class="profiler-stat-label">${warningIcon} VRAM Before</div>
+        <div class="profiler-stat-value">${vramPercent.toFixed(1)}%</div>
+    </div>
+`;
+```
+
+#### OOM Indicators in Node Table
+
+```javascript
+// Mark OOM nodes with 💥 icon
+tbody.innerHTML = nodeArray.map(node => `
+    <tr class="${node.oomOccurred ? 'oom-node' : ''}">
+        <td>${node.oomOccurred ? '💥 ' : ''}${node.nodeType}</td>
+        <td>${formatMs(node.executionTime)}</td>
+        <td>${formatBytes(node.vramDelta)}</td>
+        <td>${node.oomOccurred ? '💥' : node.cacheHit ? '🟢' : '⚡'}</td>
+    </tr>
+`).join('');
+```
+
+#### New Modal Tab: "💥 OOM Analysis"
+
+```javascript
+<div class="profiler-tab-panel" id="profiler-tab-oom">
+    <h3>💥 Out of Memory Analysis</h3>
+    
+    <!-- Summary Cards -->
+    <div class="oom-summary-grid">
+        <div class="oom-summary-card">
+            <div class="oom-summary-label">Total OOMs</div>
+            <div class="oom-summary-value">47</div>
+        </div>
+        <div class="oom-summary-card">
+            <div class="oom-summary-label">OOM Rate</div>
+            <div class="oom-summary-value">12.3%</div>
+        </div>
+    </div>
+    
+    <!-- Node Type Ranking Table -->
+    <h4>Node Types by OOM Frequency</h4>
+    <table class="oom-ranking-table">
+        <thead>
+            <tr>
+                <th>Node Type</th>
+                <th>OOM Count</th>
+                <th>OOM Rate</th>
+                <th>Avg VRAM Before</th>
+            </tr>
+        </thead>
+        <tbody id="oom-ranking-body"></tbody>
+    </table>
+    
+    <!-- Model Correlation -->
+    <h4>Models Present at OOM</h4>
+    <div id="oom-models-correlation"></div>
+    
+    <!-- Recommendations -->
+    <h4>💡 Recommendations</h4>
+    <div id="oom-recommendations-list"></div>
+</div>
+```
+
+### Model Unload Recommendations
+
+**Algorithm**:
+1. Sort loaded models by VRAM usage (descending)
+2. Check last-used timestamps via node execution tracking
+3. Calculate VRAM headroom needed to prevent OOM
+4. Generate specific recommendations
+
+**Example Output**:
+```
+💡 RECOMMENDATION: Unload these models before WanVideoWrapper
+  1. sd3_medium_incl_clips (6.0 GB) - Last used 45s ago
+  2. flux_vae (0.5 GB) - Last used 62s ago
+  → Expected VRAM freed: 6.5 GB
+  → Usage would drop from 92% to 63%
+
+💡 RECOMMENDATION: Enable --lowvram mode
+  Reason: Workflows with WanVideoWrapper consistently use >85% VRAM
+  Impact: Slower execution but prevents OOM
+```
+
+### Archive Enhancement with OOM Data
+
+Archives now include OOM-specific data:
+
+```json
+{
+    "archived_at": "2025-11-29T15:30:00.000Z",
+    "history": [...],
+    "oom_history": [...],
+    "oom_summary": {
+        "total_oom_count": 47,
+        "oom_rate": 12.3,
+        "most_problematic_node": "WanVideoWrapper",
+        "most_problematic_model": "Wan2_2-T2V-A14B-HIGH"
+    }
+}
+```
+
+Archives with OOM events show a badge in the UI:
+```javascript
+<span class="oom-badge">💥 ${archive.oom_count} OOMs</span>
+```
+
+### Real-World Example: WanVideoWrapper OOM
+
+**Before (no OOM detection)**:
+```
+torch.OutOfMemoryError: Allocation on device
+Got an OOM, unloading all loaded models.
+```
+
+**After (with OOM detection)**:
+```
+⚠️  WARNING: VRAM at 87.3% before WanVideoWrapper (free: 2.8 GB / 22.0 GB)
+🔴 CRITICAL: VRAM at 96.1% before next node (free: 0.9 GB / 22.0 GB) - OOM likely!
+💥 OOM detected in node WanVideoWrapper (ID: 42)
+
+Models loaded at OOM:
+  GPU 0: 4 models
+    - Wan2_2-T2V-A14B-HIGH (checkpoint): 8704 MB
+    - sd3_medium_incl_clips (checkpoint): 6144 MB
+    - flux_vae (vae): 512 MB
+    - controlnet_union (controlnet): 1280 MB
+  Total model VRAM: 16.3 GB
+  System/Framework overhead: 5.7 GB
+
+💡 RECOMMENDATION: Unload 'sd3_medium_incl_clips' (6.0 GB) before WanVideoWrapper
+   This would bring pre-execution VRAM from 87.3% to 60.1%
+```
+
+### Common OOM Scenarios & Solutions
+
+#### Scenario 1: Large Checkpoint + Large Video Model
+**Symptoms**: VRAM >90% before video generation, OOM during forward pass
+**Solution**: 
+```python
+import comfy.model_management as mm
+mm.unload_all_models()  # Before WanVideoWrapper node
+mm.soft_empty_cache()
+```
+
+#### Scenario 2: Batch Size Too Large
+**Symptoms**: OOM during KSampler with high batch size
+**Solution**: Reduce `batch_size` or enable `--lowvram` mode
+
+#### Scenario 3: Memory Fragmentation
+**Symptoms**: Free VRAM available but allocation fails, OOM with <80% usage
+**Solution**: Restart ComfyUI to defragment GPU memory
+
+### OOM Prevention Best Practices
+
+1. **Monitor Pre-OOM Warnings**: Act on ⚠️ (85%) and 🔴 (95%) warnings
+2. **Unload Models Proactively**: Clear models between workflow stages
+3. **Use --lowvram Mode**: For workflows consistently using >80% VRAM
+4. **Reduce Resolution First**: Lower image/video resolution before quality
+5. **Check Model Combinations**: Use OOM analysis to identify problematic combos
+6. **Archive OOM History**: Review patterns to optimize workflows
+
+### Implementation Phases
+
+**Phase 6.1: Backend OOM Detection**
+- [ ] Extend NodeProfile/WorkflowProfile with OOM fields
+- [ ] Add pre-OOM warnings in start_node() (85%/95% thresholds)
+- [ ] Implement OOM exception capture in map_node_with_profiling()
+- [ ] Add OOM event logging with model snapshots
+
+**Phase 6.2: Historical OOM Tracking**
+- [ ] Add oom_history to ProfilerManager
+- [ ] Implement _update_oom_stats() method
+- [ ] Extend archive structure with OOM data
+- [ ] Create GET /swissarmyknife/profiler/oom_stats endpoint
+
+**Phase 6.3: Model Recommendations**
+- [ ] Track model last-used timestamps
+- [ ] Implement unload recommendation algorithm
+- [ ] Add headroom calculation logic
+
+**Phase 6.4: Frontend OOM UI**
+- [ ] Add pre-OOM warning indicators to stats cards
+- [ ] Add 💥 OOM column to node table
+- [ ] Create "💥 OOM Analysis" modal tab
+- [ ] Display model correlation and recommendations
+- [ ] Add OOM badge to archive list

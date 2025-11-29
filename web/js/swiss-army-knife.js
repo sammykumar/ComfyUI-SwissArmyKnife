@@ -5,6 +5,9 @@ import { api } from "../../../scripts/api.js";
 const EXTENSION_VERSION = "3.0.0"; // Should match pyproject.toml version
 const LOAD_TIMESTAMP = new Date().toISOString();
 
+// Version indicator - check console for this on page load
+console.log("%c[🔪SwissArmyKnife] Version 3.0.0 - Main Extension Loaded", "color: #10b981; font-weight: bold; font-size: 14px;");
+
 // DEBUG mode - check setting dynamically
 const isDebugEnabled = () => {
     try {
@@ -17,7 +20,7 @@ const isDebugEnabled = () => {
 // Conditional logging wrapper - checks setting dynamically
 const debugLog = (...args) => {
     if (isDebugEnabled()) {
-        console.log("[SwissArmyKnife]", ...args);
+        console.log("%c[🔪SwissArmyKnife]", "color: #3b82f6; font-weight: bold;", ...args);
     }
 };
 
@@ -91,7 +94,7 @@ const syncApiKeysToBackend = async () => {
     }
 };
 
-console.log(`Loading swiss-army-knife.js extension v${EXTENSION_VERSION} at ${LOAD_TIMESTAMP}`);
+console.log("%c[🔪SwissArmyKnife]", "color: #3b82f6; font-weight: bold;", `Loading extension v${EXTENSION_VERSION} at ${LOAD_TIMESTAMP}`);
 
 // Register custom widgets for Swiss Army Knife nodes
 app.registerExtension({
@@ -220,7 +223,7 @@ app.registerExtension({
                             previewWidget.value = `Preview:\n${full_path}`;
                         }
                     } catch (error) {
-                        console.log("Error updating filename preview:", error);
+                        console.error("%c[🔪SwissArmyKnife]", "color: #ef4444; font-weight: bold;", "Error updating filename preview:", error);
                         const previewWidget = this.widgets.find(
                             (w) => w.name === "filename_preview"
                         );
@@ -2202,7 +2205,7 @@ app.registerExtension({
     async setup() {
         // Log ALL API events to debug
         const originalAddEventListener = api.addEventListener.bind(api);
-        console.log("[SwissArmyKnife] Setting up API event listeners...");
+        console.log("%c[🔪SwissArmyKnife]", "color: #3b82f6; font-weight: bold;", "Setting up API event listeners...");
         
         // Listen for execution_cached events - this fires when nodes use cached results
         // The onExecuted hook will still receive the cached ui data, so no special handling needed
