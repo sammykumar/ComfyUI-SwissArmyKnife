@@ -148,19 +148,26 @@ class ProfilerManager:
         return cls._instance
 
     def _check_dependencies(self):
-        """Check for optional dependencies"""
+        """Check for optional dependencies and log capabilities"""
         self.torch_available = False
+        self.cuda_available = False
         self.psutil_available = False
 
         try:
             import torch
-            self.torch_available = torch.cuda.is_available()
-            logger.info(f"Torch available: {self.torch_available}")
+            self.torch_available = True  # Torch is installed
+            self.cuda_available = torch.cuda.is_available()  # CUDA hardware present
+            logger.info(f"Torch installed: {self.torch_available}, CUDA available: {self.cuda_available}")
+
+            if not self.cuda_available:
+                logger.warning("CUDA not available - VRAM tracking will be disabled (CPU-only mode)")
         except ImportError:
             logger.warning("Torch not available - VRAM tracking disabled")
 
         try:
             import psutil
+            # Verify psutil is functional by attempting to access process info
+            _ = psutil.Process()
             self.psutil_available = True
             logger.info("psutil available")
         except ImportError:
@@ -214,13 +221,13 @@ class ProfilerManager:
         node_profile.start_time = time.time()
 
         # Track VRAM
-        if self.torch_available:
+        if self.torch_available and self.cuda_available:
             try:
                 import torch
                 torch.cuda.reset_peak_memory_stats()
                 node_profile.vram_before = torch.cuda.memory_allocated()
             except Exception as e:
-                logger.debug(f"VRAM tracking error: {e}")
+                logger.warning(f"⚠️  VRAM tracking failed at start of node {node_type}: {e}")
 
         # Track RAM
         if self.psutil_available:
@@ -251,7 +258,7 @@ class ProfilerManager:
         node_profile = profile.nodes[node_id]
         node_profile.end_time = time.time()
         node_profile.cache_hit = cache_hit
-        
+
         execution_time_ms = (node_profile.end_time - node_profile.start_time) * 1000
         print(f"[SwissArmyKnife][Profiler] Node {node_profile.node_type} (ID: {node_id}) took {execution_time_ms:.2f}ms")
 
@@ -262,17 +269,16 @@ class ProfilerManager:
             profile.cache_misses += 1
 
         # Track VRAM
-        if self.torch_available:
+        if self.torch_available and self.cuda_available:
             try:
                 import torch
-                if torch.cuda.is_available():
-                    node_profile.vram_after = torch.cuda.memory_allocated()
-                    node_profile.vram_peak = torch.cuda.max_memory_allocated()
-                    vram_delta = node_profile.vram_after - (node_profile.vram_before or 0)
-                    print(f"[SwissArmyKnife][Profiler] Node {node_profile.node_type} VRAM: before={node_profile.vram_before}, after={node_profile.vram_after}, peak={node_profile.vram_peak}, delta={vram_delta}")
+                node_profile.vram_after = torch.cuda.memory_allocated()
+                node_profile.vram_peak = torch.cuda.max_memory_allocated()
+                vram_delta = node_profile.vram_after - (node_profile.vram_before or 0)
+                print(f"[SwissArmyKnife][Profiler] Node {node_profile.node_type} VRAM: before={node_profile.vram_before}, after={node_profile.vram_after}, peak={node_profile.vram_peak}, delta={vram_delta}")
             except Exception as e:
-                print(f"[SwissArmyKnife][Profiler] VRAM tracking error: {e}")
-                logger.debug(f"VRAM tracking error: {e}")
+                logger.warning(f"⚠️  VRAM tracking failed for node {node_profile.node_type}: {e}")
+                print(f"[SwissArmyKnife][Profiler] ⚠️  VRAM tracking error: {e}")
 
         # Track RAM
         if self.psutil_available:

@@ -31,14 +31,12 @@ def inject_profiling():
         # Import ComfyUI execution modules
         import execution
         from .profiler_core import ProfilerManager
-        import time
 
         # Get profiler instance
         profiler = ProfilerManager.get_instance()
 
         # Store original functions
         original_map_node_over_list = execution._async_map_node_over_list
-        original_prompt_executor_init = None
 
         # Try to wrap PromptExecutor if it exists
         try:
@@ -50,40 +48,32 @@ def inject_profiling():
         # Wrap _async_map_node_over_list to capture actual node execution timing
         async def map_node_with_profiling(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt=False, execution_block_cb=None, pre_execute_cb=None, hidden_inputs=None):
             """Wrap the actual node function execution to capture timing"""
-            
+
             # Check if profiler is enabled before doing any profiling work
             from ...config_api import get_profiler_enabled
             profiler_enabled = get_profiler_enabled()
-            
+
             # Only track timing for the main FUNCTION execution, not check_lazy_status, etc.
             is_main_execution = (func == getattr(obj, 'FUNCTION', None) or (isinstance(func, str) and func == getattr(obj, 'FUNCTION', None)))
-            
+
             if is_main_execution and profiler_enabled:
                 # Get node type
                 class_type = obj.__class__.__name__
-                
-                # Start timing
-                start_time = time.time()
+
+                # Start profiling (tracks its own timing internally)
                 profiler.start_node(prompt_id, unique_id, class_type)
-            
+
             try:
                 # Execute original function
                 result = await original_map_node_over_list(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt, execution_block_cb, pre_execute_cb, hidden_inputs)
-                
+
                 if is_main_execution and profiler_enabled:
-                    # End timing
-                    end_time = time.time()
-                    execution_time = (end_time - start_time) * 1000  # Convert to ms
-                    
-                    # Update the node profile with actual timing
-                    if prompt_id in profiler.active_profiles:
-                        if unique_id in profiler.active_profiles[prompt_id].nodes:
-                            node_profile = profiler.active_profiles[prompt_id].nodes[unique_id]
-                            node_profile.end_time = end_time
-                            print(f"[SwissArmyKnife][Profiler] Node {class_type} (ID: {unique_id}) actually took {execution_time:.2f}ms")
-                
+                    # Call profiler.end_node() to capture VRAM, RAM, and complete profiling
+                    # Note: cache_hit detection deferred for future implementation
+                    profiler.end_node(prompt_id, unique_id, outputs=result, cache_hit=False)
+
                 return result
-                
+
             except Exception as e:
                 if is_main_execution and profiler_enabled:
                     # Track error
@@ -100,7 +90,7 @@ def inject_profiling():
                 # Check if profiler is enabled
                 from ...config_api import get_profiler_enabled
                 profiler_enabled = get_profiler_enabled()
-                
+
                 if profiler_enabled:
                     # Start workflow profiling
                     profiler.start_workflow(prompt_id)

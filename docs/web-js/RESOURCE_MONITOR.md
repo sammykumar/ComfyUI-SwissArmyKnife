@@ -168,12 +168,67 @@ Profiler is enabled by default with:
 
 ### Usage
 
-1. Click �� profiler button in floating monitor for quick stats
+1. Click 📊 profiler button in floating monitor for quick stats
 2. Click "View Full History" for detailed modal analysis
 3. Use Settings tab for archive management
+
+### Known Limitations
+
+#### VRAM Tracking
+- **Requires NVIDIA CUDA**: VRAM tracking only works on systems with CUDA-enabled GPUs (PyTorch CUDA API)
+- **CPU-only mode**: No VRAM tracking available when running on CPU-only systems (logs warning at startup)
+- **AMD/Intel GPUs**: VRAM tracking not supported (PyTorch CUDA-specific implementation)
+- **Allocation timing**: Captures memory at node execution boundaries only, not internal allocations during node execution
+- **Shared memory**: Cannot distinguish between node-specific and globally shared VRAM usage across the process
+
+#### RAM Tracking
+- **Requires psutil**: RAM tracking disabled if psutil package not installed
+- **Process-level only**: Measures total process memory, not per-node isolation
+- **System overhead**: Includes Python interpreter and ComfyUI framework overhead in measurements
+
+#### Cache Hit Detection
+- **Not yet implemented**: Currently always reports `cache_hit=False` for all node executions
+- **Planned enhancement**: Future integration with ComfyUI's cache system to detect actual cache hits
+
+#### Tensor Shape Tracking
+- **Requires PyTorch**: Only available when torch package is installed
+- **Limited types**: Only tracks `torch.Tensor` objects in inputs/outputs
+- **Nested structures**: May miss tensors deeply nested in complex data structures
+
+#### Timing Accuracy
+- **Async operations**: May not capture accurate timing for nodes with async GPU operations that return before completion
+- **Python GIL**: Subject to Python Global Interpreter Lock overhead
+- **System scheduling**: Wall-clock timing affected by system scheduling and other processes
+
+#### History & Storage
+- **Auto-archive limit**: Automatically archives after 10,000 workflows to prevent unbounded disk growth
+- **Disk I/O**: Batched saves (every 5 workflows) may delay persistence during crashes
+- **Memory footprint**: Active profiling adds ~500KB-2MB per workflow in memory before archiving
+
+#### Hardware Detection
+- **Best-effort detection**: Dependency availability checked at startup only, not dynamically
+- **Silent degradation**: Missing dependencies log warnings but don't fail loudly to user
+- **CUDA initialization**: First CUDA call may add latency during ProfilerManager initialization
+
+### Troubleshooting
+
+**VRAM shows as 0 or null:**
+- Verify CUDA is available: Check console for "CUDA available: True" message
+- Ensure GPU is NVIDIA with CUDA support
+- Confirm PyTorch installed with CUDA support: `python -c "import torch; print(torch.cuda.is_available())"`
+
+**RAM tracking not working:**
+- Install psutil: `pip install psutil`
+- Restart ComfyUI server after installation
+
+**Profiler not capturing data:**
+- Check console for "[SwissArmyKnife][Profiler]" messages
+- Verify profiler enabled in settings (enabled by default)
+- Look for warnings about dependency availability
 
 ### Next Steps
 
 - Enhanced archive management UI (Phase 4)
 - Historical charts and sparklines
 - Advanced execution tracking (Phase 5)
+- Implement cache hit detection
