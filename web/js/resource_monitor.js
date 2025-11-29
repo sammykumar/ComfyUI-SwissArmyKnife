@@ -634,9 +634,136 @@ ${JSON.stringify(data.node_averages, null, 2)}
 }
 
 /**
+ * Create GPU tooltip showing loaded models
+ */
+function createGPUTooltip(gpuId) {
+    const tooltip = document.createElement("div");
+    tooltip.className = "swissarmyknife-gpu-tooltip";
+    tooltip.id = `swissarmyknife-gpu-tooltip-${gpuId}`;
+    tooltip.style.display = "none";
+    
+    tooltip.innerHTML = `
+        <div class="gpu-tooltip-header">GPU ${gpuId}</div>
+        <div class="gpu-tooltip-content" id="gpu-tooltip-content-${gpuId}">
+            <div class="gpu-tooltip-loading">Loading...</div>
+        </div>
+    `;
+    
+    document.body.appendChild(tooltip);
+    return tooltip;
+}
+
+/**
+ * Update GPU tooltip with loaded models data
+ */
+async function updateGPUTooltip(gpuId, monitorElement) {
+    try {
+        const response = await fetchWithRetry("/swissarmyknife/profiler/loaded_models", 1);
+        if (!response.ok) {
+            throw new Error("Failed to fetch loaded models");
+        }
+        
+        const result = await response.json();
+        if (!result.success || !result.data) {
+            throw new Error("Invalid response");
+        }
+        
+        const gpuData = result.data[gpuId];
+        const contentEl = document.getElementById(`gpu-tooltip-content-${gpuId}`);
+        
+        if (!gpuData || !gpuData.models || gpuData.models.length === 0) {
+            contentEl.innerHTML = `
+                <div class="gpu-tooltip-empty">No models loaded</div>
+            `;
+            return;
+        }
+        
+        // Sort models by VRAM usage (descending)
+        const sortedModels = [...gpuData.models].sort((a, b) => b.vram_mb - a.vram_mb);
+        
+        // Build models list HTML
+        let modelsHTML = '<div class="gpu-tooltip-section">📦 Loaded Models:</div>';
+        modelsHTML += '<div class="gpu-tooltip-models">';
+        
+        sortedModels.forEach(model => {
+            const icon = getModelIcon(model.type);
+            const vramGB = (model.vram_mb / 1024).toFixed(1);
+            modelsHTML += `
+                <div class="gpu-tooltip-model">
+                    <div class="gpu-tooltip-model-info">
+                        <span class="gpu-tooltip-model-icon">${icon}</span>
+                        <span class="gpu-tooltip-model-name" title="${model.name}">${model.name}</span>
+                    </div>
+                    <div class="gpu-tooltip-model-vram">${vramGB} GB</div>
+                </div>
+            `;
+        });
+        
+        modelsHTML += '</div>';
+        
+        // Add summary
+        const totalVRAM = (gpuData.total_vram_mb / 1024).toFixed(1);
+        modelsHTML += `
+            <div class="gpu-tooltip-summary">
+                <div class="gpu-tooltip-summary-item">
+                    <span>📊 Total Model VRAM:</span>
+                    <span class="gpu-tooltip-summary-value">${totalVRAM} GB</span>
+                </div>
+                <div class="gpu-tooltip-summary-item">
+                    <span>🔢 Model Count:</span>
+                    <span class="gpu-tooltip-summary-value">${gpuData.model_count}</span>
+                </div>
+            </div>
+        `;
+        
+        contentEl.innerHTML = modelsHTML;
+        
+    } catch (error) {
+        debugLog("Error updating GPU tooltip:", error);
+        const contentEl = document.getElementById(`gpu-tooltip-content-${gpuId}`);
+        if (contentEl) {
+            contentEl.innerHTML = `
+                <div class="gpu-tooltip-error">Failed to load model data</div>
+            `;
+        }
+    }
+}
+
+/**
+ * Get icon for model type
+ */
+function getModelIcon(type) {
+    const icons = {
+        'checkpoint': '🎨',
+        'lora': '🎯',
+        'vae': '🔄',
+        'controlnet': '🎮',
+        'clip': '📝',
+        'style': '✨',
+        'gligen': '🔮',
+        'upscaler': '⬆️',
+        'model': '📦'
+    };
+    return icons[type] || '📦';
+}
+
+/**
+ * Position tooltip near monitor element
+ */
+function positionTooltip(tooltip, monitorElement) {
+    const rect = monitorElement.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    
+    // Position above the monitor element
+    tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltipRect.width / 2)}px`;
+    tooltip.style.bottom = `${window.innerHeight - rect.top + 10}px`;
+    tooltip.style.top = 'auto';
+}
+
+/**
  * Create a monitor display element with inline label and background bar
  */
-function createMonitorDisplay(label, id) {
+function createMonitorDisplay(label, id, enableTooltip = false) {
     const monitor = document.createElement("div");
     monitor.className = "swissarmyknife-monitor";
     monitor.id = `swissarmyknife-monitor-${id}`;
@@ -656,6 +783,34 @@ function createMonitorDisplay(label, id) {
         labelEl.textContent = label;
         contentWrapper.appendChild(labelEl);
         contentWrapper.appendChild(document.createTextNode(" "));
+        
+        // Add tooltip functionality for GPU labels
+        if (enableTooltip && id.includes("gpu") && id.includes("-label")) {
+            const gpuMatch = id.match(/gpu(\d+)-label/);
+            if (gpuMatch) {
+                const gpuId = parseInt(gpuMatch[1]);
+                const tooltip = createGPUTooltip(gpuId);
+                
+                // Show tooltip on hover
+                monitor.addEventListener("mouseenter", () => {
+                    tooltip.style.display = "block";
+                    updateGPUTooltip(gpuId, monitor);
+                    // Position after a brief delay to allow content to render
+                    setTimeout(() => positionTooltip(tooltip, monitor), 50);
+                });
+                
+                monitor.addEventListener("mouseleave", () => {
+                    tooltip.style.display = "none";
+                });
+                
+                // Update tooltip position on scroll/resize
+                window.addEventListener("scroll", () => {
+                    if (tooltip.style.display === "block") {
+                        positionTooltip(tooltip, monitor);
+                    }
+                });
+            }
+        }
     }
     
     const valueEl = document.createElement("span");
@@ -865,8 +1020,8 @@ app.registerExtension({
                         // Extract compact GPU model name
                         const gpuModel = extractGPUModel(device.name);
                         
-                        // Add GPU model label
-                        buttonGroup.appendChild(createMonitorDisplay(gpuModel.toUpperCase(), `gpu${index}-label`));
+                        // Add GPU model label with tooltip enabled
+                        buttonGroup.appendChild(createMonitorDisplay(gpuModel.toUpperCase(), `gpu${index}-label`, true));
                         
                         // Add VRAM monitor - just the value in GB (no label)
                         buttonGroup.appendChild(createMonitorDisplay("", `vram${index}`));

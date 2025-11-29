@@ -28,6 +28,7 @@ class NodeProfile:
         self.ram_after: Optional[int] = None
         self.input_sizes: Dict[str, List[int]] = {}
         self.output_sizes: Dict[str, List[int]] = {}
+        self.raw_inputs: Optional[Any] = None  # Store raw inputs for model tracking
         self.cache_hit: bool = False
         self.error: Optional[str] = None
 
@@ -119,6 +120,18 @@ class ProfilerManager:
             'count': 0,
             'vram_peak': 0.0,
             'ram_peak': 0.0
+        }
+
+        # Loaded models tracking (per GPU)
+        self.loaded_models: Dict[int, List[Dict[str, Any]]] = {}  # gpu_id -> list of model info
+        self.model_loader_nodes = {
+            'CheckpointLoaderSimple', 'CheckpointLoader', 'unCLIPCheckpointLoader',
+            'LoraLoader', 'LoraLoaderModelOnly',
+            'VAELoader',
+            'ControlNetLoader', 'DiffControlNetLoader',
+            'CLIPLoader', 'DualCLIPLoader', 'TripleCLIPLoader',
+            'StyleModelLoader', 'GLIGENLoader',
+            'UpscaleModelLoader', 'ImageOnlyCheckpointLoader'
         }
 
         # Persistence
@@ -237,12 +250,119 @@ class ProfilerManager:
             except Exception as e:
                 logger.debug(f"RAM tracking error: {e}")
 
-        # Track input shapes
+        # Track input shapes and store raw inputs
         if inputs:
             node_profile.input_sizes = self._get_tensor_sizes(inputs)
+            node_profile.raw_inputs = inputs  # Store for model tracking
 
         profile.nodes[node_id] = node_profile
         profile.execution_order.append(node_id)
+
+    def track_model_load(self, node_id: str, node_type: str, inputs: Any, outputs: Any, vram_delta: int):
+        """Track model loading from node execution"""
+        if node_type not in self.model_loader_nodes:
+            return
+
+        try:
+            # Determine GPU (default to 0 for now, can be enhanced)
+            gpu_id = 0
+
+            # Extract model information based on node type
+            model_info = self._extract_model_info(node_type, inputs, vram_delta)
+            if not model_info:
+                return
+
+            # Initialize GPU tracking if needed
+            if gpu_id not in self.loaded_models:
+                self.loaded_models[gpu_id] = []
+
+            # Check if model already tracked (avoid duplicates)
+            existing = next((m for m in self.loaded_models[gpu_id] if m['name'] == model_info['name']), None)
+            if existing:
+                # Update existing model info
+                existing.update(model_info)
+            else:
+                # Add new model
+                self.loaded_models[gpu_id].append(model_info)
+
+            logger.debug(f"Tracked model load: {model_info['name']} on GPU {gpu_id}")
+
+        except Exception as e:
+            logger.warning(f"Failed to track model load for {node_type}: {e}")
+
+    def _extract_model_info(self, node_type: str, inputs: Any, vram_delta: int) -> Optional[Dict[str, Any]]:
+        """Extract model information from node inputs"""
+        try:
+            model_info = {
+                'type': self._get_model_type(node_type),
+                'vram_mb': vram_delta // (1024 * 1024) if vram_delta > 0 else 0,
+                'loaded_at': datetime.now().isoformat(),
+                'name': 'Unknown'
+            }
+
+            # Extract model name from inputs
+            if isinstance(inputs, dict):
+                # Common input keys for model files
+                for key in ['ckpt_name', 'lora_name', 'vae_name', 'control_net_name', 'model_name', 'clip_name', 'style_model_name', 'upscale_model']:
+                    if key in inputs:
+                        model_info['name'] = str(inputs[key])
+                        break
+
+            # If still unknown, try to get from first string value
+            if model_info['name'] == 'Unknown' and isinstance(inputs, dict):
+                for value in inputs.values():
+                    if isinstance(value, str) and '.' in value:
+                        model_info['name'] = value
+                        break
+
+            return model_info if model_info['name'] != 'Unknown' else None
+
+        except Exception as e:
+            logger.debug(f"Failed to extract model info: {e}")
+            return None
+
+    def _get_model_type(self, node_type: str) -> str:
+        """Get friendly model type name from node type"""
+        type_map = {
+            'CheckpointLoaderSimple': 'checkpoint',
+            'CheckpointLoader': 'checkpoint',
+            'unCLIPCheckpointLoader': 'checkpoint',
+            'LoraLoader': 'lora',
+            'LoraLoaderModelOnly': 'lora',
+            'VAELoader': 'vae',
+            'ControlNetLoader': 'controlnet',
+            'DiffControlNetLoader': 'controlnet',
+            'CLIPLoader': 'clip',
+            'DualCLIPLoader': 'clip',
+            'TripleCLIPLoader': 'clip',
+            'StyleModelLoader': 'style',
+            'GLIGENLoader': 'gligen',
+            'UpscaleModelLoader': 'upscaler',
+            'ImageOnlyCheckpointLoader': 'checkpoint'
+        }
+        return type_map.get(node_type, 'model')
+
+    def get_loaded_models(self) -> Dict[int, Dict[str, Any]]:
+        """Get currently loaded models by GPU"""
+        result = {}
+
+        for gpu_id, models in self.loaded_models.items():
+            total_vram = sum(m['vram_mb'] for m in models)
+            result[gpu_id] = {
+                'models': models,
+                'total_vram_mb': total_vram,
+                'model_count': len(models),
+                'last_activity': models[-1]['loaded_at'] if models else None
+            }
+
+        return result
+
+    def clear_loaded_models(self, gpu_id: Optional[int] = None):
+        """Clear loaded models tracking"""
+        if gpu_id is not None:
+            self.loaded_models[gpu_id] = []
+        else:
+            self.loaded_models.clear()
 
     def end_node(self, prompt_id: str, node_id: str, outputs: Any = None, cache_hit: bool = False):
         """End profiling a node execution"""
@@ -269,6 +389,7 @@ class ProfilerManager:
             profile.cache_misses += 1
 
         # Track VRAM
+        vram_delta = 0
         if self.torch_available and self.cuda_available:
             try:
                 import torch
@@ -276,6 +397,12 @@ class ProfilerManager:
                 node_profile.vram_peak = torch.cuda.max_memory_allocated()
                 vram_delta = node_profile.vram_after - (node_profile.vram_before or 0)
                 print(f"[SwissArmyKnife][Profiler] Node {node_profile.node_type} VRAM: before={node_profile.vram_before}, after={node_profile.vram_after}, peak={node_profile.vram_peak}, delta={vram_delta}")
+
+                # Track model loading if this is a model loader node
+                if node_profile.node_type in self.model_loader_nodes and vram_delta > 0:
+                    # Get inputs from the active profile to pass to track_model_load
+                    inputs = node_profile.input_sizes  # This is a placeholder; we'll need to store actual inputs
+                    self.track_model_load(node_id, node_profile.node_type, inputs, outputs, vram_delta)
             except Exception as e:
                 logger.warning(f"⚠️  VRAM tracking failed for node {node_profile.node_type}: {e}")
                 print(f"[SwissArmyKnife][Profiler] ⚠️  VRAM tracking error: {e}")

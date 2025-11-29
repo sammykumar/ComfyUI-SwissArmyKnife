@@ -3,7 +3,10 @@ Profiler API Endpoints
 REST API for workflow profiling statistics and archive management
 """
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .profiler_core import ProfilerManager
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +29,7 @@ def get_profiler_manager():
 def register_profiler_routes(app):
     """
     Register profiler API routes with ComfyUI server
-    
+
     Args:
         app: The aiohttp or PromptServer application instance
     """
@@ -176,6 +179,33 @@ def register_profiler_routes(app):
             }, status=404)
         except Exception as e:
             logger.error(f"Error deleting archive: {e}", exc_info=True)
+            return web.json_response({
+                "success": False,
+                "error": str(e)
+            }, status=500)
+
+    @app.routes.get("/swissarmyknife/profiler/loaded_models")
+    async def get_loaded_models(request):
+        """
+        GET /swissarmyknife/profiler/loaded_models
+        Get currently loaded models by GPU
+        """
+        try:
+            manager = get_profiler_manager()
+            if not manager:
+                return web.json_response({
+                    "success": False,
+                    "error": "Profiler not initialized"
+                }, status=503)
+
+            loaded_models = manager.get_loaded_models()
+            return web.json_response({
+                "success": True,
+                "data": loaded_models
+            })
+
+        except Exception as e:
+            logger.error(f"Error getting loaded models: {e}", exc_info=True)
             return web.json_response({
                 "success": False,
                 "error": str(e)
