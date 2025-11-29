@@ -40,6 +40,14 @@ class NodeProfile:
         self.raw_inputs: Optional[Any] = None  # Store raw inputs for model tracking
         self.cache_hit: bool = False
         self.error: Optional[str] = None
+        
+        # OOM Detection Fields (Phase 6.1)
+        self.oom_occurred: bool = False
+        self.oom_error: Optional[str] = None
+        self.vram_free_before: Optional[int] = None
+        self.vram_percent_before: Optional[float] = None
+        self.vram_at_oom: Optional[int] = None
+        self.models_at_oom: Optional[Dict[int, List[Dict[str, Any]]]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization"""
@@ -59,7 +67,14 @@ class NodeProfile:
             'inputSizes': self.input_sizes,
             'outputSizes': self.output_sizes,
             'cacheHit': self.cache_hit,
-            'error': self.error
+            'error': self.error,
+            # OOM fields (Phase 6.1)
+            'oomOccurred': self.oom_occurred,
+            'oomError': self.oom_error,
+            'vramFreeBefore': self.vram_free_before,
+            'vramPercentBefore': self.vram_percent_before,
+            'vramAtOom': self.vram_at_oom,
+            'modelsAtOom': self.models_at_oom
         }
 
 
@@ -74,6 +89,10 @@ class WorkflowProfile:
         self.execution_order: List[str] = []
         self.cache_hits = 0
         self.cache_misses = 0
+        
+        # OOM Detection Fields (Phase 6.1)
+        self.oom_occurred: bool = False
+        self.oom_node_id: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization"""
@@ -99,7 +118,10 @@ class WorkflowProfile:
             'cacheMisses': self.cache_misses,
             'totalVramPeak': vram_peak,
             'totalRamPeak': ram_peak,
-            'nodesExecuted': len([n for n in self.nodes.values() if not n.cache_hit])
+            'nodesExecuted': len([n for n in self.nodes.values() if not n.cache_hit]),
+            # OOM fields (Phase 6.1)
+            'oomOccurred': self.oom_occurred,
+            'oomNodeId': self.oom_node_id
         }
 
 
@@ -136,9 +158,19 @@ class ProfilerManager:
         self._model_scan_cache_timestamp: Optional[float] = None
         self._model_scan_cache_ttl: float = 1.0  # Cache scan results for 1 second
 
+        # OOM tracking (Phase 6.1)
+        self.oom_history: List[Dict[str, Any]] = []
+        self.max_oom_history = 1000
+        self.oom_stats: Dict[str, Dict[str, Any]] = {}  # Per-node-type OOM statistics
+
         # Track pending model loads with metadata (filename, timestamp, metadata)
         self._pending_model_loads: List[Dict[str, Any]] = []
         self._pending_loads_max_age: float = 5.0  # Keep pending loads for 5 seconds
+        
+        # OOM Tracking (Phase 6.1)
+        self.oom_history: List[Dict[str, Any]] = []
+        self.oom_stats: Dict[str, Dict[str, Any]] = {}
+        self.max_oom_history: int = 1000
 
         # Persistence
         self.history_file = Path("cache/profiler_history.json")
@@ -216,6 +248,10 @@ class ProfilerManager:
 
         # Update averages
         self._update_averages(workflow_dict)
+        
+        # Update OOM stats if OOM occurred (Phase 6.2)
+        if profile.oom_occurred:
+            self._update_oom_stats(profile, workflow_dict)
 
         # Remove from active
         del self.active_profiles[prompt_id]
@@ -239,10 +275,34 @@ class ProfilerManager:
         node_profile = NodeProfile(node_id, node_type)
         node_profile.start_time = time.time()
 
-        # Track VRAM
+        # Track VRAM with pre-OOM detection (Phase 6.1)
         if self.torch_available and self.cuda_available:
             try:
                 import torch
+                
+                # Get free VRAM before node execution (OOM Prevention)
+                free_vram, total_vram = torch.cuda.mem_get_info()
+                node_profile.vram_free_before = free_vram
+                
+                # Calculate VRAM usage percentage
+                vram_used = total_vram - free_vram
+                node_profile.vram_percent_before = (vram_used / total_vram) * 100
+                
+                # Pre-OOM threshold warnings
+                if node_profile.vram_percent_before >= 95:
+                    logger.error(
+                        f"🔴 CRITICAL: VRAM at {node_profile.vram_percent_before:.1f}% "
+                        f"before {node_type} (free: {free_vram / 1024**3:.1f} GB / "
+                        f"{total_vram / 1024**3:.1f} GB) - OOM likely!"
+                    )
+                elif node_profile.vram_percent_before >= 85:
+                    logger.warning(
+                        f"⚠️  WARNING: VRAM at {node_profile.vram_percent_before:.1f}% "
+                        f"before {node_type} (free: {free_vram / 1024**3:.1f} GB / "
+                        f"{total_vram / 1024**3:.1f} GB)"
+                    )
+                
+                # Reset peak tracking and record allocated VRAM
                 torch.cuda.reset_peak_memory_stats()
                 node_profile.vram_before = torch.cuda.memory_allocated()
             except Exception as e:
@@ -781,6 +841,79 @@ class ProfilerManager:
 
             if node_dict['cacheHit']:
                 avg['cache_hits'] += 1
+    
+    def _update_oom_stats(self, profile: 'WorkflowProfile', workflow_dict: Dict[str, Any]):
+        """Update OOM statistics and history (Phase 6.2)"""
+        try:
+            # Get the OOM node details
+            if not profile.oom_node_id or profile.oom_node_id not in profile.nodes:
+                logger.warning("OOM occurred but node details not found")
+                return
+            
+            oom_node = profile.nodes[profile.oom_node_id]
+            node_type = oom_node.node_type
+            
+            # Create OOM event
+            oom_event = {
+                'timestamp': datetime.now().isoformat(),
+                'workflow_id': workflow_dict['workflowId'],
+                'node_id': profile.oom_node_id,
+                'node_type': node_type,
+                'vram_free_before': oom_node.vram_free_before,
+                'vram_percent_before': oom_node.vram_percent_before,
+                'vram_at_oom': oom_node.vram_at_oom,
+                'vram_peak': oom_node.vram_peak,
+                'models_at_oom': oom_node.models_at_oom,
+                'error_message': oom_node.oom_error,
+                'execution_time': oom_node.execution_time
+            }
+            
+            # Add to OOM history
+            self.oom_history.append(oom_event)
+            
+            # Limit OOM history size
+            if len(self.oom_history) > self.max_oom_history:
+                self.oom_history = self.oom_history[-self.max_oom_history:]
+            
+            # Update per-node-type OOM statistics
+            if node_type not in self.oom_stats:
+                self.oom_stats[node_type] = {
+                    'count': 0,
+                    'total_vram_at_oom': 0,
+                    'avg_vram_at_oom': 0,
+                    'model_combinations': {},
+                    'last_oom': None
+                }
+            
+            stats = self.oom_stats[node_type]
+            stats['count'] += 1
+            stats['last_oom'] = oom_event['timestamp']
+            
+            if oom_node.vram_at_oom:
+                stats['total_vram_at_oom'] += oom_node.vram_at_oom
+                stats['avg_vram_at_oom'] = stats['total_vram_at_oom'] / stats['count']
+            
+            # Track model combinations at OOM
+            if oom_node.models_at_oom:
+                for gpu_id, models in oom_node.models_at_oom.items():
+                    model_names = tuple(sorted([m['base_name'] for m in models]))
+                    model_key = str(model_names)
+                    
+                    if model_key not in stats['model_combinations']:
+                        stats['model_combinations'][model_key] = {
+                            'models': list(model_names),
+                            'count': 0,
+                            'total_vram': sum(m['vram_mb'] for m in models)
+                        }
+                    
+                    stats['model_combinations'][model_key]['count'] += 1
+            
+            logger.info(f"Updated OOM stats for {node_type}: {stats['count']} total OOMs")
+            
+        except Exception as e:
+            logger.error(f"Failed to update OOM stats: {e}")
+            import traceback
+            traceback.print_exc()
 
     def get_stats(self) -> Dict[str, Any]:
         """Get current profiler statistics"""
@@ -812,8 +945,97 @@ class ProfilerManager:
             'latest': self.history[-1] if self.history else None,
             'history': self.history[-100:],  # Last 100 workflows
             'node_averages': node_averages_computed,
-            'workflow_averages': workflow_avg_computed
+            'workflow_averages': workflow_avg_computed,
+            'oom_stats': self.get_oom_stats()
         }
+    
+    def get_oom_stats(self) -> Dict[str, Any]:
+        """Get OOM statistics and analytics (Phase 6.2)"""
+        try:
+            total_workflows = self.workflow_averages.get('count', 0)
+            total_ooms = len(self.oom_history)
+            oom_rate = (total_ooms / total_workflows * 100) if total_workflows > 0 else 0
+            
+            # Rank node types by OOM frequency
+            node_type_ranking = []
+            for node_type, stats in self.oom_stats.items():
+                node_avg = self.node_averages.get(node_type, {})
+                node_count = node_avg.get('count', stats['count'])
+                node_oom_rate = (stats['count'] / node_count * 100) if node_count > 0 else 0
+                
+                node_type_ranking.append({
+                    'node_type': node_type,
+                    'oom_count': stats['count'],
+                    'total_executions': node_count,
+                    'oom_rate': node_oom_rate,
+                    'avg_vram_at_oom_mb': int(stats['avg_vram_at_oom'] / (1024 * 1024)) if stats['avg_vram_at_oom'] > 0 else 0,
+                    'last_oom': stats['last_oom']
+                })
+            
+            # Sort by OOM count descending
+            node_type_ranking.sort(key=lambda x: x['oom_count'], reverse=True)
+            
+            # Model correlation analysis
+            model_correlation = []
+            for node_type, stats in self.oom_stats.items():
+                for model_combo, combo_stats in stats['model_combinations'].items():
+                    model_correlation.append({
+                        'node_type': node_type,
+                        'models': combo_stats['models'],
+                        'oom_count': combo_stats['count'],
+                        'total_vram_mb': combo_stats['total_vram']
+                    })
+            
+            # Sort by OOM count descending
+            model_correlation.sort(key=lambda x: x['oom_count'], reverse=True)
+            
+            # Generate recommendations
+            recommendations = []
+            if total_ooms > 0:
+                # Most problematic node
+                if node_type_ranking:
+                    worst_node = node_type_ranking[0]
+                    if worst_node['oom_rate'] > 50:
+                        recommendations.append({
+                            'type': 'node_prone',
+                            'severity': 'high',
+                            'message': f"{worst_node['node_type']} fails with OOM {worst_node['oom_rate']:.1f}% of the time. Consider reducing batch size or model complexity."
+                        })
+                
+                # Model combination warnings
+                if model_correlation:
+                    worst_combo = model_correlation[0]
+                    if worst_combo['oom_count'] >= 2:
+                        recommendations.append({
+                            'type': 'model_combination',
+                            'severity': 'medium',
+                            'message': f"Model combination {', '.join(worst_combo['models'][:2])} caused {worst_combo['oom_count']} OOMs. Consider unloading unused models before this operation."
+                        })
+                
+                # General VRAM advice
+                if oom_rate > 10:
+                    recommendations.append({
+                        'type': 'general',
+                        'severity': 'medium',
+                        'message': f"OOM rate is {oom_rate:.1f}%. Consider enabling --lowvram mode or reducing resolution/batch size."
+                    })
+            
+            return {
+                'total_oom_count': total_ooms,
+                'total_workflows': total_workflows,
+                'oom_rate': round(oom_rate, 2),
+                'recent_ooms': self.oom_history[-10:],  # Last 10 OOMs
+                'node_type_ranking': node_type_ranking[:10],  # Top 10 worst nodes
+                'model_correlation': model_correlation[:10],  # Top 10 model combos
+                'recommendations': recommendations
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to get OOM stats: {e}")
+            return {
+                'total_oom_count': len(self.oom_history),
+                'error': str(e)
+            }
 
     def _load_history(self):
         """Load history from disk"""
@@ -866,17 +1088,33 @@ class ProfilerManager:
         archive_file = self.archive_dir / f"profiler_archive_{timestamp}.json"
 
         try:
+            # Calculate OOM summary for archived workflows (Phase 6.2)
+            oom_summary = {
+                'total_workflows': len(self.history),
+                'oom_workflows': sum(1 for w in self.history if w.get('oomOccurred', False)),
+                'oom_nodes': {}
+            }
+            
+            for workflow in self.history:
+                if workflow.get('oomOccurred'):
+                    oom_node_id = workflow.get('oomNodeId')
+                    if oom_node_id and oom_node_id in workflow.get('nodes', {}):
+                        node_type = workflow['nodes'][oom_node_id].get('nodeType')
+                        if node_type:
+                            oom_summary['oom_nodes'][node_type] = oom_summary['oom_nodes'].get(node_type, 0) + 1
+            
             data = {
                 'history': self.history,
                 'node_averages': self.node_averages,
                 'workflow_averages': self.workflow_averages,
+                'oom_summary': oom_summary,
                 'archived_at': timestamp
             }
 
             with open(archive_file, 'w') as f:
                 json.dump(data, f, indent=2)
 
-            logger.info(f"Auto-archived {len(self.history)} profiles to {archive_file.name}")
+            logger.info(f"Auto-archived {len(self.history)} profiles to {archive_file.name} (OOMs: {oom_summary['oom_workflows']})")
 
             # Clear current history
             self.history = []

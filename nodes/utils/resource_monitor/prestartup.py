@@ -74,9 +74,65 @@ def inject_profiling():
 
                 return result
 
+            except RuntimeError as e:
+                # OOM Detection (Phase 6.1) - catch all PyTorch OOM variations
+                error_msg = str(e).lower()
+                is_oom = any(phrase in error_msg for phrase in [
+                    "out of memory",
+                    "allocation",  # Catches "Allocation on device" errors
+                    "oom"
+                ])
+                
+                if is_oom and is_main_execution and profiler_enabled:
+                    logger.error(f"💥 OOM detected in node {class_type} (ID: {unique_id})")
+                    
+                    if prompt_id in profiler.active_profiles:
+                        profile = profiler.active_profiles[prompt_id]
+                        
+                        if unique_id in profile.nodes:
+                            node = profile.nodes[unique_id]
+                            node.oom_occurred = True
+                            node.oom_error = str(e)
+                            
+                            # Capture OOM context
+                            try:
+                                import torch
+                                node.vram_at_oom = torch.cuda.memory_allocated()
+                                
+                                # Get GPU memory summary
+                                memory_summary = torch.cuda.memory_summary()
+                                logger.error(f"GPU Memory Summary:\n{memory_summary}")
+                                
+                                # Snapshot loaded models
+                                node.models_at_oom = profiler._scan_gpu_models()
+                                
+                                # Log models present at OOM
+                                if node.models_at_oom:
+                                    logger.error(f"Models loaded at OOM:")
+                                    for gpu_id, models in node.models_at_oom.items():
+                                        logger.error(f"  GPU {gpu_id}: {len(models)} models")
+                                        for model in models:
+                                            logger.error(
+                                                f"    - {model['name']} ({model['type']}): "
+                                                f"{model['vram_mb']} MB"
+                                            )
+                                
+                            except Exception as capture_error:
+                                logger.error(f"Failed to capture OOM context: {capture_error}")
+                            
+                            # Mark workflow as OOM'd
+                            profile.oom_occurred = True
+                            profile.oom_node_id = unique_id
+                    
+                    # End node tracking with error
+                    profiler.end_node(prompt_id, unique_id)
+                
+                # Re-raise to maintain ComfyUI error flow
+                raise
+                
             except Exception as e:
                 if is_main_execution and profiler_enabled:
-                    # Track error
+                    # Track non-OOM errors
                     if prompt_id in profiler.active_profiles:
                         if unique_id in profiler.active_profiles[prompt_id].nodes:
                             profiler.active_profiles[prompt_id].nodes[unique_id].error = str(e)
