@@ -1026,6 +1026,8 @@ app.registerExtension({
         const buttonGroup = document.createElement("div");
         buttonGroup.id = "swissarmyknife-resource-monitor";
         buttonGroup.className = "comfyui-button-group"; // Same class as Crystools
+        const monitorWrapper = document.createElement("div");
+        monitorWrapper.id = "swissarmyknife-resource-monitor-inner";
         
         // Fetch initial status to determine what monitors to create
         try {
@@ -1037,14 +1039,14 @@ app.registerExtension({
                 
                 // Add CPU monitor
                 if (hardware?.available) {
-                    buttonGroup.appendChild(createMonitorDisplay("CPU", "cpu"));
+                    monitorWrapper.appendChild(createMonitorDisplay("CPU", "cpu"));
                     
                     // Add CPU temp if available
                     if (hardware.cpu_temp !== null) {
-                        buttonGroup.appendChild(createMonitorDisplay("", "cpu-temp"));
+                        monitorWrapper.appendChild(createMonitorDisplay("", "cpu-temp"));
                     }
                     
-                    buttonGroup.appendChild(createMonitorDisplay("RAM", "ram"));
+                    monitorWrapper.appendChild(createMonitorDisplay("RAM", "ram"));
                 }
                 
                 // Add GPU monitors
@@ -1056,14 +1058,14 @@ app.registerExtension({
                         const gpuModel = extractGPUModel(device.name);
                         
                         // Add GPU model label with tooltip enabled
-                        buttonGroup.appendChild(createMonitorDisplay(gpuModel.toUpperCase(), `gpu${index}-label`, true));
+                        monitorWrapper.appendChild(createMonitorDisplay(gpuModel.toUpperCase(), `gpu${index}-label`, true));
                         
                         // Add VRAM monitor - just the value in GB (no label)
-                        buttonGroup.appendChild(createMonitorDisplay("", `vram${index}`));
+                        monitorWrapper.appendChild(createMonitorDisplay("", `vram${index}`));
                         
                         // Add GPU temp if available
                         if (device.temperature !== null && device.temperature !== undefined) {
-                            buttonGroup.appendChild(createMonitorDisplay("", `gpu${index}-temp`));
+                            monitorWrapper.appendChild(createMonitorDisplay("", `gpu${index}-temp`));
                         }
                     });
                 }
@@ -1075,6 +1077,7 @@ app.registerExtension({
             console.error("[SwissArmyKnife][ResourceMonitor] Error fetching initial status:", error);
         }
         
+        buttonGroup.appendChild(monitorWrapper);
         // Append monitors to body as floating element
         document.body.appendChild(buttonGroup);
         debugLog("Resource monitor inserted as floating bar");
