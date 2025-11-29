@@ -657,21 +657,31 @@ function createGPUTooltip(gpuId) {
  * Update GPU tooltip with loaded models data
  */
 async function updateGPUTooltip(gpuId, monitorElement) {
+    debugLog(`[updateGPUTooltip] Starting update for GPU ${gpuId}`);
     try {
         const response = await fetchWithRetry("/swissarmyknife/profiler/loaded_models", 1);
+        debugLog(`[updateGPUTooltip] Response status: ${response.status} ${response.ok ? 'OK' : 'FAILED'}`);
         if (!response.ok) {
             throw new Error("Failed to fetch loaded models");
         }
         
         const result = await response.json();
+        debugLog(`[updateGPUTooltip] API response:`, result);
+        debugLog(`[updateGPUTooltip] Available GPU IDs:`, Object.keys(result.data || {}));
         if (!result.success || !result.data) {
+            debugLog(`[updateGPUTooltip] ❌ Invalid response from API`);
             throw new Error("Invalid response");
         }
         
         const gpuData = result.data[gpuId];
+        debugLog(`[updateGPUTooltip] GPU ${gpuId} data:`, gpuData);
         const contentEl = document.getElementById(`gpu-tooltip-content-${gpuId}`);
         
         if (!gpuData || !gpuData.models || gpuData.models.length === 0) {
+            debugLog(`[updateGPUTooltip] ⚠️  No models found for GPU ${gpuId}`);
+            debugLog(`[updateGPUTooltip]   - gpuData exists: ${!!gpuData}`);
+            debugLog(`[updateGPUTooltip]   - models array exists: ${!!(gpuData && gpuData.models)}`);
+            debugLog(`[updateGPUTooltip]   - models length: ${gpuData && gpuData.models ? gpuData.models.length : 0}`);
             contentEl.innerHTML = `
                 <div class="gpu-tooltip-empty">No models loaded</div>
             `;
@@ -680,6 +690,10 @@ async function updateGPUTooltip(gpuId, monitorElement) {
         
         // Sort models by VRAM usage (descending)
         const sortedModels = [...gpuData.models].sort((a, b) => b.vram_mb - a.vram_mb);
+        debugLog(`[updateGPUTooltip] ✅ Found ${sortedModels.length} models on GPU ${gpuId}:`);
+        sortedModels.forEach((model, idx) => {
+            debugLog(`[updateGPUTooltip]   ${idx + 1}. ${model.name} (${model.type}): ${model.vram_mb} MB [${model.class_name}]`);
+        });
         
         // Build models list HTML
         let modelsHTML = '<div class="gpu-tooltip-section">📦 Loaded Models:</div>';
@@ -719,7 +733,8 @@ async function updateGPUTooltip(gpuId, monitorElement) {
         contentEl.innerHTML = modelsHTML;
         
     } catch (error) {
-        debugLog("Error updating GPU tooltip:", error);
+        debugLog("❌ [updateGPUTooltip] Error updating GPU tooltip:", error);
+        debugLog(`[updateGPUTooltip] Error stack:`, error.stack);
         const contentEl = document.getElementById(`gpu-tooltip-content-${gpuId}`);
         if (contentEl) {
             contentEl.innerHTML = `
