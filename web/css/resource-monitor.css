@@ -807,3 +807,228 @@
 .swissarmyknife-monitor:hover .swissarmyknife-monitor-label {
     color: rgba(255, 255, 255, 0.9);
 }
+
+/* ========== OOM (Out of Memory) Styling ========== */
+
+/* OOM Warning Borders for Stats Cards */
+.profiler-stat-card-warning {
+    border: 2px solid #f59e0b !important;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.profiler-stat-card-critical {
+    border: 2px solid #ef4444 !important;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+/* OOM Icon Column */
+.profiler-oom-icon {
+    text-align: center;
+    font-size: 1rem;
+}
+
+/* OOM Analysis Tab Styles */
+.oom-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.oom-summary-card {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+}
+
+.oom-summary-label {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 0.5rem;
+}
+
+.oom-summary-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+}
+
+.oom-summary-error {
+    color: #ef4444;
+}
+
+.oom-summary-warning {
+    color: #f59e0b;
+}
+
+/* OOM Sections */
+.oom-section {
+    margin-bottom: 2rem;
+}
+
+.oom-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Recent OOM Events */
+.oom-recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.oom-recent-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.oom-recent-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.oom-recent-node {
+    font-weight: 600;
+    color: #ef4444;
+    font-size: 1rem;
+}
+
+.oom-recent-time {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.oom-recent-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.oom-recent-models {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.5rem;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 4px;
+    margin-top: 0.5rem;
+}
+
+.oom-recent-error {
+    font-size: 0.75rem;
+    color: #f59e0b;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+/* OOM Tables */
+.oom-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.oom-table thead {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+.oom-table th {
+    text-align: left;
+    padding: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.oom-table td {
+    padding: 0.75rem;
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.oom-table tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.oom-count {
+    font-weight: 600;
+    color: #ef4444;
+}
+
+.oom-rate-warning {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.oom-rate-critical {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* Recommendations */
+.oom-recommendations {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.oom-recommendation {
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.oom-rec-critical {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+}
+
+.oom-rec-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+}
+
+.oom-rec-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+}
+
+.oom-rec-header {
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.oom-rec-message {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.5;
+}
+
+/* Success Message */
+.oom-success {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 8px;
+    color: #22c55e;
+    font-weight: 600;
+    font-size: 1.125rem;
+}

@@ -357,6 +357,166 @@ function formatBytes(bytes) {
 }
 
 /**
+ * Render OOM Analysis content
+ */
+function renderOomAnalysis(container, oomStats) {
+    if (!oomStats) {
+        container.innerHTML = '<p style="color: rgba(255,255,255,0.7); text-align: center; padding: 2rem;">No OOM data available</p>';
+        return;
+    }
+    
+    const { 
+        total_oom_count, 
+        total_workflows, 
+        oom_rate, 
+        recent_ooms = [], 
+        node_type_ranking = [], 
+        model_correlation = [], 
+        recommendations = [] 
+    } = oomStats;
+    
+    let html = '';
+    
+    // Summary Cards
+    html += '<div class="oom-summary-cards">';
+    html += `
+        <div class="oom-summary-card">
+            <div class="oom-summary-label">💥 Total OOMs</div>
+            <div class="oom-summary-value ${total_oom_count > 0 ? 'oom-summary-error' : ''}">${total_oom_count}</div>
+        </div>
+        <div class="oom-summary-card">
+            <div class="oom-summary-label">📈 Total Workflows</div>
+            <div class="oom-summary-value">${total_workflows}</div>
+        </div>
+        <div class="oom-summary-card">
+            <div class="oom-summary-label">📉 OOM Rate</div>
+            <div class="oom-summary-value ${oom_rate > 10 ? 'oom-summary-warning' : ''}">${oom_rate.toFixed(1)}%</div>
+        </div>
+    `;
+    html += '</div>';
+    
+    // Recent OOMs
+    if (recent_ooms.length > 0) {
+        html += '<div class="oom-section">';
+        html += '<h4 class="oom-section-title">🕒 Recent OOM Events</h4>';
+        html += '<div class="oom-recent-list">';
+        
+        recent_ooms.forEach(oom => {
+            const timestamp = new Date(oom.timestamp).toLocaleString();
+            const vramAtOomGB = (oom.vram_at_oom / (1024 ** 3)).toFixed(1);
+            const vramPeakGB = (oom.vram_peak / (1024 ** 3)).toFixed(1);
+            const models = oom.models_at_oom ? Object.values(oom.models_at_oom).flat() : [];
+            
+            html += `
+                <div class="oom-recent-item">
+                    <div class="oom-recent-header">
+                        <span class="oom-recent-node">💥 ${oom.node_type}</span>
+                        <span class="oom-recent-time">${timestamp}</span>
+                    </div>
+                    <div class="oom-recent-details">
+                        <div>🎮 VRAM at OOM: ${vramAtOomGB} GB (${oom.vram_percent_before.toFixed(1)}% used)</div>
+                        <div>📈 VRAM Peak: ${vramPeakGB} GB</div>
+                        <div>⏱️ Execution: ${formatMs(oom.execution_time)}</div>
+                    </div>
+            `;
+            
+            if (models.length > 0) {
+                html += '<div class="oom-recent-models">';
+                html += '<strong>📦 Models Loaded:</strong> ';
+                html += models.map(m => `${m.base_name} (${m.vram_mb} MB)`).join(', ');
+                html += '</div>';
+            }
+            
+            if (oom.error_message) {
+                html += `<div class="oom-recent-error">⚠️ ${oom.error_message}</div>`;
+            }
+            
+            html += '</div>';
+        });
+        
+        html += '</div></div>';
+    }
+    
+    // Node Type Ranking
+    if (node_type_ranking.length > 0) {
+        html += '<div class="oom-section">';
+        html += '<h4 class="oom-section-title">🎯 Node Type OOM Frequency</h4>';
+        html += '<table class="oom-table">';
+        html += '<thead><tr><th>Node Type</th><th>OOMs</th><th>Total Executions</th><th>OOM Rate</th><th>Avg VRAM at OOM</th><th>Last OOM</th></tr></thead>';
+        html += '<tbody>';
+        
+        node_type_ranking.forEach(node => {
+            const lastOomDate = new Date(node.last_oom).toLocaleDateString();
+            const oomRateClass = node.oom_rate > 50 ? 'oom-rate-critical' : node.oom_rate > 10 ? 'oom-rate-warning' : '';
+            
+            html += `
+                <tr>
+                    <td><strong>${node.node_type}</strong></td>
+                    <td class="oom-count">${node.oom_count}</td>
+                    <td>${node.total_executions}</td>
+                    <td class="${oomRateClass}">${node.oom_rate.toFixed(1)}%</td>
+                    <td>${node.avg_vram_at_oom_mb} MB</td>
+                    <td>${lastOomDate}</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table></div>';
+    }
+    
+    // Model Correlation
+    if (model_correlation.length > 0) {
+        html += '<div class="oom-section">';
+        html += '<h4 class="oom-section-title">📦 Model Correlation</h4>';
+        html += '<table class="oom-table">';
+        html += '<thead><tr><th>Node Type</th><th>Models</th><th>OOM Count</th><th>Total VRAM</th></tr></thead>';
+        html += '<tbody>';
+        
+        model_correlation.forEach(corr => {
+            html += `
+                <tr>
+                    <td><strong>${corr.node_type}</strong></td>
+                    <td>${corr.models.join(', ')}</td>
+                    <td class="oom-count">${corr.oom_count}</td>
+                    <td>${corr.total_vram_mb} MB</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table></div>';
+    }
+    
+    // Recommendations
+    if (recommendations.length > 0) {
+        html += '<div class="oom-section">';
+        html += '<h4 class="oom-section-title">💡 Recommendations</h4>';
+        html += '<div class="oom-recommendations">';
+        
+        recommendations.forEach(rec => {
+            const severityClass = rec.severity === 'critical' ? 'oom-rec-critical' : 
+                                rec.severity === 'warning' ? 'oom-rec-warning' : 'oom-rec-info';
+            const icon = rec.severity === 'critical' ? '🛑' : 
+                        rec.severity === 'warning' ? '⚠️' : '💡';
+            
+            html += `
+                <div class="oom-recommendation ${severityClass}">
+                    <div class="oom-rec-header">${icon} <strong>${rec.title}</strong></div>
+                    <div class="oom-rec-message">${rec.message}</div>
+                </div>
+            `;
+        });
+        
+        html += '</div></div>';
+    } else if (total_oom_count === 0) {
+        html += '<div class="oom-section">';
+        html += '<div class="oom-success">✅ No OOM errors detected! Your workflows are running smoothly.</div>';
+        html += '</div>';
+    }
+    
+    container.innerHTML = html;
+}
+
+/**
  * Create profiler popup
  */
 function createProfilerPopup() {
@@ -382,10 +542,11 @@ function createProfilerPopup() {
                         <th>Time</th>
                         <th>VRAM</th>
                         <th>Cache</th>
+                        <th title="Out of Memory">💥</th>
                     </tr>
                 </thead>
                 <tbody id="profiler-node-table-body">
-                    <tr><td colspan="4" style="text-align: center; padding: 1rem;">No data available</td></tr>
+                    <tr><td colspan="5" style="text-align: center; padding: 1rem;">No data available</td></tr>
                 </tbody>
             </table>
         </div>
@@ -448,18 +609,33 @@ function updateProfilerPopupContent(popup, data) {
     
     const latest = data.latest;
     
-    // Update stats grid
+    // Update stats grid with OOM warning indicators
     const statsGrid = popup.querySelector("#profiler-stats-grid");
+    
+    // Helper to get warning class based on highest VRAM percentage in workflow
+    const getOomWarningClass = () => {
+        if (!latest.nodes) return '';
+        
+        const nodeArray = Object.values(latest.nodes);
+        const maxVramPercent = Math.max(...nodeArray.map(n => n.vramPercentBefore || 0));
+        
+        if (maxVramPercent >= 95) return 'profiler-stat-card-critical';
+        if (maxVramPercent >= 85) return 'profiler-stat-card-warning';
+        return '';
+    };
+    
+    const warningClass = getOomWarningClass();
+    
     statsGrid.innerHTML = `
-        <div class="profiler-stat-card">
+        <div class="profiler-stat-card ${warningClass}">
             <div class="profiler-stat-label">⏱️ Total Time</div>
             <div class="profiler-stat-value">${formatDurationMs(latest.executionTime)}</div>
         </div>
-        <div class="profiler-stat-card">
+        <div class="profiler-stat-card ${warningClass}">
             <div class="profiler-stat-label">🎮 VRAM Peak</div>
             <div class="profiler-stat-value">${formatBytes(latest.totalVramPeak)}</div>
         </div>
-        <div class="profiler-stat-card">
+        <div class="profiler-stat-card ${warningClass}">
             <div class="profiler-stat-label">💾 RAM Peak</div>
             <div class="profiler-stat-value">${formatBytes(latest.totalRamPeak)}</div>
         </div>
@@ -477,7 +653,7 @@ function updateProfilerPopupContent(popup, data) {
         </div>
     `;
     
-    // Update node table (top 10 slowest)
+    // Update node table (top 10 slowest) with OOM column
     const tbody = popup.querySelector("#profiler-node-table-body");
     
     if (latest.nodes && Object.keys(latest.nodes).length > 0) {
@@ -493,10 +669,11 @@ function updateProfilerPopupContent(popup, data) {
                     <td>${formatMs(node.executionTime)}</td>
                     <td>${formatBytes(node.vramDelta)}</td>
                     <td class="profiler-cache-icon">${node.cacheHit ? '🟢' : '⚡'}</td>
+                    <td class="profiler-oom-icon" title="${node.oomOccurred ? 'Out of Memory Error' : 'No OOM'}">${node.oomOccurred ? '💥' : ''}</td>
                 </tr>
             `).join('');
         } else {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1rem;">No executed nodes in latest workflow</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 1rem;">No executed nodes in latest workflow</td></tr>';
         }
     } else {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1rem;">No node data available</td></tr>';
@@ -540,6 +717,7 @@ function createProfilerModal() {
                 <button class="profiler-tab active" data-tab="latest">📊 Latest Run</button>
                 <button class="profiler-tab" data-tab="previous">📈 Previous Runs</button>
                 <button class="profiler-tab" data-tab="analytics">🔍 Node Analytics</button>
+                <button class="profiler-tab" data-tab="oom">💥 OOM Analysis</button>
                 <button class="profiler-tab" data-tab="settings">⚙️ Settings</button>
             </div>
             
@@ -557,6 +735,11 @@ function createProfilerModal() {
                 <div class="profiler-tab-panel" id="profiler-tab-analytics">
                     <h3>Node Performance Analytics</h3>
                     <div id="profiler-analytics-content">Loading...</div>
+                </div>
+                
+                <div class="profiler-tab-panel" id="profiler-tab-oom">
+                    <h3>💥 Out of Memory Analysis</h3>
+                    <div id="profiler-oom-content">Loading...</div>
                 </div>
                 
                 <div class="profiler-tab-panel" id="profiler-tab-settings">
@@ -645,6 +828,12 @@ ${JSON.stringify(data.history.slice(0, 10), null, 2)}
 ${JSON.stringify(data.node_averages, null, 2)}
             </pre>
         `;
+    }
+    
+    // Update OOM Analysis tab
+    const oomContent = document.getElementById("profiler-oom-content");
+    if (oomContent && data.oom_stats) {
+        renderOomAnalysis(oomContent, data.oom_stats);
     }
     
     const settingsContent = document.getElementById("profiler-settings-content");
