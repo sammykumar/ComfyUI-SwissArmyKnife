@@ -1,4 +1,19 @@
 /* Swiss Army Knife - Resource Monitor Floating Bar */
+@property --swissarmyknife-gradient-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes swissarmyknife-resource-monitor-rotation {
+    0% {
+        --swissarmyknife-gradient-angle: 0deg;
+    }
+    100% {
+        --swissarmyknife-gradient-angle: 360deg;
+    }
+}
+
 #swissarmyknife-resource-monitor {
     position: fixed;
     bottom: 20px;
@@ -19,6 +34,33 @@
     font-size: 0.919rem;
     line-height: 1.313rem;
     font-weight: 500;
+    isolation: isolate;
+    --swissarmyknife-gradient-angle: 0deg;
+}
+
+#swissarmyknife-resource-monitor::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease, filter 0.3s ease;
+    pointer-events: none;
+}
+
+#swissarmyknife-resource-monitor.swissarmyknife-is-executing {
+    overflow: visible;
+    border-color: transparent;
+    box-shadow: 0 15px 35px rgba(59, 130, 246, 0.35), 0 0 25px rgba(236, 72, 153, 0.4);
+}
+
+#swissarmyknife-resource-monitor.swissarmyknife-is-executing::before {
+    opacity: 1;
+    inset: -4px;
+    filter: blur(12px);
+    background: linear-gradient(var(--swissarmyknife-gradient-angle), #60a5fa, #a855f7, #ec4899, #f97316, #60a5fa);
+    animation: swissarmyknife-resource-monitor-rotation 6s linear infinite;
 }
 
 /* Restart Button */

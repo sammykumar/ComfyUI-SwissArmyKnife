@@ -1043,6 +1043,25 @@ app.registerExtension({
         // Append monitors to body as floating element
         document.body.appendChild(buttonGroup);
         debugLog("Resource monitor inserted as floating bar");
+
+        const setExecutionGlowState = (isExecuting) => {
+            if (!buttonGroup) {
+                return;
+            }
+            buttonGroup.classList.toggle("swissarmyknife-is-executing", Boolean(isExecuting));
+        };
+
+        const clearExecutionGlow = () => setExecutionGlowState(false);
+
+        api.addEventListener("execution_start", () => setExecutionGlowState(true));
+        [
+            "execution_success",
+            "execution_error",
+            "execution_cancelled",
+            "execution_end",
+        ].forEach((eventName) => {
+            api.addEventListener(eventName, clearExecutionGlow);
+        });
         
         // Create separate button group for profiler and restart
         const actionButtonGroup = document.createElement("div");
