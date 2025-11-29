@@ -268,616 +268,27 @@ function createProfilerButton() {
 }
 
 /**
- * Injects CSS styles for the resource monitor (restart button + profiler)
+ * Loads CSS stylesheet for the resource monitor
  */
-function injectResourceMonitorStyles() {
-    debugLog("Injecting restart button styles");
+function loadResourceMonitorStyles() {
+    debugLog("Loading resource monitor stylesheet");
 
-    const styleId = "swissarmyknife-restart-button-styles";
+    const linkId = "swissarmyknife-resource-monitor-styles";
     
-    // Check if styles already exist
-    if (document.getElementById(styleId)) {
-        debugLog("Restart button styles already exist");
+    // Check if stylesheet already exists
+    if (document.getElementById(linkId)) {
+        debugLog("Resource monitor stylesheet already loaded");
         return;
     }
 
-    const style = document.createElement("style");
-    style.id = styleId;
-    style.textContent = `
-        /* Swiss Army Knife - Resource Monitor Floating Bar */
-        #swissarmyknife-resource-monitor {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 0;
-            padding: 0;
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            background-color: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 9999px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            overflow: hidden;
-            z-index: 9999;
-            font-size: 0.919rem;
-            line-height: 1.313rem;
-            font-weight: 500;
-        }
-
-        /* Restart Button */
-        #swissarmyknife-restart-button {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 1rem;
-            height: 100%;
-            background-color: #dc3545;
-            color: white;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        #swissarmyknife-restart-button::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 2rem;
-            width: 1px;
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        #swissarmyknife-restart-button:hover {
-            background-color: #c82333;
-        }
-
-        #swissarmyknife-restart-button:active {
-            background-color: #bd2130;
-        }
-
-        #swissarmyknife-restart-button:disabled {
-            background-color: #6c757d;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        /* Monitor Display - Individual Metrics Container */
-        .swissarmyknife-monitor {
-            position: relative;
-            padding-left: 1rem;
-            padding-right: 1rem;
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
-            overflow: hidden;
-        }
-        
-        /* Background Progress Bar - Percentage Reactive */
-        .swissarmyknife-monitor-bg {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            width: 0%;
-            transition: all 500ms;
-            background-color: transparent;
-        }
-        
-        /* Divider - Separator between monitors */
-        .swissarmyknife-monitor:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 2rem;
-            width: 1px;
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-        
-        .swissarmyknife-monitor-content {
-            position: relative;
-            display: flex;
-            align-items: baseline;
-            gap: 0.5rem;
-            white-space: nowrap;
-            z-index: 1;
-        }
-        
-        .swissarmyknife-monitor-label {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.875rem;
-            line-height: 1.25rem;
-        }
-        
-        .swissarmyknife-monitor-value {
-            color: rgb(255, 255, 255);
-            font-weight: 600;
-            font-variant-numeric: tabular-nums;
-            font-size: 0.875rem;
-            line-height: 1.25rem;
-        }
-
-        /* Profiler Button */
-        #swissarmyknife-profiler-button {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 1rem;
-            height: 100%;
-            background-color: rgba(99, 102, 241, 0.8);
-            color: white;
-            font-size: 1.25rem;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        #swissarmyknife-profiler-button::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 2rem;
-            width: 1px;
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        #swissarmyknife-profiler-button:hover {
-            background-color: rgba(79, 70, 229, 0.9);
-        }
-
-        #swissarmyknife-profiler-button:active {
-            background-color: rgba(67, 56, 202, 1);
-        }
-
-        /* Profiler Popup */
-        #swissarmyknife-profiler-popup {
-            position: fixed;
-            display: none;
-            width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            background-color: rgba(0, 0, 0, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            z-index: 10000;
-            padding: 1.5rem;
-        }
-
-        /* Arrow pointer for popup - pointing to the right */
-        #swissarmyknife-profiler-popup::after {
-            content: '';
-            position: absolute;
-            right: -8px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 0;
-            height: 0;
-            border-top: 8px solid transparent;
-            border-bottom: 8px solid transparent;
-            border-left: 8px solid rgba(0, 0, 0, 0.85);
-        }
-
-        /* Popup Header */
-        .profiler-popup-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-        }
-
-        .profiler-popup-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .profiler-popup-close {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: white;
-            width: 2rem;
-            height: 2rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 1.25rem;
-            line-height: 1;
-            transition: all 0.2s ease;
-        }
-
-        .profiler-popup-close:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Progress Gauge */
-        .profiler-gauge-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-        }
-
-        .profiler-gauge-svg {
-            width: 120px;
-            height: 120px;
-            transform: rotate(-90deg);
-        }
-
-        .profiler-gauge-circle-bg {
-            fill: none;
-            stroke: rgba(255, 255, 255, 0.1);
-            stroke-width: 8;
-        }
-
-        .profiler-gauge-circle-progress {
-            fill: none;
-            stroke: #fbbf24;
-            stroke-width: 8;
-            stroke-linecap: round;
-            transition: stroke-dashoffset 0.5s ease;
-        }
-
-        .profiler-gauge-text {
-            position: absolute;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .profiler-gauge-label {
-            margin-top: 0.5rem;
-            font-size: 0.875rem;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        /* Stats Grid */
-        .profiler-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .profiler-stat-card {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 0.75rem;
-            transition: all 0.2s ease;
-        }
-
-        .profiler-stat-card:hover {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .profiler-stat-label {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 0.25rem;
-        }
-
-        .profiler-stat-value {
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .profiler-stat-icon {
-            margin-right: 0.25rem;
-        }
-
-        /* Node Table */
-        .profiler-node-table-container {
-            margin-bottom: 1rem;
-        }
-
-        .profiler-node-table-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 0.75rem;
-        }
-
-        .profiler-node-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75rem;
-        }
-
-        .profiler-node-table th {
-            text-align: left;
-            padding: 0.5rem;
-            color: rgba(255, 255, 255, 0.6);
-            font-weight: 600;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            cursor: pointer;
-        }
-
-        .profiler-node-table th:hover {
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .profiler-node-table td {
-            padding: 0.5rem;
-            color: rgba(255, 255, 255, 0.9);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .profiler-node-table tr:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .profiler-cache-icon {
-            font-size: 0.875rem;
-        }
-
-        /* Footer Actions */
-        .profiler-popup-footer {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .profiler-btn {
-            flex: 1;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .profiler-btn-primary {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: white;
-        }
-
-        .profiler-btn-primary:hover {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        }
-
-        .profiler-btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-
-        .profiler-btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .profiler-btn-danger {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
-        }
-
-        .profiler-btn-danger:hover {
-            background: rgba(239, 68, 68, 0.3);
-        }
-
-        /* Profiler Modal */
-        #swissarmyknife-profiler-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            display: none;
-            z-index: 11000;
-            padding: 2rem;
-        }
-
-        .profiler-modal-content {
-            background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(31, 41, 55, 0.95) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .profiler-modal-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .profiler-modal-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .profiler-modal-close {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: white;
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 1.5rem;
-            line-height: 1;
-            transition: all 0.2s ease;
-        }
-
-        .profiler-modal-close:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Tabs */
-        .profiler-tabs {
-            display: flex;
-            gap: 0.5rem;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .profiler-tab {
-            padding: 0.5rem 1rem;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.6);
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .profiler-tab:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .profiler-tab.active {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: white;
-        }
-
-        .profiler-tab-content {
-            flex: 1;
-            padding: 1.5rem;
-            overflow-y: auto;
-        }
-
-        .profiler-tab-panel {
-            display: none;
-        }
-
-        .profiler-tab-panel.active {
-            display: block;
-        }
-
-        /* Action Button Group - Vertical floating container for Profiler and Restart */
-        #swissarmyknife-action-buttons {
-            position: fixed;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0;
-            padding: 0;
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            background-color: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 9999px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            overflow: hidden;
-            z-index: 9999;
-            width: 3rem;
-        }
-
-        /* Action buttons - shared styles */
-        #swissarmyknife-action-buttons .comfyui-button {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem 0;
-            width: 100%;
-            background-color: transparent;
-            color: rgba(255, 255, 255, 0.8);
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        #swissarmyknife-action-buttons .comfyui-button svg {
-            display: block;
-        }
-
-        #swissarmyknife-action-buttons .comfyui-button:hover {
-            color: rgba(255, 255, 255, 1);
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        #swissarmyknife-action-buttons .comfyui-button:active {
-            background-color: rgba(255, 255, 255, 0.15);
-        }
-
-        #swissarmyknife-action-buttons .comfyui-button:disabled {
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        /* Separator between action buttons */
-        #swissarmyknife-action-buttons .comfyui-button:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 2rem;
-            height: 1px;
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        /* Override profiler button styles when in action group */
-        #swissarmyknife-action-buttons #swissarmyknife-profiler-button {
-            background-color: transparent;
-            font-size: 1rem;
-        }
-
-        #swissarmyknife-action-buttons #swissarmyknife-profiler-button::before {
-            display: none;
-        }
-
-        #swissarmyknife-action-buttons #swissarmyknife-profiler-button:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        #swissarmyknife-action-buttons #swissarmyknife-profiler-button:active {
-            background-color: rgba(255, 255, 255, 0.15);
-        }
-
-        /* Override restart button styles when in action group */
-        #swissarmyknife-action-buttons #swissarmyknife-restart-button {
-            background-color: transparent;
-        }
-
-        #swissarmyknife-action-buttons #swissarmyknife-restart-button::before {
-            display: none;
-        }
-
-        #swissarmyknife-action-buttons #swissarmyknife-restart-button:hover {
-            background-color: rgba(220, 53, 69, 0.2);
-            color: rgba(255, 255, 255, 1);
-        }
-
-        #swissarmyknife-action-buttons #swissarmyknife-restart-button:active {
-            background-color: rgba(220, 53, 69, 0.3);
-        }
-    `;
-
-    document.head.appendChild(style);
-    debugLog("Resource monitor styles injected");
+    const link = document.createElement("link");
+    link.id = linkId;
+    link.rel = "stylesheet";
+    link.type = "text/css";
+    link.href = "extensions/ComfyUI-SwissArmyKnife/css/resource-monitor.css";
+
+    document.head.appendChild(link);
+    debugLog("Resource monitor stylesheet loaded");
 }
 
 /**
@@ -1238,17 +649,20 @@ function createMonitorDisplay(label, id) {
     const contentWrapper = document.createElement("div");
     contentWrapper.className = "swissarmyknife-monitor-content";
     
-    const labelEl = document.createElement("span");
-    labelEl.className = "swissarmyknife-monitor-label";
-    labelEl.textContent = label;
+    // Only create label if one is provided
+    if (label) {
+        const labelEl = document.createElement("span");
+        labelEl.className = "swissarmyknife-monitor-label";
+        labelEl.textContent = label;
+        contentWrapper.appendChild(labelEl);
+        contentWrapper.appendChild(document.createTextNode(" "));
+    }
     
     const valueEl = document.createElement("span");
     valueEl.className = "swissarmyknife-monitor-value";
     valueEl.id = `swissarmyknife-monitor-value-${id}`;
     valueEl.textContent = "--";
     
-    contentWrapper.appendChild(labelEl);
-    contentWrapper.appendChild(document.createTextNode(" "));
     contentWrapper.appendChild(valueEl);
     
     monitor.appendChild(bgBar);
@@ -1388,9 +802,9 @@ function handleMonitorUpdate(data) {
         gpu.devices.forEach((device, index) => {
             if (!device.available) return;
             
-            // Update GPU utilization
+            // Update GPU label (shows utilization percentage)
             if (device.utilization !== null && device.utilization !== undefined) {
-                updateMonitorValue(`gpu${index}`, formatPercent(device.utilization), device.utilization);
+                updateMonitorValue(`gpu${index}-label`, formatPercent(device.utilization), device.utilization);
             }
             
             // Update VRAM - show used GB
@@ -1415,8 +829,8 @@ app.registerExtension({
     async setup() {
         debugLog("Resource Monitor extension setup started");
         
-        // Inject styles first
-        injectResourceMonitorStyles();
+        // Load stylesheet first
+        loadResourceMonitorStyles();
         
         // Create button group DIV (plain DOM, no deprecated imports)
         const buttonGroup = document.createElement("div");
@@ -1434,12 +848,13 @@ app.registerExtension({
                 // Add CPU monitor
                 if (hardware?.available) {
                     buttonGroup.appendChild(createMonitorDisplay("CPU", "cpu"));
-                    buttonGroup.appendChild(createMonitorDisplay("RAM", "ram"));
                     
                     // Add CPU temp if available
                     if (hardware.cpu_temp !== null) {
-                        buttonGroup.appendChild(createMonitorDisplay("TEMP", "cpu-temp"));
+                        buttonGroup.appendChild(createMonitorDisplay("", "cpu-temp"));
                     }
+                    
+                    buttonGroup.appendChild(createMonitorDisplay("RAM", "ram"));
                 }
                 
                 // Add GPU monitors
@@ -1450,12 +865,15 @@ app.registerExtension({
                         // Extract compact GPU model name
                         const gpuModel = extractGPUModel(device.name);
                         
-                        // Add VRAM monitor with index
-                        buttonGroup.appendChild(createMonitorDisplay(`VRAM ${index}`, `vram${index}`));
+                        // Add GPU model label
+                        buttonGroup.appendChild(createMonitorDisplay(gpuModel.toUpperCase(), `gpu${index}-label`));
                         
-                        // Add GPU temp if available - just model name, all caps
+                        // Add VRAM monitor - just the value in GB (no label)
+                        buttonGroup.appendChild(createMonitorDisplay("", `vram${index}`));
+                        
+                        // Add GPU temp if available
                         if (device.temperature !== null && device.temperature !== undefined) {
-                            buttonGroup.appendChild(createMonitorDisplay(gpuModel.toUpperCase(), `gpu${index}-temp`));
+                            buttonGroup.appendChild(createMonitorDisplay("", `gpu${index}-temp`));
                         }
                     });
                 }
