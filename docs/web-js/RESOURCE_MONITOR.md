@@ -155,7 +155,7 @@ Keep the file-level documentation synchronized with each feature drop so operato
 - Profiler button (📊) in floating resource monitor
 - Glassmorphic popup with:
   - Circular progress gauge
-  - 6-card stats grid (Time, VRAM, RAM, Cache, Nodes)
+  - 6-card stats grid (Time, VRAM, RAM, Cache, Nodes). The Total Time card now renders long runs in minutes+seconds (e.g., `5m 50.9s`) while sub-minute workflows stay in seconds for better readability.
   - Top 10 slowest nodes table
   - "View Full History" and "Clear History" buttons
 - Full-screen modal with 4 tabs (Latest, Previous, Analytics, Settings)

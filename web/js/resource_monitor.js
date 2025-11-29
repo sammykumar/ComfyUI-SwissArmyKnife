@@ -321,6 +321,26 @@ function formatMs(ms) {
     return `${(ms / 1000).toFixed(2)}s`;
 }
 
+function formatDurationMs(ms) {
+    if (ms === null || ms === undefined) return "N/A";
+    const totalSeconds = ms / 1000;
+    let minutes = Math.floor(totalSeconds / 60);
+    let seconds = totalSeconds - minutes * 60;
+    seconds = Math.round(seconds * 100) / 100;
+    if (seconds >= 60) {
+        minutes += 1;
+        seconds = 0;
+    }
+    if (minutes <= 0) {
+        const precision = seconds < 10 ? 2 : 1;
+        return `${seconds.toFixed(precision)}s`;
+    }
+    const precision = seconds < 10 ? 2 : 1;
+    const secondsValue = Number(seconds.toFixed(precision));
+    const secondsStr = Number.isInteger(secondsValue) ? secondsValue.toFixed(0) : secondsValue.toString();
+    return `${minutes}m ${secondsStr}s`;
+}
+
 /**
  * Format bytes to human readable
  */
@@ -430,7 +450,7 @@ function updateProfilerPopupContent(popup, data) {
     statsGrid.innerHTML = `
         <div class="profiler-stat-card">
             <div class="profiler-stat-label">⏱️ Total Time</div>
-            <div class="profiler-stat-value">${formatMs(latest.executionTime)}</div>
+            <div class="profiler-stat-value">${formatDurationMs(latest.executionTime)}</div>
         </div>
         <div class="profiler-stat-card">
             <div class="profiler-stat-label">🎮 VRAM Peak</div>
