@@ -854,9 +854,14 @@ class ProfilerManager:
             node_type = oom_node.node_type
             
             # Create OOM event
+            # Calculate execution time from start/end
+            execution_time = None
+            if oom_node.start_time and oom_node.end_time:
+                execution_time = (oom_node.end_time - oom_node.start_time) * 1000  # Convert to ms
+            
             oom_event = {
                 'timestamp': datetime.now().isoformat(),
-                'workflow_id': workflow_dict['workflowId'],
+                'prompt_id': workflow_dict.get('promptId', 'unknown'),
                 'node_id': profile.oom_node_id,
                 'node_type': node_type,
                 'vram_free_before': oom_node.vram_free_before,
@@ -865,7 +870,7 @@ class ProfilerManager:
                 'vram_peak': oom_node.vram_peak,
                 'models_at_oom': oom_node.models_at_oom,
                 'error_message': oom_node.oom_error,
-                'execution_time': oom_node.execution_time
+                'execution_time': execution_time
             }
             
             # Add to OOM history
