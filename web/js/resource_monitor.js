@@ -25,7 +25,7 @@ const isDebugEnabled = () => {
 
 const debugLog = (...args) => {
     if (isDebugEnabled()) {
-        console.log("[SwissArmyKnife][ResourceMonitor]", ...args);
+        console.log("%c[🔪SwissArmyKnife][ResourceMonitor]", "color: #3b82f6; font-weight: bold;", ...args);
     }
 };
 
@@ -168,7 +168,7 @@ function createRestartButton() {
             }
             
         } catch (error) {
-            console.error("[SwissArmyKnife][ResourceMonitor] Error restarting server:", error);
+            console.error("%c[🔪SwissArmyKnife][ResourceMonitor]", "color: #ef4444; font-weight: bold;", "Error restarting server:", error);
             button.disabled = false;
             button.textContent = "Restart";
             
@@ -229,10 +229,10 @@ function createProfilerButton() {
                     button._profilerData = result.data;
                     updateProfilerPopupContent(popup, result.data);
                 } else {
-                    console.warn("[SwissArmyKnife][Profiler] No data in response:", result);
+                    console.warn("%c[🔪SwissArmyKnife][Profiler]", "color: #f59e0b; font-weight: bold;", "No data in response:", result);
                 }
             } catch (error) {
-                console.error("[SwissArmyKnife][Profiler] Error fetching profiler data:", error);
+                console.error("%c[🔪SwissArmyKnife][Profiler]", "color: #ef4444; font-weight: bold;", "Error fetching profiler data:", error);
             }
             
             // Position popup to the left of the action buttons
@@ -425,7 +425,7 @@ function createProfilerPopup() {
                     button._profilerData = null;
                 }
             } catch (error) {
-                console.error("[SwissArmyKnife][Profiler] Error clearing history:", error);
+                console.error("%c[🔪SwissArmyKnife][Profiler]", "color: #ef4444; font-weight: bold;", "Error clearing history:", error);
             }
         }
     });
@@ -605,7 +605,7 @@ async function fetchProfilerDataForModal() {
             updateModalContent(result.data);
         }
     } catch (error) {
-        console.error("[SwissArmyKnife][Profiler] Error fetching modal data:", error);
+        console.error("%c[🔪SwissArmyKnife][Profiler]", "color: #ef4444; font-weight: bold;", "Error fetching modal data:", error);
     }
 }
 
@@ -819,9 +819,9 @@ function createMonitorDisplay(label, id, enableTooltip = false) {
         contentWrapper.appendChild(labelEl);
         contentWrapper.appendChild(document.createTextNode(" "));
         
-        // Add tooltip functionality for GPU labels
-        if (enableTooltip && id.includes("gpu") && id.includes("-label")) {
-            const gpuMatch = id.match(/gpu(\d+)-label/);
+        // Add tooltip functionality for VRAM metrics
+        if (enableTooltip && id.includes("vram")) {
+            const gpuMatch = id.match(/vram(\d+)/);
             if (gpuMatch) {
                 const gpuId = parseInt(gpuMatch[1]);
                 const tooltip = createGPUTooltip(gpuId);
@@ -1057,11 +1057,11 @@ app.registerExtension({
                         // Extract compact GPU model name
                         const gpuModel = extractGPUModel(device.name);
                         
-                        // Add GPU model label with tooltip enabled
-                        monitorWrapper.appendChild(createMonitorDisplay(gpuModel.toUpperCase(), `gpu${index}-label`, true));
+                        // Add GPU model label (no tooltip)
+                        monitorWrapper.appendChild(createMonitorDisplay(gpuModel.toUpperCase(), `gpu${index}-label`, false));
                         
-                        // Add VRAM monitor - just the value in GB (no label)
-                        monitorWrapper.appendChild(createMonitorDisplay("", `vram${index}`));
+                        // Add VRAM monitor with tooltip showing loaded models
+                        monitorWrapper.appendChild(createMonitorDisplay("", `vram${index}`, true));
                         
                         // Add GPU temp if available
                         if (device.temperature !== null && device.temperature !== undefined) {
@@ -1074,7 +1074,7 @@ app.registerExtension({
                 handleMonitorUpdate(result.data);
             }
         } catch (error) {
-            console.error("[SwissArmyKnife][ResourceMonitor] Error fetching initial status:", error);
+            console.error("%c[🔪SwissArmyKnife][ResourceMonitor]", "color: #ef4444; font-weight: bold;", "Error fetching initial status:", error);
         }
         
         buttonGroup.appendChild(monitorWrapper);
