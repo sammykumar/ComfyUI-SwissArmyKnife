@@ -212,56 +212,71 @@ function createProfilerButton() {
     button._profilerPopup = popup;
     button._profilerData = null;
     
-    // Add click handler to toggle popup
-    button.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        debugLog("Profiler button clicked");
+    let hideTimeout = null;
+    
+    // Add hover handler to show popup
+    button.addEventListener("mouseenter", async (e) => {
+        // Clear any pending hide timeout
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+        }
         
-        const isVisible = popup.style.display === "block";
+        debugLog("Profiler button hover enter");
         
-        if (!isVisible) {
-            // Always fetch latest data on open
-            try {
-                debugLog("Fetching profiler data...");
-                const response = await fetchWithRetry("/swissarmyknife/profiler/stats");
-                const result = await response.json();
-                
-                debugLog("Profiler data received:", result);
-                
-                if (result.success && result.data) {
-                    button._profilerData = result.data;
-                    updateProfilerPopupContent(popup, result.data);
-                } else {
-                    console.warn("%c[🔪SwissArmyKnife][Profiler]", "color: #f59e0b; font-weight: bold;", "No data in response:", result);
-                }
-            } catch (error) {
-                console.error("%c[🔪SwissArmyKnife][Profiler]", "color: #ef4444; font-weight: bold;", "Error fetching profiler data:", error);
+        // Always fetch latest data on open
+        try {
+            debugLog("Fetching profiler data...");
+            const response = await fetchWithRetry("/swissarmyknife/profiler/stats");
+            const result = await response.json();
+            
+            debugLog("Profiler data received:", result);
+            
+            if (result.success && result.data) {
+                button._profilerData = result.data;
+                updateProfilerPopupContent(popup, result.data);
+            } else {
+                console.warn("%c[🔪SwissArmyKnife][Profiler]", "color: #f59e0b; font-weight: bold;", "No data in response:", result);
             }
-            
-            // Position popup to the left of the action buttons
-            const actionButtonsRect = document.getElementById("swissarmyknife-action-buttons").getBoundingClientRect();
-            
-            popup.style.right = `${window.innerWidth - actionButtonsRect.left + 12}px`;
-            popup.style.top = `50%`;
-            popup.style.transform = `translateY(-50%)`;
-            popup.style.left = 'auto';
-            popup.style.bottom = 'auto';
-            popup.style.display = "block";
-            
-            debugLog("Profiler popup opened");
-        } else {
-            popup.style.display = "none";
-            debugLog("Profiler popup closed");
+        } catch (error) {
+            console.error("%c[🔪SwissArmyKnife][Profiler]", "color: #ef4444; font-weight: bold;", "Error fetching profiler data:", error);
+        }
+        
+        // Position popup to the left of the action buttons
+        const actionButtonsRect = document.getElementById("swissarmyknife-action-buttons").getBoundingClientRect();
+        
+        popup.style.right = `${window.innerWidth - actionButtonsRect.left + 12}px`;
+        popup.style.top = `50%`;
+        popup.style.transform = `translateY(-50%)`;
+        popup.style.left = 'auto';
+        popup.style.bottom = 'auto';
+        popup.style.display = "block";
+        
+        debugLog("Profiler popup opened");
+    });
+    
+    // Add handler to keep popup visible when hovering over it
+    popup.addEventListener("mouseenter", () => {
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
         }
     });
     
-    // Close popup when clicking outside
-    document.addEventListener("click", (e) => {
-        if (popup.style.display === "block" && 
-            !popup.contains(e.target) && 
-            !button.contains(e.target)) {
+    // Hide popup when mouse leaves button
+    button.addEventListener("mouseleave", () => {
+        hideTimeout = setTimeout(() => {
             popup.style.display = "none";
-        }
+            debugLog("Profiler popup closed (button leave)");
+        }, 300); // 300ms delay before hiding
+    });
+    
+    // Hide popup when mouse leaves popup
+    popup.addEventListener("mouseleave", () => {
+        hideTimeout = setTimeout(() => {
+            popup.style.display = "none";
+            debugLog("Profiler popup closed (popup leave)");
+        }, 300); // 300ms delay before hiding
     });
     
     // Append popup to body
