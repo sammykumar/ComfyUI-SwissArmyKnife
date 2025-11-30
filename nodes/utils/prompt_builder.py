@@ -104,7 +104,7 @@ class PromptBuilder:
             if clean_text:
                 prompt_segments.append(clean_text)
 
-        positive_prompt = "\n".join(prompt_segments)
+        positive_prompt = "\n\n".join(prompt_segments)
 
         return (positive_prompt,)
 
