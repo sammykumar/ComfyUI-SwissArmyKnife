@@ -9,12 +9,9 @@ This guide documents the documentation consolidation process for ComfyUI-SwissAr
 
 ## Consolidation Status
 
-### ✅ Completed Nodes (1/6)
+### ✅ Completed / Retired Nodes
 
-1. **video-metadata** (5 files → 1 file)
-   - Consolidated into: `VIDEO_METADATA.md`
-   - Includes: Append functionality, VHS compatibility, LoRA JSON integration, troubleshooting
-   - Size: ~14.8 KB
+1. **video-metadata** – Node retired (November 30, 2025). Documentation set removed because the FFmpeg metadata helper is no longer shipped.
 
 > **Note:** The legacy `video-preview` node has been retired, so its documentation set was removed rather than consolidated.
 

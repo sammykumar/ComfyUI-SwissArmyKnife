@@ -1,6 +1,6 @@
 {
-    "last_node_id": 4,
-    "last_link_id": 3,
+    "last_node_id": 2,
+    "last_link_id": 1,
     "nodes": [
         {
             "id": 1,
@@ -48,7 +48,7 @@
                 {
                     "name": "final_string",
                     "type": "STRING",
-                    "links": [2],
+                    "links": null,
                     "shape": 3,
                     "slot_index": 2
                 }
@@ -61,26 +61,10 @@
                 "Please analyze this image...",
                 ""
             ]
-        },
-        {
-            "id": 3,
-            "type": "ShowText",
-            "pos": [1000, 100],
-            "size": { "0": 300, "1": 200 },
-            "flags": {},
-            "order": 2,
-            "mode": 0,
-            "inputs": [{ "name": "text", "type": "STRING", "link": 2 }],
-            "outputs": [
-                { "name": "text", "type": "STRING", "links": null, "shape": 3 }
-            ],
-            "properties": { "Node name for S&R": "ShowText" },
-            "widgets_values": [""]
         }
     ],
     "links": [
-        [1, 1, 0, 2, 0, "IMAGE"],
-        [2, 2, 2, 3, 0, "STRING"]
+        [1, 1, 0, 2, 0, "IMAGE"]
     ],
     "groups": [],
     "config": {},

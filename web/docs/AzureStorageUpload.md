@@ -12,7 +12,7 @@ Upload any generated file to Azure Blob Storage using the connection string stor
 
 ## Usage Tips
 1. Set the Azure connection string under Swiss Army Knife settings and install `azure-storage-blob`.
-2. Pass filenames from VideoMetadataNode or VHS nodes to push renders straight to the cloud.
+2. Pass filenames from VHS nodes or any other file-producing node to push renders straight to the cloud.
 
 ## Additional Resources
 - [Full documentation](docs/nodes/azure-storage-upload/AZURE_STORAGE_UPLOAD.md)

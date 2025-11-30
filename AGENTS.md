@@ -85,9 +85,6 @@ dev-docs/
 ├── README.md                    # Developer documentation index
 │
 ├── nodes/                       # Node-specific documentation (ONE file per node)
-│   ├── video-metadata/         # Video Metadata node
-│   │   ├── README.md           # Quick reference
-│   │   └── VIDEO_METADATA.md   # Complete documentation
 │   ├── lm-studio-describe/     # LM Studio structured describe nodes
 │   ├── reddit-media/           # Reddit Media Extraction
 │   ├── media-selection/        # Media Selection node
@@ -252,17 +249,17 @@ python3 -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('Available nodes:
 
 ```bash
 # Example workflow for modifying a node
-vim nodes/video_metadata/video_metadata.py    # Edit node implementation
+vim nodes/media_selection/media_selection.py    # Edit node implementation
 
 # Update technical documentation
-vim dev-docs/nodes/video-metadata/VIDEO_METADATA.md
+vim dev-docs/nodes/media-selection/MEDIA_SELECTION.md
 
 # Update user help page
-vim web/docs/VideoMetadata.md
+vim web/docs/MediaSelection.md
 
 # Commit both together
-git add nodes/video_metadata/ dev-docs/nodes/video-metadata/ web/docs/VideoMetadata.md
-git commit -m "feat: Add duration_threshold parameter to VideoMetadata
+git add nodes/media_selection/ dev-docs/nodes/media-selection/ web/docs/MediaSelection.md
+git commit -m "feat: Add duration_threshold parameter to MediaSelection
 
 - Added duration_threshold parameter
 - Updated technical docs with implementation details
@@ -275,9 +272,6 @@ git commit -m "feat: Add duration_threshold parameter to VideoMetadata
 dev-docs/
 ├── README.md                    # Developer documentation index
 ├── nodes/                       # Node-specific documentation (ONE file per node)
-│   ├── video-metadata/
-│   │   ├── README.md           # Quick reference
-│   │   └── VIDEO_METADATA.md   # Complete consolidated documentation
 │   ├── lm-studio-describe/     # LM Studio structured describe docs
 │   ├── reddit-media/           # Reddit Media Extraction docs
 │   ├── media-selection/        # Media Selection node docs
@@ -324,7 +318,7 @@ touch dev-docs/integrations/[service]/NEW_INTEGRATION.md
 
 **Developer docs (`dev-docs/`):**
 
--   **Nodes**: Use descriptive all-caps names: `VIDEO_METADATA.md`, `MEDIA_DESCRIBE.md`
+-   **Nodes**: Use descriptive all-caps names: `MEDIA_SELECTION.md`, `MEDIA_DESCRIBE.md`
 -   **ONE file per node**: Consolidate all information about a node into a single comprehensive file
 -   Node docs go in `dev-docs/nodes/[node-name]/`
 -   Infrastructure docs go in `dev-docs/infrastructure/[category]/`
@@ -333,7 +327,7 @@ touch dev-docs/integrations/[service]/NEW_INTEGRATION.md
 **User help pages (`web/docs/`):**
 
 -   **MUST match** `NODE_CLASS_MAPPINGS` key exactly (case-sensitive)
--   Example: `NODE_CLASS_MAPPINGS = {"VideoMetadata": ...}` → `web/docs/VideoMetadata.md`
+-   Example: `NODE_CLASS_MAPPINGS = {"MediaSelection": ...}` → `web/docs/MediaSelection.md`
 
 **CRITICAL**: Whenever you implement a new feature, fix a bug, or solve a technical problem:
 
@@ -837,7 +831,7 @@ else:
 "
 
 # Example output:
-# ✅ Found: web/docs/VideoMetadata.md
+# ✅ Found: web/docs/MediaSelection.md
 # ❌ Missing: web/docs/GeminiUtilVideoDescribe.md
 ```
 
@@ -954,8 +948,8 @@ ls -la dev-docs/examples/        # Example workflows
 ls -la web/docs/                 # User help pages (MANDATORY for all nodes)
 
 # View node documentation
-cat dev-docs/nodes/video-metadata/VIDEO_METADATA.md   # Complete technical docs
-cat web/docs/VideoMetadata.md                         # User help page
+cat dev-docs/nodes/media-selection/MEDIA_SELECTION.md   # Complete technical docs
+cat web/docs/MediaSelection.md                         # User help page
 
 # Common documentation patterns:
 # Developer docs (dev-docs/):
@@ -981,9 +975,6 @@ comfyui_swissarmyknife/
 ├── dev-docs/                          # DEVELOPER DOCUMENTATION (Technical)
 │   ├── README.md                      # Developer documentation index
 │   ├── nodes/                         # Node-specific documentation (ONE file per node)
-│   │   ├── video-metadata/           # Video Metadata node docs
-│   │   │   ├── README.md             # Quick reference
-│   │   │   └── VIDEO_METADATA.md     # Complete documentation
 │   │   ├── lm-studio-describe/       # LM Studio structured describe docs
 │   │   ├── reddit-media/             # Reddit Media Extraction docs
 │   │   ├── media-selection/          # Media Selection node docs
@@ -1009,8 +1000,8 @@ comfyui_swissarmyknife/
 │   │   └── ...
 │   ├── css/                           # Stylesheets
 │   └── docs/                          # USER HELP PAGES (In-UI reference)
-│       ├── VideoMetadata.md          # Help page for VideoMetadata node
-│       ├── ControlPanelOverview.md   # Help page for ControlPanelOverview node
+│       ├── MediaSelection.md         # Help page for MediaSelection node
+│       ├── ControlPanelPromptBreakdown.md   # Help page for Control Panel output node
 │       └── ...                       # (MUST match NODE_CLASS_MAPPINGS keys)
 │
 └── ui-react_backup/                   # React UI extension (DISABLED)

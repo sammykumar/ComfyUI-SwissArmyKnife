@@ -72,7 +72,7 @@ Extract media from:
 
 ## 📚 Related Documentation
 
-- [Video Metadata](../video-metadata/) - For extracting video information
+- [Media Selection](../media-selection/) - Route downloaded assets into structured describe nodes
 - [Features](../../features/) - For text extraction and processing
 
 ---

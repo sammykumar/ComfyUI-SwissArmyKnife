@@ -26,6 +26,7 @@ The following nodes have been removed as they are now redundant or better served
 - **FilenameGenerator** - Use ComfyUI's built-in string nodes
 - **VideoMetadataNode** - Functionality merged into enhanced video preview
 - **ShowText** - Use ComfyUI's built-in display nodes
+- **ControlPanelOverview** - Use Control Panel Prompt Breakdown or built-in viewers
 - **FrameExtractor** - Use ComfyUI's built-in video frame extraction
 - **MultiCaptionCombiner** - Use ComfyUI's built-in string concatenation
 - **GeminiUtilOptions** - Consolidated into main Gemini nodes

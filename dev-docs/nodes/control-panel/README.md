@@ -1,112 +1,62 @@
 # Control Panel Node Documentation
 
-The Control Panel node is a display-only node that shows comprehensive workflow information from connected nodes.
-## 📄 Documentation
+## Files
+- **[CONTROL_PANEL.md](CONTROL_PANEL.md)** – canonical implementation details for `ControlPanelPromptBreakdown` (backend + frontend)
+- **CONTROL_PANEL_DATA_POPULATION_DEBUG.md** – archived notes from the retired `ControlPanelOverview` node (kept only for historical troubleshooting of legacy workflows)
 
-- **[CONTROL_PANEL.md](CONTROL_PANEL.md)** - Complete consolidated documentation
-
-## Documentation Files
-
-### CONTROL_PANEL_DATA_POPULATION_DEBUG.md
-
-**Enhanced debugging for data population issues**
-
-Comprehensive guide to debugging Control Panel data flow from backend to frontend. Includes:
-
-- Double output implementation (redundant data paths)
-- Extensive console logging for both Python and JavaScript
-- Step-by-step debugging workflow
-- Common issues and solutions
-- Testing procedures
-
-**Use when**: Control Panel is not showing data or you need to trace data flow through the system.
-
-**Date**: October 11, 2025
-**Status**: ✅ Implemented
-
----
-
-## Node Overview
+## Active Node Summary
+| Property | Value |
+| --- | --- |
+| **Name** | `ControlPanelPromptBreakdown` |
+| **Category** | Swiss Army Knife 🔪/Utils |
+| **Inputs** | `positive_prompt_json` (`STRING`, optional, force input) |
+| **Outputs** | UI-only (`{"ui": {"prompt_breakdown": [...]}}`) |
+| **Status** | Stable |
 
 ### Purpose
+Render the structured prompt JSON from LM Studio nodes into five digestible columns (Subject, Clothing, Movement, Scene, Visual Style). It is the fastest way to sanity-check overrides before feeding prompts downstream.
 
-The Control Panel node acts as a central dashboard that displays key workflow information in an organized, multi-column layout.
+### Input Schema Expectations
+- Source JSON: `LLMStudioStructuredDescribe.json_output` or `LLMStudioStructuredVideoDescribe.json_output`
+- Required keys: `subject`, `clothing`, `movement`, `scene`, `visual_style`
+- Backward compatibility: still inspects `all_media_describe_data`/`prompt_breakdown` arrays so older saved workflows can load without edits.
 
-### Features
+### Output Behavior
+- The node does **not** emit tensors. Instead it returns a `ui` dictionary that ComfyUI reads to populate the DOM widget created in `web/js/swiss-army-knife.js`.
+- Missing keys render as `(empty)` so artists know which paragraphs need overrides.
 
-- **Display-only node** - No outputs, only visualizes data
-- **Three-column layout**:
-    - Left: Final Prompt/Description (full text)
-    - Middle: Gemini Status (model, API key info, completion status)
-    - Right: Media Info (media processing details, height, width only)
-- **Accepts JSON data** via `all_media_describe_data` input
-- **Auto-updates** on workflow execution
-- **Clean display** - Shows only essential metadata, hides verbose fields like subject, cinematic_aesthetic, stylization_tone, clothing, scene, movement
+## Implementation Locations
+- **Backend**: `nodes/utils/control_panel.py` → `ControlPanelPromptBreakdown.display_info`
+- **Frontend**: `web/js/swiss-army-knife.js` → `beforeRegisterNodeDef` handler for `ControlPanelPromptBreakdown`
 
-### Input
-
-- `all_media_describe_data` (STRING, optional) - JSON string containing workflow data
-
-### Output
-
-None - display-only node
-
-### Category
-
-Swiss Army Knife 🔪/Utils
-
-## Implementation Files
-
-### Backend
-
-- `nodes/utils/control_panel.py` - Python node implementation
-    - Class: `ControlPanel`
-    - Function: `display_info`
-    - Returns: `{"ui": {"all_media_describe_data": [...]}}`
-
-### Frontend
-
-- `web/js/swiss-army-knife.js` - JavaScript widget implementation
-    - Lines ~238-520: Control Panel node setup
-    - Function: `updateControlPanelData` - Parses and displays data
-    - Handler: `onExecuted` - Receives execution results
-
-## Data Flow
-
+## Data Flow Overview
 ```
-Gemini Media Describe Node
-    ↓
-    all_media_describe_data (JSON string)
-    ↓
-Control Panel Node (Python)
-    ↓
-    {"ui": {"all_media_describe_data": [...]}}
-    ↓
-ComfyUI onExecuted Event
-    ↓
-    message.output.all_media_describe_data
-    ↓
-JavaScript updateControlPanelData()
-    ↓
-    Parse JSON → Extract fields → Update DOM
-    ↓
-Three-column display in UI
+LLMStudioStructuredDescribe ──▶ ControlPanelPromptBreakdown
+       json_output                  positive_prompt_json
+           │                               │
+           └─────────────── JSON string ───┘
+                                   │
+                         Python parses JSON
+                                   │
+                        {"ui": {"prompt_breakdown": [...]}}
+                                   │
+                     JS updatePromptBreakdownData()
+                                   │
+                        DOM columns render text
 ```
 
 ## Related Nodes
+- **LM Studio Structured Describe (Image/Video)** – produces the JSON consumed here
+- **Control Panel Prompt Breakdown (web/docs)** – user-facing help that mirrors the developer view
+- **Media Selection** – typically precedes LM Studio nodes and controls which asset is being described
 
-- **Gemini Media Describe** - Primary data source for Control Panel
-- **Media Selection** - Provides media path information
-- **Video Metadata** - Provides technical video details
+## Troubleshooting Quick Hits
+1. **No columns populated** → Confirm the JSON actually reaches the node (`DEBUG=true` and check `[ControlPanelPromptBreakdown DEBUG]` logs).
+2. **Columns show `(No data available)`** → The upstream JSON is empty or missing required keys. Verify the LM Studio node executed successfully.
+3. **Widget squashed** → Drag the node wider; the DOM widget recomputes widths on every resize.
+4. **Legacy workflows** → If an ancient workflow still references `ControlPanelOverview`, replace it with `ControlPanelPromptBreakdown` or remove the node entirely.
 
-## Known Issues
-
-See `CONTROL_PANEL_DATA_POPULATION_DEBUG.md` for debugging data population issues.
-
-## Future Enhancements
-
-- [ ] Add configurable column layout
-- [ ] Support custom field selection
-- [ ] Add export functionality (copy to clipboard, save to file)
-- [ ] Add collapsible sections for large datasets
-- [ ] Add separate `CONTROL_PANEL_DEBUG` toggle independent of global DEBUG
+## Future Ideas
+- Column selector (let artists pick which JSON keys to visualize)
+- Copy-to-clipboard buttons per column
+- Optional markdown rendering for the visual style column

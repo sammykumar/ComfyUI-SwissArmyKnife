@@ -100,7 +100,6 @@ Or when not connected:
 
 ```
 LLMStudioStructuredDescribe / LLMStudioStructuredVideoDescribe
-  ├─ json_output → Control Panel Overview (optional display)
   └─ json_output → Control Panel Prompt Breakdown (wire into `positive_prompt_json`)
 ```
 

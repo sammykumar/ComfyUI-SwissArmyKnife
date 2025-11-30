@@ -1,6 +1,6 @@
 # LoRA Info Extractor Node
 
-The **LoRA Info Extractor** walks WanVideo LoRA stacks, calculates persistent hashes for every referenced file, optionally fetches matching metadata from CivitAI, and emits both a structured JSON blob plus a readable summary string. Use it to keep render logs auditable and to pass rich LoRA metadata into downstream nodes such as the Video Metadata updater.
+The **LoRA Info Extractor** walks WanVideo LoRA stacks, calculates persistent hashes for every referenced file, optionally fetches matching metadata from CivitAI, and emits both a structured JSON blob plus a readable summary string. Use it to keep render logs auditable and to pass rich LoRA metadata into downstream logging and archival nodes.
 
 ## Features
 
@@ -80,15 +80,15 @@ All inputs are optional except `lora`. The node automatically handles single dic
 }
 ```
 
-Use the `combined_display` string as a quick label (e.g., send it into the Video Metadata node so FFmpeg titles/keywords list the LoRAs that were used).
+Use the `combined_display` string as a quick label (e.g., hand it to your FFmpeg/metadata script so rendered files list the LoRAs that were used).
 
 ## Typical Workflow
 
 ```
-WanVideo LoRA Select (Multi) ──▶ LoRAInfoExtractor ──▶ VideoMetadataNode
-                                   │                    │
-                                   ├─ lora_json ────────┘ (metadata embed)
-                                   ├─ lora_info ──▶ Control Panel / Logger
+WanVideo LoRA Select (Multi) ──▶ LoRAInfoExtractor
+                                   │
+                                   ├─ lora_json ──▶ FFmpeg/Azure upload scripts for metadata embedding
+                                   ├─ lora_info ──▶ Control Panel / built-in text display nodes
                                    └─ lora_passthrough ─▶ Downstream LoRA-aware nodes
 ```
 
@@ -103,13 +103,13 @@ WanVideo LoRA Select (Multi) ──▶ LoRAInfoExtractor ──▶ VideoMetadata
 
 | Issue | Fix |
 | --- | --- |
-| `Fallback: No LoRAs Detected` | Ensure the upstream node outputs `WANVIDLORA` (list/dict). You can wire `lora_passthrough` into a `ShowText` node to inspect the raw stack. |
+| `Fallback: No LoRAs Detected` | Ensure the upstream node outputs `WANVIDLORA` (list/dict). You can wire `lora_passthrough` into ComfyUI’s built-in text display nodes to inspect the raw stack. |
 | Missing files | The summary line reports `Missing: N`. Confirm the referenced `.safetensors` files exist at the recorded path. |
 | No CivitAI matches | Confirm the key is set in ComfyUI settings and `use_civitai_api=True`. The debug log also prints whether a key was detected. |
 | Slow first run | Hash cache warms on the first pass because every LoRA file must be read. Subsequent runs re-use cached hashes as long as the files remain unchanged. |
 
 ## Related Documentation
 
-- [Video Metadata Node](../video-metadata/VIDEO_METADATA.md) – Shows how `lora_json` is embedded back into FFmpeg metadata.
 - [CivitAI API Key Widget Implementation](../../integrations/civitai/CIVITAI_API_KEY_WIDGET.md) – Details the backend/frontend plumbing for settings-based API keys.
 - [Settings Integration Guide](../../infrastructure/SETTINGS_INTEGRATION.md) – Overview of how Swiss Army Knife nodes access stored secrets.
+- [Azure Storage Upload](../azure-storage-upload/AZURE_STORAGE_UPLOAD.md) – Example of pushing structured metadata and assets to the cloud.

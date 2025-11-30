@@ -6,7 +6,7 @@ Extracts metadata about Wan LoRA stacks, hashes every file, and optionally enric
 
 1. Connect `WANVIDLORA` output from WanVideo LoRA Select (single or multi).
 2. (Optional) Toggle `use_civitai_api` if you want to hit the CivitAI API using the Swiss Army Knife settings key.
-3. Wire the `lora_json` output into downstream nodes (e.g., Video Metadata) and surface `lora_info` anywhere you want a readable summary.
+3. Wire the `lora_json` output into downstream metadata/logging nodes and surface `lora_info` anywhere you want a readable summary.
 
 ## Inputs
 

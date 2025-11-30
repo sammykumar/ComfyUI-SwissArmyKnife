@@ -16,8 +16,8 @@ Traverses Wan LoRA stacks, hashes every referenced file, optionally queries Civi
 
 ## Usage Tips
 - Store your CivitAI API key once in ComfyUI Settings → Swiss Army Knife and leave `use_civitai_api` enabled for rich metadata.
-- Wire `lora_json` into the Video Metadata node to embed LoRA info back into rendered files.
-- Display `lora_info` with `ShowText` or Control Panel to verify which LoRAs were active per render.
+- Wire `lora_json` into your preferred metadata writer (FFmpeg scripts, Azure uploads, etc.) to embed LoRA info back into rendered files.
+- Display `lora_info` with ComfyUI's built-in text display/output nodes or the Control Panel prompt widgets to verify which LoRAs were active per render.
 - If you only need hashes (offline), disable `use_civitai_api` for faster execution.
 
 ## Documentation

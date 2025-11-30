@@ -25,7 +25,7 @@ Welcome to the ComfyUI-SwissArmyKnife **developer documentation**!
 
 Core custom nodes that extend ComfyUI functionality:
 
--   **[video-metadata](nodes/video-metadata/)** - Video metadata extraction and manipulation with append functionality
+-   ~~**video-metadata**~~ (retired November 30, 2025) - FFmpeg metadata helper removed from the repo
 -   **[lm-studio-describe](nodes/lm-studio-describe/)** - Structured LM Studio describe nodes with JSON outputs
 -   **[reddit-media](nodes/reddit-media/)** - Reddit and RedGifs media extraction and processing
 -   **[media-selection](nodes/media-selection/)** - Media source selection and management
@@ -105,7 +105,7 @@ Each node should have a single comprehensive markdown file that includes:
 
 ### By Topic
 
--   **Video Processing**: Check `/nodes/video-metadata/`
+-   **Video Processing**: See `/nodes/media-selection/` and `/nodes/reddit-media/`
 -   **AI/ML Features**: See `/nodes/lm-studio-describe/`
 -   **External APIs**: Look in `/integrations/`
 -   **Performance & Monitoring**: Check `/web-js/RESOURCE_MONITOR.md` for profiling and OOM analysis

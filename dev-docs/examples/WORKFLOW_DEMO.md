@@ -3,20 +3,25 @@
 This shows how to set up a workflow to test the final_string widget functionality:
 
 ```
-┌─────────────┐    ┌─────────────────────────┐    ┌─────────────┐
-│ Load Image  │    │ Gemini Image Describe   │    │ Show Text   │
-│             │────▶│                         │────▶│             │
-│ [Load your  │    │ - API Key: [your key]   │    │ Displays    │
-│  test image]│    │ - Model: gemini-2.5-    │    │ final       │
-│             │    │   flash                 │    │ generated   │
-└─────────────┘    │ - System Prompt: [...]  │    │ prompt      │
-                   │ - User Prompt: [...]    │    └─────────────┘
+┌─────────────┐    ┌─────────────────────────┐
+│ Load Image  │    │ Gemini Image Describe   │
+│             │────▶│                         │
+│ [Load your  │    │ - API Key: [your key]   │
+│  test image]│    │ - Model: gemini-2.5-    │
+│             │    │   flash                 │
+└─────────────┘    │ - System Prompt: [...]  │
+                   │ - User Prompt: [...]    │
                    │                         │
                    │ ┌─────────────────────┐ │
-                   │ │ final_string widget │ │  ← This widget will
-                   │ │ (will auto-update)  │ │     populate after
+                   │ │ final_string widget │ │  ← This widget auto-
+                   │ │ (will auto-update)  │ │     populates after
                    │ └─────────────────────┘ │     execution!
                    └─────────────────────────┘
+                                       │
+                                       ▼
+                         (Optional) connect `final_string`
+                         to any built-in ComfyUI text display node
+                         if you want it rendered outside the Gemini node.
 ```
 
 ### Step-by-step Instructions:
@@ -28,7 +33,7 @@ This shows how to set up a workflow to test the final_string widget functionalit
 2. **Set up the nodes**:
    - Load Image: Choose any test image
    - Gemini Image Describe: Enter your valid Gemini API key
-   - Show Text: This will display the final output
+   - (Optional) add a built-in ComfyUI text output node (e.g., `Text`/`Note`) and wire it to `final_string` if you want the caption outside of the Gemini panel
 
 3. **Execute the workflow**:
    - Click "Queue Prompt" to run the workflow
@@ -36,7 +41,7 @@ This shows how to set up a workflow to test the final_string widget functionalit
 
 4. **Check the results**:
    - The `final_string` widget on the Gemini node should populate with generated text
-   - The Show Text node should display the same text
+   - Optional downstream text nodes should mirror the same string
    - Browser console should show "Updated final_string widget with:" message
 
 ### What was fixed:
