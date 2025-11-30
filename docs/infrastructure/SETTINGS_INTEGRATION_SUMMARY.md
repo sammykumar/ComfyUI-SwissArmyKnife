@@ -33,7 +33,6 @@ This implementation replaces text input widgets for API keys with ComfyUI's nati
 #### Documentation
 
 - **`docs/infrastructure/SETTINGS_INTEGRATION.md`** - Comprehensive guide to the new settings integration
-- **`docs/IMPLEMENTATION_STATUS.md`** - Updated with settings integration status
 - **`docs/README.md`** - Added reference to settings integration documentation
 
 ### 🎯 Key Benefits

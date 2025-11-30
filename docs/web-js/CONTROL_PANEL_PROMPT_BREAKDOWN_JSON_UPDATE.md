@@ -99,20 +99,17 @@ Or when not connected:
 ### Required Setup (Simplified)
 
 ```
-Media Describe Node
-  ├─ final_string → (wherever needed)
-  ├─ all_media_describe_data → Control Panel Overview
-  ├─ raw_gemini_json → Control Panel Prompt Breakdown ⭐ REQUIRED
-  ├─ height → (wherever needed)
-  └─ width → (wherever needed)
+LLMStudioStructuredDescribe / LLMStudioStructuredVideoDescribe
+  ├─ json_output → Control Panel Overview (optional display)
+  └─ json_output → Control Panel Prompt Breakdown (wire into `positive_prompt_json`)
 ```
 
 ## Migration Notes
 
-- **Breaking Change**: `all_media_describe_data` input removed
-- **Action Required**: Connect `raw_gemini_json` to this node
-- **Legacy Workflows**: Will need to update connections
-- **Benefit**: Cleaner, more maintainable code
+- **Breaking Change**: Legacy `all_media_describe_data`/`raw_gemini_json` inputs removed
+- **Action Required**: Connect the structured node's `json_output` (or any compatible JSON string) to the `positive_prompt_json` input
+- **Legacy Workflows**: Need to swap MediaDescribe nodes for LM Studio structured nodes or other JSON sources
+- **Benefit**: Cleaner, schema-driven parsing without brittle field positions
 
 ## Testing Recommendations
 
@@ -126,7 +123,7 @@ Media Describe Node
 
 - `nodes/utils/control_panel.py` - Python backend logic (**simplified**)
 - `web/js/swiss-army-knife.js` - JavaScript UI display (unchanged)
-- `nodes/media_describe/mediia_describe.py` - Source of `raw_gemini_json`
+- `nodes/media_describe/llm_studio_structured.py` - Source of `json_output`
 
 ## Date
 

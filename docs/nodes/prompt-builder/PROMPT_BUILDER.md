@@ -56,6 +56,6 @@ All inputs default to blank strings and are fully optional.
 
 ## Related Documentation
 
-- [Media Describe Node](../media-describe/MEDIA_DESCRIBE.md) – Understand how Gemini paragraphs are structured downstream
+- [Structured Output Implementation](../lm-studio-describe/STRUCTURED_OUTPUT_IMPLEMENTATION.md) – Understand how paragraph fields are structured downstream
 - [Control Panel Node](../control-panel/CONTROL_PANEL.md) – Display prompt summaries alongside render metadata
 - [Web Help Page](../../web/docs/PromptBuilder.md) – In-app summary shown inside ComfyUI

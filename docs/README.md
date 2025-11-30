@@ -9,11 +9,11 @@ Welcome to the ComfyUI-SwissArmyKnife documentation! This directory contains com
 Core custom nodes that extend ComfyUI functionality:
 
 - **[video-metadata](nodes/video-metadata/)** - Video metadata extraction and manipulation with append functionality
-- **[media-describe](nodes/media-describe/)** - AI-powered media description using Gemini API
+- **[lm-studio-describe](nodes/lm-studio-describe/)** - Structured LM Studio describe nodes with JSON outputs
 - **[reddit-media](nodes/reddit-media/)** - Reddit and RedGifs media extraction and processing
 - **[media-selection](nodes/media-selection/)** - Media source selection and management
 - **[control-panel](nodes/control-panel/)** - Workflow information dashboard display
-- **[prompt-builder](nodes/prompt-builder/)** - Compose MediaDescribe overrides with previewable prompt strings
+- **[prompt-builder](nodes/prompt-builder/)** - Compose structured describe overrides with previewable prompt strings
 - **[lora-info-extractor](nodes/lora-info-extractor/)** - Hash LoRA stacks, query CivitAI, and emit structured metadata
 
 ### 🏗️ Infrastructure (`/infrastructure`)
@@ -89,7 +89,7 @@ Each node should have a single comprehensive markdown file that includes:
 ### By Topic
 
 - **Video Processing**: Check `/nodes/video-metadata/`
-- **AI/ML Features**: See `/nodes/media-describe/`
+- **AI/ML Features**: See `/nodes/lm-studio-describe/`
 - **External APIs**: Look in `/integrations/`
 - **Performance & Monitoring**: Check `/web-js/RESOURCE_MONITOR.md` for profiling and OOM analysis
 - **Caching**: See `/infrastructure/caching/`
@@ -125,13 +125,13 @@ Each subdirectory contains a `README.md` that:
 
 ## 📊 Project Status
 
-See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for overall project status and feature completion tracking.
+See the repository changelog (README) for overall project status and feature completion tracking.
 
 ## 🆘 Need Help?
 
 1. **Search**: Use your editor's search to find keywords across all docs
 2. **Index Files**: Check the `README.md` in each subdirectory
-3. **Status**: Review `IMPLEMENTATION_STATUS.md` for current project state
+3. **Status**: Review the main README for current project state
 4. **Examples**: Look in `/examples/` for working implementations
 
 ## 📅 Documentation Maintenance

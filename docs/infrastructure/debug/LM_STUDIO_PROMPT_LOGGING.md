@@ -1,6 +1,6 @@
 # LM Studio Prompt Logging
 
-Debug logging for LM Studio API calls in the Media Describe node.
+Debug logging for LM Studio API calls inside the **LM Studio Structured Describe** nodes.
 
 ## Overview
 
@@ -13,7 +13,7 @@ When using LM Studio for media description, it's crucial to verify that prompts 
 
 ## Enabling Verbose Logging
 
-Set `verbose=True` in the **LM Studio - Options** node to enable detailed prompt logging.
+Set `verbose=True` on the **LM Studio Structured Describe** (image) or **LM Studio Structured Video Describe** nodes to enable detailed prompt logging.
 
 ## Log Output Format
 
@@ -241,6 +241,6 @@ Key methods:
 
 ## Related Documentation
 
-- [Media Describe Node](../../nodes/media-describe/MEDIA_DESCRIBE.md)
-- [LM Studio Options](../../nodes/media-describe/LM_STUDIO_OPTIONS.md)
+- [Structured Output Implementation Notes](../../nodes/lm-studio-describe/STRUCTURED_OUTPUT_IMPLEMENTATION.md)
+- [Structured Output Proposal](../../nodes/lm-studio-describe/STRUCTURED_OUTPUT_PROPOSAL.md)
 - [Debug Mode Implementation](DEBUG_MODE_IMPLEMENTATION.md)

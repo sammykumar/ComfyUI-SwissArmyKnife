@@ -49,18 +49,9 @@ rm -rf cache/gemini_descriptions/*
 # Hard refresh: Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac)
 ```
 
-### Verify Cache
-
-```python
-# Run cache verification tests
-python test_cache_verification.py
-```
-
 ## 📚 Related Documentation
 
 - [Debug System](../debug/) - For cache debugging
-
-- [Media Describe](../../nodes/media-describe/) - For description caching
 
 ---
 

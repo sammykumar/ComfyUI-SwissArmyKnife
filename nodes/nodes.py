@@ -7,9 +7,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .civitai_service import CivitAIService
 from .lora_hash_cache import get_cache as get_lora_hash_cache
-from .media_describe import (LLMStudioOptions, MediaDescribe, MediaDescribeOverrides, 
-                              LLMStudioVideoDescribe, LLMStudioPictureDescribe,
-                              LLMStudioStructuredDescribe, LLMStudioStructuredVideoDescribe)
+from .media_describe import (
+    LLMStudioStructuredDescribe,
+    LLMStudioStructuredVideoDescribe,
+)
 from .debug_utils import Logger
 
 logger = Logger("Nodes")
@@ -338,11 +339,6 @@ class VideoMetadataNode:
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
-    "MediaDescribe": MediaDescribe,
-    "LLMStudioOptions": LLMStudioOptions,
-    "MediaDescribeOverrides": MediaDescribeOverrides,
-    "LLMStudioVideoDescribe": LLMStudioVideoDescribe,
-    "LLMStudioPictureDescribe": LLMStudioPictureDescribe,
     "LLMStudioStructuredDescribe": LLMStudioStructuredDescribe,
     "LLMStudioStructuredVideoDescribe": LLMStudioStructuredVideoDescribe,
     "FilenameGenerator": FilenameGenerator,
@@ -351,11 +347,6 @@ NODE_CLASS_MAPPINGS = {
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "MediaDescribe": "Media Describe",
-    "LLMStudioOptions": "LLM Studio - Options",
-    "MediaDescribeOverrides": "Media Describe - Overrides",
-    "LLMStudioVideoDescribe": "LLM Studio Video Describe",
-    "LLMStudioPictureDescribe": "LLM Studio Picture Describe",
     "LLMStudioStructuredDescribe": "LM Studio Structured Describe (Image)",
     "LLMStudioStructuredVideoDescribe": "LM Studio Structured Describe (Video)",
     "FilenameGenerator": "Filename Generator",

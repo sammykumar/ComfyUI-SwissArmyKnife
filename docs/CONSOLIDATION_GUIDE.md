@@ -18,15 +18,14 @@ This guide documents the documentation consolidation process for ComfyUI-SwissAr
 
 > **Note:** The legacy `video-preview` node has been retired, so its documentation set was removed rather than consolidated.
 
-### 📋 Pending Consolidation (5/6)
+### 📋 Pending Consolidation (4/6)
 
 1. **control-panel** - 3 files remaining
 2. **reddit-media** - 6 files remaining
 3. **media-selection** - 8 files remaining
 4. **lora-loader** - 15 files remaining
-5. **media-describe** - 22 files remaining
 
-**Total:** 54 files to consolidate
+**Total:** 32 files to consolidate (media-describe documentation was retired alongside the node)
 
 ## Consolidation Template
 
@@ -222,9 +221,8 @@ To complete the consolidation:
 2. Then **reddit-media** (6 files)
 3. Then **media-selection** (8 files)
 4. Then **lora-loader** (15 files)
-5. Finally **media-describe** (22 files, largest)
 
-Each consolidated file should follow the pattern established by VIDEO_METADATA.md and MEDIA_DESCRIBE.md.
+Each consolidated file should follow the pattern established by VIDEO_METADATA.md and the structured describe implementation docs.
 
 ---
 

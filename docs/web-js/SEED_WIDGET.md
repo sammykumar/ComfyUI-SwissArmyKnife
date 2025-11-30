@@ -1,9 +1,9 @@
 # Seed Widget
 
 **Last Updated**: October 8, 2025  
-**Node**: MediaDescribe (formerly GeminiUtilMediaDescribe)
+**Node**: MediaSelection
 
-The seed widget enables reproducible randomization for the MediaDescribe node when using "Randomize Media from Path" mode. It solves the ComfyUI execution caching issue where the same media_path wouldn't trigger re-execution.
+The seed widget enables reproducible randomization for the MediaSelection node when using "Randomize Media from Path" mode. It solves the ComfyUI execution caching issue where the same media_path wouldn't trigger re-execution.
 
 ---
 
@@ -303,6 +303,6 @@ All functionality has been verified through:
 
 ## Related Documentation
 
-- [Media Describe Node](../nodes/media-describe/) - Main node documentation
+- [LM Studio Structured Describe Nodes](../nodes/lm-studio-describe/) - Main node documentation
 - [Dimensions Display Widget](DIMENSIONS_DISPLAY.md) - Another dynamic widget implementation
 - [JavaScript Improvements](../features/JAVASCRIPT_IMPROVEMENTS.md) - Widget development patterns

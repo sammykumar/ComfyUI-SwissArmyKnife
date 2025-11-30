@@ -71,13 +71,12 @@ cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-
 ```
 docs/
 ├── README.md                    # Main documentation index and navigation
-├── IMPLEMENTATION_STATUS.md     # Overall project status
 │
 ├── nodes/                       # Node-specific documentation (ONE file per node)
 │   ├── video-metadata/         # Video Metadata node
 │   │   ├── README.md           # Quick reference
 │   │   └── VIDEO_METADATA.md   # Complete documentation
-│   ├── media-describe/         # Gemini AI Media Description
+│   ├── lm-studio-describe/     # LM Studio structured describe nodes
 │   ├── reddit-media/           # Reddit Media Extraction
 │   ├── media-selection/        # Media Selection node
 │   └── control-panel/          # Control Panel Display
@@ -209,12 +208,11 @@ python3 -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('Available nodes:
 # Documentation structure
 docs/
 ├── README.md                    # Main documentation index
-├── IMPLEMENTATION_STATUS.md     # Overall project status
 ├── nodes/                       # Node-specific documentation (ONE file per node)
 │   ├── video-metadata/
 │   │   ├── README.md           # Quick reference
 │   │   └── VIDEO_METADATA.md   # Complete consolidated documentation
-│   ├── media-describe/         # Gemini AI Media Description docs
+│   ├── lm-studio-describe/     # LM Studio structured describe docs
 │   ├── reddit-media/           # Reddit Media Extraction docs
 │   ├── media-selection/        # Media Selection node docs
 │   └── control-panel/          # Control Panel Display docs
@@ -830,7 +828,6 @@ cat docs/nodes/video-metadata/VIDEO_METADATA.md   # Complete video metadata docs
 # - docs/infrastructure/[category]/SYSTEM_NAME.md - Infrastructure documentation
 # - docs/integrations/[service]/INTEGRATION_GUIDE.md - Integration guides
 # - docs/web-js/WIDGET_NAME.md - Web JavaScript widget documentation
-# - docs/IMPLEMENTATION_STATUS.md - Overall project status (root level)
 ```
 
 ### File Structure Overview
@@ -842,12 +839,11 @@ comfyui_swissarmyknife/
 ├── pyproject.toml                      # Project metadata & publishing config
 ├── docs/                              # ALL PROJECT DOCUMENTATION (STREAMLINED)
 │   ├── README.md                      # Main documentation index
-│   ├── IMPLEMENTATION_STATUS.md       # Overall project status
 │   ├── nodes/                         # Node-specific documentation (ONE file per node)
 │   │   ├── video-metadata/           # Video Metadata node docs
 │   │   │   ├── README.md             # Quick reference
 │   │   │   └── VIDEO_METADATA.md     # Complete documentation
-│   │   ├── media-describe/           # Gemini AI Media Description docs
+│   │   ├── lm-studio-describe/       # LM Studio structured describe docs
 │   │   ├── reddit-media/             # Reddit Media Extraction docs
 │   │   ├── media-selection/          # Media Selection node docs
 │   │   └── control-panel/            # Control Panel Display docs

@@ -25,10 +25,10 @@ The Media Selection node centralizes all media ingestion logic for SwissArmyKnif
 ## Example Workflow
 
 1. **Media Selection** – choose source + resizing rules  
-2. **Media Describe** – analyze the normalized file  
+2. **LM Studio Structured Describe** – analyze the normalized file  
 3. **Control Panel** – display the resulting JSON/prompt data
 
 ## Related Docs
 
-- [Media Describe](../media-describe/) – consumes the outputs of Media Selection
+- [Structured Output Implementation](../lm-studio-describe/STRUCTURED_OUTPUT_IMPLEMENTATION.md) – consumes the outputs of Media Selection
 - [Control Panel](../control-panel/) – displays the metadata JSON produced downstream

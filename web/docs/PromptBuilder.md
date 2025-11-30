@@ -18,7 +18,7 @@ Prompt Builder assembles paragraph-level overrides for Gemini prompts. Fill in w
 - Leave fields blank to keep Gemini output for that section
 - Wire upstream `STRING` nodes for dynamic overrides (templates, metadata, etc.)
 - Display `positive_prompt` in Control Panel or logs to verify overrides before rendering
-- Works for both image and video MediaDescribe variants
+- Works for both LM Studio structured image and video describe variants
 
 ## Documentation
 Full details: [`docs/nodes/prompt-builder/PROMPT_BUILDER.md`](../../docs/nodes/prompt-builder/PROMPT_BUILDER.md)

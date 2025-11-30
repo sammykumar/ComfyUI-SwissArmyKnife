@@ -57,7 +57,7 @@ const debugLog = (...args) => {
 ### Component Tags
 
 
-- `[MediaDescribe]` - Gemini API debug
+- `[LLMStudioStructuredDescribe]` - Structured describe debug
 - `[CivitAI]` - CivitAI integration debug
 - `[Cache]` - Caching system debug
 

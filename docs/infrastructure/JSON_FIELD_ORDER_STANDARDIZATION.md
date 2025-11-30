@@ -71,9 +71,9 @@ After these changes, you should:
 The order affects these outputs:
 
 - Control Panel Prompt Breakdown widget display
-- JSON outputs from Gemini AI Media Describe node
+- JSON outputs from LM Studio Structured Describe nodes
 - `positive_prompt_json` output
-- `all_media_describe_data` output
+- `json_output` returned to downstream nodes
 - Console logging output
 
 ## Future Considerations

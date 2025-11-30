@@ -788,7 +788,7 @@ app.registerExtension({
                             ? data.prompt_breakdown[0]
                             : data.prompt_breakdown;
                     }
-                    // Then try all_media_describe_data (current format from MediaDescribe node)
+                    // Then try all_media_describe_data (legacy aggregated output)
                     else if (data.all_media_describe_data) {
                         debugLog(
                             "🔍 [ControlPanelPromptBreakdown DEBUG] Found data.all_media_describe_data"
@@ -1709,39 +1709,8 @@ app.registerExtension({
         // CivitMetadataHelper node - no custom widgets needed
     },
 
-    // Hook to handle workflow loading
-    loadedGraphNode(node, app) {
-        if (node.comfyClass === "MediaDescribe") {
-            debugLog("[LOADED] loadedGraphNode called for MediaDescribe");
-
-            // Check if this node has saved UI state with uploaded file data
-            const hasSavedVideoData = node.ui_state?.uploaded_file_info?.video?.file;
-            const hasSavedImageData = node.ui_state?.uploaded_file_info?.image?.file;
-
-            debugLog(
-                "[LOADED] hasSavedVideoData:",
-                !!hasSavedVideoData,
-                "hasSavedImageData:",
-                !!hasSavedImageData
-            );
-            debugLog("[LOADED] Saved video file:", hasSavedVideoData);
-            debugLog("[LOADED] Saved image file:", hasSavedImageData);
-
-            // Only call updateMediaWidgets if we don't have any saved uploaded file data
-            // If we have saved data, onConfigure will handle the restoration
-            if (!hasSavedVideoData && !hasSavedImageData && node.updateMediaWidgets) {
-                debugLog("[LOADED] No saved uploaded file data found, applying default UI state");
-                setTimeout(() => {
-                    node.updateMediaWidgets();
-                    debugLog("[LOADED] Applied default UI state for loaded workflow node");
-                }, 100); // Small delay to ensure all widgets are properly initialized
-            } else {
-                debugLog(
-                    "[LOADED] Saved uploaded file data found, skipping updateMediaWidgets to preserve onConfigure restoration"
-                );
-            }
-        }
-    },
+    // Hook to handle workflow loading (currently no-op; retained for forward compatibility)
+    loadedGraphNode() {},
 
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         // Handle LLMStudioStructuredDescribe node - dynamic output labels
@@ -2201,7 +2170,7 @@ app.registerExtension({
         }
     },
 
-    // Setup app-level execution handler for MediaDescribe and ControlPanel
+    // Setup app-level execution handler for structured describe nodes and ControlPanel
     async setup() {
         // Log ALL API events to debug
         const originalAddEventListener = api.addEventListener.bind(api);
@@ -2263,36 +2232,9 @@ app.registerExtension({
             debugLog("[API] Output data:", output);
             debugLog("[API] Node found:", !!node, "comfyClass:", node?.comfyClass);
 
-            // Handle MediaDescribe execution
-            if (node && node.comfyClass === "MediaDescribe") {
-                debugLog("[API] ✅ Found MediaDescribe execution result");
-                debugLog("[API] Full output structure:", JSON.stringify(output, null, 2));
-
-                // Extract dimensions from output
-                // Output structure: {height: [1080], width: [1920], ...}
-                let height = null;
-                let width = null;
-
-                if (output && output.height && output.width) {
-                    height = Array.isArray(output.height) ? output.height[0] : output.height;
-                    width = Array.isArray(output.width) ? output.width[0] : output.width;
-                    debugLog("[API] Extracted dimensions from API event:", width, "x", height);
-
-                    // Update the dimensions display using the helper method
-                    if (node.updateDimensionsDisplay) {
-                        node.updateDimensionsDisplay(height, width);
-                    } else {
-                        debugLog(
-                            "[API] WARNING: updateDimensionsDisplay method not found on node!"
-                        );
-                    }
-                } else {
-                    debugLog("[API] ⚠️ No height/width in output. Output structure:", output);
-                }
-            }
             // Handle LLMStudioStructuredDescribe execution
             // Check both comfyClass and type to be sure we catch it
-            else if (node && (node.comfyClass === "LLMStudioStructuredDescribe" || node.type === "LLMStudioStructuredDescribe")) {
+            if (node && (node.comfyClass === "LLMStudioStructuredDescribe" || node.type === "LLMStudioStructuredDescribe")) {
                 console.log("[SwissArmyKnife][API] ✅ Found LLMStudioStructuredDescribe execution result");
                 console.log("[SwissArmyKnife][API] Node comfyClass:", node.comfyClass, "type:", node.type);
                 console.log("[SwissArmyKnife][API] Full output structure:", JSON.stringify(output, null, 2));
@@ -2338,7 +2280,7 @@ app.registerExtension({
                     );
                 }
             } else {
-                debugLog("[API] ❌ Not a MediaDescribe or ControlPanel node, skipping");
+                debugLog("[API] ❌ Not a structured describe or ControlPanel node, skipping");
             }
         });
     },

@@ -75,8 +75,7 @@ class PromptBuilder:
     FUNCTION = "build_prompt"
     CATEGORY = "Swiss Army Knife 🔪/Prompt Tools"
     DESCRIPTION = (
-        "Compose prompt paragraphs for MediaDescribe or other nodes. Outputs a preview string plus an OVERRIDES dictionary "
-        "compatible with MediaDescribe overrides."
+        "Compose prompt paragraphs for the LM Studio structured describe nodes or any other prompt consumer."
     )
 
     def build_prompt(

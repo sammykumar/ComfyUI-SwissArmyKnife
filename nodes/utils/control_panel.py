@@ -41,8 +41,8 @@ class ControlPanelOverview:
     CATEGORY = "Swiss Army Knife 🔪/Utils"
     OUTPUT_NODE = True  # Makes this an output node that displays in the UI
     DESCRIPTION = (
-        "Displays the full `all_media_describe_data` JSON inside ComfyUI’s Control Panel so you can audit MediaDescribe outputs "
-        "without leaving the workflow."
+        "Displays the full `all_media_describe_data` JSON inside ComfyUI’s Control Panel so you can audit structured describe "
+        "outputs without leaving the workflow."
     )
 
     def display_info(self, **kwargs):

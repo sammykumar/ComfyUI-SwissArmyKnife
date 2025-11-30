@@ -10,7 +10,7 @@ As of version 2.8.11+, ComfyUI-SwissArmyKnife integrates with ComfyUI's native s
 
 - **Setting ID**: `swiss_army_knife.gemini.api_key`
 - **Location**: ComfyUI Settings → Swiss Army Knife → Gemini API Key
-- **Purpose**: Used by MediaDescribe and LM Studio nodes for Gemini calls
+- **Purpose**: Used by the LM Studio structured describe nodes for Gemini calls
 
 ### CivitAI API Key
 
@@ -40,10 +40,10 @@ As of version 2.8.11+, ComfyUI-SwissArmyKnife integrates with ComfyUI's native s
 
 ## Node Changes
 
-### MediaDescribe Node
+### LM Studio Structured Describe Nodes
 
 **Before**: Required a separate GeminiUtilOptions node with an API key widget  
-**After**: Reads the Gemini key directly from settings (no extra node required)
+**After**: Read the Gemini key directly from settings (no extra node required)
 
 ### LoRAInfoExtractor Node
 

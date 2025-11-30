@@ -45,13 +45,13 @@ Outputs:
 ### 1. Standard Describe Pipeline
 
 1. **Media Selection** – `Upload Media`, `media_type=video`, `max_duration=6`, `resize_mode=Auto`.
-2. **Media Describe** – consumes `media_processed_path`.
-3. **Control Panel** – displays JSON returned by Media Describe and ensures metadata is visible for QA.
+2. **LM Studio Structured Describe** – consume `media_processed_path` for JSON captioning.
+3. **Control Panel** – displays the JSON returned by the structured describe nodes so QA can verify metadata.
 
 ### 2. Reddit Sampling Loop
 
 1. **Media Selection** – `media_source=Randomize from Subreddit`, `subreddit_url=r/GifSound`, `seed=<iteration>`.
-2. **Media Describe Overrides** – optional curated overrides.
+2. **Prompt Builder / overrides** – optional curated overrides (structured describe nodes accept custom JSON input).
 3. **LM Studio Structured Describe** – triggered when `llm_studio_options` present.
 
 ## Implementation Notes
@@ -72,6 +72,6 @@ Outputs:
 
 ## Related Documentation
 
-- [Media Describe](../media-describe/MEDIA_DESCRIBE.md)
-- [Media Describe Overrides](../media-describe/VISUAL_STYLE_UPDATE.md)
+- [Structured Output Implementation](../lm-studio-describe/STRUCTURED_OUTPUT_IMPLEMENTATION.md)
+- [Control Panel](../control-panel/README.md)
 - [Control Panel](../control-panel/CONTROL_PANEL.md)

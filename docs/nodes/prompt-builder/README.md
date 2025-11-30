@@ -1,6 +1,6 @@
 # Prompt Builder Node - Quick Reference
 
-Assemble paragraph-level overrides for MediaDescribe outputs or any other prompt consumer.
+Assemble paragraph-level overrides for the structured describe outputs or any other prompt consumer.
 
 ## Quick Start
 

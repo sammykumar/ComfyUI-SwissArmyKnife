@@ -34,7 +34,7 @@ class ShowText:
     OUTPUT_NODE = True  # This makes it an output node that shows in the UI
     DESCRIPTION = (
         "Simple output helper that prints and displays any STRING input inside ComfyUI—ideal for inspecting prompts or captions "
-        "produced by MediaDescribe."
+        "produced by the structured describe nodes."
     )
 
     def show_text(self, text):

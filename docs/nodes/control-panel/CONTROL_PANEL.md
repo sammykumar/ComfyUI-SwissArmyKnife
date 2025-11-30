@@ -101,7 +101,7 @@ CONTROL PANEL - Workflow Information
 🔍 DEBUG - All kwargs received:
   - all_media_describe_data: str = {...}
 
-📊 All Media Describe Data:
+📊 Analysis JSON Input:
 {
   "final_prompt": "...",
   "gemini_status": "...",
@@ -167,7 +167,7 @@ Based on the debug output, you can identify:
 1. Start ComfyUI server with the custom node installed
 2. Create a workflow with:
     - A media source node (e.g., Load Video)
-    - Gemini Media Describe node
+    - LM Studio Structured Describe nodes
     - Control Panel node connected to `all_media_describe_data` output
 3. Execute the workflow
 4. Check both Python console and browser console for debug output
@@ -431,7 +431,7 @@ The comprehensive debug logging revealed:
 
 Different parts of the workflow use different field names:
 
-- `final_string` - Gemini Media Describe output
+- `final_string` - Caption/summary output from upstream describe nodes
 - `final_prompt` - Expected by Control Panel (legacy name?)
 - `description` - Fallback field
 
@@ -602,7 +602,7 @@ this.updatePromptBreakdownData = function (data) {
 ### Data Flow
 
 ```
-1. GeminiUtilMediaDescribe Node
+1. LLMStudioStructuredDescribe Node
    ↓ (generates description with 6 paragraphs)
 
 2. all_media_describe_data (JSON string)
@@ -647,7 +647,7 @@ console.log(
 
 ### Testing
 
-1. Connect `GeminiUtilMediaDescribe` output to `ControlPanelPromptBreakdown` input
+1. Connect `LLMStudioStructuredDescribe` `json_output` to `ControlPanelPromptBreakdown` input (wired into `positive_prompt_json`)
 2. Execute the workflow
 3. Check console logs to verify:
     - Description is being split correctly into 6 paragraphs
@@ -683,7 +683,7 @@ console.log(
 ## Related Documentation
 
 - [Video Metadata Implementation](../video-metadata/)
-- [Gemini Media Describe](../media-describe/)
+- [LM Studio Structured Describe](../lm-studio-describe/)
 - [Control Panel Overview](./CONTROL_PANEL_OVERVIEW.md)
 
 ## Version History

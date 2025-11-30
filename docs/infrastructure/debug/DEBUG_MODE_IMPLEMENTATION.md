@@ -270,7 +270,7 @@ All these message types now respect the DEBUG environment variable:
 -   `[LOADED]` - Workflow loading
 -   `[UPLOAD]` - File upload operations
 -   `[API]` - API event handling
--   `[MediaDescribe]` - Media description node diagnostics
+-   `[LLMStudioStructuredDescribe]` - Structured describe diagnostics
 -   Widget discovery and manipulation
 -   File restoration and state management
 -   Dimensions display updates

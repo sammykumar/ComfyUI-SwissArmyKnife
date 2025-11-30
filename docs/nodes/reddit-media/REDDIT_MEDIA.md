@@ -91,7 +91,7 @@ When "Reddit Post" is selected as media_source:
 
 ## Overview
 
-The "Reddit Post" media source option in the **Gemini Util - Media Describe** node allows users to directly input Reddit post URLs to download and analyze media content. This feature has been enhanced with improved redgifs support and proper capitalization, now supporting both images and videos from Reddit posts, including content hosted on external platforms like redgifs.
+The "Reddit Post" media source in the **Media Selection** node allows users to directly input Reddit post URLs to download and analyze media content. This feature ships with enhanced redgifs support and proper capitalization, supporting both images and videos from Reddit posts, including content hosted on external platforms like redgifs.
 
 ## Features
 

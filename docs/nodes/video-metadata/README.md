@@ -47,7 +47,7 @@ Extract and manipulate video metadata including:
 
 ## 📚 Related Documentation
 
-- [Media Describe Node](../media-describe/) - For AI-generated video descriptions
+- [LM Studio Structured Describe Nodes](../lm-studio-describe/) - For AI-generated descriptions
 
 ---
 

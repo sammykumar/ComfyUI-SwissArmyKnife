@@ -91,9 +91,7 @@ All nodes that create temporary files have been updated:
 
 1. **Media Selection** (`nodes/media_selection/media_selection.py`)
     - Uses `get_temp_file_path(suffix='.mp4', subdir='videos')` for video trimming
-2. **Media Describe** (`nodes/media_describe/mediia_describe.py`)
-    - Uses `get_temp_file_path(suffix=file_ext, subdir='downloads')` for Reddit downloads
-    - Uses `get_temp_file_path(suffix='.mp4', subdir='videos')` for video trimming
+    - Uses `get_temp_file_path(suffix=file_ext, subdir='downloads')` for Reddit downloads (migrated here after removing the Media Describe node)
 
 ## Docker Configuration
 

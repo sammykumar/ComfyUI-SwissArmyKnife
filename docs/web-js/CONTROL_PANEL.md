@@ -3,7 +3,7 @@
 **Last Updated**: October 8, 2025  
 **Status**: Completed
 
-The Control Panel node is a display-only dashboard node that shows data from connected workflow nodes. It includes a predefined input specifically designed for MediaDescribe's `all_media_describe_data` output, plus the ability to add dynamic wildcard inputs for other connections.
+The Control Panel node is a display-only dashboard node that shows data from connected workflow nodes. It includes a predefined input (legacy name `all_media_describe_data`) that can accept any JSON payload, plus the ability to add dynamic wildcard inputs for other connections.
 
 ---
 
@@ -21,7 +21,7 @@ The Control Panel node is a display-only dashboard node that shows data from con
 
 The Control Panel provides a flexible dashboard for monitoring workflow data with:
 
-- **Predefined Input**: `all_media_describe_data` input for MediaDescribe integration
+- **Predefined Input**: `all_media_describe_data` input for structured describe JSON (legacy name retained)
 - **Dynamic Inputs**: Add unlimited wildcard inputs via context menu
 - **Dual Display Modes**: Connection info (before execution) and execution results (after execution)
 - **Two-Column Layout**: Organized display with left (metadata) and right (content) columns
@@ -38,9 +38,9 @@ The Control Panel provides a flexible dashboard for monitoring workflow data wit
 #### Key Features
 
 1. **Predefined Input**
-    - Includes `all_media_describe_data` input specifically for MediaDescribe node
+    - Includes `all_media_describe_data` input (wire any JSON string here)
     - Type: STRING with `forceInput: True` (connection-only, no text widget)
-    - Perfect for connecting MediaDescribe's aggregated output
+    - Perfect for connecting LM Studio structured nodes' `json_output` (or any aggregated output)
 
 2. **Dynamic Input Handling**
     - Accepts `**kwargs` to handle any connected inputs dynamically
@@ -110,7 +110,7 @@ The Control Panel provides a flexible dashboard for monitoring workflow data wit
 
 ### The Problem (Original Implementation)
 
-The Control Panel was receiving a pre-formatted text string from MediaDescribe:
+The original MediaDescribe node sent a pre-formatted text string to the Control Panel:
 
 ```python
 # Old approach - formatted string
@@ -208,8 +208,8 @@ Each column:
 ### Basic Setup
 
 1. Add "🎛️ Control Panel" node to workflow
-2. Node starts with `all_media_describe_data` input
-3. Connect MediaDescribe's `all_media_describe_data` output to it
+2. Node starts with `all_media_describe_data` input (legacy name)
+3. Connect your structured describe node's `json_output` (or any JSON string) to it
 
 ### Adding More Inputs
 
@@ -223,7 +223,7 @@ Each column:
 **Before Execution (Connection Mode)**:
 
 ```
-all_media_describe_data ⇐ MediaDescribe.all_media_describe_data
+all_media_describe_data ⇐ LLMStudioStructuredDescribe.json_output
 ```
 
 **After Execution (Data Mode)**:
@@ -250,9 +250,9 @@ Left Column:              Right Column:
 To verify the Control Panel:
 
 1. **Create a workflow** with:
-    - MediaDescribe node
+    - LLMStudioStructuredDescribe (or LM Studio Structured Video Describe) node
     - ControlPanel node
-    - Connect MediaDescribe's `all_media_describe_data` output to ControlPanel's input
+    - Connect the describe node's `json_output` to ControlPanel's `all_media_describe_data` input
 
 2. **Execute the workflow** with an image or video
 
@@ -286,7 +286,7 @@ To verify the Control Panel:
 
 1. Check browser console for debug logs (enable DEBUG mode)
 2. Verify Python node is returning `{"ui": {...}}` structure
-3. Ensure MediaDescribe is outputting JSON format, not formatted string
+3. Ensure the upstream describe node outputs JSON instead of a formatted string
 
 ### Issue: Display area too small/large
 
@@ -304,7 +304,7 @@ To verify the Control Panel:
 
 **Solution**: The Control Panel includes fallback handling. If JSON parsing fails, it displays the raw data. Check:
 
-1. MediaDescribe node is using updated version with JSON output
+1. Upstream describe node emits JSON output
 2. `all_media_describe_data` contains valid JSON string
 3. No corruption in data transmission
 
@@ -371,7 +371,7 @@ font-family:
 2. **Serialization**: DOM content not saved to workflow (by design - `serialize: false`)
 3. **Large Data**: Values truncated at 500 characters to prevent UI slowdown
 4. **Input Naming**: Inputs named sequentially (`in1`, `in2`, etc.) - not customizable via UI
-5. **JSON Parsing**: If MediaDescribe outputs non-JSON data, falls back to raw display
+5. **JSON Parsing**: If upstream nodes output non-JSON data, falls back to raw display
 
 ---
 
@@ -391,6 +391,6 @@ Possible improvements:
 
 ## Related Documentation
 
-- [Media Describe Node](../nodes/media-describe/) - AI content analysis integration
+- [LM Studio Structured Describe Nodes](../nodes/lm-studio-describe/) - AI content analysis integration
 - [JavaScript Improvements](../features/JAVASCRIPT_IMPROVEMENTS.md) - Cache busting and updates
 - [Debug System](../infrastructure/debug/) - For widget debugging
