@@ -6,9 +6,9 @@
 
 For technical implementation details, reference these official ComfyUI custom node development guides:
 
-- **Backend (Python) Development**: https://docs.comfy.org/custom-nodes/backend/server_overview
-- **Web Extension (JavaScript) Development**: https://docs.comfy.org/custom-nodes/js/javascript_overview
-- **Lite Graph (ComfyUi is built on top of Lite Graph)**:https://github.com/jagenjo/litegraph.js/tree/master
+-   **Backend (Python) Development**: https://docs.comfy.org/custom-nodes/backend/server_overview
+-   **Web Extension (JavaScript) Development**: https://docs.comfy.org/custom-nodes/js/javascript_overview
+-   **Lite Graph (ComfyUi is built on top of Lite Graph)**:https://github.com/jagenjo/litegraph.js/tree/master
 
 _Note: These are the official JavaScript widget docs, not React-based extensions._
 
@@ -18,9 +18,9 @@ ComfyUI-SwissArmyKnife is a ComfyUI extension that consists of two essential com
 
 ### Backend (Python Custom Nodes)
 
-- Python custom nodes in `nodes/*.py` for Gemini AI video analysis and processing
-- Core business logic and AI integration
-- Requires ComfyUI server restart when modified
+-   Python custom nodes in `nodes/*.py` for Gemini AI video analysis and processing
+-   Core business logic and AI integration
+-   Requires ComfyUI server restart when modified
 
 **CRITICAL: Auto-Restart Development Server After Python Changes**
 
@@ -32,12 +32,14 @@ cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-
 ```
 
 **When to restart:**
-- After editing Python node files in `nodes/`
-- After modifying `__init__.py` or any Python configuration
-- After installing new Python packages with pip
-- After any Python code change that needs to take effect
+
+-   After editing Python node files in `nodes/`
+-   After modifying `__init__.py` or any Python configuration
+-   After installing new Python packages with pip
+-   After any Python code change that needs to take effect
 
 **Example workflow:**
+
 1. Edit Python file (e.g., `nodes/media_describe/llm_studio_structured.py`)
 2. Verify syntax with `ruff check .`
 3. **Immediately restart server:** `cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-comfyui`
@@ -46,31 +48,41 @@ cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-
 
 ### Web Extension (JavaScript Widgets)
 
-- Plain JavaScript widgets in `./web/js/` for enhanced ComfyUI interaction
-- UI components and client-side functionality
-- Requires browser cache refresh when modified
-- **Chrome DevTools MCP Tool (Required for UI changes):** Whenever you work on anything that touches the ComfyUI browser experience or files under `web/`, spin up the Chrome DevTools MCP tool and inspect DOM/layout changes through it instead of guessing from memory. Use it to capture screenshots, review network logs, and confirm widget wiring before writing or modifying code. Treat any UI-oriented task (CSS tweaks, widget bugs, layout fixes) as blocked until you have gathered evidence via the dev tools call.
+-   Plain JavaScript widgets in `./web/js/` for enhanced ComfyUI interaction
+-   UI components and client-side functionality
+-   Requires browser cache refresh when modified
+-   **Chrome DevTools MCP Tool (Required for UI changes):** Whenever you work on anything that touches the ComfyUI browser experience or files under `web/`, spin up the Chrome DevTools MCP tool and inspect DOM/layout changes through it instead of guessing from memory. Use it to capture screenshots, review network logs, and confirm widget wiring before writing or modifying code. Treat any UI-oriented task (CSS tweaks, widget bugs, layout fixes) as blocked until you have gathered evidence via the dev tools call.
 
 ### Additional Components
 
-- ~~React/TypeScript UI extension with internationalization~~ **DISABLED FOR NOW**
-- GitHub Actions for automated building and publishing
-- Playwright tests in `./web/tests/` for testing against hosted ComfyUI server
-- Documentation in `docs/` directory - organized into categorized folders (see Documentation Organization section)
+-   ~~React/TypeScript UI extension with internationalization~~ **DISABLED FOR NOW**
+-   GitHub Actions for automated building and publishing
+-   Playwright tests in `./web/tests/` for testing against hosted ComfyUI server
+-   Documentation in `dev-docs/` directory - organized into categorized folders (see Documentation Organization section)
 
 **IMPORTANT**: Both backend and web extension components are required for the custom node to function properly. Changes to backend Python files require restarting the ComfyUI server, while changes to web JavaScript files require refreshing the browser cache.
 
-**DOCUMENTATION REQUIREMENT**: All documentation, guides, troubleshooting notes, implementation details, and technical specifications must be added to the appropriate folder in the `docs/` directory. The documentation is organized by category - see the "Documentation Organization" section below for the proper folder structure. Never document directly in code comments when a separate documentation file would be more appropriate. Always attempt to update documentation for existing markdown files before creating new ones.
+**DOCUMENTATION REQUIREMENT**: The project maintains TWO distinct documentation systems with different audiences:
+
+1. **Developer Documentation** (`dev-docs/`) - Technical implementation details for contributors
+2. **User Help Pages** (`web/docs/`) - End-user reference displayed in ComfyUI UI
+
+Never document directly in code comments when a separate documentation file would be more appropriate. Always attempt to update documentation for existing markdown files before creating new ones.
 
 **Note: The React UI component (`ui-react_backup/`) is currently disabled and not in active development.**
 
 ## Documentation Organization
 
-**All project documentation is organized in a streamlined folder structure:**
+**The project maintains TWO distinct documentation layers with different audiences:**
+
+### 1. Developer Documentation (`dev-docs/`)
+
+**Audience:** Internal developers and contributors  
+**Purpose:** Technical implementation details, architecture decisions, troubleshooting guides
 
 ```
-docs/
-├── README.md                    # Main documentation index and navigation
+dev-docs/
+├── README.md                    # Developer documentation index
 │
 ├── nodes/                       # Node-specific documentation (ONE file per node)
 │   ├── video-metadata/         # Video Metadata node
@@ -88,20 +100,44 @@ docs/
 │   └── build-deploy/           # Build & deployment
 │
 ├── integrations/                # External service integrations
-│   └── civitai/                # CivitAI API integration
+│   ├── civitai/                # CivitAI API integration
+│   └── reddit/                 # Reddit API integration
 │
 ├── web-js/                      # Web JavaScript widget documentation
-└── examples/                    # Example workflows
+├── examples/                    # Example workflows
+└── comfyui/                     # ComfyUI-specific documentation
+    └── custom-nodes_documentation_guidelines.md
+```
+
+### 2. User-Facing Help Pages (`web/docs/`)
+
+**Audience:** End users who install and use your nodes in ComfyUI workflows  
+**Purpose:** In-UI reference documentation displayed in ComfyUI's help panel
+
+**For complete ComfyUI help page guidelines, see:** `dev-docs/comfyui/custom-nodes_documentation_guidelines.md`
+
+```
+web/
+└── docs/
+    ├── NodeName.md        # Default help page (required for each registered node)
+    └── NodeName/          # Optional: Multi-language support
+        ├── en.md
+        └── zh.md
 ```
 
 ### Documentation Rules
 
-1. **Node-specific docs** → `docs/nodes/[node-name]/` - **ONE comprehensive file per node**
-2. **Infrastructure docs** → `docs/infrastructure/[category]/`
-3. **Integration docs** → `docs/integrations/[service]/`
-4. **Web JavaScript widget docs** → `docs/web-js/`
-5. **Examples** → `docs/examples/`
-6. **ComfyUI help pages** → every registered node **must** have a matching help markdown file inside `web/docs/`. The filename must match the node key from `NODE_CLASS_MAPPINGS` (e.g., `web/docs/VACEScribbleAnnotator.md`). Use the help page template described at https://docs.comfy.org/custom-nodes/help_page and keep its content in sync with the canonical node doc under `docs/nodes/...`.
+**Two-tier documentation system:**
+
+**Layer 1: Developer Documentation (`dev-docs/`)** - Technical implementation details
+
+1. **Node-specific docs** → `dev-docs/nodes/[node-name]/` - **ONE comprehensive file per node**
+2. **Infrastructure docs** → `dev-docs/infrastructure/[category]/`
+3. **Integration docs** → `dev-docs/integrations/[service]/`
+4. **Web JavaScript widget docs** → `dev-docs/web-js/`
+5. **Examples** → `dev-docs/examples/`
+
+**Layer 2: User Help Pages (`web/docs/`)** - MANDATORY for all registered nodes 6. **ComfyUI help pages** → every registered node **must** have a matching help markdown file inside `web/docs/`. The filename must match the node key from `NODE_CLASS_MAPPINGS` (e.g., `web/docs/VACEScribbleAnnotator.md`). Use the help page template described at https://docs.comfy.org/custom-nodes/help_page and keep its content in sync with the canonical node doc under `dev-docs/nodes/...`.
 
 #### ComfyUI Help Page Structure
 
@@ -113,16 +149,23 @@ web/
     └── NodeName/zh.md
 ```
 
-- At minimum provide headings for **Summary**, **Inputs**, **Outputs**, **Usage Tips**, and link back to the full documentation under `docs/`.
-- If you update a node’s behavior, update both the canonical doc (`docs/nodes/...`) **and** the corresponding `web/docs/NodeName.md` help file in the same PR.
+-   At minimum provide headings for **Summary**, **Inputs**, **Outputs**, **Usage Tips**, and link back to the full documentation under `dev-docs/`.
+-   If you update a node’s behavior, update both the canonical doc (`dev-docs/nodes/...`) **and** the corresponding `web/docs/NodeName.md` help file in the same PR.
 
 ### Finding Documentation
 
-- **Start here**: `docs/README.md` - Main index with links to all categories
-- **Category indexes**: Each folder has a `README.md` listing all files
-- **By node**: `docs/nodes/[node-name]/README.md` for quick reference
-- **Complete node docs**: `docs/nodes/[node-name]/[NODE_NAME].md` for comprehensive documentation
-- **By topic**: Browse appropriate category folder
+**For Developers:**
+
+-   **Start here**: `dev-docs/README.md` - Technical documentation index
+-   **Category indexes**: Each folder has a `README.md` listing all files
+-   **By node**: `dev-docs/nodes/[node-name]/README.md` for quick reference
+-   **Complete node docs**: `dev-docs/nodes/[node-name]/[NODE_NAME].md` for comprehensive documentation
+-   **By topic**: Browse appropriate category folder
+
+**For End Users:**
+
+-   **In ComfyUI**: Right-click node → View Help (displays `web/docs/NodeName.md`)
+-   **Fallback**: Browse `web/docs/NodeName.md` files for concise user documentation
 
 ## Working Effectively
 
@@ -143,11 +186,11 @@ which python3  # Should show path inside .venv directory
 
 **IMPORTANT**: Run the activation command before:
 
-- Installing Python packages (`pip3 install`)
-- Running Python scripts or commands
-- Running tests (`pytest`)
-- Linting Python code (`ruff check`)
-- Any other Python-related terminal operations
+-   Installing Python packages (`pip3 install`)
+-   Running Python scripts or commands
+-   Running tests (`pytest`)
+-   Linting Python code (`ruff check`)
+-   Any other Python-related terminal operations
 
 ### Essential System Dependencies
 
@@ -202,12 +245,35 @@ python3 -c "from nodes.nodes import NODE_CLASS_MAPPINGS; print('Available nodes:
 
 ### Documentation Workflow
 
-**Documentation is streamlined with ONE comprehensive file per node:**
+**When modifying a node, you MUST update BOTH documentation layers:**
+
+1. **Technical documentation** (`dev-docs/`) - Implementation details, architecture
+2. **User help page** (`web/docs/`) - User-facing parameters, usage
 
 ```bash
-# Documentation structure
-docs/
-├── README.md                    # Main documentation index
+# Example workflow for modifying a node
+vim nodes/video_metadata/video_metadata.py    # Edit node implementation
+
+# Update technical documentation
+vim dev-docs/nodes/video-metadata/VIDEO_METADATA.md
+
+# Update user help page
+vim web/docs/VideoMetadata.md
+
+# Commit both together
+git add nodes/video_metadata/ dev-docs/nodes/video-metadata/ web/docs/VideoMetadata.md
+git commit -m "feat: Add duration_threshold parameter to VideoMetadata
+
+- Added duration_threshold parameter
+- Updated technical docs with implementation details
+- Updated help page with user-facing parameter description"
+```
+
+**Developer documentation structure:**
+
+```bash
+dev-docs/
+├── README.md                    # Developer documentation index
 ├── nodes/                       # Node-specific documentation (ONE file per node)
 │   ├── video-metadata/
 │   │   ├── README.md           # Quick reference
@@ -222,7 +288,8 @@ docs/
 │   ├── docker/                 # Docker setup docs
 │   └── build-deploy/           # Build & deployment docs
 ├── integrations/                # External service integrations
-│   └── civitai/                # CivitAI API integration docs
+│   ├── civitai/                # CivitAI API integration docs
+│   └── reddit/                 # Reddit API integration docs
 ├── web-js/                      # Web JavaScript widget documentation
 └── examples/                    # Example workflows
 ```
@@ -230,45 +297,72 @@ docs/
 **Adding New Documentation:**
 
 ```bash
-# For new nodes - create ONE comprehensive file
-touch docs/nodes/[node-name]/[NODE_NAME].md
+# For new nodes - create BOTH documentation layers
+# 1. Technical documentation (developer-focused)
+mkdir -p dev-docs/nodes/[node-name]
+touch dev-docs/nodes/[node-name]/README.md
+touch dev-docs/nodes/[node-name]/[NODE_NAME].md
+
+# 2. User help page (MANDATORY - must match NODE_CLASS_MAPPINGS key)
+touch web/docs/NodeName.md
 
 # Update existing node documentation
-vim docs/nodes/[node-name]/[NODE_NAME].md
+vim dev-docs/nodes/[node-name]/[NODE_NAME].md
+vim web/docs/NodeName.md
 
 # For infrastructure documentation
-touch docs/infrastructure/[category]/NEW_SYSTEM.md
+touch dev-docs/infrastructure/[category]/NEW_SYSTEM.md
 
 # For web JavaScript widgets
-touch docs/web-js/NEW_WIDGET.md
+touch dev-docs/web-js/NEW_WIDGET.md
 
 # For integrations
-touch docs/integrations/[service]/NEW_INTEGRATION.md
+touch dev-docs/integrations/[service]/NEW_INTEGRATION.md
 ```
 
 **Documentation file naming convention:**
 
-- **Nodes**: Use descriptive all-caps names: `VIDEO_METADATA.md`, `MEDIA_DESCRIBE.md`
-- **ONE file per node**: Consolidate all information about a node into a single comprehensive file
-- Node docs go in `docs/nodes/[node-name]/`
-- Infrastructure docs go in `docs/infrastructure/[category]/`
-- Web JavaScript widget docs go in `docs/web-js/`
+**Developer docs (`dev-docs/`):**
+
+-   **Nodes**: Use descriptive all-caps names: `VIDEO_METADATA.md`, `MEDIA_DESCRIBE.md`
+-   **ONE file per node**: Consolidate all information about a node into a single comprehensive file
+-   Node docs go in `dev-docs/nodes/[node-name]/`
+-   Infrastructure docs go in `dev-docs/infrastructure/[category]/`
+-   Web JavaScript widget docs go in `dev-docs/web-js/`
+
+**User help pages (`web/docs/`):**
+
+-   **MUST match** `NODE_CLASS_MAPPINGS` key exactly (case-sensitive)
+-   Example: `NODE_CLASS_MAPPINGS = {"VideoMetadata": ...}` → `web/docs/VideoMetadata.md`
 
 **CRITICAL**: Whenever you implement a new feature, fix a bug, or solve a technical problem:
 
-1. Identify the correct documentation folder:
-    - Node changes → `docs/nodes/[node-name]/` - **Update the single comprehensive file**
-    - System changes → `docs/infrastructure/[category]/`
-    - Widget changes → `docs/web-js/`
-    - Integration work → `docs/integrations/[service]/`
-2. **For nodes**: Update the existing comprehensive file or create one if it doesn't exist
+1. Identify the correct documentation layer(s):
+
+    - **Node changes** → Update BOTH layers:
+        - `dev-docs/nodes/[node-name]/[NODE_NAME].md` (technical)
+        - `web/docs/NodeName.md` (user help - see `dev-docs/comfyui/custom-nodes_documentation_guidelines.md` for guidelines)
+    - **System changes** → `dev-docs/infrastructure/[category]/`
+    - **Widget changes** → `dev-docs/web-js/`
+    - **Integration work** → `dev-docs/integrations/[service]/`
+
+2. **For nodes**:
+
+    - Update the existing comprehensive file in `dev-docs/` or create one if it doesn't exist
+    - Update or create the matching help page in `web/docs/` (refer to `dev-docs/comfyui/custom-nodes_documentation_guidelines.md`)
+    - Ensure filename in `web/docs/` matches `NODE_CLASS_MAPPINGS` key exactly
+
 3. **For other components**: Create or update documentation with descriptive names
-4. Include implementation details, gotchas, and future considerations
+
+4. Include implementation details, gotchas, and future considerations in `dev-docs/`
+
 5. Update the folder's `README.md` index if needed
-6. Reference the documentation file in commit messages
-7. Cross-reference related documentation in other folders
-5. Reference the documentation file in commit messages
-6. Cross-reference related documentation in other folders
+
+6. Reference both documentation files in commit messages
+
+7. Cross-reference:
+    - Link from help page to technical docs: `See ../../dev-docs/nodes/...`
+    - Link related documentation in other folders
 
 ### React UI Development _(DISABLED)_
 
@@ -426,9 +520,9 @@ ruff check --fix .
 
 The repository includes automated publishing via `.github/workflows/react-build.yml`:
 
-- Triggers on `pyproject.toml` changes pushed to main branch
-- Requires `REGISTRY_ACCESS_TOKEN` secret in repository settings
-- Automatically builds React UI and publishes to ComfyUI Registry
+-   Triggers on `pyproject.toml` changes pushed to main branch
+-   Requires `REGISTRY_ACCESS_TOKEN` secret in repository settings
+-   Automatically builds React UI and publishes to ComfyUI Registry
 
 ## pyproject.toml Specifications
 
@@ -448,17 +542,17 @@ comfy node install <node-id>
 
 **Requirements:**
 
-- Must be less than 100 characters
-- Can only contain alphanumeric characters, hyphens, underscores, and periods
-- Cannot have consecutive special characters
-- Cannot start with a number or special character
-- Case-insensitive comparison
+-   Must be less than 100 characters
+-   Can only contain alphanumeric characters, hyphens, underscores, and periods
+-   Cannot have consecutive special characters
+-   Cannot start with a number or special character
+-   Case-insensitive comparison
 
 **Best Practices:**
 
-- Use a short, descriptive name
-- Don't include "ComfyUI" in the name
-- Make it memorable and easy to type
+-   Use a short, descriptive name
+-   Don't include "ComfyUI" in the name
+-   Make it memorable and easy to type
 
 **Examples:**
 
@@ -473,9 +567,9 @@ name = "123-tool"            # ❌ Bad: Starts with number
 
 Uses [semantic versioning](https://semver.org/) with a three-digit version number X.Y.Z:
 
-- X (MAJOR): Breaking changes
-- Y (MINOR): New features (backwards compatible)
-- Z (PATCH): Bug fixes
+-   X (MAJOR): Breaking changes
+-   Y (MINOR): New features (backwards compatible)
+-   Z (PATCH): Bug fixes
 
 **Examples:**
 
@@ -550,9 +644,9 @@ If your node has specific requirements for which ComfyUI frontend versions it su
 
 Use this field when:
 
-- Your custom node uses frontend APIs that were introduced in a specific version
-- You've identified incompatibilities between your node and certain frontend versions
-- Your node requires specific UI features only available in newer frontend versions
+-   Your custom node uses frontend APIs that were introduced in a specific version
+-   You've identified incompatibilities between your node and certain frontend versions
+-   Your node requires specific UI features only available in newer frontend versions
 
 ```toml
 [project]
@@ -616,9 +710,9 @@ URL to your custom node's icon that will be displayed on the ComfyUI Registry an
 
 **Requirements:**
 
-- File types: SVG, PNG, JPG, or GIF
-- Maximum resolution: 400px × 400px
-- Aspect ratio should be square
+-   File types: SVG, PNG, JPG, or GIF
+-   Maximum resolution: 400px × 400px
+-   Aspect ratio should be square
 
 ```toml
 Icon = "https://raw.githubusercontent.com/username/repo/main/icon.png"
@@ -630,8 +724,8 @@ URL to a larger banner image that will be displayed on the ComfyUI Registry and 
 
 **Requirements:**
 
-- File types: SVG, PNG, JPG, or GIF
-- Aspect ratio: 21:9
+-   File types: SVG, PNG, JPG, or GIF
+-   Aspect ratio: 21:9
 
 ```toml
 Banner = "https://raw.githubusercontent.com/username/repo/main/banner.png"
@@ -701,15 +795,50 @@ requires-comfyui = ">=1.0.0"  # ComfyUI version compatibility
 #### Documentation Validation
 
 ```bash
-# 1. Verify all changes are documented
-ls -la docs/  # Check for relevant documentation files
+# 1. Verify all changes are documented (both layers)
+ls -la dev-docs/  # Check for relevant technical documentation
+ls -la web/docs/  # Check for user help pages
 
 # 2. Ensure documentation is up-to-date
-grep -r "TODO\|FIXME\|OUTDATED" docs/  # Should return no results
+grep -r "TODO\|FIXME\|OUTDATED" dev-docs/  # Should return no results
 
 # 3. Validate markdown formatting
 # (Optional: install markdownlint if available)
-# markdownlint docs/*.md
+# markdownlint dev-docs/*.md web/docs/*.md
+
+# 4. CRITICAL: Verify all registered nodes have help pages
+python3 -c "
+from nodes.nodes import NODE_CLASS_MAPPINGS
+import os
+
+print('\n=== Checking Help Pages for All Registered Nodes ===\n')
+
+missing = []
+found = []
+
+for node_name in sorted(NODE_CLASS_MAPPINGS.keys()):
+    help_file = f'web/docs/{node_name}.md'
+    if not os.path.exists(help_file):
+        missing.append(f'❌ Missing: {help_file}')
+    else:
+        found.append(f'✅ Found: {help_file}')
+
+for item in found:
+    print(item)
+
+if missing:
+    print('\n=== MISSING HELP PAGES ===\n')
+    for item in missing:
+        print(item)
+    print(f'\n⚠️  {len(missing)} help page(s) missing out of {len(NODE_CLASS_MAPPINGS)} registered nodes')
+    exit(1)
+else:
+    print(f'\n✅ All {len(NODE_CLASS_MAPPINGS)} registered nodes have help pages!')
+"
+
+# Example output:
+# ✅ Found: web/docs/VideoMetadata.md
+# ❌ Missing: web/docs/GeminiUtilVideoDescribe.md
 ```
 
 #### Python Node Validation
@@ -770,64 +899,75 @@ ls -la ../../__init__.py  # Python entry point (ACTIVE)
 
 ### Jest Testing Configuration
 
-- Jest tests fail due to ES module configuration issues
-- Example test exists in `src/__tests__/dummy.test.tsx` but won't run
-- Fix requires updating jest.config.js and jest.setup.js for ESM support
+-   Jest tests fail due to ES module configuration issues
+-   Example test exists in `src/__tests__/dummy.test.tsx` but won't run
+-   Fix requires updating jest.config.js and jest.setup.js for ESM support
 
 ### ESLint Configuration
 
-- ESLint shows TypeScript project configuration warnings
-- Code builds and runs correctly despite these warnings
-- Focus on functional validation rather than linting perfection
+-   ESLint shows TypeScript project configuration warnings
+-   Code builds and runs correctly despite these warnings
+-   Focus on functional validation rather than linting perfection
 
 ### Python Import Warnings
 
-- Ruff reports unused imports in `__init__.py` files
-- These imports are intentional for ComfyUI integration
-- The warnings can be safely ignored
+-   Ruff reports unused imports in `__init__.py` files
+-   These imports are intentional for ComfyUI integration
+-   The warnings can be safely ignored
 
 ### System Dependencies
 
-- FFmpeg is required for video processing features
-- Without FFmpeg, video-related functionality will fail at runtime
-- Always verify FFmpeg is installed in your environment
+-   FFmpeg is required for video processing features
+-   Without FFmpeg, video-related functionality will fail at runtime
+-   Always verify FFmpeg is installed in your environment
 
 ## Common Tasks
 
 ### Documentation Tasks
 
 ```bash
-# Update node documentation (single comprehensive file)
-vim docs/nodes/[node-name]/[NODE_NAME].md
+# Update node documentation - BOTH layers required
+vim dev-docs/nodes/[node-name]/[NODE_NAME].md   # Technical docs
+vim web/docs/NodeName.md                         # User help page
 
-# Create new node documentation
-touch docs/nodes/[node-name]/[NODE_NAME].md
+# Create new node documentation - BOTH layers
+mkdir -p dev-docs/nodes/[node-name]
+touch dev-docs/nodes/[node-name]/README.md
+touch dev-docs/nodes/[node-name]/[NODE_NAME].md
+touch web/docs/NodeName.md                       # MUST match NODE_CLASS_MAPPINGS key
 
 # Document infrastructure changes
-touch docs/infrastructure/[category]/SYSTEM_NAME.md
+touch dev-docs/infrastructure/[category]/SYSTEM_NAME.md
 
 # Document web JavaScript widget
-touch docs/web-js/WIDGET_NAME.md
+touch dev-docs/web-js/WIDGET_NAME.md
 
 # Search for documentation gaps
-grep -r "TODO\|FIXME\|INCOMPLETE" docs/
+grep -r "TODO\|FIXME\|INCOMPLETE" dev-docs/
 
 # Browse documentation by category
-ls -la docs/nodes/           # Node-specific docs (ONE file per node)
-ls -la docs/infrastructure/  # System/infrastructure docs
-ls -la docs/integrations/    # External service integrations
-ls -la docs/web-js/          # Web JavaScript widget documentation
-ls -la docs/examples/        # Example workflows
+ls -la dev-docs/nodes/           # Node-specific docs (ONE file per node)
+ls -la dev-docs/infrastructure/  # System/infrastructure docs
+ls -la dev-docs/integrations/    # External service integrations
+ls -la dev-docs/web-js/          # Web JavaScript widget documentation
+ls -la dev-docs/examples/        # Example workflows
+ls -la web/docs/                 # User help pages (MANDATORY for all nodes)
 
 # View node documentation
-cat docs/nodes/video-metadata/VIDEO_METADATA.md   # Complete video metadata docs
+cat dev-docs/nodes/video-metadata/VIDEO_METADATA.md   # Complete technical docs
+cat web/docs/VideoMetadata.md                         # User help page
 
 # Common documentation patterns:
-# - docs/nodes/[node-name]/[NODE_NAME].md - Single comprehensive node documentation
-# - docs/nodes/[node-name]/README.md - Quick reference for the node
-# - docs/infrastructure/[category]/SYSTEM_NAME.md - Infrastructure documentation
-# - docs/integrations/[service]/INTEGRATION_GUIDE.md - Integration guides
-# - docs/web-js/WIDGET_NAME.md - Web JavaScript widget documentation
+# Developer docs (dev-docs/):
+# - dev-docs/nodes/[node-name]/[NODE_NAME].md - Single comprehensive node documentation
+# - dev-docs/nodes/[node-name]/README.md - Quick reference for the node
+# - dev-docs/infrastructure/[category]/SYSTEM_NAME.md - Infrastructure documentation
+# - dev-docs/integrations/[service]/INTEGRATION_GUIDE.md - Integration guides
+# - dev-docs/web-js/WIDGET_NAME.md - Web JavaScript widget documentation
+# - dev-docs/comfyui/custom-nodes_documentation_guidelines.md - Help page guidelines
+#
+# User help pages (web/docs/):
+# - web/docs/NodeName.md - User-facing help (MUST match NODE_CLASS_MAPPINGS)
 ```
 
 ### File Structure Overview
@@ -837,8 +977,9 @@ comfyui_swissarmyknife/
 ├── .github/workflows/react-build.yml  # CI/CD automation
 ├── __init__.py                         # Python entry point
 ├── pyproject.toml                      # Project metadata & publishing config
-├── docs/                              # ALL PROJECT DOCUMENTATION (STREAMLINED)
-│   ├── README.md                      # Main documentation index
+│
+├── dev-docs/                          # DEVELOPER DOCUMENTATION (Technical)
+│   ├── README.md                      # Developer documentation index
 │   ├── nodes/                         # Node-specific documentation (ONE file per node)
 │   │   ├── video-metadata/           # Video Metadata node docs
 │   │   │   ├── README.md             # Quick reference
@@ -853,13 +994,25 @@ comfyui_swissarmyknife/
 │   │   ├── docker/                   # Docker setup docs
 │   │   └── build-deploy/             # Build & deployment docs
 │   ├── integrations/                  # External service integrations
-│   │   └── civitai/                  # CivitAI API integration docs
+│   │   ├── civitai/                  # CivitAI API integration docs
+│   │   └── reddit/                   # Reddit API integration docs
 │   ├── web-js/                        # Web JavaScript widget documentation
-│   └── examples/                      # Example workflows
+│   ├── examples/                      # Example workflows
+│   └── comfyui/                       # ComfyUI-specific documentation
+│       └── custom-nodes_documentation_guidelines.md
+│
 ├── nodes/nodes.py                      # Main Python custom nodes
-├── web/js/                            # JavaScript widgets
-│   ├── gemini_widgets.js             # Gemini widgets
-│   └── ...
+│
+├── web/                               # Web extension components
+│   ├── js/                            # JavaScript widgets
+│   │   ├── gemini_widgets.js         # Gemini widgets
+│   │   └── ...
+│   ├── css/                           # Stylesheets
+│   └── docs/                          # USER HELP PAGES (In-UI reference)
+│       ├── VideoMetadata.md          # Help page for VideoMetadata node
+│       ├── ControlPanelOverview.md   # Help page for ControlPanelOverview node
+│       └── ...                       # (MUST match NODE_CLASS_MAPPINGS keys)
+│
 └── ui-react_backup/                   # React UI extension (DISABLED)
     ├── ui/src/                        # React source code
     ├── ui/package.json                # Node.js dependencies
@@ -901,20 +1054,20 @@ npm list --prefix ui-react_backup/ui  # Show React dependencies
 
 **NEVER CANCEL these operations - they may appear to hang but are working:**
 
-- `npm install`: 40 seconds (normal)
-- `npm run build`: 5 seconds (very fast)
-- `pip3 install torch opencv-python`: 2-3 minutes (downloads large binaries)
-- `npm run watch`: Runs continuously until stopped
-- `ruff check`: < 1 second (very fast)
-- `pytest`: < 30 seconds (but no tests exist currently)
+-   `npm install`: 40 seconds (normal)
+-   `npm run build`: 5 seconds (very fast)
+-   `pip3 install torch opencv-python`: 2-3 minutes (downloads large binaries)
+-   `npm run watch`: Runs continuously until stopped
+-   `ruff check`: < 1 second (very fast)
+-   `pytest`: < 30 seconds (but no tests exist currently)
 
 Set appropriate timeouts: 60+ seconds for npm install, 300+ seconds for Python ML dependencies.
 
 ## Development Tips
 
-- **Backend changes**: Restart ComfyUI server after modifying Python files in `nodes/` using: `cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-comfyui`
-- **Web extension changes**: Refresh browser cache after modifying JavaScript files in `web/js/`
-- JavaScript widgets require no build step (plain JS files)
-- Use Playwright tests in `web/tests/` to validate functionality against hosted ComfyUI server
-- Focus on functional testing since automated tests have configuration issues
-- FFmpeg must be available in PATH for video processing features to work
+-   **Backend changes**: Restart ComfyUI server after modifying Python files in `nodes/` using: `cd /mnt/nfs_share/gen-ai-image/comfyui-containers && docker compose restart dev-comfyui`
+-   **Web extension changes**: Refresh browser cache after modifying JavaScript files in `web/js/`
+-   JavaScript widgets require no build step (plain JS files)
+-   Use Playwright tests in `web/tests/` to validate functionality against hosted ComfyUI server
+-   Focus on functional testing since automated tests have configuration issues
+-   FFmpeg must be available in PATH for video processing features to work
