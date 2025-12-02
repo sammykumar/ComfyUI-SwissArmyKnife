@@ -67,6 +67,14 @@ class PromptBuilder:
                         "tooltip": "Override text for VISUAL STYLE paragraph",
                     },
                 ),
+                "nsfw": (
+                    "STRING",
+                    {
+                        "multiline": True,
+                        "default": "",
+                        "tooltip": "Override text for NSFW paragraph",
+                    },
+                ),
             },
         }
 
@@ -86,6 +94,7 @@ class PromptBuilder:
         action: str = "",
         scene: str = "",
         visual_style: str = "",
+        nsfw: str = "",
     ):
         """Compose a prompt string from the provided overrides."""
 
@@ -98,6 +107,7 @@ class PromptBuilder:
             action,
             scene,
             visual_style,
+            nsfw,
         ):
             clean_text = text.strip()
             if clean_text:
