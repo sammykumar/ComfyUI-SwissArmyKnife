@@ -198,8 +198,8 @@ class LLMStudioStructuredDescribe:
                 "max_tokens": ("INT", {
                     "default": 12000,
                     "min": 1,
-                    "max": 32000,
-                    "step": 100,
+                    "max": 262144,
+                    "step": 1,
                     "tooltip": "Maximum number of tokens to generate"
                 }),
                 "verbose": ("BOOLEAN", {
@@ -520,8 +520,8 @@ class LLMStudioStructuredVideoDescribe:
                 "max_tokens": ("INT", {
                     "default": 12000,
                     "min": 1,
-                    "max": 32000,
-                    "step": 100,
+                    "max": 262144,
+                    "step": 1,
                     "tooltip": "Maximum number of tokens to generate"
                 }),
                 "verbose": ("BOOLEAN", {
