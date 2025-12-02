@@ -49,8 +49,8 @@ VIDEO_DESCRIPTION_SCHEMA = {
                     "description": "Combined lighting, camera details, rendering cues, mood/genre descriptors, and overall aesthetic direction"
                 },
                 "nsfw": {
-                    "type": "boolean",
-                    "description": "Whether the content contains NSFW (Not Safe For Work) elements such as nudity, sexual content, or explicit material"
+                    "type": "string",
+                    "description": "Textual description of any NSFW (Not Safe For Work) elements such as nudity, sexual content, or explicit material. If no NSFW content is present, provide an empty string or 'sfw'."
                 }
             },
             "required": ["subject", "clothing", "action", "scene", "visual_style", "nsfw"],
@@ -77,8 +77,8 @@ SIMPLE_DESCRIPTION_SCHEMA = {
                     "description": "List of relevant tags/keywords"
                 },
                 "nsfw": {
-                    "type": "boolean",
-                    "description": "Whether the content contains NSFW (Not Safe For Work) elements such as nudity, sexual content, or explicit material"
+                    "type": "string",
+                    "description": "Textual description of any NSFW (Not Safe For Work) elements such as nudity, sexual content, or explicit material. If no NSFW content is present, provide an empty string or 'sfw'."
                 }
             },
             "required": ["caption", "tags", "nsfw"],
@@ -112,8 +112,8 @@ CHARACTER_ANALYSIS_SCHEMA = {
                     "description": "Clothing and accessories"
                 },
                 "nsfw": {
-                    "type": "boolean",
-                    "description": "Whether the content contains NSFW (Not Safe For Work) elements such as nudity, sexual content, or explicit material"
+                    "type": "string",
+                    "description": "Textual description of any NSFW (Not Safe For Work) elements such as nudity, sexual content, or explicit material. If no NSFW content is present, provide an empty string or 'sfw'."
                 }
             },
             "required": ["appearance", "expression", "pose", "clothing", "nsfw"],
@@ -381,8 +381,7 @@ class LLMStudioStructuredDescribe:
                 logger.log("="*80)
 
             # Extract fields based on schema preset
-            nsfw_value = result.get("nsfw", False)
-            nsfw = "true" if nsfw_value else "false"
+            nsfw = result.get("nsfw", "")
 
             if schema_preset == "video_description":
                 field_1 = result.get("subject", "")
@@ -418,21 +417,21 @@ class LLMStudioStructuredDescribe:
             logger.error(f"❌ {error_msg}")
             return {
                 "ui": {"json_output": [error_msg]},
-                "result": (error_msg, "", "", "", "", "", "false")
+                "result": (error_msg, "", "", "", "", "", "")
             }
         except json.JSONDecodeError as e:
             error_msg = f"Failed to parse JSON response: {e}"
             logger.error(f"❌ {error_msg}")
             return {
                 "ui": {"json_output": [error_msg]},
-                "result": (error_msg, "", "", "", "", "", "false")
+                "result": (error_msg, "", "", "", "", "", "")
             }
         except Exception as e:
             error_msg = f"Error: {e}"
             logger.error(f"❌ {error_msg}")
             return {
                 "ui": {"json_output": [error_msg]},
-                "result": (error_msg, "", "", "", "", "", "false")
+                "result": (error_msg, "", "", "", "", "", "")
             }
 
 
@@ -532,8 +531,8 @@ class LLMStudioStructuredVideoDescribe:
             },
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "INT")
-    RETURN_NAMES = ("json_output", "field_1", "field_2", "field_3", "field_4", "field_5", "frames_processed")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("json_output", "field_1", "field_2", "field_3", "field_4", "field_5", "nsfw")
     FUNCTION = "describe_video"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
     DESCRIPTION = (
@@ -656,12 +655,12 @@ class LLMStudioStructuredVideoDescribe:
         top_p: float,
         max_tokens: int,
         verbose: bool
-    ) -> Tuple[str, str, str, str, str, str, int]:
+    ) -> Tuple[str, str, str, str, str, str, str]:
         """
         Main function to describe video using LM Studio with structured output.
 
         Returns:
-            Tuple of (json_output, field_1, field_2, field_3, field_4, field_5, frames_processed)
+            Tuple of (json_output, field_1, field_2, field_3, field_4, field_5, nsfw)
         """
         self.base_url = base_url
 
@@ -682,7 +681,7 @@ class LLMStudioStructuredVideoDescribe:
         if not schema:
             error_msg = f"Unknown schema preset: {schema_preset}"
             logger.error(f"❌ {error_msg}")
-            return (error_msg, "", "", "", "", "", 0)
+            return (error_msg, "", "", "", "", "", "")
 
         # Extract frames from video
         try:
@@ -695,7 +694,7 @@ class LLMStudioStructuredVideoDescribe:
             if not frame_paths:
                 error_msg = "No frames extracted from video"
                 logger.error(f"❌ {error_msg}")
-                return (error_msg, "", "", "", "", "", 0)
+                return (error_msg, "", "", "", "", "", "")
 
             sampling_duration = min(video_duration, max_duration)
             logger.log(f"📹 Video duration: {video_duration:.2f}s, sampling {sampling_duration:.2f}s")
@@ -704,7 +703,7 @@ class LLMStudioStructuredVideoDescribe:
         except Exception as e:
             error_msg = f"Error extracting frames: {e}"
             logger.error(f"❌ {error_msg}")
-            return (error_msg, "", "", "", "", "", 0)
+            return (error_msg, "", "", "", "", "", "")
 
         # Encode frames
         try:
@@ -714,7 +713,7 @@ class LLMStudioStructuredVideoDescribe:
         except Exception as e:
             error_msg = f"Error encoding frames: {e}"
             logger.error(f"❌ {error_msg}")
-            return (error_msg, "", "", "", "", "", len(frame_paths))
+            return (error_msg, "", "", "", "", "", "")
 
         # Call LM Studio with structured output
         logger.log(f"\n🤖 Analyzing {len(images_base64)} frames with structured output...")
@@ -745,6 +744,8 @@ class LLMStudioStructuredVideoDescribe:
                 logger.log("="*80)
 
             # Extract fields based on schema preset
+            nsfw = result.get("nsfw", "")
+
             if schema_preset == "video_description":
                 field_1 = result.get("subject", "")
                 field_2 = result.get("clothing", "")
@@ -781,7 +782,7 @@ class LLMStudioStructuredVideoDescribe:
             # Return both ui field (for JavaScript display) and result tuple (for node outputs)
             return {
                 "ui": {"json_output": [json_output]},
-                "result": (json_output, field_1, field_2, field_3, field_4, field_5, len(images_base64))
+                "result": (json_output, field_1, field_2, field_3, field_4, field_5, nsfw)
             }
 
         except requests.exceptions.RequestException as e:
@@ -789,21 +790,21 @@ class LLMStudioStructuredVideoDescribe:
             logger.error(f"❌ {error_msg}")
             return {
                 "ui": {"json_output": [error_msg]},
-                "result": (error_msg, "", "", "", "", "", len(frame_paths))
+                "result": (error_msg, "", "", "", "", "", "")
             }
         except json.JSONDecodeError as e:
             error_msg = f"Failed to parse JSON response: {e}"
             logger.error(f"❌ {error_msg}")
             return {
                 "ui": {"json_output": [error_msg]},
-                "result": (error_msg, "", "", "", "", "", len(frame_paths))
+                "result": (error_msg, "", "", "", "", "", "")
             }
         except Exception as e:
             error_msg = f"Error: {e}"
             logger.error(f"❌ {error_msg}")
             return {
                 "ui": {"json_output": [error_msg]},
-                "result": (error_msg, "", "", "", "", "", len(frame_paths))
+                "result": (error_msg, "", "", "", "", "", "")
             }
 
 
