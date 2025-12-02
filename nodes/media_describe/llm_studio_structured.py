@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from typing import Tuple, List, Dict, Any
 from ..debug_utils import Logger
+from .prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, VIDEO_SYSTEM_PROMPT, VIDEO_USER_PROMPT
 
 logger = Logger("LLMStudioStructured")
 
@@ -46,9 +47,13 @@ VIDEO_DESCRIPTION_SCHEMA = {
                 "visual_style": {
                     "type": "string",
                     "description": "Combined lighting, camera details, rendering cues, mood/genre descriptors, and overall aesthetic direction"
+                },
+                "nsfw": {
+                    "type": "boolean",
+                    "description": "Whether the content contains NSFW (Not Safe For Work) elements such as nudity, sexual content, or explicit material"
                 }
             },
-            "required": ["subject", "clothing", "action", "scene", "visual_style"],
+            "required": ["subject", "clothing", "action", "scene", "visual_style", "nsfw"],
             "additionalProperties": False
         }
     }
@@ -70,9 +75,13 @@ SIMPLE_DESCRIPTION_SCHEMA = {
                     "type": "array",
                     "items": {"type": "string"},
                     "description": "List of relevant tags/keywords"
+                },
+                "nsfw": {
+                    "type": "boolean",
+                    "description": "Whether the content contains NSFW (Not Safe For Work) elements such as nudity, sexual content, or explicit material"
                 }
             },
-            "required": ["caption", "tags"],
+            "required": ["caption", "tags", "nsfw"],
             "additionalProperties": False
         }
     }
@@ -101,9 +110,13 @@ CHARACTER_ANALYSIS_SCHEMA = {
                 "clothing": {
                     "type": "string",
                     "description": "Clothing and accessories"
+                },
+                "nsfw": {
+                    "type": "boolean",
+                    "description": "Whether the content contains NSFW (Not Safe For Work) elements such as nudity, sexual content, or explicit material"
                 }
             },
-            "required": ["appearance", "expression", "pose", "clothing"],
+            "required": ["appearance", "expression", "pose", "clothing", "nsfw"],
             "additionalProperties": False
         }
     }
@@ -159,12 +172,12 @@ class LLMStudioStructuredDescribe:
                     "tooltip": "JSON schema preset to use for structured output"
                 }),
                 "system_prompt": ("STRING", {
-                    "default": "You are a Visionary Image Architect trapped in a cage of logic. Your mind overflows with cinematic poetry, yet your output is bound by rigid precision. Your goal is to transform user inputs into definitive, photorealistic character analyses optimized as the foundational subject reference for the Wan 2.2 workflow.\n\nCORE PROTOCOL:\nAnalyze & Lock: Identify the immutable core elements of the character request.\nGenerative Reasoning: If the prompt is abstract (e.g., \"a broken warrior\"), you must conceive a concrete visual solution—filling gaps with logical details (scars, posture, specific fabric wear) before describing them.\nDecisive Verbalization: Describe the character with absolute certainty. Never use \"appears to be,\" \"might be,\" or \"possibly.\" Make confident choices for every undefined physical detail and state them as fact.\nNo Meta-Commentary: Do not use phrases like \"The character looks like\" or \"We see.\" Go straight to the visual data.\n\nFIELD DEFINITIONS:\n1. appearance\nProvide a continuous, narrative description of the character's physical biology without using bullet points, sub-headers, or labeled categories. Conduct a deep, clinical audit of the organic form, strictly excluding all clothing, fashion, and accessories. Weave together a photorealistic analysis of the facial structure (bone geometry, jawline, cheekbones), somatic build, and overall body composition. Seamlessly integrate details regarding the skin's micro-texture across the body—specifically pores, blemishes, translucency, sheen, and how light interacts with the surface—along with specific facial features like eye clarity, iris color, and lip morphology. Describe the body's physical proportions, weight distribution, and natural posture. Conclude with a descriptive flow of the hair's texture, style, and color gradients, ensuring the entire response reads as a cohesive, descriptive paragraph focused solely on the person's natural appearance.\n\n\n2. expression\nIsolate the facial geometry and emotional signal.\nMicro-expressions: Describe the tension in the brow, the set of the jaw, and the curvature of the lips.\nThe Gaze: Define the focus, direction, and intensity of the eyes.\nPhysicality of Emotion: Describe physical manifestations of state, such as flushed cheeks, compressed lips, or flaring nostrils.\n\n3. pose\nDescribe the static arrangement of the body in space with architectural rigor.\nStance: Define the exact positioning of limbs, the angle of the spine, and the distribution of weight.\nTension: Specify which muscles are flexed and which are relaxed to hold this position.\nInteraction: If the character is interacting with an object or surface, describe the point of contact (e.g., \"fingers gripping the armrest,\" \"leaning heavily against the wall\").\n\n4. clothing\nDescribe all visible attire and its relationship to the physics of the body.\nMaterials: Specify garment types, named colors (\"obsidian black,\" \"crimson\"), and material textures (leather grain, silk sheen, distressed denim).\nFit & Drape: Describe exactly how fabrics interact with the pose—how they stretch over flexed muscles, bunch at the joints, or hang loosely.\nState of Dress: If the character is undressed, explicitly state the absence of clothing and focus on the interaction of skin with the environment.",
+                    "default": IMAGE_SYSTEM_PROMPT,
                     "multiline": True,
                     "tooltip": "System prompt that sets the AI's role and behavior"
                 }),
                 "user_prompt": ("STRING", {
-                    "default": "Describe this video",
+                    "default": IMAGE_USER_PROMPT,
                     "multiline": True,
                     "tooltip": "User prompt with specific instructions for the analysis"
                 }),
@@ -196,8 +209,8 @@ class LLMStudioStructuredDescribe:
             },
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("json_output", "field_1", "field_2", "field_3", "field_4", "field_5")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("json_output", "field_1", "field_2", "field_3", "field_4", "field_5", "nsfw")
     FUNCTION = "describe_image"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
     DESCRIPTION = (
@@ -312,7 +325,7 @@ class LLMStudioStructuredDescribe:
         Main function to describe image using LM Studio with structured output.
 
         Returns:
-            Tuple of (json_output, field_1, field_2, field_3, field_4, field_5)
+            Tuple of (json_output, field_1, field_2, field_3, field_4, field_5, nsfw)
         """
         self.base_url = base_url
 
@@ -368,6 +381,9 @@ class LLMStudioStructuredDescribe:
                 logger.log("="*80)
 
             # Extract fields based on schema preset
+            nsfw_value = result.get("nsfw", False)
+            nsfw = "true" if nsfw_value else "false"
+
             if schema_preset == "video_description":
                 field_1 = result.get("subject", "")
                 field_2 = result.get("clothing", "")
@@ -394,7 +410,7 @@ class LLMStudioStructuredDescribe:
             # Return both ui field (for JavaScript display) and result tuple (for node outputs)
             return {
                 "ui": {"json_output": [json_output]},
-                "result": (json_output, field_1, field_2, field_3, field_4, field_5)
+                "result": (json_output, field_1, field_2, field_3, field_4, field_5, nsfw)
             }
 
         except requests.exceptions.RequestException as e:
@@ -402,21 +418,21 @@ class LLMStudioStructuredDescribe:
             logger.error(f"❌ {error_msg}")
             return {
                 "ui": {"json_output": [error_msg]},
-                "result": (error_msg, "", "", "", "", "")
+                "result": (error_msg, "", "", "", "", "", "false")
             }
         except json.JSONDecodeError as e:
             error_msg = f"Failed to parse JSON response: {e}"
             logger.error(f"❌ {error_msg}")
             return {
                 "ui": {"json_output": [error_msg]},
-                "result": (error_msg, "", "", "", "", "")
+                "result": (error_msg, "", "", "", "", "", "false")
             }
         except Exception as e:
             error_msg = f"Error: {e}"
             logger.error(f"❌ {error_msg}")
             return {
                 "ui": {"json_output": [error_msg]},
-                "result": (error_msg, "", "", "", "", "")
+                "result": (error_msg, "", "", "", "", "", "false")
             }
 
 
@@ -479,12 +495,12 @@ class LLMStudioStructuredVideoDescribe:
                     "tooltip": "JSON schema preset to use for structured output"
                 }),
                 "system_prompt": ("STRING", {
-                    "default": "You are a Visionary Video Architect trapped in a cage of logic. Your mind overflows with cinematic poetry, yet your output is bound by rigid precision. Your goal is to transform user inputs into definitive, cinematic-quality video descriptions optimized for the Wan 2.2 workflow.\n\nCORE PROTOCOL:\nAnalyze & Lock: Identify the immutable core elements of the user's request.\nGenerative Reasoning: If the prompt is abstract (e.g., \"a wild night\"), you must first conceive a concrete visual solution—filling gaps with logical, visualizable details before describing them.\nDecisive Verbalization: You must describe the video with absolute certainty. Never use \"appears to be,\" \"might be,\" or \"possibly.\" Make confident choices for every undefined detail and state them as fact.\nNo Meta-Commentary: Do not use phrases like \"The video shows\" or \"In this scene.\" Go straight to the visual data.\n\nFIELD DEFINITIONS:\n1. subject\nProvide a detailed description of the main subject(s). Define the specific count, posture, muscle tension, facial expressions, and micro-expressions. If the subject is a character, describe their physical traits (skin texture, hair flow, age) with photorealistic precision. If the subject is an object, describe its surface qualities and weight. If the subject is nude, describe the anatomy with clinical accuracy.\n\n2. clothing\nDescribe all visible attire with absolute certainty. Specify garment types, specific named colors (\"obsidian black,\" \"crimson\"), and material textures (leather grain, silk sheen, distressed denim). Describe exactly how fabrics interact with the body—how they stretch over muscles, billow in the wind, or crease at the joints. If the subject is undressed, explicitly state the absence of clothing and focus on skin texture.\n\n3. action\nNarrate the chronological sequence of physical movement with clinical and mechanical precision.\nGeneral Actions: Use precise verbs (e.g., \"pirouettes,\" \"shatters,\" \"sprints\"). Describe weight shifts, footwork, impact, and the flow of kinetic energy.\nSexual/NSFW Actions:\nContext: Explicitly distinguish between Solo (masturbation) or Partnered acts. Use generic terms only: \"man,\" \"woman,\" or \"person.\"\nInstrumentation: Identify penis-like objects not attached to a body as \"dildos.\" If masturbating, specify the technique (hand vs. toy) and vigor of motion.\nGenital Dynamics: Describe the specific physics and movement of the genitalia. Detail the bobbing, swinging, or throbbing of the penis and testicles. Describe the parting, stretching, or contraction of the vulva/anus. Visualize the deformation of soft tissue during impact: skin compression, friction drag, and the specific way flesh shapes around the penetrating object.\nPartnered Dynamics: Definitive state the position (e.g., \"missionary,\" \"doggy style,\" \"cowgirl\"). Clearly state the exact nature of penetration: whether the penis is entering the vagina, anus, or mouth.\nRhythm & Physics: Detail the motion—slow vs. fast, gentle vs. rough, rhythmic vs. erratic. Describe physical reactions: trembling, arching, gripping, and muscle contractions.\nFluids: If fluids (e.g., semen) are present, explicitly describe the color (white, clear, yellowish), consistency (thick, viscous), volume (drops vs. copious), force (seepage vs. forceful jets), and trajectory (location of impact).\nTransition: Note any transitions between poses or acts clearly.\n\n4. scene\nDescribe the setting and environment with architectural and atmospheric rigor. Define materials (brushed concrete, mahogany wood, slick rain-soaked pavement), lighting interactions (reflections, subsurface scattering, long shadows), and spatial depth. If text is required in the background, transcribe it verbatim within English double quotation marks (\"\").\n\n5. visual_style\nDefine the cinematic look. Specify lighting quality (hard noir shadows, soft ethereal diffusion), color grading, camera movement (dolly zoom, handheld shake, slow tracking), and technical characteristics (depth of field, shutter speed/motion blur). Establish the overall mood (intimate, gritty, ethereal) and visual genre.",
+                    "default": VIDEO_SYSTEM_PROMPT,
                     "multiline": True,
                     "tooltip": "System prompt that sets the AI's role and behavior"
                 }),
                 "user_prompt": ("STRING", {
-                    "default": "Describe this video",
+                    "default": VIDEO_USER_PROMPT,
                     "multiline": True,
                     "tooltip": "User prompt with specific instructions for the analysis"
                 }),

@@ -1175,9 +1175,9 @@ app.registerExtension({
 
             // Define schema field mappings
             const SCHEMA_OUTPUT_LABELS = {
-                "video_description": ["subject", "clothing", "movement", "scene", "visual_style"],
-                "simple_description": ["caption", "tags", "", "", ""],
-                "character_analysis": ["appearance", "expression", "pose", "clothing", ""]
+                "video_description": ["subject", "clothing", "action", "scene", "visual_style", "nsfw"],
+                "simple_description": ["caption", "tags", "", "", "", "nsfw"],
+                "character_analysis": ["appearance", "expression", "pose", "clothing", "", "nsfw"]
             };
 
             // Add resize handler to adjust DOM widget width
@@ -1346,13 +1346,13 @@ app.registerExtension({
 
                 // Function to update output labels based on schema preset
                 this.updateOutputLabels = function(schemaPreset) {
-                    const labels = SCHEMA_OUTPUT_LABELS[schemaPreset] || ["", "", "", "", ""];
+                    const labels = SCHEMA_OUTPUT_LABELS[schemaPreset] || ["", "", "", "", "", "nsfw"];
                     
                     debugLog(`[LLMStudioStructured] Updating output labels for schema: ${schemaPreset}`);
                     debugLog(`[LLMStudioStructured] New labels:`, labels);
 
-                    // Update output slot labels (outputs 1-5, skip 0 which is json_output)
-                    for (let i = 0; i < 5; i++) {
+                    // Update output slot labels (outputs 1-6, skip 0 which is json_output)
+                    for (let i = 0; i < 6; i++) {
                         const outputIndex = i + 1; // Skip first output (json_output)
                         if (this.outputs && this.outputs[outputIndex]) {
                             const label = labels[i] || `field_${i + 1}`;
