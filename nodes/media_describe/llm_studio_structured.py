@@ -196,7 +196,7 @@ class LLMStudioStructuredDescribe:
                     "tooltip": "Nucleus sampling probability threshold"
                 }),
                 "max_tokens": ("INT", {
-                    "default": 12000,
+                    "default": 262144,
                     "min": 1,
                     "max": 262144,
                     "step": 1,
@@ -518,7 +518,7 @@ class LLMStudioStructuredVideoDescribe:
                     "tooltip": "Nucleus sampling probability threshold"
                 }),
                 "max_tokens": ("INT", {
-                    "default": 12000,
+                    "default": 262144,
                     "min": 1,
                     "max": 262144,
                     "step": 1,

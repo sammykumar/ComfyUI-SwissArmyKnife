@@ -27,7 +27,7 @@ Media Selection isolates all media ingestion tasks—uploads, folder randomizati
 | `seed` | INT | Drives deterministic selection for randomization modes |
 | `media_path` | STRING | Base directory when randomizing from path |
 | `uploaded_image_file` / `uploaded_video_file` | FILE | Set via upload widgets when using `Upload Media` |
-| `reddit_url` / `subreddit_url` | STRING | Reddit endpoints used by download helper |
+| `reddit_url` / `subreddit_url` | STRING | Reddit post URL, subreddit, or direct `Redgifs`/`Gfycat` URL (used by the download helper) |
 | `max_duration` | FLOAT | Trims long clips (seconds, `0` = full length) |
 | `resize_mode` | CHOICE | `None`, `Auto (by orientation)`, or `Custom` |
 | `resize_width` / `resize_height` | INT | Target dimensions for `Custom` mode |

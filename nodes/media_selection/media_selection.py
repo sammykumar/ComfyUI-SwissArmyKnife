@@ -31,9 +31,9 @@ class MediaSelection:
         """
         return {
             "required": {
-                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit Post", "Randomize from Subreddit"], {
-                    "default": "Reddit Post",
-                    "tooltip": "Choose whether to upload media, randomize from a directory path, download from a Reddit post, or randomize from a subreddit"
+                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit/RedGif Post", "Randomize from Subreddit"], {
+                    "default": "Reddit/RedGif Post",
+                    "tooltip": "Choose whether to upload media, randomize from a directory path, download from a Reddit/RedGif post, or randomize from a subreddit"
                 }),
                 "media_type": (["image", "video"], {
                     "default": "image",
@@ -63,7 +63,7 @@ class MediaSelection:
                 "reddit_url": ("STRING", {
                     "multiline": False,
                     "default": "",
-                    "tooltip": "Reddit post URL (used when media_source is Reddit Post)"
+                    "tooltip": "Reddit post URL or direct Redgifs/Gfycat URL (used when media_source is Reddit/RedGif Post)"
                 }),
                 "subreddit_url": ("STRING", {
                     "multiline": False,
@@ -112,7 +112,7 @@ class MediaSelection:
         Select media from various sources and return path and metadata.
 
         Args:
-            media_source: Source of media ("Upload Media", "Randomize Media from Path", "Reddit Post", or "Randomize from Subreddit")
+            media_source: Source of media ("Upload Media", "Randomize Media from Path", "Reddit/RedGif Post", or "Randomize from Subreddit")
             media_type: Type of media ("image" or "video")
             seed: Seed for randomization
             media_path: Directory path for randomization (optional)
@@ -137,7 +137,7 @@ class MediaSelection:
                 selected_media_path, media_info_text = self._randomize_from_path(
                     media_path, media_type, seed
                 )
-            elif media_source == "Reddit Post":
+            elif media_source == "Reddit/RedGif Post":
                 selected_media_path, media_type, media_info_text = self._download_reddit_post(
                     reddit_url, media_type
                 )
@@ -211,7 +211,7 @@ class MediaSelection:
     def _download_reddit_post(self, reddit_url, media_type):
         """Download media from a Reddit post."""
         if not reddit_url or not reddit_url.strip():
-            raise ValueError("Reddit URL is required when media_source is 'Reddit Post'")
+            raise ValueError("Reddit URL is required when media_source is 'Reddit/RedGif Post'")
 
         downloaded_path, detected_media_type, reddit_media_info = self._download_reddit_media(reddit_url)
         selected_media_path = downloaded_path
@@ -348,28 +348,43 @@ class MediaSelection:
                 reddit_url = 'https://' + reddit_url
 
             parsed_url = urlparse(reddit_url)
-            if 'reddit.com' not in parsed_url.netloc:
-                raise ValueError("URL must be a Reddit post URL")
+            # Allow direct Reddit posts or direct Redgifs/Gfycat URLs
+            allowed_hosts = ['reddit.com', 'www.reddit.com', 'redgifs.com', 'www.redgifs.com', 'gfycat.com', 'www.gfycat.com']
+            if not any(h in parsed_url.netloc.lower() for h in allowed_hosts):
+                raise ValueError("URL must be a Reddit post URL or a supported external host (redgifs.com/gfycat.com)")
 
-            json_url = reddit_url.rstrip('/') + '.json'
+            # If this is a direct Redgifs/Gfycat URL, attempt to extract the direct media URL
+            if 'redgifs.com' in parsed_url.netloc.lower() or 'gfycat.com' in parsed_url.netloc.lower():
+                media_url, media_type = self._extract_redgifs_url(reddit_url)
+                if not media_url:
+                    raise ValueError(f"Could not extract a direct media URL from: {reddit_url}")
+
+                # Bypass reddit JSON flow and download the media_url directly
+                logger.info(f"Downloading media from direct external URL: {media_url}")
+                direct_external = True
+                post_title = reddit_url
+            else:
+                json_url = reddit_url.rstrip('/') + '.json'
+                direct_external = False
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
 
-            response = requests.get(json_url, headers=headers, timeout=30)
-            response.raise_for_status()
-            data = response.json()
+            if not direct_external:
+                response = requests.get(json_url, headers=headers, timeout=30)
+                response.raise_for_status()
+                data = response.json()
 
-            if not data or len(data) < 1:
-                raise ValueError("Unable to parse Reddit post data")
+                if not data or len(data) < 1:
+                    raise ValueError("Unable to parse Reddit post data")
 
-            post_data = data[0]['data']['children'][0]['data']
-            media_url = None
-            media_type = None
-            post_title = post_data.get('title', 'Reddit Post')
+                post_data = data[0]['data']['children'][0]['data']
+                media_url = None
+                media_type = None
+                post_title = post_data.get('title', 'Reddit Post')
 
-            if post_data.get('url'):
-                url = post_data['url']
+                if post_data.get('url'):
+                    url = post_data['url']
 
                 if url.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
                     media_url = url
@@ -390,16 +405,16 @@ class MediaSelection:
                         media_url = url
                         media_type = 'video'
 
-            if not media_url and post_data.get('media_metadata'):
-                for media_info in post_data['media_metadata'].values():
-                    if media_info.get('s') and media_info['s'].get('u'):
-                        media_url = unescape(media_info['s']['u'])
-                        mime_type = media_info.get('m', '')
-                        if mime_type.startswith('image/'):
-                            media_type = 'image'
-                        elif mime_type.startswith('video/'):
-                            media_type = 'video'
-                        break
+                if not media_url and post_data.get('media_metadata'):
+                    for media_info in post_data['media_metadata'].values():
+                        if media_info.get('s') and media_info['s'].get('u'):
+                            media_url = unescape(media_info['s']['u'])
+                            mime_type = media_info.get('m', '')
+                            if mime_type.startswith('image/'):
+                                media_type = 'image'
+                            elif mime_type.startswith('video/'):
+                                media_type = 'video'
+                            break
 
             if not media_url:
                 raise ValueError(f"No downloadable media found in Reddit post: {post_title}")

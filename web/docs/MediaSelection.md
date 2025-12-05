@@ -20,7 +20,7 @@ Select images or videos from uploads, filesystem directories, or Reddit sources,
 
 1. Use “Randomize Media from Path” with different seeds to iterate through a dataset quickly.
 2. “Auto (by orientation)” resize keeps common portrait/landscape sizes (832×480 or 480×832) without manual math.
-3. When sourcing Reddit media, provide either a full URL or `r/subreddit`—the node handles downloads and temp storage.
+3. When sourcing Reddit media, provide either a full URL, a direct `Redgifs`/`Gfycat` URL, or `r/subreddit`—the node handles downloads and temp storage.
 
 ## Additional Resources
 
