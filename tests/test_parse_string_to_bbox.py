@@ -14,12 +14,17 @@ ParseStringToBBox = parse_mod.ParseStringToBBox
 def test_valid_bbox_string():
     s = "[ [170.6425323486328, 71.72273254394531, 300.5597229003906, 238.28350830078125] ]"
     node = ParseStringToBBox()
-    x1, y1, x2, y2 = node.parse_bbox(s)
+    x1, y1, x2, y2, width, height = node.parse_bbox(s)
 
-    assert math.isclose(x1, 170.6425323486328, rel_tol=1e-9)
-    assert math.isclose(y1, 71.72273254394531, rel_tol=1e-9)
-    assert math.isclose(x2, 300.5597229003906, rel_tol=1e-9)
-    assert math.isclose(y2, 238.28350830078125, rel_tol=1e-9)
+    # Values are rounded to nearest int
+    assert x1 == 171
+    assert y1 == 72
+    assert x2 == 301
+    assert y2 == 238
+
+    # width = x2 - x1, height = y2 - y1
+    assert width == 130
+    assert height == 166
 
 
 def test_invalid_json_raises():

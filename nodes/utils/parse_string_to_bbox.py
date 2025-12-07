@@ -42,8 +42,9 @@ class ParseStringToBBox:
             "optional": {},
         }
 
-    RETURN_TYPES = ("FLOAT", "FLOAT", "FLOAT", "FLOAT")
-    RETURN_NAMES = ("x1", "y1", "x2", "y2")
+    # Return integer coordinates and width/height (rounded to nearest int)
+    RETURN_TYPES = ("INT", "INT", "INT", "INT", "INT", "INT")
+    RETURN_NAMES = ("x1", "y1", "x2", "y2", "width", "height")
     FUNCTION = "parse_bbox"
     CATEGORY = "Swiss Army Knife 🔪/Utils"
     DESCRIPTION = "Parse a JSON-style bbox string into x1, y1, x2, y2 floats."
@@ -54,7 +55,6 @@ class ParseStringToBBox:
         This function expects the exact nested-list JSON structure shown above.
         """
         try:
-            # json.loads will accept the multi-line JSON string shown in examples
             data = json.loads(bboxString)
         except Exception as e:
             raise ValueError(f"Failed to parse bboxString as JSON: {e}")
@@ -67,14 +67,23 @@ class ParseStringToBBox:
             raise ValueError("bboxString must contain an inner list with exactly four numeric values")
 
         try:
-            x1 = float(inner[0])
-            y1 = float(inner[1])
-            x2 = float(inner[2])
-            y2 = float(inner[3])
+            # Parse floats then round to nearest int for internal integer outputs
+            x1f = float(inner[0])
+            y1f = float(inner[1])
+            x2f = float(inner[2])
+            y2f = float(inner[3])
         except Exception as e:
             raise ValueError(f"BBox coordinates must be numeric: {e}")
 
-        return (x1, y1, x2, y2)
+        x1 = int(round(x1f))
+        y1 = int(round(y1f))
+        x2 = int(round(x2f))
+        y2 = int(round(y2f))
+
+        width = int(round(x2 - x1))
+        height = int(round(y2 - y1))
+
+        return (x1, y1, x2, y2, width, height)
 
 
 NODE_CLASS_MAPPINGS = {
