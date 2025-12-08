@@ -1027,8 +1027,8 @@ class LLMStudioStructuredVideoDescribe:
 class LMStudioCombinedStructuredDescribe:
     """Two-pass workflow: extract subject appearance first, then describe video frames."""
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
-    RETURN_NAMES = ("subject_json", "video_json", "combined_text")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("subject_json", "video_json", "combined_text", "formatted_response")
     FUNCTION = "describe_combined"
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
@@ -1233,22 +1233,22 @@ class LMStudioCombinedStructuredDescribe:
         top_p: float,
         max_tokens: int,
         verbose: bool
-    ) -> Tuple[str, str, str]:
+    ) -> Tuple[str, str, str, str]:
         if not subject_image_path or not os.path.exists(subject_image_path):
             error_msg = f"Subject image not found: {subject_image_path}"
             logger.error(error_msg)
-            return (error_msg, "", "")
+            return (error_msg, "", "", "")
         if not video_path or not os.path.exists(video_path):
             error_msg = f"Video file not found: {video_path}"
             logger.error(error_msg)
-            return ("", error_msg, "")
+            return ("", error_msg, "", "")
 
         try:
             subject_b64 = self.encode_file_to_base64(Path(subject_image_path))
         except Exception as exc:
             error_msg = f"Failed to encode subject image: {exc}"
             logger.error(error_msg)
-            return (error_msg, "", "")
+            return (error_msg, "", "", "")
 
         subject_content = [
             {"type": "text", "text": subject_user_prompt},
@@ -1273,7 +1273,7 @@ class LMStudioCombinedStructuredDescribe:
         except Exception as exc:
             error_msg = f"Subject appearance request failed: {exc}"
             logger.error(error_msg)
-            return (error_msg, "", "")
+            return (error_msg, "", "", "")
 
         subject_json = json.dumps(subject_result, indent=2)
 
@@ -1284,11 +1284,11 @@ class LMStudioCombinedStructuredDescribe:
             if not frames_meta:
                 error_msg = "No frames extracted from video"
                 logger.error(error_msg)
-                return (subject_json, error_msg, "")
+                return (subject_json, error_msg, "", "")
         except Exception as exc:
             error_msg = f"Failed to extract frames: {exc}"
             logger.error(error_msg)
-            return (subject_json, error_msg, "")
+            return (subject_json, error_msg, "", "")
 
         if verbose:
             logger.log(
@@ -1323,7 +1323,7 @@ class LMStudioCombinedStructuredDescribe:
             self.cleanup_temp_frames(frames_meta)
             error_msg = f"Video analysis request failed: {exc}"
             logger.error(error_msg)
-            return (subject_json, error_msg, "")
+            return (subject_json, error_msg, "", "")
 
         self.cleanup_temp_frames(frames_meta)
 
@@ -1335,47 +1335,62 @@ class LMStudioCombinedStructuredDescribe:
         scene = video_result.get("scene", "")
         visual_style = video_result.get("visual_style", "")
         nsfw = video_result.get("nsfw", {})
-        nsfw_summary = ""
-        if isinstance(nsfw, dict):
-            status = "NSFW" if nsfw.get("has_nsfw") else "SFW"
-            nsfw_summary = f"{status}: {nsfw.get('summary', '').strip()}"
+        nsfw_plain_parts: List[str] = []
+        nsfw_formatted_parts: List[str] = []
 
-            frames_notes = nsfw.get("frames") or []
-            if frames_notes:
-                notes = []
-                for entry in frames_notes:
-                    idx = entry.get("frame_index")
-                    ts = entry.get("timestamp_seconds")
-                    desc = entry.get("description", "")
-                    notes.append(
-                        f"Frame {idx} ({ts:.2f}s): {desc}" if isinstance(ts, (int, float)) else f"Frame {idx}: {desc}"
-                    )
-                nsfw_summary = f"{nsfw_summary}\n" + "\n".join(notes)
-
-        nsfw_body = ""
         if isinstance(nsfw, dict):
-            parts = []
             summary = nsfw.get("summary", "").strip()
             if summary:
-                parts.append(summary)
+                nsfw_plain_parts.append(summary)
+                nsfw_formatted_parts.append(f"NSFW Summary:\n{summary}")
 
             frames_notes = nsfw.get("frames") or []
             for entry in frames_notes:
                 desc = entry.get("description", "").strip()
-                if desc:
-                    parts.append(desc)
+                if not desc:
+                    continue
+                header_parts = []
+                idx = entry.get("frame_index")
+                ts = entry.get("timestamp_seconds")
+                if isinstance(idx, int):
+                    header_parts.append(f"Frame {idx}")
+                if isinstance(ts, (int, float)):
+                    header_parts.append(f"({ts:.2f}s)")
+                header = " ".join(header_parts).strip()
+                if header:
+                    nsfw_formatted_parts.append(f"{header}\n{desc}")
+                else:
+                    nsfw_formatted_parts.append(desc)
+                nsfw_plain_parts.append(desc)
 
-            nsfw_body = "\n\n".join(parts)
+        nsfw_body = "\n\n".join([part for part in nsfw_plain_parts if part])
+        formatted_nsfw_section = "\n\n".join([part for part in nsfw_formatted_parts if part])
 
         text_sections = [appearance_text, clothing, action, scene, visual_style, nsfw_body]
         combined_text = "\n\n".join([section for section in text_sections if section.strip()])
+
+        formatted_sections = []
+        if appearance_text.strip():
+            formatted_sections.append(f"Subject Appearance:\n{appearance_text}")
+        if clothing.strip():
+            formatted_sections.append(f"Clothing & Style:\n{clothing}")
+        if action.strip():
+            formatted_sections.append(f"Action & Motion:\n{action}")
+        if scene.strip():
+            formatted_sections.append(f"Scene:\n{scene}")
+        if visual_style.strip():
+            formatted_sections.append(f"Visual Style:\n{visual_style}")
+        if formatted_nsfw_section.strip():
+            formatted_sections.append(f"NSFW:\n{formatted_nsfw_section}")
+
+        formatted_response = "\n\n".join(formatted_sections)
 
         if verbose:
             logger.log("✅ Combined structured description ready")
 
         return {
-            "ui": {"json_output": [subject_json, video_json, combined_text]},
-            "result": (subject_json, video_json, combined_text)
+            "ui": {"json_output": [subject_json, video_json, combined_text, formatted_response]},
+            "result": (subject_json, video_json, combined_text, formatted_response)
         }
 
 
