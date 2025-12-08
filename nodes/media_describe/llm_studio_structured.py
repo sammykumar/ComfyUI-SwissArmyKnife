@@ -663,17 +663,17 @@ class LLMStudioStructuredVideoDescribe:
                     "step": 0.5,
                     "tooltip": "Maximum duration in seconds to sample from"
                 }),
-                "schema_preset": (["video_description", "simple_description", "character_analysis"], {
-                    "default": "video_description",
+                "schema_preset": (["video_frame_architect", "video_description", "simple_description", "character_analysis"], {
+                    "default": "video_frame_architect",
                     "tooltip": "JSON schema preset to use for structured output"
                 }),
                 "system_prompt": ("STRING", {
-                    "default": VIDEO_SYSTEM_PROMPT,
+                    "default": VIDEO_FRAME_ARCHITECT_SYSTEM_PROMPT,
                     "multiline": True,
                     "tooltip": "System prompt that sets the AI's role and behavior"
                 }),
                 "user_prompt": ("STRING", {
-                    "default": VIDEO_USER_PROMPT,
+                    "default": VIDEO_FRAME_ARCHITECT_USER_PROMPT,
                     "multiline": True,
                     "tooltip": "User prompt with specific instructions for the analysis"
                 }),
@@ -719,14 +719,14 @@ class LLMStudioStructuredVideoDescribe:
         video_path: str, 
         sample_rate: float = 1.0, 
         max_duration: float = 5.0
-    ) -> Tuple[List[Path], float]:
+    ) -> Tuple[List[Dict[str, Any]], float]:
         """Extract frames from video at specified sampling rate."""
         cap = cv2.VideoCapture(str(video_path))
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         video_fps = cap.get(cv2.CAP_PROP_FPS)
         duration = total_frames / video_fps if video_fps > 0 else 0
 
-        extracted_frames = []
+        extracted_frames: List[Dict[str, Any]] = []
         temp_dir = Path(tempfile.mkdtemp())
 
         sampling_duration = min(duration, max_duration)
@@ -745,7 +745,12 @@ class LLMStudioStructuredVideoDescribe:
             if ret:
                 frame_path = temp_dir / f"frame_{idx:03d}.jpg"
                 cv2.imwrite(str(frame_path), frame)
-                extracted_frames.append(frame_path)
+                timestamp = frame_num / video_fps if video_fps > 0 else idx / sample_rate
+                extracted_frames.append({
+                    "path": frame_path,
+                    "index": idx,
+                    "timestamp": timestamp,
+                })
 
         cap.release()
         return extracted_frames, duration
@@ -765,18 +770,22 @@ class LLMStudioStructuredVideoDescribe:
         schema: Dict[str, Any],
         temperature: float,
         top_p: float,
-        max_tokens: int
+        max_tokens: int,
+        custom_content: List[Dict[str, Any]] | None = None
     ) -> Dict[str, Any]:
         """Call LM Studio with structured output for multiple images."""
-        # Build content array with text prompt followed by all images
-        content = [{"type": "text", "text": user_prompt}]
-        for img_base64 in images_base64:
-            content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/jpeg;base64,{img_base64}"
-                }
-            })
+        # Build content array with text prompt followed by all images unless overridden
+        if custom_content is not None:
+            content = custom_content
+        else:
+            content = [{"type": "text", "text": user_prompt}]
+            for img_base64 in images_base64:
+                content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{img_base64}"
+                    }
+                })
 
         # Use OpenAI-compatible chat completions format with vision
         # System message first, then user message with text and images
@@ -859,20 +868,20 @@ class LLMStudioStructuredVideoDescribe:
 
         # Extract frames from video
         try:
-            frame_paths, video_duration = self.extract_frames_from_video(
+            frame_metas, video_duration = self.extract_frames_from_video(
                 video_path, 
                 sample_rate=sample_rate,
                 max_duration=max_duration
             )
 
-            if not frame_paths:
+            if not frame_metas:
                 error_msg = "No frames extracted from video"
                 logger.error(f"❌ {error_msg}")
                 return (error_msg, "", "", "", "", "", "")
 
             sampling_duration = min(video_duration, max_duration)
             logger.log(f"📹 Video duration: {video_duration:.2f}s, sampling {sampling_duration:.2f}s")
-            logger.log(f"📸 Extracted {len(frame_paths)} frames ({sample_rate} fps)")
+            logger.log(f"📸 Extracted {len(frame_metas)} frames ({sample_rate} fps)")
 
         except Exception as e:
             error_msg = f"Error extracting frames: {e}"
@@ -881,7 +890,14 @@ class LLMStudioStructuredVideoDescribe:
 
         # Encode frames
         try:
-            images_base64 = [self.encode_image(frame) for frame in frame_paths]
+            images_base64: List[Dict[str, Any]] = []
+            for meta in frame_metas:
+                encoded = self.encode_image(meta["path"])
+                images_base64.append({
+                    "base64": encoded,
+                    "index": meta["index"],
+                    "timestamp": meta["timestamp"],
+                })
             if verbose:
                 logger.log(f"✅ Encoded {len(images_base64)} frames")
         except Exception as e:
@@ -893,16 +909,36 @@ class LLMStudioStructuredVideoDescribe:
         logger.log(f"\n🤖 Analyzing {len(images_base64)} frames with structured output...")
 
         try:
+            custom_content = None
+            if schema_preset == "video_frame_architect":
+                custom_content = [{"type": "text", "text": user_prompt}]
+                for payload in images_base64:
+                    timestamp = payload.get("timestamp", 0.0)
+                    index = payload.get("index", 0)
+                    custom_content.append({
+                        "type": "text",
+                        "text": f"Frame {index} ({timestamp:.2f}s)"
+                    })
+                    custom_content.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{payload['base64']}"
+                        }
+                    })
+
+            base64_list = [item["base64"] for item in images_base64]
+
             result = self.call_lmstudio_structured(
                 base_url=base_url,
                 model_name=model_name,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
-                images_base64=images_base64,
+                images_base64=base64_list,
                 schema=schema,
                 temperature=temperature,
                 top_p=top_p,
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
+                custom_content=custom_content
             )
 
             # Convert to JSON string
@@ -943,11 +979,11 @@ class LLMStudioStructuredVideoDescribe:
 
             # Clean up temporary files
             try:
-                for frame_path in frame_paths:
-                    if frame_path.exists():
-                        frame_path.unlink()
-                if frame_paths and frame_paths[0].parent.exists():
-                    frame_paths[0].parent.rmdir()
+                for meta in frame_metas:
+                    if meta["path"].exists():
+                        meta["path"].unlink()
+                if frame_metas and frame_metas[0]["path"].parent.exists():
+                    frame_metas[0]["path"].parent.rmdir()
             except Exception as e:
                 logger.warning(f"⚠️ Error cleaning up temp files: {e}")
 
