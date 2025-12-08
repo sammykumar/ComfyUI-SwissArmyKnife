@@ -149,6 +149,10 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
         "schema": {
             "type": "object",
             "properties": {
+                "subject": {
+                    "type": "string",
+                    "description": "Detailed description of the main subject"
+                },
                 "clothing": {
                     "type": "string",
                     "description": "Clothing and style details observed throughout the clip"
@@ -202,11 +206,11 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                             "description": "Per-frame NSFW notes"
                         }
                     },
-                    "required": ["has_nsfw"],
+                    "required": ["has_nsfw", "summary"],
                     "additionalProperties": False
                 }
             },
-            "required": ["clothing", "action", "scene", "visual_style", "nsfw"],
+            "required": ["subject", "clothing", "action", "scene", "visual_style", "nsfw"],
             "additionalProperties": False
         }
     }
@@ -557,7 +561,13 @@ class LLMStudioStructuredDescribe:
             # Extract fields based on schema preset
             nsfw = result.get("nsfw", "")
 
-            if schema_preset == "video_description":
+            if schema_preset == "video_frame_architect":
+                field_1 = result.get("subject", "")
+                field_2 = result.get("clothing", "")
+                field_3 = result.get("action", "")
+                field_4 = result.get("scene", "")
+                field_5 = result.get("visual_style", "")
+            elif schema_preset == "video_description":
                 field_1 = result.get("subject", "")
                 field_2 = result.get("clothing", "")
                 field_3 = result.get("action", "")
