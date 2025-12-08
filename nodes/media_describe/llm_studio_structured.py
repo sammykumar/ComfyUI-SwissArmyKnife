@@ -122,6 +122,96 @@ CHARACTER_ANALYSIS_SCHEMA = {
     }
 }
 
+SUBJECT_APPEARANCE_SCHEMA = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "subject_appearance",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "appearance": {
+                    "type": "string",
+                    "description": "Detailed description of the subject's physical appearance, including face, body, skin, and notable traits"
+                }
+            },
+            "required": ["appearance"],
+            "additionalProperties": False
+        }
+    }
+}
+
+VIDEO_FRAME_ARCHITECT_SCHEMA = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "video_frame_architect",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "clothing": {
+                    "type": "string",
+                    "description": "Clothing and style details observed throughout the clip"
+                },
+                "action": {
+                    "type": "string",
+                    "description": "Pose, gestures, and kinetic sequencing across frames"
+                },
+                "scene": {
+                    "type": "string",
+                    "description": "Environment, set dressing, and lighting context"
+                },
+                "visual_style": {
+                    "type": "string",
+                    "description": "Cinematic and technical aesthetic treatment"
+                },
+                "nsfw": {
+                    "type": "object",
+                    "properties": {
+                        "has_nsfw": {
+                            "type": "boolean",
+                            "description": "Whether explicit or erotic content is detected"
+                        },
+                        "summary": {
+                            "type": "string",
+                            "description": "High-level summary of the NSFW content"
+                        },
+                        "frames": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "frame_index": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "description": "Zero-based index of the frame"
+                                    },
+                                    "timestamp_seconds": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "description": "Timestamp of the frame in seconds"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "description": "Detailed clinical description of what happens in this frame"
+                                    }
+                                },
+                                "required": ["frame_index", "description"],
+                                "additionalProperties": False
+                            },
+                            "description": "Per-frame NSFW notes"
+                        }
+                    },
+                    "required": ["has_nsfw"],
+                    "additionalProperties": False
+                }
+            },
+            "required": ["clothing", "action", "scene", "visual_style", "nsfw"],
+            "additionalProperties": False
+        }
+    }
+}
+
 SCHEMA_PRESETS = {
     "video_description": VIDEO_DESCRIPTION_SCHEMA,
     "simple_description": SIMPLE_DESCRIPTION_SCHEMA,
