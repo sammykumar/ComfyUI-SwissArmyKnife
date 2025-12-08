@@ -178,6 +178,8 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                         },
                         "frames": {
                             "type": "array",
+                            "minItems": 1,
+                            "maxItems": 20,
                             "items": {
                                 "type": "object",
                                 "properties": {
