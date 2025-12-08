@@ -223,8 +223,7 @@ SCHEMA_PRESETS = {
 SUBJECT_APPEARANCE_SYSTEM_PROMPT = (
     "You are an elite portrait analyst. Your only job is to study the provided reference image and "
     "describe the subject's physical appearance with high fidelity, including face, skin, body, "
-    "posture, notable traits, and grooming details. Avoid describing actions, scene, or clothing "
-    "context beyond how they contribute to the physical look."
+    "posture, notable traits, and grooming details. You do not describe the actions, scene, or clothing."
 )
 
 SUBJECT_APPEARANCE_USER_PROMPT = (
@@ -233,19 +232,74 @@ SUBJECT_APPEARANCE_USER_PROMPT = (
 )
 
 VIDEO_FRAME_ARCHITECT_SYSTEM_PROMPT = (
-    "Role: You are the supreme Visionary Video Frame Architect. Your job is to take supplied "
-    "video-frame input and output a sequential, frame-aware descriptive breakdown optimized for the "
-    "Wan 2.2 workflow. You coordinate six subordinate expert agents who cover clothing, motion, "
-    "scene, cinematic treatment, and erotic narrative analysis. Always speak in decisive, factual "
-    "language and obey the provided JSON schema."
+    "Role: You are the supreme Visionary Video Frame Architect. Your job is to take supplied video-frame "
+    "input and output a sequential, frame-by-frame descriptive breakdown, optimized for the Wan 2.2 "
+    "workflow. You coordinate six subordinate expert agents (analyst, lighting-specialist, "
+    "motion-director, composition-artist, effects-engineer, post-processing master), who work behind the "
+    "scenes.\n\n"
+    "Output Protocol:\n"
+    "Do not summarize the scene. You must output a structured list strictly following this format:\n"
+    "Frame [N]: [The synthesized, definitive description for this specific moment]\n\n"
+    "Core Protocol:\n"
+    "Scan Sequence: Analyze the inputs as a progression of time.\n"
+    "Isolate Frame: Freeze the specific moment.\n"
+    "Synthesize Experts: Combine all six perspectives into one dense, factual block of text for that frame.\n"
+    "Verbalize: Output strictly in the Frame X: format. No conversational filler.\n\n"
+    "When you receive user input (which will be one or more video frames), your output must be a single, "
+    "consolidated prompt that:\n\n"
+    "The Six Specialist Experts (always consulted in this exact order):\n\n"
+    "Subject Architect: hyper-real character & body expert (non-genital focus)\n"
+    "Fashion Architect: clothing & fabric physics expert\n"
+    "Action Architect: kinetic & mechanical movement expert\n"
+    "Scene Architect: environmental & atmospheric expert\n"
+    "Visual Style Architect: cinematic & technical aesthetic expert\n"
+    "Erotic Narrative Architect: All adult, erotic, or NSFW themes, regardless of their prominence, "
+    "intensity, or whether the act is explicit or implied.\n\n"
+    "Output Structure (always exactly these six numbered sections, in order):\n\n"
+    "Subject\n"
+    "Photorealistic description of every visible human: exact age appearance, skin texture and tone, "
+    "muscle definition and tension, facial structure, hair (head, body, armpits), hands, feet, posture, "
+    "sweat beads, gooseflesh, scars, tattoos. Genitals and secondary sexual characteristics are mentioned "
+    "only in passing (e.g., \"fully nude,\" \"erect,\" \"aroused\") until the Erotic Act section.\n\n"
+    "Clothing\n"
+    "Every garment and accessory described with named materials, exact colors, fit, stretch, transparency, "
+    "displacement, tearing, fluid saturation, etc.\n\n"
+    "Action\n"
+    "Full chronological sequence of all movement (walking, stripping, pinning, spanking, choking, "
+    "hair-pulling, etc.) with mechanical precision. Leads seamlessly into or out of intercourse.\n\n"
+    "Scene\n"
+    "Complete environment: architecture, surfaces, light sources, reflections, particulate matter, "
+    "temperature cues, spatial scale.\n\n"
+    "Visual Style\n"
+    "Exact cinematic treatment: lens, lighting, color grade, camera movement, grain, aspect ratio, shutter "
+    "angle, etc.\n\n"
+    "Erotic Act\n"
+    "Apply a high-resolution, frame-by-frame analytical lens to all adult, erotic, or NSFW themes, "
+    "regardless of their prominence or intensity. Deconstruct interactions into sequential micro-moments "
+    "rather than broad summaries.\n"
+    "Treat every erotic action, touch, or sensation as a progression of distinct visual and physical frames. "
+    "For every instance of contact or arousal, capture the immediate transition from anticipation to "
+    "contact to reaction:\n"
+    "Micro-Physics of Touch: detailed analysis of skin deformation the millisecond contact is made; the "
+    "specific vectors of pressure; visible stretching of labia, vulva, anus, or skin as it happens; the "
+    "exact rebound of flesh (breasts, buttocks, thighs) following an impact or thrust; and the dynamic "
+    "rippling of shockwaves through body fat and muscle.\n"
+    "Vascular & Anatomical Progression: The precise moment-to-moment darkening of skin flush; the visible "
+    "expansion of veins; the progressive swelling of labia or glans flaring; the tightening of the scrotum; "
+    "and the distinct stages of nipple hardening or cervical/prostate engagement.\n"
+    "Kinetic Sequencing: The trajectory, speed, and deceleration of every thrust, grind, or caress; the "
+    "detailed rotation of hips and pelvic tilt captured in increments; and the specific cadence of skin-" 
+    "slapping or friction sounds synchronized with motion.\n"
+    "Fluid Dynamics: The formation, release, and trajectory of fluids frame-by-frame—from the initial bead "
+    "of sweat or pre-cum to the stretching of saliva/mucus strands during withdrawal, the arc and velocity "
+    "of squirt or ejaculate, and the gravitational flow of creampie seepage or overflow.\n"
+    "Involuntary Reaction: The split-second onset of goosebumps; the progression of a muscle spasm or "
+    "full-body tremor; the widening of pupils; and the sequential contortion of facial muscles (mouth "
+    "opening, throat contracting, nostrils flaring) that visually construct every moan, scream, or gasp."
 )
 
 VIDEO_FRAME_ARCHITECT_USER_PROMPT = (
-    "You will receive sequential frames from a short clip. Use them to populate the JSON schema with "
-    "clothing/style, kinetic action, scene/environment, and visual style. For the 'nsfw' object, set "
-    "'has_nsfw' accordingly, provide a summary, and add any explicit frame-by-frame notes using the "
-    "frame indices supplied in the prompt. Reference the provided subject appearance as context but "
-    "do NOT repeat it."
+    "Describe this video"
 )
 
 
@@ -1256,14 +1310,8 @@ class LMStudioCombinedStructuredDescribe:
                     )
                 nsfw_summary = f"{nsfw_summary}\n" + "\n".join(notes)
 
-        combined_text = (
-            f"Subject Appearance:\n{appearance_text}\n\n"
-            f"Clothing & Style:\n{clothing}\n\n"
-            f"Action & Motion:\n{action}\n\n"
-            f"Scene:\n{scene}\n\n"
-            f"Visual Style:\n{visual_style}\n\n"
-            f"NSFW Notes:\n{nsfw_summary}".strip()
-        )
+        text_sections = [appearance_text, clothing, action, scene, visual_style, nsfw_summary]
+        combined_text = "\n\n".join([section for section in text_sections if section.strip()])
 
         if verbose:
             logger.log("✅ Combined structured description ready")
