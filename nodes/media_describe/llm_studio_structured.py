@@ -1150,23 +1150,36 @@ class LMStudioCombinedStructuredDescribe:
         sampling_window = min(duration, max_duration)
         frames_needed = max(1, int(sampling_window * sample_rate))
         if fps <= 0:
-            fps = sample_rate
-        frame_interval = int(max(1, fps / sample_rate))
-        frame_indices = [min(total_frames - 1, i * frame_interval) for i in range(frames_needed)]
+            fps = 30.0  # fallback to 30 FPS if video fps is invalid
+        
+        # Calculate time interval between frames (in seconds)
+        time_interval = 1.0 / sample_rate if sample_rate > 0 else 1.0
+        
+        # Generate frame indices based on timestamps
+        frame_indices = []
+        for i in range(frames_needed):
+            timestamp = i * time_interval
+            frame_num = int(timestamp * fps)
+            # Ensure we don't exceed video bounds
+            if frame_num < total_frames:
+                frame_indices.append(frame_num)
 
-        for idx, frame_num in enumerate(frame_indices):
+        # Track successful frame index separately from video frame number
+        successful_idx = 0
+        for frame_num in frame_indices:
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
             ret, frame = cap.read()
             if not ret:
                 continue
-            frame_path = temp_dir / f"frame_{idx:03d}.jpg"
+            frame_path = temp_dir / f"frame_{successful_idx:03d}.jpg"
             cv2.imwrite(str(frame_path), frame)
-            timestamp = frame_num / fps if fps > 0 else idx / sample_rate
+            timestamp = frame_num / fps if fps > 0 else successful_idx / sample_rate
             frames_meta.append({
                 "path": frame_path,
-                "index": idx,
+                "index": successful_idx,
                 "timestamp": timestamp
             })
+            successful_idx += 1
 
         cap.release()
         return frames_meta, duration
