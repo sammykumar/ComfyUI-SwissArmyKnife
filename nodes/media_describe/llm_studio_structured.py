@@ -149,6 +149,10 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
         "schema": {
             "type": "object",
             "properties": {
+                "subject": {
+                    "type": "string",
+                    "description": "Detailed description of the main subject"
+                },
                 "clothing": {
                     "type": "string",
                     "description": "Clothing and style details observed throughout the clip"
@@ -167,11 +171,8 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                 },
                 "nsfw": {
                     "type": "object",
+                    "description": "Frame-by-frame NSFW analysis metadata",
                     "properties": {
-                        "has_nsfw": {
-                            "type": "boolean",
-                            "description": "Whether explicit or erotic content is detected"
-                        },
                         "summary": {
                             "type": "string",
                             "description": "High-level summary of the NSFW content"
@@ -186,12 +187,12 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                                     "frame_index": {
                                         "type": "integer",
                                         "minimum": 0,
-                                        "description": "Zero-based index of the frame"
+                                        "description": "Zero-based index of the frame in the sample set"
                                     },
                                     "timestamp_seconds": {
                                         "type": "number",
                                         "minimum": 0,
-                                        "description": "Timestamp of the frame in seconds"
+                                        "description": "Timestamp of the frame relative to the start of the source video (seconds)"
                                     },
                                     "description": {
                                         "type": "string",
@@ -201,14 +202,14 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                                 "required": ["frame_index", "description"],
                                 "additionalProperties": False
                             },
-                            "description": "Per-frame NSFW notes"
+                            "description": "Per-frame NSFW notes (max 20 frames)"
                         }
                     },
-                    "required": ["has_nsfw"],
+                    "required": ["summary"],
                     "additionalProperties": False
                 }
             },
-            "required": ["clothing", "action", "scene", "visual_style", "nsfw"],
+            "required": ["subject", "clothing", "action", "scene", "visual_style", "nsfw"],
             "additionalProperties": False
         }
     }
@@ -1331,6 +1332,7 @@ class LMStudioCombinedStructuredDescribe:
 
         video_json = json.dumps(video_result, indent=2)
 
+        # Use appearance from subject reference image, override video's subject field
         appearance_text = subject_result.get("appearance", "")
         clothing = video_result.get("clothing", "")
         action = video_result.get("action", "")
