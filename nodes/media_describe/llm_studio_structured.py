@@ -1310,11 +1310,23 @@ class LMStudioCombinedStructuredDescribe:
             logger.log(
                 f"🎬 Extracted {len(frames_meta)} frames over {min(video_duration, max_duration):.2f}s"
             )
+            # Debug: show frame indices
+            frame_indices = [meta['index'] for meta in frames_meta]
+            logger.log(f"📊 Frame indices: {frame_indices}")
 
         try:
             frames_content = [{"type": "text", "text": video_user_prompt}]
             for meta in frames_meta:
-                frame_b64 = self.encode_file_to_base64(meta["path"])
+                frame_path = meta["path"]
+                if verbose:
+                    file_exists = frame_path.exists()
+                    file_size = frame_path.stat().st_size if file_exists else 0
+                    logger.log(f"📁 Frame {meta['index']}: exists={file_exists}, size={file_size} bytes")
+                
+                frame_b64 = self.encode_file_to_base64(frame_path)
+                if verbose and len(frame_b64) < 100:
+                    logger.warning(f"⚠️ Frame {meta['index']} base64 encoding is suspiciously short: {len(frame_b64)} chars")
+                
                 frames_content.append({
                     "type": "text",
                     "text": f"Frame {meta['index']} at {meta['timestamp']:.2f}s",
