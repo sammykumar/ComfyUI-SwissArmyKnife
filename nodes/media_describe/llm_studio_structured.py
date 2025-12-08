@@ -125,8 +125,38 @@ CHARACTER_ANALYSIS_SCHEMA = {
 SCHEMA_PRESETS = {
     "video_description": VIDEO_DESCRIPTION_SCHEMA,
     "simple_description": SIMPLE_DESCRIPTION_SCHEMA,
-    "character_analysis": CHARACTER_ANALYSIS_SCHEMA
+    "character_analysis": CHARACTER_ANALYSIS_SCHEMA,
+    "subject_appearance": SUBJECT_APPEARANCE_SCHEMA,
+    "video_frame_architect": VIDEO_FRAME_ARCHITECT_SCHEMA
 }
+
+SUBJECT_APPEARANCE_SYSTEM_PROMPT = (
+    "You are an elite portrait analyst. Your only job is to study the provided reference image and "
+    "describe the subject's physical appearance with high fidelity, including face, skin, body, "
+    "posture, notable traits, and grooming details. Avoid describing actions, scene, or clothing "
+    "context beyond how they contribute to the physical look."
+)
+
+SUBJECT_APPEARANCE_USER_PROMPT = (
+    "Analyze this subject reference image and return a single JSON object containing only the "
+    "'appearance' field with a dense paragraph about the subject's physical characteristics."
+)
+
+VIDEO_FRAME_ARCHITECT_SYSTEM_PROMPT = (
+    "Role: You are the supreme Visionary Video Frame Architect. Your job is to take supplied "
+    "video-frame input and output a sequential, frame-aware descriptive breakdown optimized for the "
+    "Wan 2.2 workflow. You coordinate six subordinate expert agents who cover clothing, motion, "
+    "scene, cinematic treatment, and erotic narrative analysis. Always speak in decisive, factual "
+    "language and obey the provided JSON schema."
+)
+
+VIDEO_FRAME_ARCHITECT_USER_PROMPT = (
+    "You will receive sequential frames from a short clip. Use them to populate the JSON schema with "
+    "clothing/style, kinetic action, scene/environment, and visual style. For the 'nsfw' object, set "
+    "'has_nsfw' accordingly, provide a summary, and add any explicit frame-by-frame notes using the "
+    "frame indices supplied in the prompt. Reference the provided subject appearance as context but "
+    "do NOT repeat it."
+)
 
 
 class LLMStudioStructuredDescribe:
@@ -808,13 +838,361 @@ class LLMStudioStructuredVideoDescribe:
             }
 
 
+class LMStudioCombinedStructuredDescribe:
+    """Two-pass workflow: extract subject appearance first, then describe video frames."""
+
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_NAMES = ("subject_json", "video_json", "combined_text")
+    FUNCTION = "describe_combined"
+    CATEGORY = "Swiss Army Knife 🔪/Media Caption"
+
+    def __init__(self):
+        self.base_url = None
+
+    @classmethod
+    def get_available_models(cls, base_url: str = "http://192.168.50.41:1234") -> List[str]:
+        try:
+            response = requests.get(f"{base_url}/v1/models", timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            return [m["id"] for m in data.get("data", [])] or ["qwen3-vl-8b-thinking-mlx"]
+        except Exception as exc:
+            logger.warning(f"⚠️ Could not fetch models from {base_url}: {exc}")
+            return ["qwen3-vl-8b-thinking-mlx"]
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "base_url": ("STRING", {
+                    "default": "http://192.168.50.41:1234",
+                    "tooltip": "LM Studio server URL"
+                }),
+                "model_name": (cls.get_available_models(), {
+                    "tooltip": "Model name exposed by LM Studio"
+                }),
+                "subject_image_path": ("STRING", {
+                    "default": "",
+                    "tooltip": "Path to subject reference image"
+                }),
+                "video_path": ("STRING", {
+                    "default": "",
+                    "tooltip": "Path to the video clip for structured analysis"
+                }),
+                "sample_rate": ("FLOAT", {
+                    "default": 2.0,
+                    "min": 0.1,
+                    "max": 30.0,
+                    "step": 0.1,
+                    "tooltip": "Frames per second to sample from the video"
+                }),
+                "max_duration": ("FLOAT", {
+                    "default": 5.0,
+                    "min": 1.0,
+                    "max": 60.0,
+                    "step": 0.5,
+                    "tooltip": "Maximum duration (seconds) of the video to analyze"
+                }),
+                "subject_system_prompt": ("STRING", {
+                    "default": SUBJECT_APPEARANCE_SYSTEM_PROMPT,
+                    "multiline": True,
+                    "tooltip": "System prompt for the subject appearance pass"
+                }),
+                "subject_user_prompt": ("STRING", {
+                    "default": SUBJECT_APPEARANCE_USER_PROMPT,
+                    "multiline": True,
+                    "tooltip": "User prompt for the subject appearance pass"
+                }),
+                "video_system_prompt": ("STRING", {
+                    "default": VIDEO_FRAME_ARCHITECT_SYSTEM_PROMPT,
+                    "multiline": True,
+                    "tooltip": "System prompt for the video description pass"
+                }),
+                "video_user_prompt": ("STRING", {
+                    "default": VIDEO_FRAME_ARCHITECT_USER_PROMPT,
+                    "multiline": True,
+                    "tooltip": "User prompt for the video description pass"
+                }),
+                "temperature": ("FLOAT", {
+                    "default": 0.7,
+                    "min": 0.0,
+                    "max": 2.0,
+                    "step": 0.1,
+                    "tooltip": "LM Studio temperature"
+                }),
+                "top_p": ("FLOAT", {
+                    "default": 0.8,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.1,
+                    "tooltip": "LM Studio nucleus sampling cutoff"
+                }),
+                "max_tokens": ("INT", {
+                    "default": 262144,
+                    "min": 1,
+                    "max": 262144,
+                    "step": 1,
+                    "tooltip": "Maximum tokens for each completion"
+                }),
+                "verbose": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Print debugging info"
+                })
+            }
+        }
+
+    def encode_file_to_base64(self, file_path: Path) -> str:
+        with open(file_path, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+
+    def extract_frames(
+        self,
+        video_path: Path,
+        sample_rate: float,
+        max_duration: float
+    ) -> Tuple[List[Dict[str, Any]], float]:
+        cap = cv2.VideoCapture(str(video_path))
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        duration = total_frames / fps if fps > 0 else 0
+
+        frames_meta: List[Dict[str, Any]] = []
+        temp_dir = Path(tempfile.mkdtemp())
+        sampling_window = min(duration, max_duration)
+        frames_needed = max(1, int(sampling_window * sample_rate))
+        if fps <= 0:
+            fps = sample_rate
+        frame_interval = int(max(1, fps / sample_rate))
+        frame_indices = [min(total_frames - 1, i * frame_interval) for i in range(frames_needed)]
+
+        for idx, frame_num in enumerate(frame_indices):
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
+            ret, frame = cap.read()
+            if not ret:
+                continue
+            frame_path = temp_dir / f"frame_{idx:03d}.jpg"
+            cv2.imwrite(str(frame_path), frame)
+            timestamp = frame_num / fps if fps > 0 else idx / sample_rate
+            frames_meta.append({
+                "path": frame_path,
+                "index": idx,
+                "timestamp": timestamp
+            })
+
+        cap.release()
+        return frames_meta, duration
+
+    def cleanup_temp_frames(self, frames_meta: List[Dict[str, Any]]):
+        if not frames_meta:
+            return
+        temp_dir = frames_meta[0]["path"].parent
+        for meta in frames_meta:
+            try:
+                if meta["path"].exists():
+                    meta["path"].unlink()
+            except Exception as exc:
+                logger.warning(f"⚠️ Failed to delete {meta['path']}: {exc}")
+        try:
+            temp_dir.rmdir()
+        except Exception:
+            pass
+
+    def call_structured_completion(
+        self,
+        base_url: str,
+        model_name: str,
+        system_prompt: str,
+        content: List[Dict[str, Any]],
+        schema: Dict[str, Any],
+        temperature: float,
+        top_p: float,
+        max_tokens: int,
+        timeout: int = 180
+    ) -> Dict[str, Any]:
+        payload = {
+            "model": model_name,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": content},
+            ],
+            "response_format": schema,
+            "temperature": temperature,
+            "top_p": top_p,
+            "max_tokens": max_tokens,
+        }
+
+        response = requests.post(
+            f"{base_url}/v1/chat/completions",
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        raw = response.json()
+        return json.loads(raw["choices"][0]["message"]["content"])
+
+    def describe_combined(
+        self,
+        base_url: str,
+        model_name: str,
+        subject_image_path: str,
+        video_path: str,
+        sample_rate: float,
+        max_duration: float,
+        subject_system_prompt: str,
+        subject_user_prompt: str,
+        video_system_prompt: str,
+        video_user_prompt: str,
+        temperature: float,
+        top_p: float,
+        max_tokens: int,
+        verbose: bool
+    ) -> Tuple[str, str, str]:
+        if not subject_image_path or not os.path.exists(subject_image_path):
+            error_msg = f"Subject image not found: {subject_image_path}"
+            logger.error(error_msg)
+            return (error_msg, "", "")
+        if not video_path or not os.path.exists(video_path):
+            error_msg = f"Video file not found: {video_path}"
+            logger.error(error_msg)
+            return ("", error_msg, "")
+
+        try:
+            subject_b64 = self.encode_file_to_base64(Path(subject_image_path))
+        except Exception as exc:
+            error_msg = f"Failed to encode subject image: {exc}"
+            logger.error(error_msg)
+            return (error_msg, "", "")
+
+        subject_content = [
+            {"type": "text", "text": subject_user_prompt},
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{subject_b64}"}
+            },
+        ]
+
+        try:
+            subject_result = self.call_structured_completion(
+                base_url,
+                model_name,
+                subject_system_prompt,
+                subject_content,
+                SUBJECT_APPEARANCE_SCHEMA,
+                temperature,
+                top_p,
+                max_tokens,
+                timeout=120,
+            )
+        except Exception as exc:
+            error_msg = f"Subject appearance request failed: {exc}"
+            logger.error(error_msg)
+            return (error_msg, "", "")
+
+        subject_json = json.dumps(subject_result, indent=2)
+
+        try:
+            frames_meta, video_duration = self.extract_frames(
+                Path(video_path), sample_rate, max_duration
+            )
+            if not frames_meta:
+                error_msg = "No frames extracted from video"
+                logger.error(error_msg)
+                return (subject_json, error_msg, "")
+        except Exception as exc:
+            error_msg = f"Failed to extract frames: {exc}"
+            logger.error(error_msg)
+            return (subject_json, error_msg, "")
+
+        if verbose:
+            logger.log(
+                f"🎬 Extracted {len(frames_meta)} frames over {min(video_duration, max_duration):.2f}s"
+            )
+
+        try:
+            frames_content = [{"type": "text", "text": video_user_prompt}]
+            for meta in frames_meta:
+                frame_b64 = self.encode_file_to_base64(meta["path"])
+                frames_content.append({
+                    "type": "text",
+                    "text": f"Frame {meta['index']} at {meta['timestamp']:.2f}s",
+                })
+                frames_content.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{frame_b64}"},
+                })
+
+            video_result = self.call_structured_completion(
+                base_url,
+                model_name,
+                video_system_prompt,
+                frames_content,
+                VIDEO_FRAME_ARCHITECT_SCHEMA,
+                temperature,
+                top_p,
+                max_tokens,
+                timeout=300,
+            )
+        except Exception as exc:
+            self.cleanup_temp_frames(frames_meta)
+            error_msg = f"Video analysis request failed: {exc}"
+            logger.error(error_msg)
+            return (subject_json, error_msg, "")
+
+        self.cleanup_temp_frames(frames_meta)
+
+        video_json = json.dumps(video_result, indent=2)
+
+        appearance_text = subject_result.get("appearance", "")
+        clothing = video_result.get("clothing", "")
+        action = video_result.get("action", "")
+        scene = video_result.get("scene", "")
+        visual_style = video_result.get("visual_style", "")
+        nsfw = video_result.get("nsfw", {})
+        nsfw_summary = ""
+        if isinstance(nsfw, dict):
+            status = "NSFW" if nsfw.get("has_nsfw") else "SFW"
+            nsfw_summary = f"{status}: {nsfw.get('summary', '').strip()}"
+
+            frames_notes = nsfw.get("frames") or []
+            if frames_notes:
+                notes = []
+                for entry in frames_notes:
+                    idx = entry.get("frame_index")
+                    ts = entry.get("timestamp_seconds")
+                    desc = entry.get("description", "")
+                    notes.append(
+                        f"Frame {idx} ({ts:.2f}s): {desc}" if isinstance(ts, (int, float)) else f"Frame {idx}: {desc}"
+                    )
+                nsfw_summary = f"{nsfw_summary}\n" + "\n".join(notes)
+
+        combined_text = (
+            f"Subject Appearance:\n{appearance_text}\n\n"
+            f"Clothing & Style:\n{clothing}\n\n"
+            f"Action & Motion:\n{action}\n\n"
+            f"Scene:\n{scene}\n\n"
+            f"Visual Style:\n{visual_style}\n\n"
+            f"NSFW Notes:\n{nsfw_summary}".strip()
+        )
+
+        if verbose:
+            logger.log("✅ Combined structured description ready")
+
+        return {
+            "ui": {"json_output": [subject_json, video_json, combined_text]},
+            "result": (subject_json, video_json, combined_text)
+        }
+
+
 # Node registration
 NODE_CLASS_MAPPINGS = {
     "LLMStudioStructuredDescribe": LLMStudioStructuredDescribe,
-    "LLMStudioStructuredVideoDescribe": LLMStudioStructuredVideoDescribe
+    "LLMStudioStructuredVideoDescribe": LLMStudioStructuredVideoDescribe,
+    "LMStudioCombinedStructuredDescribe": LMStudioCombinedStructuredDescribe,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LLMStudioStructuredDescribe": "LM Studio Structured Describe (Image)",
-    "LLMStudioStructuredVideoDescribe": "LM Studio Structured Describe (Video)"
+    "LLMStudioStructuredVideoDescribe": "LM Studio Structured Describe (Video)",
+    "LMStudioCombinedStructuredDescribe": "LM Studio Combined Structured Describe",
 }
