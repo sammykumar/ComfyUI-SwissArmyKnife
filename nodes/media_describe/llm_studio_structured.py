@@ -1352,7 +1352,22 @@ class LMStudioCombinedStructuredDescribe:
                     )
                 nsfw_summary = f"{nsfw_summary}\n" + "\n".join(notes)
 
-        text_sections = [appearance_text, clothing, action, scene, visual_style, nsfw_summary]
+        nsfw_body = ""
+        if isinstance(nsfw, dict):
+            parts = []
+            summary = nsfw.get("summary", "").strip()
+            if summary:
+                parts.append(summary)
+
+            frames_notes = nsfw.get("frames") or []
+            for entry in frames_notes:
+                desc = entry.get("description", "").strip()
+                if desc:
+                    parts.append(desc)
+
+            nsfw_body = "\n\n".join(parts)
+
+        text_sections = [appearance_text, clothing, action, scene, visual_style, nsfw_body]
         combined_text = "\n\n".join([section for section in text_sections if section.strip()])
 
         if verbose:
