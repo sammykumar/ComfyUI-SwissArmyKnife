@@ -199,13 +199,13 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                                         "description": "Detailed clinical description of what happens in this frame"
                                     }
                                 },
-                                "required": ["frame_index", "description"],
+                                "required": ["frame_index", "timestamp_seconds", "description"],
                                 "additionalProperties": False
                             },
                             "description": "Per-frame NSFW notes (max 20 frames)"
                         }
                     },
-                    "required": ["summary"],
+                    "required": ["summary", "frames"],
                     "additionalProperties": False
                 }
             },
