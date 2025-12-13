@@ -6,6 +6,7 @@ requests
 aiohttp>=3.8.0
 openai
 azure-storage-blob
+azure-storage-queue==12.9.0
 psutil>=5.9.0
 pynvml>=11.5.0
 py-cpuinfo>=9.0.0

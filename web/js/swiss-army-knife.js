@@ -6,7 +6,10 @@ const EXTENSION_VERSION = "3.0.0"; // Should match pyproject.toml version
 const LOAD_TIMESTAMP = new Date().toISOString();
 
 // Version indicator - check console for this on page load
-console.log("%c[🔪SwissArmyKnife] Version 3.0.0 - Main Extension Loaded", "color: #10b981; font-weight: bold; font-size: 14px;");
+console.log(
+    "%c[🔪SwissArmyKnife] Version 3.0.0 - Main Extension Loaded",
+    "color: #10b981; font-weight: bold; font-size: 14px;"
+);
 
 // DEBUG mode - check setting dynamically
 const isDebugEnabled = () => {
@@ -56,6 +59,18 @@ const getAzureStorageConnectionString = () => {
     }
 };
 
+const getAzureJobEventsQueue = () => {
+    try {
+        const value =
+            app.extensionManager.setting.get("SwissArmyKnife.azure_storage.job_events_queue") || "";
+        debugLog(`getAzureJobEventsQueue called, value: ${value}`);
+        return value;
+    } catch (error) {
+        console.warn("Failed to get Azure job events queue from settings:", error);
+        return "";
+    }
+};
+
 // Function to sync API keys to backend
 const syncApiKeysToBackend = async () => {
     debugLog("syncApiKeysToBackend called");
@@ -64,7 +79,9 @@ const syncApiKeysToBackend = async () => {
         const civitaiKey = getCivitaiApiKey();
         const azureConnectionString = getAzureStorageConnectionString();
         const debugMode = isDebugEnabled();
-        const profilerEnabled = app.extensionManager?.setting?.get("SwissArmyKnife.profiler_enabled") ?? true;
+        const profilerEnabled =
+            app.extensionManager?.setting?.get("SwissArmyKnife.profiler_enabled") ?? true;
+        const azureJobEventsQueue = getAzureJobEventsQueue();
 
         debugLog("Azure connection string length:", azureConnectionString.length);
         debugLog("Debug mode:", debugMode);
@@ -79,6 +96,7 @@ const syncApiKeysToBackend = async () => {
                 gemini_api_key: geminiKey,
                 civitai_api_key: civitaiKey,
                 azure_storage_connection_string: azureConnectionString,
+                azure_job_events_queue: azureJobEventsQueue,
                 debug_mode: debugMode,
                 profiler_enabled: profilerEnabled,
             }),
@@ -94,7 +112,11 @@ const syncApiKeysToBackend = async () => {
     }
 };
 
-console.log("%c[🔪SwissArmyKnife]", "color: #3b82f6; font-weight: bold;", `Loading extension v${EXTENSION_VERSION} at ${LOAD_TIMESTAMP}`);
+console.log(
+    "%c[🔪SwissArmyKnife]",
+    "color: #3b82f6; font-weight: bold;",
+    `Loading extension v${EXTENSION_VERSION} at ${LOAD_TIMESTAMP}`
+);
 
 // Register custom widgets for Swiss Army Knife nodes
 app.registerExtension({
@@ -308,9 +330,7 @@ app.registerExtension({
                         return;
                     }
 
-                    debugLog(
-                        "🔍 [ControlPanelPromptBreakdown DEBUG] Updating columns with data"
-                    );
+                    debugLog("🔍 [ControlPanelPromptBreakdown DEBUG] Updating columns with data");
 
                     // Update each column
                     this._cpb_subject.textContent = promptBreakdown.subject || "(empty)";
@@ -1004,9 +1024,7 @@ app.registerExtension({
                         (w) => w.name === "upload_video_button"
                     );
 
-                    debugLog(
-                        `🔍 [MediaSelection UPLOAD DEBUG] ========== FINAL STATE ==========`
-                    );
+                    debugLog(`🔍 [MediaSelection UPLOAD DEBUG] ========== FINAL STATE ==========`);
                     debugLog(`🔍 [MediaSelection UPLOAD DEBUG] mediaSource: "${mediaSource}"`);
                     debugLog(
                         `🔍 [MediaSelection UPLOAD DEBUG] Total widgets: ${
@@ -1175,9 +1193,16 @@ app.registerExtension({
 
             // Define schema field mappings
             const SCHEMA_OUTPUT_LABELS = {
-                "video_description": ["subject", "clothing", "action", "scene", "visual_style", "nsfw"],
-                "simple_description": ["caption", "tags", "", "", "", "nsfw"],
-                "character_analysis": ["appearance", "expression", "pose", "clothing", "", "nsfw"]
+                video_description: [
+                    "subject",
+                    "clothing",
+                    "action",
+                    "scene",
+                    "visual_style",
+                    "nsfw",
+                ],
+                simple_description: ["caption", "tags", "", "", "", "nsfw"],
+                character_analysis: ["appearance", "expression", "pose", "clothing", "", "nsfw"],
             };
 
             // Add resize handler to adjust DOM widget width
@@ -1208,7 +1233,8 @@ app.registerExtension({
                 if (!this._json_display_dom) {
                     // Create main container
                     const dom = document.createElement("div");
-                    dom.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontFamily =
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
                     dom.style.fontSize = "11px";
                     dom.style.lineHeight = "1.35";
                     dom.style.overflow = "auto";
@@ -1236,17 +1262,20 @@ app.registerExtension({
                     });
 
                     // Add custom computeSize to measure actual content height
-                    widget.computeSize = function(width) {
+                    widget.computeSize = function (width) {
                         if (!dom) return [width || 400, 300];
-                        
+
                         // Measure actual content height (scrollHeight includes all content)
                         const contentHeight = dom.scrollHeight;
                         const minHeight = 100;
-                        const maxHeight = 800;  // Max 800px height
-                        
+                        const maxHeight = 800; // Max 800px height
+
                         // Clamp between min and max, add padding
-                        const finalHeight = Math.max(minHeight, Math.min(maxHeight, contentHeight + 16));
-                        
+                        const finalHeight = Math.max(
+                            minHeight,
+                            Math.min(maxHeight, contentHeight + 16)
+                        );
+
                         return [width || 400, finalHeight];
                     };
 
@@ -1259,55 +1288,64 @@ app.registerExtension({
                 }
 
                 // Function to update JSON display from execution output
-                this.updateJsonDisplay = function(jsonString) {
-                    console.log("[SwissArmyKnife][updateJsonDisplay] Called with data:", jsonString);
-                    console.log("[SwissArmyKnife][updateJsonDisplay] Has content div:", !!this._json_display_content);
+                this.updateJsonDisplay = function (jsonString) {
+                    console.log(
+                        "[SwissArmyKnife][updateJsonDisplay] Called with data:",
+                        jsonString
+                    );
+                    console.log(
+                        "[SwissArmyKnife][updateJsonDisplay] Has content div:",
+                        !!this._json_display_content
+                    );
                     debugLog("[updateJsonDisplay] Called with data:", jsonString);
                     debugLog("[updateJsonDisplay] Has content div:", !!this._json_display_content);
-                    
+
                     if (!this._json_display_content) {
                         console.error("[SwissArmyKnife][updateJsonDisplay] No content div found!");
                         return;
                     }
-                    
+
                     try {
                         // Parse JSON string
                         debugLog("[updateJsonDisplay] Type of input:", typeof jsonString);
-                        const jsonData = typeof jsonString === "string" 
-                            ? JSON.parse(jsonString) 
-                            : jsonString;
-                        
+                        const jsonData =
+                            typeof jsonString === "string" ? JSON.parse(jsonString) : jsonString;
+
                         debugLog("[updateJsonDisplay] Parsed JSON data:", jsonData);
                         debugLog("[updateJsonDisplay] JSON keys:", Object.keys(jsonData));
-                        
+
                         // Build formatted output with each key-value pair
                         const lines = [];
                         for (const [key, value] of Object.entries(jsonData)) {
                             // Capitalize first letter of key for display
-                            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
-                            
+                            const displayKey =
+                                key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
+
                             // Format value (handle strings, arrays, objects)
                             let displayValue;
                             if (typeof value === "string") {
                                 displayValue = value;
                             } else if (Array.isArray(value)) {
-                                displayValue = value.join(', ');
+                                displayValue = value.join(", ");
                             } else if (typeof value === "object" && value !== null) {
                                 displayValue = JSON.stringify(value, null, 2);
                             } else {
                                 displayValue = String(value);
                             }
-                            
+
                             lines.push(`${displayKey}: ${displayValue}`);
                         }
-                        
-                        const finalText = lines.join('\n\n');
+
+                        const finalText = lines.join("\n\n");
                         debugLog("[updateJsonDisplay] Final text length:", finalText.length);
-                        debugLog("[updateJsonDisplay] Final text preview:", finalText.substring(0, 200));
-                        
+                        debugLog(
+                            "[updateJsonDisplay] Final text preview:",
+                            finalText.substring(0, 200)
+                        );
+
                         this._json_display_content.textContent = finalText;
                         debugLog("[updateJsonDisplay] ✅ Successfully updated display");
-                        
+
                         // Trigger node resize after content update (wait for browser reflow)
                         requestAnimationFrame(() => {
                             const sz = this.computeSize();
@@ -1330,25 +1368,34 @@ app.registerExtension({
                 const originalOnExecuted = this.onExecuted;
                 this.onExecuted = function (message) {
                     debugLog("LLMStudioStructuredDescribe onExecuted called", message);
-                    
+
                     if (message && message.json_output) {
                         // Extract json_output (first element if array)
                         const jsonOutput = Array.isArray(message.json_output)
                             ? message.json_output[0]
                             : message.json_output;
-                        
+
                         debugLog("Received json_output:", jsonOutput);
                         this.updateJsonDisplay(jsonOutput);
                     }
-                    
+
                     return originalOnExecuted?.call(this, message);
                 };
 
                 // Function to update output labels based on schema preset
-                this.updateOutputLabels = function(schemaPreset) {
-                    const labels = SCHEMA_OUTPUT_LABELS[schemaPreset] || ["", "", "", "", "", "nsfw"];
-                    
-                    debugLog(`[LLMStudioStructured] Updating output labels for schema: ${schemaPreset}`);
+                this.updateOutputLabels = function (schemaPreset) {
+                    const labels = SCHEMA_OUTPUT_LABELS[schemaPreset] || [
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "nsfw",
+                    ];
+
+                    debugLog(
+                        `[LLMStudioStructured] Updating output labels for schema: ${schemaPreset}`
+                    );
                     debugLog(`[LLMStudioStructured] New labels:`, labels);
 
                     // Update output slot labels (outputs 1-6, skip 0 which is json_output)
@@ -1358,7 +1405,9 @@ app.registerExtension({
                             const label = labels[i] || `field_${i + 1}`;
                             this.outputs[outputIndex].label = label;
                             this.outputs[outputIndex].name = label;
-                            debugLog(`[LLMStudioStructured] Updated output ${outputIndex}: ${label}`);
+                            debugLog(
+                                `[LLMStudioStructured] Updated output ${outputIndex}: ${label}`
+                            );
                         }
                     }
 
@@ -1369,21 +1418,21 @@ app.registerExtension({
                 };
 
                 // Find schema_preset widget and add callback
-                const schemaWidget = this.widgets?.find(w => w.name === "schema_preset");
+                const schemaWidget = this.widgets?.find((w) => w.name === "schema_preset");
                 if (schemaWidget) {
                     debugLog("[LLMStudioStructured] Found schema_preset widget");
-                    
+
                     // Update labels on initial creation
                     this.updateOutputLabels(schemaWidget.value);
 
                     // Store original callback
                     const originalCallback = schemaWidget.callback;
-                    
+
                     // Add our callback
                     schemaWidget.callback = (value) => {
                         debugLog(`[LLMStudioStructured] Schema preset changed to: ${value}`);
                         this.updateOutputLabels(value);
-                        
+
                         // Call original callback if exists
                         if (originalCallback) {
                             originalCallback.apply(schemaWidget, arguments);
@@ -1399,13 +1448,15 @@ app.registerExtension({
 
         // Handle LLMStudioStructuredVideoDescribe node - dynamic output labels and JSON display
         else if (nodeData.name === "LLMStudioStructuredVideoDescribe") {
-            debugLog("Registering LLMStudioStructuredVideoDescribe node with dynamic output labels and JSON display");
+            debugLog(
+                "Registering LLMStudioStructuredVideoDescribe node with dynamic output labels and JSON display"
+            );
 
             // Define schema field mappings (video has all schemas including video_description)
             const SCHEMA_OUTPUT_LABELS = {
-                "video_description": ["subject", "clothing", "action", "scene", "visual_style"],
-                "simple_description": ["caption", "tags", "", "", ""],
-                "character_analysis": ["appearance", "expression", "pose", "clothing", ""]
+                video_description: ["subject", "clothing", "action", "scene", "visual_style"],
+                simple_description: ["caption", "tags", "", "", ""],
+                character_analysis: ["appearance", "expression", "pose", "clothing", ""],
             };
 
             // Add resize handler to adjust DOM widget width
@@ -1436,7 +1487,8 @@ app.registerExtension({
                 if (!this._json_display_dom) {
                     // Create main container
                     const dom = document.createElement("div");
-                    dom.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+                    dom.style.fontFamily =
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
                     dom.style.fontSize = "11px";
                     dom.style.lineHeight = "1.35";
                     dom.style.overflow = "auto";
@@ -1464,17 +1516,20 @@ app.registerExtension({
                     });
 
                     // Add custom computeSize to measure actual content height
-                    widget.computeSize = function(width) {
+                    widget.computeSize = function (width) {
                         if (!dom) return [width || 400, 300];
-                        
+
                         // Measure actual content height (scrollHeight includes all content)
                         const contentHeight = dom.scrollHeight;
                         const minHeight = 100;
-                        const maxHeight = 800;  // Max 800px height
-                        
+                        const maxHeight = 800; // Max 800px height
+
                         // Clamp between min and max, add padding
-                        const finalHeight = Math.max(minHeight, Math.min(maxHeight, contentHeight + 16));
-                        
+                        const finalHeight = Math.max(
+                            minHeight,
+                            Math.min(maxHeight, contentHeight + 16)
+                        );
+
                         return [width || 400, finalHeight];
                     };
 
@@ -1487,55 +1542,64 @@ app.registerExtension({
                 }
 
                 // Function to update JSON display from execution output
-                this.updateJsonDisplay = function(jsonString) {
-                    console.log("[SwissArmyKnife][updateJsonDisplay] Called with data:", jsonString);
-                    console.log("[SwissArmyKnife][updateJsonDisplay] Has content div:", !!this._json_display_content);
+                this.updateJsonDisplay = function (jsonString) {
+                    console.log(
+                        "[SwissArmyKnife][updateJsonDisplay] Called with data:",
+                        jsonString
+                    );
+                    console.log(
+                        "[SwissArmyKnife][updateJsonDisplay] Has content div:",
+                        !!this._json_display_content
+                    );
                     debugLog("[updateJsonDisplay] Called with data:", jsonString);
                     debugLog("[updateJsonDisplay] Has content div:", !!this._json_display_content);
-                    
+
                     if (!this._json_display_content) {
                         console.error("[SwissArmyKnife][updateJsonDisplay] No content div found!");
                         return;
                     }
-                    
+
                     try {
                         // Parse JSON string
                         debugLog("[updateJsonDisplay] Type of input:", typeof jsonString);
-                        const jsonData = typeof jsonString === "string" 
-                            ? JSON.parse(jsonString) 
-                            : jsonString;
-                        
+                        const jsonData =
+                            typeof jsonString === "string" ? JSON.parse(jsonString) : jsonString;
+
                         debugLog("[updateJsonDisplay] Parsed JSON data:", jsonData);
                         debugLog("[updateJsonDisplay] JSON keys:", Object.keys(jsonData));
-                        
+
                         // Build formatted output with each key-value pair
                         const lines = [];
                         for (const [key, value] of Object.entries(jsonData)) {
                             // Capitalize first letter of key for display
-                            const displayKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
-                            
+                            const displayKey =
+                                key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
+
                             // Format value (handle strings, arrays, objects)
                             let displayValue;
                             if (typeof value === "string") {
                                 displayValue = value;
                             } else if (Array.isArray(value)) {
-                                displayValue = value.join(', ');
+                                displayValue = value.join(", ");
                             } else if (typeof value === "object" && value !== null) {
                                 displayValue = JSON.stringify(value, null, 2);
                             } else {
                                 displayValue = String(value);
                             }
-                            
+
                             lines.push(`${displayKey}: ${displayValue}`);
                         }
-                        
-                        const finalText = lines.join('\n\n');
+
+                        const finalText = lines.join("\n\n");
                         debugLog("[updateJsonDisplay] Final text length:", finalText.length);
-                        debugLog("[updateJsonDisplay] Final text preview:", finalText.substring(0, 200));
-                        
+                        debugLog(
+                            "[updateJsonDisplay] Final text preview:",
+                            finalText.substring(0, 200)
+                        );
+
                         this._json_display_content.textContent = finalText;
                         debugLog("[updateJsonDisplay] ✅ Successfully updated display");
-                        
+
                         // Trigger node resize after content update (wait for browser reflow)
                         requestAnimationFrame(() => {
                             const sz = this.computeSize();
@@ -1558,25 +1622,27 @@ app.registerExtension({
                 const originalOnExecuted = this.onExecuted;
                 this.onExecuted = function (message) {
                     debugLog("LLMStudioStructuredVideoDescribe onExecuted called", message);
-                    
+
                     if (message && message.json_output) {
                         // Extract json_output (first element if array)
                         const jsonOutput = Array.isArray(message.json_output)
                             ? message.json_output[0]
                             : message.json_output;
-                        
+
                         debugLog("Received json_output:", jsonOutput);
                         this.updateJsonDisplay(jsonOutput);
                     }
-                    
+
                     return originalOnExecuted?.call(this, message);
                 };
 
                 // Function to update output labels based on schema preset
-                this.updateOutputLabels = function(schemaPreset) {
+                this.updateOutputLabels = function (schemaPreset) {
                     const labels = SCHEMA_OUTPUT_LABELS[schemaPreset] || ["", "", "", "", ""];
-                    
-                    debugLog(`[LLMStudioStructuredVideo] Updating output labels for schema: ${schemaPreset}`);
+
+                    debugLog(
+                        `[LLMStudioStructuredVideo] Updating output labels for schema: ${schemaPreset}`
+                    );
                     debugLog(`[LLMStudioStructuredVideo] New labels:`, labels);
 
                     // Update output slot labels (outputs 1-5, skip 0 which is json_output)
@@ -1586,7 +1652,9 @@ app.registerExtension({
                             const label = labels[i] || `field_${i + 1}`;
                             this.outputs[outputIndex].label = label;
                             this.outputs[outputIndex].name = label;
-                            debugLog(`[LLMStudioStructuredVideo] Updated output ${outputIndex}: ${label}`);
+                            debugLog(
+                                `[LLMStudioStructuredVideo] Updated output ${outputIndex}: ${label}`
+                            );
                         }
                     }
 
@@ -1597,21 +1665,21 @@ app.registerExtension({
                 };
 
                 // Find schema_preset widget and add callback
-                const schemaWidget = this.widgets?.find(w => w.name === "schema_preset");
+                const schemaWidget = this.widgets?.find((w) => w.name === "schema_preset");
                 if (schemaWidget) {
                     debugLog("[LLMStudioStructuredVideo] Found schema_preset widget");
-                    
+
                     // Update labels on initial creation
                     this.updateOutputLabels(schemaWidget.value);
 
                     // Store original callback
                     const originalCallback = schemaWidget.callback;
-                    
+
                     // Add our callback
                     schemaWidget.callback = (value) => {
                         debugLog(`[LLMStudioStructuredVideo] Schema preset changed to: ${value}`);
                         this.updateOutputLabels(value);
-                        
+
                         // Call original callback if exists
                         if (originalCallback) {
                             originalCallback.apply(schemaWidget, arguments);
@@ -1630,41 +1698,56 @@ app.registerExtension({
     async setup() {
         // Log ALL API events to debug
         const originalAddEventListener = api.addEventListener.bind(api);
-        console.log("%c[🔪SwissArmyKnife]", "color: #3b82f6; font-weight: bold;", "Setting up API event listeners...");
-        
+        console.log(
+            "%c[🔪SwissArmyKnife]",
+            "color: #3b82f6; font-weight: bold;",
+            "Setting up API event listeners..."
+        );
+
         // Listen for execution_cached events - this fires when nodes use cached results
         // The onExecuted hook will still receive the cached ui data, so no special handling needed
         api.addEventListener("execution_cached", ({ detail }) => {
             console.log("[SwissArmyKnife][API] execution_cached event:", detail);
             // Cached nodes will still trigger onExecuted with their ui field data
         });
-        
+
         // Listen for 'executing' event for logging
         api.addEventListener("executing", ({ detail }) => {
             const nodeId = detail;
             if (nodeId !== null && nodeId !== undefined) {
                 const node = app.graph.getNodeById(parseInt(nodeId));
-                console.log("[SwissArmyKnife][API] Executing node:", nodeId, "type:", node?.type, "comfyClass:", node?.comfyClass);
+                console.log(
+                    "[SwissArmyKnife][API] Executing node:",
+                    nodeId,
+                    "type:",
+                    node?.type,
+                    "comfyClass:",
+                    node?.comfyClass
+                );
             } else {
                 console.log("[SwissArmyKnife][API] Execution complete for current node");
             }
         });
-        
+
         // Listen for execution complete
         api.addEventListener("execution_success", ({ detail }) => {
             console.log("[SwissArmyKnife][API] Workflow execution completed successfully", detail);
             // onExecuted hooks have already received the ui data and updated displays
         });
-        
+
         // Listen for execution start to update LLMStudioStructuredDescribe and Video nodes to "Pending response..."
         api.addEventListener("execution_start", ({ detail }) => {
             console.log("[SwissArmyKnife] [API] Workflow execution started", detail);
             debugLog("[API] Workflow execution started", detail);
-            
+
             // Find all LLMStudioStructuredDescribe and LLMStudioStructuredVideoDescribe nodes in the current graph and update to pending state
             if (app.graph && app.graph._nodes) {
                 for (const node of app.graph._nodes) {
-                    if ((node.comfyClass === "LLMStudioStructuredDescribe" || node.comfyClass === "LLMStudioStructuredVideoDescribe") && node._json_display_content) {
+                    if (
+                        (node.comfyClass === "LLMStudioStructuredDescribe" ||
+                            node.comfyClass === "LLMStudioStructuredVideoDescribe") &&
+                        node._json_display_content
+                    ) {
                         const currentContent = node._json_display_content.textContent;
                         if (currentContent === "Awaiting execution...") {
                             node._json_display_content.textContent = "Pending response...";
@@ -1682,18 +1765,37 @@ app.registerExtension({
 
             console.log("[SwissArmyKnife][API] Execution event received for node:", nodeId);
             console.log("[SwissArmyKnife][API] Output data:", output);
-            console.log("[SwissArmyKnife][API] Node type:", node?.type, "comfyClass:", node?.comfyClass);
-            
+            console.log(
+                "[SwissArmyKnife][API] Node type:",
+                node?.type,
+                "comfyClass:",
+                node?.comfyClass
+            );
+
             debugLog("[API] Execution event received for node:", nodeId);
             debugLog("[API] Output data:", output);
             debugLog("[API] Node found:", !!node, "comfyClass:", node?.comfyClass);
 
             // Handle LLMStudioStructuredDescribe execution
             // Check both comfyClass and type to be sure we catch it
-            if (node && (node.comfyClass === "LLMStudioStructuredDescribe" || node.type === "LLMStudioStructuredDescribe")) {
-                console.log("[SwissArmyKnife][API] ✅ Found LLMStudioStructuredDescribe execution result");
-                console.log("[SwissArmyKnife][API] Node comfyClass:", node.comfyClass, "type:", node.type);
-                console.log("[SwissArmyKnife][API] Full output structure:", JSON.stringify(output, null, 2));
+            if (
+                node &&
+                (node.comfyClass === "LLMStudioStructuredDescribe" ||
+                    node.type === "LLMStudioStructuredDescribe")
+            ) {
+                console.log(
+                    "[SwissArmyKnife][API] ✅ Found LLMStudioStructuredDescribe execution result"
+                );
+                console.log(
+                    "[SwissArmyKnife][API] Node comfyClass:",
+                    node.comfyClass,
+                    "type:",
+                    node.type
+                );
+                console.log(
+                    "[SwissArmyKnife][API] Full output structure:",
+                    JSON.stringify(output, null, 2)
+                );
                 debugLog("[API] ✅ Found LLMStudioStructuredDescribe execution result");
                 debugLog("[API] Full output structure:", JSON.stringify(output, null, 2));
 
@@ -1702,23 +1804,30 @@ app.registerExtension({
                     const jsonOutput = Array.isArray(output.json_output)
                         ? output.json_output[0]
                         : output.json_output;
-                    
+
                     console.log("[SwissArmyKnife][API] Extracted json_output:", jsonOutput);
                     debugLog("[API] Extracted json_output:", jsonOutput);
-                    
+
                     // Update the display using the node's method
                     if (node.updateJsonDisplay) {
                         console.log("[SwissArmyKnife][API] Calling updateJsonDisplay...");
                         node.updateJsonDisplay(jsonOutput);
-                        console.log("[SwissArmyKnife][API] ✅ Updated JSON display via global listener");
+                        console.log(
+                            "[SwissArmyKnife][API] ✅ Updated JSON display via global listener"
+                        );
                         debugLog("[API] ✅ Updated JSON display via global listener");
                     } else {
-                        console.error("[SwissArmyKnife][API] ⚠️ updateJsonDisplay method not found on node!");
+                        console.error(
+                            "[SwissArmyKnife][API] ⚠️ updateJsonDisplay method not found on node!"
+                        );
                         console.error("[SwissArmyKnife][API] Node properties:", Object.keys(node));
                         debugLog("[API] ⚠️ updateJsonDisplay method not found on node!");
                     }
                 } else {
-                    console.warn("[SwissArmyKnife][API] ⚠️ No json_output in output. Output structure:", output);
+                    console.warn(
+                        "[SwissArmyKnife][API] ⚠️ No json_output in output. Output structure:",
+                        output
+                    );
                     debugLog("[API] ⚠️ No json_output in output. Output structure:", output);
                 }
             }
@@ -1799,9 +1908,7 @@ app.registerExtension({
         const lastSeenVersion = localStorage.getItem("swissarmyknife_last_version");
 
         if (lastSeenVersion && lastSeenVersion !== EXTENSION_VERSION) {
-            debugLog(
-                `Swiss Army Knife updated from v${lastSeenVersion} to v${EXTENSION_VERSION}`
-            );
+            debugLog(`Swiss Army Knife updated from v${lastSeenVersion} to v${EXTENSION_VERSION}`);
 
             // Show update notification if available
             if (app.extensionManager?.toast?.add) {
@@ -1852,6 +1959,17 @@ app.registerExtension({
             tooltip: "Your Azure Storage connection string (includes account name and key)",
             onChange: (newVal, oldVal) => {
                 debugLog(`[Settings] Azure Storage connection string changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "SwissArmyKnife.azure_storage.job_events_queue",
+            name: "Azure Job Events Queue",
+            type: "text",
+            defaultValue: "job-events",
+            tooltip: "Azure Storage queue name for job events (Flow 3)",
+            onChange: (newVal, oldVal) => {
+                debugLog(`[Settings] Azure job events queue changed, syncing to backend`);
                 syncApiKeysToBackend();
             },
         },

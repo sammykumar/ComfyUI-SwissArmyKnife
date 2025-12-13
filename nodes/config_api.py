@@ -68,13 +68,15 @@ async def get_config(request):
         azure_connection_string = get_setting_value("swiss_army_knife.azure_storage.connection_string")
 
         profiler_enabled = _cached_settings.get("profiler_enabled", True)
+        azure_job_events_queue = _cached_settings.get("azure_job_events_queue", "")
         
         return web.json_response({
             "debug": debug,
             "profiler_enabled": profiler_enabled,
             "gemini_api_key": gemini_api_key,
             "civitai_api_key": civitai_api_key,
-            "azure_storage_connection_string": azure_connection_string
+            "azure_storage_connection_string": azure_connection_string,
+            "azure_job_events_queue": azure_job_events_queue,
         })
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
@@ -89,12 +91,14 @@ async def set_api_keys(request):
         gemini_key = data.get("gemini_api_key", "")
         civitai_key = data.get("civitai_api_key", "")
         azure_connection_string = data.get("azure_storage_connection_string", "")
+        azure_job_events_queue = data.get("azure_job_events_queue", "")
         debug_mode = data.get("debug_mode", False)
         profiler_enabled = data.get("profiler_enabled", True)
         
         debug_print(f"[Config API] set_api_keys received:")
         debug_print(f"  - Azure connection string length: {len(azure_connection_string)}")
         debug_print(f"  - Debug mode: {debug_mode}")
+        debug_print(f"  - Job events queue: {azure_job_events_queue}")
         
         if azure_connection_string:
             debug_print(f"  - Connection string preview: {azure_connection_string[:50]}...")
@@ -108,8 +112,13 @@ async def set_api_keys(request):
         }
         _cached_settings = {
             "debug_mode": debug_mode,
-            "profiler_enabled": profiler_enabled
+            "profiler_enabled": profiler_enabled,
+            "azure_job_events_queue": azure_job_events_queue
         }
+
+        # Set env var for queue name so the publisher node can read it without restart if supported
+        if azure_job_events_queue:
+            os.environ["AZURE_JOB_EVENTS_QUEUE"] = azure_job_events_queue
         
         debug_print(f"[Config API] Cached keys after update: {list(_cached_api_keys.keys())}")
         debug_print(f"[Config API] Cached Azure connection string length: {len(_cached_api_keys.get('azure_storage_connection_string', ''))}")
@@ -121,7 +130,10 @@ async def set_api_keys(request):
         except ImportError:
             pass  # CivitAI service not available
         
-        print(f"[Swiss Army Knife] Settings cached: Gemini={bool(gemini_key)}, CivitAI={bool(civitai_key)}, Azure={bool(azure_connection_string)}, Debug={debug_mode}, Profiler={profiler_enabled}")
+        print(
+            f"[Swiss Army Knife] Settings cached: Gemini={bool(gemini_key)}, CivitAI={bool(civitai_key)}, Azure={bool(azure_connection_string)}, "
+            f"JobQueue={azure_job_events_queue or 'job-events'}, Debug={debug_mode}, Profiler={profiler_enabled}"
+        )
         
         return web.json_response({"success": True})
     except Exception as e:
