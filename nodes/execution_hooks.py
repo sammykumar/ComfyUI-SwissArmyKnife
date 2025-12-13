@@ -154,9 +154,11 @@ def register_execution_hooks():
                 _publisher.initialize()
 
             # Intercept execution events and publish to Azure
+            # Note: 'executed' fires per-node, 'execution_success' fires per-prompt
             if event == "execution_start":
                 _publisher.handle_execution_start(data)
-            elif event == "execution_success" or event == "executed":
+            elif event == "execution_success":
+                # This fires once when the entire prompt completes successfully
                 _publisher.handle_execution_success(data)
             elif event == "execution_error":
                 _publisher.handle_execution_error(data)
