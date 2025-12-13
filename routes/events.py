@@ -120,20 +120,46 @@ async def health(_: web.Request) -> web.Response:
 
 
 def register_event_routes(app):
+    """Register SAF event routes with best-effort fallbacks."""
+
     # Prefer PromptServer routes API; fall back to aiohttp router if needed.
     routes = getattr(app, "routes", None)
     router = getattr(app, "router", None)
 
-    if routes:
-        routes.post("/swiss-army-knife/emit-event")(emit_event)
-        routes.get("/swiss-army-knife/health")(health)
-        print("[SwissArmyKnife] Registered emit-event via PromptServer routes")
-    elif router:
-        router.add_post("/swiss-army-knife/emit-event", emit_event)
-        router.add_get("/swiss-army-knife/health", health)
-        print("[SwissArmyKnife] Registered emit-event via aiohttp router")
-    else:
-        print("[SwissArmyKnife] Failed to register emit-event routes: no routes/router available")
+    registered = False
+
+    # Primary: use the provided aiohttp app.router (expected when app is PromptServer.instance.app)
+    try:
+        router = getattr(app, "router", None)
+        if router:
+            router.add_post("/swiss-army-knife/emit-event", emit_event)
+            router.add_get("/swiss-army-knife/health", health)
+            print("[SwissArmyKnife] Registered event routes via app.router")
+            registered = True
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        print(f"[SwissArmyKnife] Failed primary route registration: {exc}")
+
+    # Fallback: try PromptServer.instance.app.router directly
+    if not registered:
+        try:
+            from server import PromptServer
+
+            ps_app = getattr(PromptServer.instance, "app", None)
+            router = getattr(ps_app, "router", None)
+            if router:
+                router.add_post("/swiss-army-knife/emit-event", emit_event)
+                router.add_get("/swiss-army-knife/health", health)
+                print(
+                    "[SwissArmyKnife] Registered event routes via PromptServer.instance.app.router"
+                )
+                registered = True
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            print(f"[SwissArmyKnife] Fallback route registration failed: {exc}")
+
+    if not registered:
+        print(
+            "[SwissArmyKnife] Event routes NOT registered; check ComfyUI version and PromptServer availability"
+        )
 
     try:
         # Log current registered paths for quick diagnostics when DEBUG is on.
