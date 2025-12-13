@@ -120,6 +120,33 @@ async def health(_: web.Request) -> web.Response:
 
 
 def register_event_routes(app):
-    app.router.add_post("/swiss-army-knife/emit-event", emit_event)
-    app.router.add_get("/swiss-army-knife/health", health)
-    print("[SwissArmyKnife] Registered event emit routes")
+    # Prefer PromptServer routes API; fall back to aiohttp router if needed.
+    routes = getattr(app, "routes", None)
+    router = getattr(app, "router", None)
+
+    if routes:
+        routes.post("/swiss-army-knife/emit-event")(emit_event)
+        routes.get("/swiss-army-knife/health")(health)
+        print("[SwissArmyKnife] Registered emit-event via PromptServer routes")
+    elif router:
+        router.add_post("/swiss-army-knife/emit-event", emit_event)
+        router.add_get("/swiss-army-knife/health", health)
+        print("[SwissArmyKnife] Registered emit-event via aiohttp router")
+    else:
+        print("[SwissArmyKnife] Failed to register emit-event routes: no routes/router available")
+
+    try:
+        # Log current registered paths for quick diagnostics when DEBUG is on.
+        if get_debug_mode():
+            registered = []
+            if routes and hasattr(routes, "resources"):
+                for res in routes.resources():
+                    for route in res:
+                        registered.append(f"{route.method} {route.resource}")
+            elif router:
+                for res in router.resources():
+                    for route in res:
+                        registered.append(f"{route.method} {route.resource}")
+            print("[SwissArmyKnife] Routes registered:", ", ".join(registered))
+    except Exception as exc:  # pragma: no cover - diagnostics only
+        print(f"[SwissArmyKnife] Route logging failed: {exc}")
