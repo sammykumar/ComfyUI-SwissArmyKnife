@@ -1,5 +1,4 @@
 import json
-import os
 from datetime import datetime, timezone
 
 from aiohttp import web
@@ -13,13 +12,15 @@ except ImportError:  # pragma: no cover - environment guard
     print("[SAF] azure-storage-queue not installed; emit-event endpoint disabled")
 
 try:
-    from ..nodes.config_api import get_debug_mode
+    from ..nodes.config_api import get_debug_mode, get_setting_value, _cached_settings
 except Exception:  # pragma: no cover - fallback
     def get_debug_mode():
         return False
+    def get_setting_value(setting_id):
+        return ""
+    _cached_settings = {}
 
 _queue_client = None
-_queue_name = os.environ.get("AZURE_JOB_EVENTS_QUEUE", "job-events")
 
 
 def _log_debug(*args):
@@ -36,16 +37,20 @@ def _get_queue_client():
         print("[SAF] Queue client unavailable: azure-storage-queue not installed")
         return None
 
-    connection_string = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+    # Get connection string from Swiss Army Knife config system
+    connection_string = get_setting_value("swiss_army_knife.azure_storage.connection_string")
     if not connection_string:
-        print("[SAF] Queue client unavailable: AZURE_STORAGE_CONNECTION_STRING not set")
+        print("[SAF] Queue client unavailable: Azure Storage Connection String not set in SwissArmyKnife settings")
         return None
+
+    # Get queue name from cached settings (defaults to "job-events")
+    queue_name = _cached_settings.get("azure_job_events_queue", "job-events")
 
     try:
         _queue_client = QueueClient.from_connection_string(
-            conn_str=connection_string, queue_name=_queue_name
+            conn_str=connection_string, queue_name=queue_name
         )
-        print(f"[SAF] Queue client initialized for queue: {_queue_name}")
+        print(f"[SAF] Queue client initialized for queue: {queue_name}")
         return _queue_client
     except Exception as exc:  # pragma: no cover - network/auth failures
         print(f"[SAF] Failed to initialize queue client: {exc}")
