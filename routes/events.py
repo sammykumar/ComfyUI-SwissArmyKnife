@@ -119,60 +119,33 @@ async def health(_: web.Request) -> web.Response:
     return web.json_response({"status": "ok"})
 
 
-def register_event_routes(app):
-    """Register SAF event routes with best-effort fallbacks."""
-
-    # Prefer PromptServer routes API; fall back to aiohttp router if needed.
-    routes = getattr(app, "routes", None)
-    router = getattr(app, "router", None)
-
-    registered = False
-
-    # Primary: use the provided aiohttp app.router (expected when app is PromptServer.instance.app)
+# Initialize routes using ComfyUI's recommended pattern
+def initialize_routes():
+    """Register SAF event routes using PromptServer.instance.routes (ComfyUI standard pattern)."""
     try:
-        router = getattr(app, "router", None)
-        if router:
-            router.add_post("/swiss-army-knife/emit-event", emit_event)
-            router.add_get("/swiss-army-knife/health", health)
-            print("[SwissArmyKnife] Registered event routes via app.router")
-            registered = True
-    except Exception as exc:  # pragma: no cover - defensive fallback
-        print(f"[SwissArmyKnife] Failed primary route registration: {exc}")
+        from server import PromptServer
 
-    # Fallback: try PromptServer.instance.app.router directly
-    if not registered:
-        try:
-            from server import PromptServer
+        routes = PromptServer.instance.routes
 
-            ps_app = getattr(PromptServer.instance, "app", None)
-            router = getattr(ps_app, "router", None)
-            if router:
-                router.add_post("/swiss-army-knife/emit-event", emit_event)
-                router.add_get("/swiss-army-knife/health", health)
-                print(
-                    "[SwissArmyKnife] Registered event routes via PromptServer.instance.app.router"
-                )
-                registered = True
-        except Exception as exc:  # pragma: no cover - defensive fallback
-            print(f"[SwissArmyKnife] Fallback route registration failed: {exc}")
+        @routes.post("/swiss-army-knife/emit-event")
+        async def handle_emit_event(request):
+            return await emit_event(request)
 
-    if not registered:
-        print(
-            "[SwissArmyKnife] Event routes NOT registered; check ComfyUI version and PromptServer availability"
-        )
+        @routes.get("/swiss-army-knife/health")
+        async def handle_health(request):
+            return await health(request)
 
-    try:
-        # Log current registered paths for quick diagnostics when DEBUG is on.
+        print("[SwissArmyKnife] Event routes registered successfully")
+
+        # Debug logging
         if get_debug_mode():
-            registered = []
-            if routes and hasattr(routes, "resources"):
-                for res in routes.resources():
-                    for route in res:
-                        registered.append(f"{route.method} {route.resource}")
-            elif router:
-                for res in router.resources():
-                    for route in res:
-                        registered.append(f"{route.method} {route.resource}")
-            print("[SwissArmyKnife] Routes registered:", ", ".join(registered))
-    except Exception as exc:  # pragma: no cover - diagnostics only
-        print(f"[SwissArmyKnife] Route logging failed: {exc}")
+            print("[SwissArmyKnife] Routes: POST /swiss-army-knife/emit-event, GET /swiss-army-knife/health")
+
+    except Exception as exc:
+        print(f"[SwissArmyKnife] Failed to register event routes: {exc}")
+        import traceback
+        traceback.print_exc()
+
+
+# Auto-initialize when module is imported
+initialize_routes()
