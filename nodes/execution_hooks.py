@@ -1,12 +1,11 @@
 """
 ComfyUI Execution Hooks for automatic event publishing to Azure Queue.
 
-This module hooks into ComfyUI's execution lifecycle to automatically emit events
-when prompts start, complete, or fail - without requiring manual node placement.
+This module hooks into PromptServer's message bus to listen for execution events
+and automatically publish them to Azure Storage Queue - without requiring manual node placement.
 """
 
 import json
-import os
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -24,9 +23,9 @@ class ExecutionEventPublisher:
 
     def __init__(self):
         self._queue_client: Optional[QueueClient] = None
-        self._connection_string = None
         self._queue_name = "job-events"
         self._initialized = False
+        self._active_prompts = {}  # Track prompt_id -> start time
 
     def initialize(self):
         """Initialize the Azure Queue client (called after config is loaded)."""
@@ -79,8 +78,14 @@ class ExecutionEventPublisher:
         except Exception as exc:
             print(f"[SAF execution_hooks] Failed to publish event: {exc}")
 
-    def on_execution_start(self, prompt_id: str, prompt: dict):
-        """Called when a prompt starts executing."""
+    def handle_execution_start(self, data: dict):
+        """Handle execution_start message from ComfyUI."""
+        prompt_id = data.get("prompt_id")
+        if not prompt_id:
+            return
+
+        self._active_prompts[prompt_id] = datetime.now(timezone.utc)
+
         self._publish_event(
             {
                 "jobId": prompt_id,
@@ -90,27 +95,40 @@ class ExecutionEventPublisher:
             }
         )
 
-    def on_execution_complete(self, prompt_id: str, prompt: dict, outputs: dict):
-        """Called when a prompt completes successfully."""
+    def handle_execution_success(self, data: dict):
+        """Handle execution_success message from ComfyUI."""
+        prompt_id = data.get("prompt_id")
+        if not prompt_id:
+            return
+
+        self._active_prompts.pop(prompt_id, None)
+
         self._publish_event(
             {
                 "jobId": prompt_id,
                 "promptId": prompt_id,
                 "eventType": "job_completed",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "metadata": {"nodeCount": len(outputs)},
             }
         )
 
-    def on_execution_error(self, prompt_id: str, prompt: dict, error: Exception):
-        """Called when a prompt execution fails."""
+    def handle_execution_error(self, data: dict):
+        """Handle execution_error message from ComfyUI."""
+        prompt_id = data.get("prompt_id")
+        if not prompt_id:
+            return
+
+        self._active_prompts.pop(prompt_id, None)
+
+        error_message = data.get("exception_message", "Unknown error")
+
         self._publish_event(
             {
                 "jobId": prompt_id,
                 "promptId": prompt_id,
                 "eventType": "job_failed",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "errorMessage": str(error),
+                "errorMessage": error_message,
             }
         )
 
@@ -120,47 +138,39 @@ _publisher = ExecutionEventPublisher()
 
 
 def register_execution_hooks():
-    """Register hooks into ComfyUI's execution system."""
+    """Register hooks into PromptServer's message bus."""
     try:
-        import execution
+        from server import PromptServer
 
-        # Store original PromptExecutor methods
-        original_execute = execution.PromptExecutor.execute
+        server = PromptServer.instance
 
-        def execute_with_hooks(self, prompt, prompt_id, extra_data={}, execute_outputs=[]):
-            """Wrapped execute method that emits events."""
-            # Initialize publisher if needed (deferred until first execution)
+        # Store original send_sync method
+        original_send_sync = server.send_sync
+
+        def send_sync_with_hooks(event, data, sid=None):
+            """Wrapped send_sync that intercepts execution events."""
+            # Initialize publisher on first message (deferred until runtime)
             if not _publisher._initialized:
                 _publisher.initialize()
 
-            # Emit job_started event
-            _publisher.on_execution_start(prompt_id, prompt)
+            # Intercept execution events and publish to Azure
+            if event == "execution_start":
+                _publisher.handle_execution_start(data)
+            elif event == "execution_success" or event == "executed":
+                _publisher.handle_execution_success(data)
+            elif event == "execution_error":
+                _publisher.handle_execution_error(data)
 
-            try:
-                # Call original execute method
-                result = original_execute(
-                    self, prompt, prompt_id, extra_data, execute_outputs
-                )
+            # Call original method to maintain ComfyUI functionality
+            return original_send_sync(event, data, sid)
 
-                # Emit job_completed event
-                _publisher.on_execution_complete(
-                    prompt_id, prompt, self.outputs if hasattr(self, "outputs") else {}
-                )
+        # Monkey-patch send_sync to intercept messages
+        server.send_sync = send_sync_with_hooks
 
-                return result
-
-            except Exception as error:
-                # Emit job_failed event
-                _publisher.on_execution_error(prompt_id, prompt, error)
-                raise  # Re-raise the exception
-
-        # Monkey-patch the execute method
-        execution.PromptExecutor.execute = execute_with_hooks
-
-        print("[SAF execution_hooks] ✅ Execution hooks registered")
+        print("[SAF execution_hooks] ✅ Execution hooks registered via PromptServer message bus")
 
     except ImportError as exc:
-        print(f"[SAF execution_hooks] Could not import execution module: {exc}")
+        print(f"[SAF execution_hooks] Could not import PromptServer: {exc}")
     except Exception as exc:
         print(f"[SAF execution_hooks] Failed to register hooks: {exc}")
 
