@@ -78,11 +78,13 @@ except ImportError as e:
 try:
     from .nodes.config_api import register_config_routes
     from .nodes.restart_api import register_restart_routes
+    from .routes.events import register_event_routes
     from server import PromptServer
     app = getattr(PromptServer.instance, "app", None) or PromptServer.instance
     if app:
         register_config_routes(app)
         register_restart_routes(app)
+        register_event_routes(app)
         print("Swiss Army Knife: Registered config API routes")
 except Exception as e:
     print(f"Swiss Army Knife: Could not register config API routes: {e}")

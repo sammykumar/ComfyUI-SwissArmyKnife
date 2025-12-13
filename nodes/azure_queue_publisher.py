@@ -33,6 +33,7 @@ class AzureQueuePublisher:
                 ),
             },
             "optional": {
+                "prompt_id": ("STRING", {"default": "", "multiline": False}),
                 "client_id": ("STRING", {"default": "", "multiline": False}),
                 "run_id": ("STRING", {"default": "", "multiline": False}),
                 "character_index": ("INT", {"default": 0, "min": 0, "max": 1000}),
@@ -77,6 +78,7 @@ class AzureQueuePublisher:
         self,
         job_id: str,
         event_type: EventType,
+        prompt_id: str = "",
         client_id: str = "",
         run_id: str = "",
         character_index: int = 0,
@@ -100,6 +102,7 @@ class AzureQueuePublisher:
 
         event_data: Dict[str, Any] = {
             "jobId": job_id,
+            "promptId": prompt_id or job_id,
             "eventType": event_type,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
@@ -108,7 +111,7 @@ class AzureQueuePublisher:
             event_data["clientId"] = client_id
         if run_id:
             event_data["runId"] = run_id
-        if character_index > 0:
+        if character_index >= 0:
             event_data["characterIndex"] = character_index
         if error_message:
             event_data["errorMessage"] = error_message
