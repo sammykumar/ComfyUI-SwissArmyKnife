@@ -93,6 +93,12 @@ try:
 except Exception as e:
     print(f"Swiss Army Knife: Could not import event routes: {e}")
 
+# Import execution hooks to auto-emit events during workflow execution
+try:
+    from .nodes import execution_hooks  # This registers hooks into ComfyUI execution
+except Exception as e:
+    print(f"Swiss Army Knife: Could not register execution hooks: {e}")
+
 
 # Get version from pyproject.toml for cache busting
 def get_version():
