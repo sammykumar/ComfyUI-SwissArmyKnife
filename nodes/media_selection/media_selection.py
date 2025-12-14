@@ -31,9 +31,9 @@ class MediaSelection:
         """
         return {
             "required": {
-                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit/RedGif Post", "Randomize from Subreddit"], {
+                "media_source": (["Upload Media", "Randomize Media from Path", "Reddit/RedGif Post", "Randomize from Subreddit", "Azure Blob URL"], {
                     "default": "Reddit/RedGif Post",
-                    "tooltip": "Choose whether to upload media, randomize from a directory path, download from a Reddit/RedGif post, or randomize from a subreddit"
+                    "tooltip": "Choose whether to upload media, randomize from a directory path, download from a Reddit/RedGif post, randomize from a subreddit, or download from Azure Blob Storage"
                 }),
                 "media_type": (["image", "video"], {
                     "default": "image",
@@ -69,6 +69,11 @@ class MediaSelection:
                     "multiline": False,
                     "default": "",
                     "tooltip": "Subreddit URL or name (e.g., 'r/pics' or 'https://www.reddit.com/r/pics/') - used when media_source is Randomize from Subreddit"
+                }),
+                "azure_blob_url": ("STRING", {
+                    "multiline": False,
+                    "default": "",
+                    "tooltip": "Azure Blob Storage URL (e.g., 'https://account.blob.core.windows.net/container/blob.mp4') - used when media_source is Azure Blob URL"
                 }),
                 "max_duration": ("FLOAT", {
                     "default": 0.0,
@@ -107,7 +112,7 @@ class MediaSelection:
         "returns the resolved path plus metadata (type, dimensions, duration, fps)."
     )
 
-    def select_media(self, media_source, media_type, seed, media_path="", uploaded_image_file="", uploaded_video_file="", reddit_url="", subreddit_url="", max_duration=0.0, resize_mode="None", resize_width=832, resize_height=480):
+    def select_media(self, media_source, media_type, seed, media_path="", uploaded_image_file="", uploaded_video_file="", reddit_url="", subreddit_url="", azure_blob_url="", max_duration=0.0, resize_mode="None", resize_width=832, resize_height=480):
         """
         Select media from various sources and return path and metadata.
 
@@ -120,6 +125,7 @@ class MediaSelection:
             uploaded_video_file: Path to uploaded video (optional)
             reddit_url: Reddit post URL (optional)
             subreddit_url: Subreddit URL for randomization (optional)
+            azure_blob_url: Azure Blob Storage URL (optional)
             max_duration: Maximum video duration in seconds (0 = full video)
             resize_mode: Resize mode ("None", "Auto (by orientation)", or "Custom")
             resize_width: Target width for Custom resize mode
@@ -144,6 +150,10 @@ class MediaSelection:
             elif media_source == "Randomize from Subreddit":
                 selected_media_path, media_type, media_info_text = self._randomize_from_subreddit(
                     subreddit_url, media_type, seed
+                )
+            elif media_source == "Azure Blob URL":
+                selected_media_path, media_type, media_info_text = self._download_azure_blob(
+                    azure_blob_url, media_type
                 )
             else:  # Upload Media
                 selected_media_path, media_info_text = self._upload_media(
@@ -575,6 +585,89 @@ class MediaSelection:
             logger.debug(f"[DEBUG] Exception in _extract_redgifs_url: {str(e)}")
 
         return None, None
+
+    def _download_azure_blob(self, azure_blob_url, media_type):
+        """Download media from Azure Blob Storage."""
+        if not azure_blob_url or not azure_blob_url.strip():
+            raise ValueError("Azure Blob URL is required when media_source is 'Azure Blob URL'")
+
+        try:
+            azure_blob_url = azure_blob_url.strip()
+            if not azure_blob_url.startswith(('http://', 'https://')):
+                azure_blob_url = 'https://' + azure_blob_url
+
+            # Validate URL format
+            parsed_url = urlparse(azure_blob_url)
+            if not parsed_url.netloc or 'blob.core.windows.net' not in parsed_url.netloc:
+                raise ValueError("URL must be an Azure Blob Storage URL (format: https://account.blob.core.windows.net/container/blob)")
+
+            logger.info(f"Downloading media from Azure Blob Storage: {azure_blob_url}")
+
+            # Download the blob
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+
+            response = requests.get(azure_blob_url, headers=headers, timeout=60)
+            response.raise_for_status()
+
+            content_type = response.headers.get('content-type', '')
+            content_length = len(response.content)
+
+            # Detect media type from content
+            detected_media_type = None
+            if content_type.startswith('image/'):
+                detected_media_type = 'image'
+            elif content_type.startswith('video/'):
+                detected_media_type = 'video'
+            else:
+                # Try to detect from URL extension
+                path_lower = parsed_url.path.lower()
+                if path_lower.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff')):
+                    detected_media_type = 'image'
+                elif path_lower.endswith(('.mp4', '.webm', '.mov', '.avi', '.mkv', '.flv')):
+                    detected_media_type = 'video'
+
+            if not detected_media_type:
+                logger.warning(f"Could not detect media type from content-type '{content_type}' or URL, using requested type '{media_type}'")
+                detected_media_type = media_type
+            elif detected_media_type != media_type:
+                logger.warning(f"Media type mismatch. Expected '{media_type}' but detected '{detected_media_type}' from Azure Blob. Using detected type.")
+                media_type = detected_media_type
+
+            # Determine file extension
+            file_ext = None
+            if content_type:
+                file_ext = mimetypes.guess_extension(content_type)
+
+            if not file_ext:
+                # Try to get extension from URL
+                if '.' in parsed_url.path:
+                    file_ext = '.' + parsed_url.path.split('.')[-1].lower()
+
+            if not file_ext:
+                file_ext = '.mp4' if media_type == 'video' else '.jpg'
+
+            # Save to temp file
+            temp_path = get_temp_file_path(suffix=file_ext, prefix='azure_blob', subdir='downloads')
+            with open(temp_path, 'wb') as temp_file:
+                temp_file.write(response.content)
+
+            # Get blob name from URL for display
+            blob_name = parsed_url.path.split('/')[-1] if '/' in parsed_url.path else 'blob'
+            file_size_mb = content_length / 1024 / 1024
+
+            emoji = "📷" if media_type == "image" else "📹"
+            media_info_text = f"{emoji} {media_type.title()} Processing Info (Azure Blob Storage):\n• Blob: {blob_name}\n• Source: {azure_blob_url}\n• File Size: {file_size_mb:.2f} MB\n• Content Type: {content_type}"
+
+            logger.info(f"Successfully downloaded {media_type} from Azure Blob Storage: {blob_name} ({file_size_mb:.2f} MB)")
+
+            return temp_path, media_type, media_info_text
+
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Failed to download Azure Blob: Network error - {str(e)}")
+        except Exception as e:
+            raise Exception(f"Azure Blob download failed: {str(e)}")
 
     def _upload_media(self, media_type, uploaded_image_file, uploaded_video_file):
         """Handle uploaded media files."""
