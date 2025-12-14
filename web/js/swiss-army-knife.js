@@ -1455,6 +1455,37 @@ app.registerExtension({
                     debugLog("[LLMStudioStructured] WARNING: schema_preset widget not found");
                 }
 
+                // Add debug logging for model dropdown interactions
+                const modelWidget = this.widgets?.find((w) => w.name === "model_name");
+                if (modelWidget) {
+                    debugLog(
+                        "[LLMStudioStructured] Found model_name widget with initial value:",
+                        modelWidget.value
+                    );
+                    if (modelWidget?.options) {
+                        debugLog(
+                            "[LLMStudioStructured] model_name widget options:",
+                            modelWidget.options
+                        );
+                    }
+
+                    const originalModelCallback = modelWidget.callback;
+                    modelWidget.callback = function (value) {
+                        debugLog(`[LLMStudioStructured] Model dropdown changed to: ${value}`);
+                        if (modelWidget?.options?.values) {
+                            debugLog(
+                                "[LLMStudioStructured] Available models:",
+                                modelWidget.options.values
+                            );
+                        }
+                        if (originalModelCallback) {
+                            originalModelCallback.apply(this, arguments);
+                        }
+                    };
+                } else {
+                    debugLog("[LLMStudioStructured] WARNING: model_name widget not found");
+                }
+
                 return result;
             };
         }
@@ -1700,6 +1731,37 @@ app.registerExtension({
                     };
                 } else {
                     debugLog("[LLMStudioStructuredVideo] WARNING: schema_preset widget not found");
+                }
+
+                // Add debug logging for model dropdown interactions
+                const modelWidget = this.widgets?.find((w) => w.name === "model_name");
+                if (modelWidget) {
+                    debugLog(
+                        "[LLMStudioStructuredVideo] Found model_name widget with initial value:",
+                        modelWidget.value
+                    );
+                    if (modelWidget?.options) {
+                        debugLog(
+                            "[LLMStudioStructuredVideo] model_name widget options:",
+                            modelWidget.options
+                        );
+                    }
+
+                    const originalModelCallback = modelWidget.callback;
+                    modelWidget.callback = function (value) {
+                        debugLog(`[LLMStudioStructuredVideo] Model dropdown changed to: ${value}`);
+                        if (modelWidget?.options?.values) {
+                            debugLog(
+                                "[LLMStudioStructuredVideo] Available models:",
+                                modelWidget.options.values
+                            );
+                        }
+                        if (originalModelCallback) {
+                            originalModelCallback.apply(this, arguments);
+                        }
+                    };
+                } else {
+                    debugLog("[LLMStudioStructuredVideo] WARNING: model_name widget not found");
                 }
 
                 return result;

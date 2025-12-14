@@ -356,11 +356,6 @@ class LLMStudioStructuredDescribe:
         """Define input parameters for the node."""
         return {
             "required": {
-                "base_url": ("STRING", {
-                    "default": "",
-                    "multiline": False,
-                    "tooltip": "Optional override. Leave blank to use Swiss Army Knife settings."
-                }),
                 "model_name": (cls.get_available_models(), {
                     "tooltip": "Model name in LM Studio"
                 }),
@@ -510,7 +505,6 @@ class LLMStudioStructuredDescribe:
 
     def describe_image(
         self,
-        base_url: str,
         model_name: str,
         image,
         schema_preset: str,
@@ -527,7 +521,7 @@ class LLMStudioStructuredDescribe:
         Returns:
             Tuple of (json_output, field_1, field_2, field_3, field_4, field_5, nsfw)
         """
-        resolved_base_url = base_url.strip() or resolve_lmstudio_base_url()
+        resolved_base_url = resolve_lmstudio_base_url()
         self.base_url = resolved_base_url
 
         logger.log(f"📡 Connecting to LM Studio at {resolved_base_url}")
@@ -670,11 +664,6 @@ class LLMStudioStructuredVideoDescribe:
         """Define input parameters for the node."""
         return {
             "required": {
-                "base_url": ("STRING", {
-                    "default": "",
-                    "multiline": False,
-                    "tooltip": "Optional override. Leave blank to use Swiss Army Knife settings."
-                }),
                 "model_name": (cls.get_available_models(), {
                     "tooltip": "Model name in LM Studio"
                 }),
@@ -860,7 +849,6 @@ class LLMStudioStructuredVideoDescribe:
 
     def describe_video(
         self,
-        base_url: str,
         model_name: str,
         video_path: str,
         sample_rate: float,
@@ -879,7 +867,7 @@ class LLMStudioStructuredVideoDescribe:
         Returns:
             Tuple of (json_output, field_1, field_2, field_3, field_4, field_5, nsfw)
         """
-        resolved_base_url = base_url.strip() or resolve_lmstudio_base_url()
+        resolved_base_url = resolve_lmstudio_base_url()
         self.base_url = resolved_base_url
 
         logger.log(f"📡 Connecting to LM Studio at {resolved_base_url}")
@@ -1080,10 +1068,6 @@ class LMStudioCombinedStructuredDescribe:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "base_url": ("STRING", {
-                    "default": "",
-                    "tooltip": "Optional override. Leave blank to use Swiss Army Knife settings."
-                }),
                 "model_name": (cls.get_available_models(), {
                     "tooltip": "Model name exposed by LM Studio"
                 }),
@@ -1262,7 +1246,6 @@ class LMStudioCombinedStructuredDescribe:
 
     def describe_combined(
         self,
-        base_url: str,
         model_name: str,
         subject_image_path: str,
         video_path: str,
@@ -1277,7 +1260,7 @@ class LMStudioCombinedStructuredDescribe:
         max_tokens: int,
         verbose: bool
     ) -> Tuple[str, str, str, str]:
-        resolved_base_url = base_url.strip() or resolve_lmstudio_base_url()
+        resolved_base_url = resolve_lmstudio_base_url()
         self.base_url = resolved_base_url
 
         if not subject_image_path or not os.path.exists(subject_image_path):
