@@ -110,8 +110,11 @@ async def emit_event(request: web.Request) -> web.Response:
 
     event = _build_event(data)
 
+    message_body = json.dumps(event, separators=(",", ":"))
+
     try:
-        client.send_message(json.dumps(event))
+        client.send_message(message_body)
+        print(f"[SAF emit-event] Published queue payload: {message_body}")
         if get_debug_mode():
             _log_debug("Published", event)
         return web.json_response({"success": True, "jobId": job_id, "eventType": event_type})
