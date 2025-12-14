@@ -14,7 +14,7 @@ Analyzes single images with structured JSON output.
 
 **Inputs:**
 
--   `base_url` - LM Studio server URL (default: http://192.168.50.41:1234)
+-   `base_url` (optional override) - leave blank to use Swiss Army Knife LM Studio Base URL setting; otherwise supply a one-off endpoint (fallback http://127.0.0.1:1234)
 -   `model_name` - Model to use (default: qwen3-vl-8b-thinking-mlx)
 -   `image` - ComfyUI IMAGE tensor
 -   `schema_preset` - Dropdown: video_description, simple_description, character_analysis
@@ -76,7 +76,7 @@ Analyzes videos with structured JSON output.
 
 **Inputs:**
 
--   `base_url` - LM Studio server URL
+-   `base_url` override (leave blank to rely on settings)
 -   `model_name` - Model to use
 -   `video_path` - Path to video file
 -   `sample_rate` - Frames per second to extract (default: 2.0)

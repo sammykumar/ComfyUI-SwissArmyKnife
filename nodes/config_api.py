@@ -10,7 +10,8 @@ import os
 _cached_api_keys = {
     "gemini_api_key": "",
     "civitai_api_key": "",
-    "azure_storage_connection_string": ""
+    "azure_storage_connection_string": "",
+    "lmstudio_base_url": ""
 }
 
 _cached_settings = {
@@ -48,6 +49,8 @@ def get_setting_value(setting_id):
             return _cached_api_keys.get("civitai_api_key", "")
         elif setting_id == "swiss_army_knife.azure_storage.connection_string":
             return _cached_api_keys.get("azure_storage_connection_string", "")
+        elif setting_id == "swiss_army_knife.lmstudio.base_url":
+            return _cached_api_keys.get("lmstudio_base_url", "")
             
     except Exception as e:
         print(f"[Swiss Army Knife] Error getting setting {setting_id}: {e}")
@@ -66,6 +69,7 @@ async def get_config(request):
         gemini_api_key = get_setting_value("swiss_army_knife.gemini.api_key")
         civitai_api_key = get_setting_value("swiss_army_knife.civitai.api_key")
         azure_connection_string = get_setting_value("swiss_army_knife.azure_storage.connection_string")
+        lmstudio_base_url = get_setting_value("swiss_army_knife.lmstudio.base_url")
 
         profiler_enabled = _cached_settings.get("profiler_enabled", True)
         azure_job_events_queue = _cached_settings.get("azure_job_events_queue", "")
@@ -77,6 +81,7 @@ async def get_config(request):
             "civitai_api_key": civitai_api_key,
             "azure_storage_connection_string": azure_connection_string,
             "azure_job_events_queue": azure_job_events_queue,
+            "lmstudio_base_url": lmstudio_base_url,
         })
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
@@ -94,11 +99,13 @@ async def set_api_keys(request):
         azure_job_events_queue = data.get("azure_job_events_queue", "")
         debug_mode = data.get("debug_mode", False)
         profiler_enabled = data.get("profiler_enabled", True)
+        lmstudio_base_url = data.get("lmstudio_base_url", "")
         
         debug_print(f"[Config API] set_api_keys received:")
         debug_print(f"  - Azure connection string length: {len(azure_connection_string)}")
         debug_print(f"  - Debug mode: {debug_mode}")
         debug_print(f"  - Job events queue: {azure_job_events_queue}")
+        debug_print(f"  - LM Studio base URL: {lmstudio_base_url}")
         
         if azure_connection_string:
             debug_print(f"  - Connection string preview: {azure_connection_string[:50]}...")
@@ -108,7 +115,8 @@ async def set_api_keys(request):
         _cached_api_keys = {
             "gemini_api_key": gemini_key,
             "civitai_api_key": civitai_key,
-            "azure_storage_connection_string": azure_connection_string
+            "azure_storage_connection_string": azure_connection_string,
+            "lmstudio_base_url": lmstudio_base_url
         }
         _cached_settings = {
             "debug_mode": debug_mode,

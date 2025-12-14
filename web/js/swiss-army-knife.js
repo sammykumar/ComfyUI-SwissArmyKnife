@@ -71,6 +71,17 @@ const getAzureJobEventsQueue = () => {
     }
 };
 
+const getLmStudioBaseUrl = () => {
+    try {
+        const value = app.extensionManager.setting.get("SwissArmyKnife.lmstudio.base_url") || "";
+        debugLog(`[Settings] LM Studio base URL loaded: ${value ? value : "(empty)"}`);
+        return value;
+    } catch (error) {
+        console.warn("Failed to get LM Studio base URL from settings:", error);
+        return "";
+    }
+};
+
 // Function to sync API keys to backend
 const syncApiKeysToBackend = async () => {
     debugLog("syncApiKeysToBackend called");
@@ -82,6 +93,7 @@ const syncApiKeysToBackend = async () => {
         const profilerEnabled =
             app.extensionManager?.setting?.get("SwissArmyKnife.profiler_enabled") ?? true;
         const azureJobEventsQueue = getAzureJobEventsQueue();
+        const lmstudioBaseUrl = getLmStudioBaseUrl();
 
         debugLog("Azure connection string length:", azureConnectionString.length);
         debugLog("Debug mode:", debugMode);
@@ -97,6 +109,7 @@ const syncApiKeysToBackend = async () => {
                 civitai_api_key: civitaiKey,
                 azure_storage_connection_string: azureConnectionString,
                 azure_job_events_queue: azureJobEventsQueue,
+                lmstudio_base_url: lmstudioBaseUrl,
                 debug_mode: debugMode,
                 profiler_enabled: profilerEnabled,
             }),
@@ -1970,6 +1983,17 @@ app.registerExtension({
             tooltip: "Azure Storage queue name for job events (Flow 3)",
             onChange: (newVal, oldVal) => {
                 debugLog(`[Settings] Azure job events queue changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "SwissArmyKnife.lmstudio.base_url",
+            name: "LM Studio Base URL",
+            type: "text",
+            defaultValue: "http://127.0.0.1:1234",
+            tooltip: "Base URL for your LM Studio server (OpenAI compatible endpoint)",
+            onChange: (newVal, oldVal) => {
+                debugLog(`[Settings] LM Studio base URL changed from ${oldVal} to ${newVal}`);
                 syncApiKeysToBackend();
             },
         },

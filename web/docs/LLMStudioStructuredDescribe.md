@@ -2,7 +2,7 @@
 Generates JSON-structured descriptions for a single image using LM Studio's schema-enforced responses. Default behavior targets photorealistic character analysis with the Visionary Image Architect system prompt that locks appearance, expression, pose, and clothing outputs for Wan 2.2 workflows.
 
 # Inputs
-- `base_url`: LM Studio endpoint (default `http://192.168.50.41:1234`).
+- `base_url` (optional override): Leave blank to use the Swiss Army Knife LM Studio Base URL setting; fill only to temporarily target a different endpoint.
 - `model_name`: Any loaded LM Studio multimodal model (defaults to `qwen3-vl-8b-thinking-mlx`).
 - `image`: IMAGE tensor to analyze.
 - `schema_preset`: Choose `simple_description` or `character_analysis` (default). Character mode uses the new architect prompt described above.

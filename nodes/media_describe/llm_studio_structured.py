@@ -14,9 +14,31 @@ import os
 from pathlib import Path
 from typing import Tuple, List, Dict, Any
 from ..debug_utils import Logger
+from ..config_api import get_setting_value
 from .prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, VIDEO_SYSTEM_PROMPT, VIDEO_USER_PROMPT
 
 logger = Logger("LLMStudioStructured")
+
+DEFAULT_LMSTUDIO_BASE_URL = "http://127.0.0.1:1234"
+
+
+def resolve_lmstudio_base_url() -> str:
+    """Resolve LM Studio base URL from settings, env, or fallback."""
+    base_url = ""
+    try:
+        base_url = get_setting_value("swiss_army_knife.lmstudio.base_url") or ""
+    except Exception as exc:
+        logger.warning(f"⚠️ Failed to read LM Studio base URL from settings: {exc}")
+
+    env_override = os.environ.get("LMSTUDIO_BASE_URL", "")
+    chosen = (base_url or env_override or DEFAULT_LMSTUDIO_BASE_URL).strip()
+
+    if not (base_url or env_override):
+        logger.warning(
+            f"⚠️ LM Studio base URL not set in settings/env; defaulting to {DEFAULT_LMSTUDIO_BASE_URL}"
+        )
+
+    return chosen
 
 
 # JSON Schema Presets
@@ -313,19 +335,20 @@ class LLMStudioStructuredDescribe:
     """
 
     def __init__(self):
-        self.base_url = None
+        self.base_url = resolve_lmstudio_base_url()
 
     @classmethod
-    def get_available_models(cls, base_url: str = "http://192.168.50.41:1234") -> List[str]:
+    def get_available_models(cls, base_url: str | None = None) -> List[str]:
         """Fetch available models from LM Studio."""
+        base = base_url or resolve_lmstudio_base_url()
         try:
-            response = requests.get(f"{base_url}/v1/models", timeout=5)
+            response = requests.get(f"{base}/v1/models", timeout=5)
             response.raise_for_status()
             models_data = response.json()
             model_ids = [model["id"] for model in models_data.get("data", [])]
             return model_ids if model_ids else ["qwen3-vl-8b-thinking-mlx"]
         except Exception as e:
-            logger.warning(f"⚠️ Could not fetch models from {base_url}: {e}")
+            logger.warning(f"⚠️ Could not fetch models from {base}: {e}")
             return ["qwen3-vl-8b-thinking-mlx"]
 
     @classmethod
@@ -334,9 +357,9 @@ class LLMStudioStructuredDescribe:
         return {
             "required": {
                 "base_url": ("STRING", {
-                    "default": "http://192.168.50.41:1234",
+                    "default": "",
                     "multiline": False,
-                    "tooltip": "LM Studio server URL (e.g. http://192.168.50.41:1234)"
+                    "tooltip": "Optional override. Leave blank to use Swiss Army Knife settings."
                 }),
                 "model_name": (cls.get_available_models(), {
                     "tooltip": "Model name in LM Studio"
@@ -504,9 +527,10 @@ class LLMStudioStructuredDescribe:
         Returns:
             Tuple of (json_output, field_1, field_2, field_3, field_4, field_5, nsfw)
         """
-        self.base_url = base_url
+        resolved_base_url = base_url.strip() or resolve_lmstudio_base_url()
+        self.base_url = resolved_base_url
 
-        logger.log(f"📡 Connecting to LM Studio at {base_url}")
+        logger.log(f"📡 Connecting to LM Studio at {resolved_base_url}")
         logger.log(f"🤖 Using model: {model_name}")
         logger.log(f"📋 Schema preset: {schema_preset}")
         logger.log("🖼️ Processing image...")
@@ -534,7 +558,7 @@ class LLMStudioStructuredDescribe:
 
         try:
             result = self.call_lmstudio_structured(
-                base_url=base_url,
+                base_url=resolved_base_url,
                 model_name=model_name,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
@@ -625,19 +649,20 @@ class LLMStudioStructuredVideoDescribe:
     """
 
     def __init__(self):
-        self.base_url = None
+        self.base_url = resolve_lmstudio_base_url()
 
     @classmethod
-    def get_available_models(cls, base_url: str = "http://192.168.50.41:1234") -> List[str]:
+    def get_available_models(cls, base_url: str | None = None) -> List[str]:
         """Fetch available models from LM Studio."""
+        base = base_url or resolve_lmstudio_base_url()
         try:
-            response = requests.get(f"{base_url}/v1/models", timeout=5)
+            response = requests.get(f"{base}/v1/models", timeout=5)
             response.raise_for_status()
             models_data = response.json()
             model_ids = [model["id"] for model in models_data.get("data", [])]
             return model_ids if model_ids else ["qwen3-vl-8b-thinking-mlx"]
         except Exception as e:
-            logger.warning(f"⚠️ Could not fetch models from {base_url}: {e}")
+            logger.warning(f"⚠️ Could not fetch models from {base}: {e}")
             return ["qwen3-vl-8b-thinking-mlx"]
 
     @classmethod
@@ -646,9 +671,9 @@ class LLMStudioStructuredVideoDescribe:
         return {
             "required": {
                 "base_url": ("STRING", {
-                    "default": "http://192.168.50.41:1234",
+                    "default": "",
                     "multiline": False,
-                    "tooltip": "LM Studio server URL (e.g. http://192.168.50.41:1234)"
+                    "tooltip": "Optional override. Leave blank to use Swiss Army Knife settings."
                 }),
                 "model_name": (cls.get_available_models(), {
                     "tooltip": "Model name in LM Studio"
@@ -854,9 +879,10 @@ class LLMStudioStructuredVideoDescribe:
         Returns:
             Tuple of (json_output, field_1, field_2, field_3, field_4, field_5, nsfw)
         """
-        self.base_url = base_url
+        resolved_base_url = base_url.strip() or resolve_lmstudio_base_url()
+        self.base_url = resolved_base_url
 
-        logger.log(f"📡 Connecting to LM Studio at {base_url}")
+        logger.log(f"📡 Connecting to LM Studio at {resolved_base_url}")
         logger.log(f"🤖 Using model: {model_name}")
         logger.log(f"📋 Schema preset: {schema_preset}")
 
@@ -938,7 +964,7 @@ class LLMStudioStructuredVideoDescribe:
             base64_list = [item["base64"] for item in images_base64]
 
             result = self.call_lmstudio_structured(
-                base_url=base_url,
+                base_url=resolved_base_url,
                 model_name=model_name,
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
@@ -1036,17 +1062,18 @@ class LMStudioCombinedStructuredDescribe:
     CATEGORY = "Swiss Army Knife 🔪/Media Caption"
 
     def __init__(self):
-        self.base_url = None
+        self.base_url = resolve_lmstudio_base_url()
 
     @classmethod
-    def get_available_models(cls, base_url: str = "http://192.168.50.41:1234") -> List[str]:
+    def get_available_models(cls, base_url: str | None = None) -> List[str]:
+        base = base_url or resolve_lmstudio_base_url()
         try:
-            response = requests.get(f"{base_url}/v1/models", timeout=5)
+            response = requests.get(f"{base}/v1/models", timeout=5)
             response.raise_for_status()
             data = response.json()
             return [m["id"] for m in data.get("data", [])] or ["qwen3-vl-8b-thinking-mlx"]
         except Exception as exc:
-            logger.warning(f"⚠️ Could not fetch models from {base_url}: {exc}")
+            logger.warning(f"⚠️ Could not fetch models from {base}: {exc}")
             return ["qwen3-vl-8b-thinking-mlx"]
 
     @classmethod
@@ -1054,8 +1081,8 @@ class LMStudioCombinedStructuredDescribe:
         return {
             "required": {
                 "base_url": ("STRING", {
-                    "default": "http://192.168.50.41:1234",
-                    "tooltip": "LM Studio server URL"
+                    "default": "",
+                    "tooltip": "Optional override. Leave blank to use Swiss Army Knife settings."
                 }),
                 "model_name": (cls.get_available_models(), {
                     "tooltip": "Model name exposed by LM Studio"
@@ -1250,6 +1277,9 @@ class LMStudioCombinedStructuredDescribe:
         max_tokens: int,
         verbose: bool
     ) -> Tuple[str, str, str, str]:
+        resolved_base_url = base_url.strip() or resolve_lmstudio_base_url()
+        self.base_url = resolved_base_url
+
         if not subject_image_path or not os.path.exists(subject_image_path):
             error_msg = f"Subject image not found: {subject_image_path}"
             logger.error(error_msg)
@@ -1276,7 +1306,7 @@ class LMStudioCombinedStructuredDescribe:
 
         try:
             subject_result = self.call_structured_completion(
-                base_url,
+                resolved_base_url,
                 model_name,
                 subject_system_prompt,
                 subject_content,
@@ -1337,7 +1367,7 @@ class LMStudioCombinedStructuredDescribe:
                 })
 
             video_result = self.call_structured_completion(
-                base_url,
+                resolved_base_url,
                 model_name,
                 video_system_prompt,
                 frames_content,
