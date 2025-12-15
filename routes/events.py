@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from aiohttp import web
 
-from ..lib.audit_logger import create_audit_logger
+from ..audit_logger_loader import create_audit_logger
 
 try:
     from azure.storage.queue import QueueClient
