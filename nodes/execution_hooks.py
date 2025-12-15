@@ -9,6 +9,8 @@ import json
 from datetime import datetime, timezone
 from typing import Optional
 
+from lib.audit_logger import create_audit_logger
+
 try:
     from azure.storage.queue import QueueClient
 
@@ -75,8 +77,46 @@ class ExecutionEventPublisher:
             print(
                 f"[SAF execution_hooks] ✅ Published {event_data.get('eventType')} for job {event_data.get('jobId')}"
             )
+            self._log_audit_event(event_data, success=True)
         except Exception as exc:
             print(f"[SAF execution_hooks] Failed to publish event: {exc}")
+            self._log_audit_event(event_data, success=False, error=str(exc))
+
+    def _log_audit_event(
+        self, event_data: dict, *, success: bool, error: Optional[str] = None
+    ):
+        job_id = event_data.get("jobId") or event_data.get("promptId") or "unknown"
+        event_type = event_data.get("eventType", "job_event")
+        action = "publish_event"
+        message = f"Published {event_type} for job {job_id}"
+        extra = {"queue": self._queue_name}
+        if error:
+            extra["error"] = error
+
+        if event_type == "job_completed":
+            AUDIT_LOGGER.success(
+                job_id=job_id,
+                event_type=event_type,
+                action=action,
+                message=message,
+                extra=extra,
+            )
+        elif event_type == "job_failed" or not success:
+            AUDIT_LOGGER.failure(
+                job_id=job_id,
+                event_type=event_type,
+                action=action,
+                message=message if success else error or message,
+                extra=extra,
+            )
+        else:
+            AUDIT_LOGGER.info(
+                job_id=job_id,
+                event_type=event_type,
+                action=action,
+                message=message,
+                extra=extra,
+            )
 
     def handle_execution_start(self, data: dict):
         """Handle execution_start message from ComfyUI."""
@@ -134,6 +174,7 @@ class ExecutionEventPublisher:
 
 
 # Global publisher instance
+AUDIT_LOGGER = create_audit_logger("comfy-execution-hooks")
 _publisher = ExecutionEventPublisher()
 
 

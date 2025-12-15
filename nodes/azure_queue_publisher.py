@@ -8,6 +8,8 @@ import json
 from typing import Any, Dict, Literal
 from datetime import datetime, timezone
 
+from lib.audit_logger import create_audit_logger
+
 try:
     from azure.storage.queue import QueueClient
 
@@ -17,6 +19,7 @@ except ImportError:
     print("⚠️  azure-storage-queue not installed")
 
 EventType = Literal["job_started", "job_completed", "character_ready", "job_failed"]
+AUDIT_LOGGER = create_audit_logger("comfy-publisher")
 
 
 class AzureQueuePublisher:
@@ -126,10 +129,23 @@ class AzureQueuePublisher:
 
             success_msg = f"✅ Published {event_type} event for job {job_id}"
             print(success_msg)
+            AUDIT_LOGGER.info(
+                job_id=job_id,
+                event_type=event_type,
+                action="publish_event",
+                message="Event published from AzureQueuePublisher node",
+                extra={"queuePayloadSize": len(message_json)},
+            )
             return (f"SUCCESS: {success_msg}",)
         except Exception as exc:  # pragma: no cover - runtime transport errors
             error_msg = f"Failed to publish event: {exc}"
             print(f"❌ {error_msg}")
+            AUDIT_LOGGER.failure(
+                job_id=job_id,
+                event_type=event_type,
+                action="publish_event_failed",
+                message=error_msg,
+            )
             return (f"ERROR: {error_msg}",)
 
 

@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 
 from aiohttp import web
+from lib.audit_logger import create_audit_logger
 
 try:
     from azure.storage.queue import QueueClient
@@ -21,6 +22,7 @@ except Exception:  # pragma: no cover - fallback
     _cached_settings = {}
 
 _queue_client = None
+AUDIT_LOGGER = create_audit_logger("comfy-events-api")
 
 
 def _log_debug(*args):
@@ -117,9 +119,22 @@ async def emit_event(request: web.Request) -> web.Response:
         print(f"[SAF emit-event] Published queue payload: {message_body}")
         if get_debug_mode():
             _log_debug("Published", event)
+        AUDIT_LOGGER.success(
+            job_id=job_id,
+            event_type=event_type,
+            action="emit_event",
+            message="Event published via emit-event endpoint",
+            extra={"queuePayloadSize": len(message_body)},
+        )
         return web.json_response({"success": True, "jobId": job_id, "eventType": event_type})
     except Exception as exc:  # pragma: no cover - runtime transport errors
         print(f"[SAF] Failed to publish event: {exc}")
+        AUDIT_LOGGER.failure(
+            job_id=job_id or "unknown",
+            event_type=event_type or "job_error",
+            action="emit_event_failed",
+            message=f"Failed to publish event: {exc}",
+        )
         return web.json_response({"error": f"Failed to publish event: {exc}"}, status=500)
 
 
