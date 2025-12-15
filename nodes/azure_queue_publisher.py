@@ -4,9 +4,15 @@ Publishes job events to Azure Storage Queue for event-driven architecture.
 """
 
 import os
+import sys
 import json
+from pathlib import Path
 from typing import Any, Dict, Literal
 from datetime import datetime, timezone
+
+PACKAGE_ROOT = Path(__file__).resolve().parents[1]
+if str(PACKAGE_ROOT) not in sys.path:
+    sys.path.append(str(PACKAGE_ROOT))
 
 from lib.audit_logger import create_audit_logger
 

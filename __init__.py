@@ -1,4 +1,13 @@
 import os
+import sys
+from pathlib import Path
+
+# Ensure the package root (which contains `lib/`) is discoverable when ComfyUI
+# loads this module directly from `custom_nodes`.
+_PACKAGE_ROOT = Path(__file__).resolve().parent
+if str(_PACKAGE_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PACKAGE_ROOT))
+
 from .nodes.nodes import NODE_CLASS_MAPPINGS as MAIN_NODE_CLASS_MAPPINGS
 from .nodes.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MAPPINGS
 from .nodes.helper_nodes import HELPER_NODE_CLASS_MAPPINGS
