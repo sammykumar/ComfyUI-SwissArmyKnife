@@ -1,30 +1,4 @@
 import os
-import sys
-import importlib.util
-from pathlib import Path
-
-_PACKAGE_ROOT = Path(__file__).resolve().parent
-_LIB_PATH = _PACKAGE_ROOT / "lib"
-_LIB_INIT = _LIB_PATH / "__init__.py"
-
-# When ComfyUI loads this module from custom_nodes, its name contains a hyphen,
-# so relative imports like `from .lib import ...` would fail. Instead, load the
-# lib package manually and register it under the top-level name `lib`.
-if _LIB_PATH.exists() and "lib" not in sys.modules:
-    try:
-        spec = importlib.util.spec_from_file_location(
-            "swiss_army_knife.lib",
-            _LIB_INIT,
-            submodule_search_locations=[str(_LIB_PATH)],
-        )
-        if spec and spec.loader:
-            module = importlib.util.module_from_spec(spec)
-            module.__path__ = [str(_LIB_PATH)]
-            spec.loader.exec_module(module)
-            sys.modules["swiss_army_knife.lib"] = module
-            sys.modules["lib"] = module
-    except Exception as exc:
-        print(f"SwissArmyKnife: Failed to load lib module: {exc}")
 
 from .nodes.nodes import NODE_CLASS_MAPPINGS as MAIN_NODE_CLASS_MAPPINGS
 from .nodes.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MAPPINGS

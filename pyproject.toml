@@ -49,7 +49,7 @@ DisplayName = "Swiss Army Knife"
 includes = ["dist/"]
 
 [tool.setuptools]
-packages = ["nodes"]
+packages = ["nodes", "routes"]
 
 [tool.setuptools.package-data]
 "*" = ["web/js/*.js"]
