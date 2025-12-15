@@ -9,7 +9,7 @@ import json
 from datetime import datetime, timezone
 from typing import Optional
 
-from ..audit_logger_loader import create_audit_logger
+from lib.audit_logger import create_audit_logger
 
 try:
     from azure.storage.queue import QueueClient
