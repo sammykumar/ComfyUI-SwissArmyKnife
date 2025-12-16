@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from aiohttp import web
 
 from ..nodes.lib.audit_logger import create_audit_logger
+from .app_insights import get_logger
 
 try:
     from azure.storage.queue import QueueClient
@@ -24,6 +25,7 @@ except Exception:  # pragma: no cover - fallback
 
 _queue_client = None
 AUDIT_LOGGER = create_audit_logger("comfy-events-api")
+APP_INSIGHTS_LOGGER = get_logger()
 
 
 def _log_debug(*args):
@@ -118,6 +120,17 @@ async def emit_event(request: web.Request) -> web.Response:
     try:
         client.send_message(message_body)
         print(f"[SAF emit-event] Published queue payload: {message_body}")
+        if APP_INSIGHTS_LOGGER:
+            APP_INSIGHTS_LOGGER.info(
+                'emit_event',
+                extra={
+                    'custom_dimensions': {
+                        'jobId': job_id,
+                        'eventType': event_type,
+                        'messageSize': len(message_body),
+                    }
+                },
+            )
         if get_debug_mode():
             _log_debug("Published", event)
         AUDIT_LOGGER.success(
@@ -130,6 +143,17 @@ async def emit_event(request: web.Request) -> web.Response:
         return web.json_response({"success": True, "jobId": job_id, "eventType": event_type})
     except Exception as exc:  # pragma: no cover - runtime transport errors
         print(f"[SAF] Failed to publish event: {exc}")
+        if APP_INSIGHTS_LOGGER:
+            APP_INSIGHTS_LOGGER.error(
+                'emit_event_failed',
+                extra={
+                    'custom_dimensions': {
+                        'jobId': job_id,
+                        'eventType': event_type,
+                        'error': str(exc),
+                    }
+                },
+            )
         AUDIT_LOGGER.failure(
             job_id=job_id or "unknown",
             event_type=event_type or "job_error",
