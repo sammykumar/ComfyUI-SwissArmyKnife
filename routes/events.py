@@ -49,7 +49,7 @@ def _get_queue_client():
         return None
 
     # Get queue name from cached settings (defaults to "job-events")
-    queue_name = _cached_settings.get("azure_job_events_queue", "job-events")
+    queue_name = _cached_settings.get("azure_job_events_queue") or "job-events"
 
     try:
         _queue_client = QueueClient.from_connection_string(

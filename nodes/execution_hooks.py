@@ -45,7 +45,7 @@ class ExecutionEventPublisher:
             connection_string = get_setting_value(
                 "swiss_army_knife.azure_storage.connection_string"
             )
-            queue_name = _cached_settings.get("azure_job_events_queue", "job-events")
+            queue_name = _cached_settings.get("azure_job_events_queue") or "job-events"
 
             if not connection_string:
                 print(
