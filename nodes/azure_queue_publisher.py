@@ -105,9 +105,8 @@ class AzureQueuePublisher:
 
         event_data: Dict[str, Any] = {
             "jobId": job_id,
-            "promptId": prompt_id or job_id,
             "eventType": event_type,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         }
 
         if client_id:
@@ -124,7 +123,7 @@ class AzureQueuePublisher:
             event_data["metadata"] = metadata_dict
 
         try:
-            message_json = json.dumps(event_data)
+            message_json = json.dumps(event_data, separators=(",", ":"))
             self.queue_client.send_message(message_json)
 
             success_msg = f"✅ Published {event_type} event for job {job_id}"

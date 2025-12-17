@@ -72,7 +72,7 @@ class ExecutionEventPublisher:
             return
 
         try:
-            message_json = json.dumps(event_data)
+            message_json = json.dumps(event_data, separators=(",", ":"))
             self._queue_client.send_message(message_json)
             print(
                 f"[SAF execution_hooks] ✅ Published {event_data.get('eventType')} for job {event_data.get('jobId')}"
@@ -129,9 +129,8 @@ class ExecutionEventPublisher:
         self._publish_event(
             {
                 "jobId": prompt_id,
-                "promptId": prompt_id,
                 "eventType": "job_started",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             }
         )
 
@@ -146,9 +145,8 @@ class ExecutionEventPublisher:
         self._publish_event(
             {
                 "jobId": prompt_id,
-                "promptId": prompt_id,
                 "eventType": "job_completed",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             }
         )
 
@@ -165,9 +163,8 @@ class ExecutionEventPublisher:
         self._publish_event(
             {
                 "jobId": prompt_id,
-                "promptId": prompt_id,
                 "eventType": "job_failed",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "errorMessage": error_message,
             }
         )

@@ -63,13 +63,12 @@ def _get_queue_client():
 
 
 def _build_event(payload: dict) -> dict:
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     job_id = payload.get("jobId") or payload.get("promptId")
     event_type = payload.get("eventType")
 
     event = {
         "jobId": job_id,
-        "promptId": payload.get("promptId") or job_id,
         "eventType": event_type,
         "timestamp": payload.get("timestamp") or now,
     }

@@ -25,7 +25,7 @@ class AuditLogEvent:
   run_id: Optional[str] = None
   extra: Dict[str, Any] = field(default_factory=dict)
   timestamp: str = field(
-    default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
   )
 
   def to_dict(self) -> Dict[str, Any]:
@@ -94,7 +94,7 @@ class AuditLogger:
   def _emit_to_console(self, event: AuditLogEvent) -> None:
     entry = event.to_dict()
     entry['level'] = self._map_status_to_level(event.status)
-    line = json.dumps(entry)
+    line = json.dumps(entry, separators=(",", ":"))
     if event.status == 'failure':
       print(line, file=sys.stderr)
     else:
@@ -106,7 +106,7 @@ class AuditLogger:
 
     request = Request(
       self.audit_endpoint_url,
-      data=json.dumps(event.to_dict()).encode('utf-8'),
+      data=json.dumps(event.to_dict(), separators=(",", ":")).encode('utf-8'),
       headers={'Content-Type': 'application/json'},
       method='POST',
     )
