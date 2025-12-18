@@ -12,7 +12,7 @@ from typing import Optional
 from .lib.audit_logger import create_audit_logger
 
 try:
-    from azure.storage.queue import QueueClient
+    from azure.storage.queue import QueueClient, TextBase64EncodePolicy
 
     AZURE_AVAILABLE = True
 except ImportError:
@@ -54,7 +54,9 @@ class ExecutionEventPublisher:
                 return
 
             self._queue_client = QueueClient.from_connection_string(
-                conn_str=connection_string, queue_name=queue_name
+                conn_str=connection_string,
+                queue_name=queue_name,
+                message_encode_policy=TextBase64EncodePolicy(),
             )
             self._queue_name = queue_name
             self._initialized = True
@@ -130,7 +132,7 @@ class ExecutionEventPublisher:
             {
                 "jobId": prompt_id,
                 "eventType": "job_started",
-                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
             }
         )
 
@@ -146,7 +148,7 @@ class ExecutionEventPublisher:
             {
                 "jobId": prompt_id,
                 "eventType": "job_completed",
-                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
             }
         )
 
@@ -164,7 +166,7 @@ class ExecutionEventPublisher:
             {
                 "jobId": prompt_id,
                 "eventType": "job_failed",
-                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
                 "errorMessage": error_message,
             }
         )

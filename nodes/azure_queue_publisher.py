@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from .lib.audit_logger import create_audit_logger
 
 try:
-    from azure.storage.queue import QueueClient
+    from azure.storage.queue import QueueClient, TextBase64EncodePolicy
 
     AZURE_AVAILABLE = True
 except ImportError:
@@ -71,7 +71,9 @@ class AzureQueuePublisher:
 
         try:
             self.queue_client = QueueClient.from_connection_string(
-                conn_str=connection_string, queue_name=queue_name
+                conn_str=connection_string,
+                queue_name=queue_name,
+                message_encode_policy=TextBase64EncodePolicy(),
             )
             print(f"✅ Azure Queue Client initialized for queue: {queue_name}")
         except Exception as exc:  # pragma: no cover - best-effort init guard
@@ -106,7 +108,7 @@ class AzureQueuePublisher:
         event_data: Dict[str, Any] = {
             "jobId": job_id,
             "eventType": event_type,
-            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         }
 
         if client_id:

@@ -7,7 +7,7 @@ from ..nodes.lib.audit_logger import create_audit_logger
 from .app_insights import get_logger
 
 try:
-    from azure.storage.queue import QueueClient
+    from azure.storage.queue import QueueClient, TextBase64EncodePolicy
 
     AZURE_AVAILABLE = True
 except ImportError:  # pragma: no cover - environment guard
@@ -53,7 +53,9 @@ def _get_queue_client():
 
     try:
         _queue_client = QueueClient.from_connection_string(
-            conn_str=connection_string, queue_name=queue_name
+            conn_str=connection_string,
+            queue_name=queue_name,
+            message_encode_policy=TextBase64EncodePolicy(),
         )
         print(f"[SAF] Queue client initialized for queue: {queue_name}")
         return _queue_client
@@ -63,7 +65,7 @@ def _get_queue_client():
 
 
 def _build_event(payload: dict) -> dict:
-    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     job_id = payload.get("jobId") or payload.get("promptId")
     event_type = payload.get("eventType")
 

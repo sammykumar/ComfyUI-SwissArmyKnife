@@ -25,7 +25,7 @@ class AuditLogEvent:
   run_id: Optional[str] = None
   extra: Dict[str, Any] = field(default_factory=dict)
   timestamp: str = field(
-    default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
   )
 
   def to_dict(self) -> Dict[str, Any]:
