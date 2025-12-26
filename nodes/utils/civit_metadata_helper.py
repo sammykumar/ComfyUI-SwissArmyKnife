@@ -96,7 +96,27 @@ class CivitMetadataHelper:
                         "tooltip": "Negative prompt text",
                     },
                 ),
-            }
+            },
+            "optional": {
+                "subject_prompt_json": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "forceInput": True,
+                        "tooltip": "Optional structured JSON for subject appearance",
+                    },
+                ),
+                "video_prompt_json": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": True,
+                        "forceInput": True,
+                        "tooltip": "Optional structured JSON for video description",
+                    },
+                ),
+            },
         }
 
     RETURN_TYPES = ("STRING", "STRING", "STRING")
@@ -120,6 +140,8 @@ class CivitMetadataHelper:
         lora_low: str,
         positive_prompt: str,
         negative_prompt: str,
+        subject_prompt_json: str = "",
+        video_prompt_json: str = "",
     ) -> Tuple[str, str, str]:
         # Normalize all free-form text inputs in case upstream nodes send dicts or numbers
         high_sampler_clean = self._normalize_text(high_sampler)
@@ -128,6 +150,8 @@ class CivitMetadataHelper:
         lora_low_clean = self._normalize_text(lora_low)
         positive_clean = self._normalize_text(positive_prompt)
         negative_clean = self._normalize_text(negative_prompt)
+        subject_json_clean = self._normalize_text(subject_prompt_json)
+        video_json_clean = self._normalize_text(video_prompt_json)
 
         metadata = self._build_metadata_dict(
             steps,
@@ -139,6 +163,8 @@ class CivitMetadataHelper:
             lora_low_clean,
             positive_clean,
             negative_clean,
+            subject_json_clean,
+            video_json_clean,
         )
 
         formatted_metadata = self._format_for_display(metadata)
@@ -160,6 +186,8 @@ class CivitMetadataHelper:
         lora_low: str,
         positive_prompt: str,
         negative_prompt: str,
+        subject_prompt_json: str = "",
+        video_prompt_json: str = "",
     ) -> Dict[str, Any]:
         positive = positive_prompt.strip()
         negative = negative_prompt.strip()
@@ -178,7 +206,12 @@ class CivitMetadataHelper:
                     "low_res": lora_low.strip(),
                 },
             },
-            "prompts": {"positive": positive, "negative": negative},
+            "prompts": {
+                "positive": positive,
+                "negative": negative,
+                "subject_prompt_json": subject_prompt_json.strip(),
+                "video_prompt_json": video_prompt_json.strip(),
+            },
             "prompt_lengths": {
                 "positive_chars": len(positive),
                 "negative_chars": len(negative),
