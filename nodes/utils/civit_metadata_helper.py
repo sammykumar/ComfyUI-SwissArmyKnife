@@ -192,6 +192,21 @@ class CivitMetadataHelper:
         positive = positive_prompt.strip()
         negative = negative_prompt.strip()
 
+        # Try to parse structured JSONs if provided
+        subject_prompt = None
+        if subject_prompt_json.strip():
+            try:
+                subject_prompt = json.loads(subject_prompt_json)
+            except Exception:
+                subject_prompt = subject_prompt_json.strip()
+
+        video_prompt = None
+        if video_prompt_json.strip():
+            try:
+                video_prompt = json.loads(video_prompt_json)
+            except Exception:
+                video_prompt = video_prompt_json.strip()
+
         return {
             "generation_parameters": {
                 "steps": steps,
@@ -209,9 +224,9 @@ class CivitMetadataHelper:
             "prompts": {
                 "positive": positive,
                 "negative": negative,
-                "subject_prompt_json": subject_prompt_json.strip(),
-                "video_prompt_json": video_prompt_json.strip(),
             },
+            "subject_prompt": subject_prompt,
+            "video_prompt": video_prompt,
             "prompt_lengths": {
                 "positive_chars": len(positive),
                 "negative_chars": len(negative),
