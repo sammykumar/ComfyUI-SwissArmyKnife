@@ -23,14 +23,14 @@ except ImportError as e:
     CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS = {}
     CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS = {}
 
-# Import Azure Storage Upload node
+# Import Upload Job to Azure node
 try:
-    from .nodes.utils.azure_storage_upload import NODE_CLASS_MAPPINGS as AZURE_STORAGE_NODE_CLASS_MAPPINGS
-    from .nodes.utils.azure_storage_upload import NODE_DISPLAY_NAME_MAPPINGS as AZURE_STORAGE_NODE_DISPLAY_NAME_MAPPINGS
+    from .nodes.utils.upload_job_to_azure import NODE_CLASS_MAPPINGS as UPLOAD_JOB_NODE_CLASS_MAPPINGS
+    from .nodes.utils.upload_job_to_azure import NODE_DISPLAY_NAME_MAPPINGS as UPLOAD_JOB_NODE_DISPLAY_NAME_MAPPINGS
 except ImportError as e:
-    print(f"Warning: Could not import Azure Storage Upload node: {e}")
-    AZURE_STORAGE_NODE_CLASS_MAPPINGS = {}
-    AZURE_STORAGE_NODE_DISPLAY_NAME_MAPPINGS = {}
+    print(f"Warning: Could not import Upload Job to Azure node: {e}")
+    UPLOAD_JOB_NODE_CLASS_MAPPINGS = {}
+    UPLOAD_JOB_NODE_DISPLAY_NAME_MAPPINGS = {}
 
 # Import Prompt Builder node
 try:
@@ -114,13 +114,13 @@ def get_version():
         import time
         return str(int(time.time()))
 
-# Combine main nodes, helper nodes, control panel, civit metadata helper, azure storage, lora_manager, media_selection, and vace_annotators nodes
+# Combine main nodes, helper nodes, control panel, civit metadata helper, upload job to azure, lora_manager, media_selection, and vace_annotators nodes
 NODE_CLASS_MAPPINGS = {
     **MAIN_NODE_CLASS_MAPPINGS,
     **HELPER_NODE_CLASS_MAPPINGS,
     **CONTROL_PANEL_NODE_CLASS_MAPPINGS,
     **CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS,
-    **AZURE_STORAGE_NODE_CLASS_MAPPINGS,
+    **UPLOAD_JOB_NODE_CLASS_MAPPINGS,
     **PROMPT_BUILDER_NODE_CLASS_MAPPINGS,
     **LORA_INFO_NODE_CLASS_MAPPINGS,
 
@@ -132,7 +132,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     **HELPER_NODE_DISPLAY_NAME_MAPPINGS,
     **CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS,
     **CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS,
-    **AZURE_STORAGE_NODE_DISPLAY_NAME_MAPPINGS,
+    **UPLOAD_JOB_NODE_DISPLAY_NAME_MAPPINGS,
     **PROMPT_BUILDER_NODE_DISPLAY_NAME_MAPPINGS,
     **LORA_INFO_NODE_DISPLAY_NAME_MAPPINGS,
 

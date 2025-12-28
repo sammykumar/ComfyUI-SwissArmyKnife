@@ -11,6 +11,9 @@ _cached_api_keys = {
     "gemini_api_key": "",
     "civitai_api_key": "",
     "azure_storage_connection_string": "",
+    "azure_cosmos_connection_string": "",
+    "azure_cosmos_database_name": "data",
+    "azure_cosmos_jobs_container": "jobs",
     "lmstudio_base_url": ""
 }
 
@@ -49,6 +52,12 @@ def get_setting_value(setting_id):
             return _cached_api_keys.get("civitai_api_key", "")
         elif setting_id == "swiss_army_knife.azure_storage.connection_string":
             return _cached_api_keys.get("azure_storage_connection_string", "")
+        elif setting_id == "swiss_army_knife.azure_cosmos.connection_string":
+            return _cached_api_keys.get("azure_cosmos_connection_string", "")
+        elif setting_id == "swiss_army_knife.azure_cosmos.database_name":
+            return _cached_api_keys.get("azure_cosmos_database_name", "data")
+        elif setting_id == "swiss_army_knife.azure_cosmos.jobs_container":
+            return _cached_api_keys.get("azure_cosmos_jobs_container", "jobs")
         elif setting_id == "swiss_army_knife.lmstudio.base_url":
             return _cached_api_keys.get("lmstudio_base_url", "")
             
@@ -69,6 +78,9 @@ async def get_config(request):
         gemini_api_key = get_setting_value("swiss_army_knife.gemini.api_key")
         civitai_api_key = get_setting_value("swiss_army_knife.civitai.api_key")
         azure_connection_string = get_setting_value("swiss_army_knife.azure_storage.connection_string")
+        azure_cosmos_connection_string = get_setting_value("swiss_army_knife.azure_cosmos.connection_string")
+        azure_cosmos_database_name = get_setting_value("swiss_army_knife.azure_cosmos.database_name")
+        azure_cosmos_jobs_container = get_setting_value("swiss_army_knife.azure_cosmos.jobs_container")
         lmstudio_base_url = get_setting_value("swiss_army_knife.lmstudio.base_url")
 
         profiler_enabled = _cached_settings.get("profiler_enabled", True)
@@ -80,6 +92,9 @@ async def get_config(request):
             "gemini_api_key": gemini_api_key,
             "civitai_api_key": civitai_api_key,
             "azure_storage_connection_string": azure_connection_string,
+            "azure_cosmos_connection_string": azure_cosmos_connection_string,
+            "azure_cosmos_database_name": azure_cosmos_database_name,
+            "azure_cosmos_jobs_container": azure_cosmos_jobs_container,
             "azure_job_events_queue": azure_job_events_queue,
             "lmstudio_base_url": lmstudio_base_url,
         })
@@ -96,6 +111,9 @@ async def set_api_keys(request):
         gemini_key = data.get("gemini_api_key", "")
         civitai_key = data.get("civitai_api_key", "")
         azure_connection_string = data.get("azure_storage_connection_string", "")
+        azure_cosmos_connection_string = data.get("azure_cosmos_connection_string", "")
+        azure_cosmos_database_name = data.get("azure_cosmos_database_name", "data")
+        azure_cosmos_jobs_container = data.get("azure_cosmos_jobs_container", "jobs")
         azure_job_events_queue = data.get("azure_job_events_queue", "")
         debug_mode = data.get("debug_mode", False)
         profiler_enabled = data.get("profiler_enabled", True)
@@ -116,6 +134,9 @@ async def set_api_keys(request):
             "gemini_api_key": gemini_key,
             "civitai_api_key": civitai_key,
             "azure_storage_connection_string": azure_connection_string,
+            "azure_cosmos_connection_string": azure_cosmos_connection_string,
+            "azure_cosmos_database_name": azure_cosmos_database_name,
+            "azure_cosmos_jobs_container": azure_cosmos_jobs_container,
             "lmstudio_base_url": lmstudio_base_url
         }
         _cached_settings = {
