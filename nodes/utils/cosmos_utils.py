@@ -77,9 +77,10 @@ def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
         container = database.get_container_client(container_name)
 
         # Read existing document
-        # Note: Using 'id' as partition key since the container's partition key field (/job_id) 
-        # is not populated in existing documents
+        # Note: Container partition key is /job_id, but documents have 'jobId' field (camelCase)
+        # The jobId field value matches the document id
         try:
+            print(f"[CosmosUtils] Attempting read with partition_key={job_id} (using jobId field)")
             item = container.read_item(item=job_id, partition_key=job_id)
             print(f"[CosmosUtils] ✅ Found job document {job_id}")
         except cosmos_exceptions.CosmosResourceNotFoundError:
@@ -108,8 +109,10 @@ def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
         # Update remaining fields in generationMetadata
         gen_meta.update(metadata_patch)
         
-        # Save back - use 'id' as partition key for replace as well
-        container.replace_item(item=job_id, body=item, partition_key=job_id)
+        # Save back - use jobId field value (which equals id) as partition key
+        partition_key_value = item.get("jobId", job_id)
+        print(f"[CosmosUtils] Saving with partition_key={partition_key_value} (from jobId field)")
+        container.replace_item(item=job_id, body=item, partition_key=partition_key_value)
         print(f"[CosmosUtils] ✅ Successfully updated metadata for job {job_id}")
 
     except Exception as e:
