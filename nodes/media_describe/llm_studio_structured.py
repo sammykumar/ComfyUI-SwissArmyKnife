@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Tuple, List, Dict, Any
 from ..debug_utils import Logger
 from ..config_api import get_setting_value
+from ..execution_hooks import get_current_prompt_id
+from ..utils.cosmos_utils import update_job_metadata, upload_subject_image
 from .prompts import IMAGE_SYSTEM_PROMPT, IMAGE_USER_PROMPT, VIDEO_SYSTEM_PROMPT, VIDEO_USER_PROMPT
 
 logger = Logger("LLMStudioStructured")
@@ -607,6 +609,32 @@ class LLMStudioStructuredDescribe:
 
             logger.log("\n✅ Analysis complete\n")
 
+            # Push results to CosmosDB if this is part of a job
+            current_job_id = get_current_prompt_id()
+            if current_job_id:
+                logger.log(f"📡 Pushing structured analysis to CosmosDB for job {current_job_id}...")
+                
+                # Upload subject image
+                subject_url = upload_subject_image(current_job_id, image)
+                
+                # Construct legacy positive prompt
+                positive_prompt = ""
+                if schema_preset == "simple_description":
+                    positive_prompt = result.get("caption", "")
+                elif "appearance" in result:
+                    positive_prompt = result.get("appearance", "")
+                elif "subject" in result:
+                    positive_prompt = result.get("subject", "")
+                
+                cosmos_meta = {
+                    "prompts": {
+                        "positive": positive_prompt or json_output,
+                        "subjectJson": result
+                    },
+                    "subjectImageUrl": subject_url
+                }
+                update_job_metadata(current_job_id, cosmos_meta)
+
             # Return both ui field (for JavaScript display) and result tuple (for node outputs)
             return {
                 "ui": {"json_output": [json_output]},
@@ -1011,6 +1039,31 @@ class LLMStudioStructuredVideoDescribe:
                 logger.warning(f"⚠️ Error cleaning up temp files: {e}")
 
             logger.log("\n✅ Video analysis complete\n")
+
+            # Push results to CosmosDB if this is part of a job
+            current_job_id = get_current_prompt_id()
+            if current_job_id:
+                logger.log(f"📡 Pushing video structured analysis to CosmosDB for job {current_job_id}...")
+                
+                # Construct legacy positive prompt
+                positive_prompt = ""
+                if schema_preset == "video_description":
+                    parts = []
+                    for f in ["subject", "clothing", "action", "scene", "visual_style"]:
+                        val = result.get(f)
+                        if val:
+                            parts.append(val)
+                    positive_prompt = "\n\n".join(parts)
+                elif schema_preset == "simple_description":
+                    positive_prompt = result.get("caption", "")
+                
+                cosmos_meta = {
+                    "prompts": {
+                        "positive": positive_prompt or json_output,
+                        "videoJson": result
+                    }
+                }
+                update_job_metadata(current_job_id, cosmos_meta)
 
             # Return both ui field (for JavaScript display) and result tuple (for node outputs)
             return {
@@ -1429,6 +1482,24 @@ class LMStudioCombinedStructuredDescribe:
 
         if verbose:
             logger.log("✅ Combined structured description ready")
+
+        # Push results to CosmosDB if this is part of a job
+        current_job_id = get_current_prompt_id()
+        if current_job_id:
+            logger.log(f"📡 Pushing combined structured analysis to CosmosDB for job {current_job_id}...")
+            
+            # Upload subject image
+            subject_url = upload_subject_image(current_job_id, subject_image_path)
+            
+            cosmos_meta = {
+                "prompts": {
+                    "positive": combined_text,
+                    "subjectJson": subject_result,
+                    "videoJson": video_result
+                },
+                "subjectImageUrl": subject_url
+            }
+            update_job_metadata(current_job_id, cosmos_meta)
 
         return {
             "ui": {"json_output": [subject_json, video_json, combined_text, formatted_response]},

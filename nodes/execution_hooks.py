@@ -175,6 +175,12 @@ class ExecutionEventPublisher:
 # Global publisher instance
 AUDIT_LOGGER = create_audit_logger("comfy-execution-hooks")
 _publisher = ExecutionEventPublisher()
+_current_prompt_id = None
+
+
+def get_current_prompt_id():
+    """Get the currently executing prompt ID (job ID)."""
+    return _current_prompt_id
 
 
 def register_execution_hooks():
@@ -196,6 +202,8 @@ def register_execution_hooks():
             # Intercept execution events and publish to Azure
             # Note: 'executed' fires per-node, 'execution_success' fires per-prompt
             if event == "execution_start":
+                global _current_prompt_id
+                _current_prompt_id = data.get("prompt_id")
                 _publisher.handle_execution_start(data)
             elif event == "execution_success":
                 # This fires once when the entire prompt completes successfully
