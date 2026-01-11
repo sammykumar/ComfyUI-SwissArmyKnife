@@ -77,6 +77,8 @@ def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
         container = database.get_container_client(container_name)
 
         # Read existing document
+        # Note: Using 'id' as partition key since the container's partition key field (/job_id) 
+        # is not populated in existing documents
         try:
             item = container.read_item(item=job_id, partition_key=job_id)
             print(f"[CosmosUtils] ✅ Found job document {job_id}")
@@ -106,8 +108,8 @@ def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
         # Update remaining fields in generationMetadata
         gen_meta.update(metadata_patch)
         
-        # Save back
-        container.replace_item(item=job_id, body=item)
+        # Save back - use 'id' as partition key for replace as well
+        container.replace_item(item=job_id, body=item, partition_key=job_id)
         print(f"[CosmosUtils] ✅ Successfully updated metadata for job {job_id}")
 
     except Exception as e:
