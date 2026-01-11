@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional, Union
 
 # SDK Imports
 try:
-    from azure.cosmos import CosmosClient, exceptions as cosmos_exceptions
+    from azure.cosmos import CosmosClient, exceptions as cosmos_exceptions, PartitionKey
     COSMOS_AVAILABLE = True
 except ImportError:
     COSMOS_AVAILABLE = False
@@ -77,17 +77,31 @@ def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
         container = database.get_container_client(container_name)
 
         # Read existing document
-        # Note: Container partition key is /job_id, but documents have 'jobId' field (camelCase)
-        # The jobId field value matches the document id
+        # CRITICAL: Container partition key path is /job_id but documents have 'jobId' field (camelCase)
+        # Since field names don't match, documents have undefined partition key
+        # Use cross-partition query to find the document reliably
+        item = None
         try:
-            print(f"[CosmosUtils] Attempting read with partition_key={job_id} (using jobId field)")
-            item = container.read_item(item=job_id, partition_key=job_id)
-            print(f"[CosmosUtils] ✅ Found job document {job_id}")
-        except cosmos_exceptions.CosmosResourceNotFoundError:
-            print(f"[CosmosUtils] ❌ Job document {job_id} not found in container {container_name}")
-            return
+            print(f"[CosmosUtils] Querying for document with id={job_id}")
+            query = "SELECT * FROM c WHERE c.id = @id"
+            params = [{"name": "@id", "value": job_id}]
+            results = list(container.query_items(
+                query=query,
+                parameters=params,
+                enable_cross_partition_query=True,
+                max_item_count=1
+            ))
+            if results:
+                item = results[0]
+                print(f"[CosmosUtils] ✅ Found job document {job_id}")
+                print(f"[CosmosUtils] 📋 Document fields: id={item.get('id')}, jobId={item.get('jobId')}, job_id={item.get('job_id', 'NOT SET')}")
+            else:
+                print(f"[CosmosUtils] ❌ No document found with id={job_id}")
+                return
         except Exception as e:
-            print(f"[CosmosUtils] ❌ Error reading job document {job_id}: {e}")
+            print(f"[CosmosUtils] ❌ Error querying for job document {job_id}: {e}")
+            import traceback
+            traceback.print_exc()
             return
 
         # Prepare generationMetadata
@@ -109,11 +123,31 @@ def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
         # Update remaining fields in generationMetadata
         gen_meta.update(metadata_patch)
         
-        # Save back - use jobId field value (which equals id) as partition key
-        partition_key_value = item.get("jobId", job_id)
-        print(f"[CosmosUtils] Saving with partition_key={partition_key_value} (from jobId field)")
-        container.replace_item(item=job_id, body=item, partition_key=partition_key_value)
-        print(f"[CosmosUtils] ✅ Successfully updated metadata for job {job_id}")
+        # Save back - documents have undefined partition key since /job_id path doesn't match 'jobId' field
+        # We need to use the same (undefined) partition key for the replace operation
+        # Try to extract job_id if it exists, otherwise use PartitionKey.NONE equivalent
+        partition_key_for_replace = item.get("job_id")  # Will be None if field doesn't exist
+        if partition_key_for_replace is None:
+            # Document has undefined partition key, but we still need to specify SOMETHING
+            # Try using the jobId field value as CosmosDB might accept it
+            partition_key_for_replace = item.get("jobId", job_id)
+        
+        print(f"[CosmosUtils] Attempting replace with partition_key={partition_key_for_replace}")
+        
+        try:
+            # First try with the extracted partition key
+            container.replace_item(item=job_id, body=item, partition_key=partition_key_for_replace)
+            print(f"[CosmosUtils] ✅ Successfully updated metadata for job {job_id}")
+        except Exception as replace_error:
+            print(f"[CosmosUtils] ⚠️ Replace failed with partition_key={partition_key_for_replace}: {replace_error}")
+            # Try upsert instead as a fallback
+            try:
+                print(f"[CosmosUtils] Attempting upsert as fallback...")
+                container.upsert_item(body=item)
+                print(f"[CosmosUtils] ✅ Successfully upserted metadata for job {job_id}")
+            except Exception as upsert_error:
+                print(f"[CosmosUtils] ❌ Upsert also failed: {upsert_error}")
+                raise
 
     except Exception as e:
         print(f"[CosmosUtils] ❌ Failed to update CosmosDB metadata: {e}")
