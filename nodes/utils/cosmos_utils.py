@@ -112,7 +112,7 @@ def upload_subject_image(job_id: str, source: Union[str, Path, Any]) -> Optional
         return None
 
     try:
-        container_name = "media"
+        container_name = "media-files"
         # Ensure container exists
         container_client = client.get_container_client(container_name)
         
