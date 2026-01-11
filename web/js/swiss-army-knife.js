@@ -71,6 +71,43 @@ const getAzureJobEventsQueue = () => {
     }
 };
 
+const getAzureCosmosConnectionString = () => {
+    try {
+        const value =
+            app.extensionManager.setting.get("SwissArmyKnife.azure_cosmos.connection_string") || "";
+        debugLog(`getAzureCosmosConnectionString called, value length: ${value.length}`);
+        return value;
+    } catch (error) {
+        console.warn("Failed to get Azure Cosmos connection string from settings:", error);
+        return "";
+    }
+};
+
+const getAzureCosmosDatabaseName = () => {
+    try {
+        const value =
+            app.extensionManager.setting.get("SwissArmyKnife.azure_cosmos.database_name") || "data";
+        debugLog(`getAzureCosmosDatabaseName called, value: ${value}`);
+        return value;
+    } catch (error) {
+        console.warn("Failed to get Azure Cosmos database name from settings:", error);
+        return "data";
+    }
+};
+
+const getAzureCosmosJobsContainer = () => {
+    try {
+        const value =
+            app.extensionManager.setting.get("SwissArmyKnife.azure_cosmos.jobs_container") ||
+            "jobs";
+        debugLog(`getAzureCosmosJobsContainer called, value: ${value}`);
+        return value;
+    } catch (error) {
+        console.warn("Failed to get Azure Cosmos jobs container from settings:", error);
+        return "jobs";
+    }
+};
+
 const getLmStudioBaseUrl = () => {
     try {
         const value = app.extensionManager.setting.get("SwissArmyKnife.lmstudio.base_url") || "";
@@ -89,13 +126,17 @@ const syncApiKeysToBackend = async () => {
         const geminiKey = getGeminiApiKey();
         const civitaiKey = getCivitaiApiKey();
         const azureConnectionString = getAzureStorageConnectionString();
+        const azureCosmosConnectionString = getAzureCosmosConnectionString();
+        const azureCosmosDatabaseName = getAzureCosmosDatabaseName();
+        const azureCosmosJobsContainer = getAzureCosmosJobsContainer();
         const debugMode = isDebugEnabled();
         const profilerEnabled =
             app.extensionManager?.setting?.get("SwissArmyKnife.profiler_enabled") ?? true;
         const azureJobEventsQueue = getAzureJobEventsQueue();
         const lmstudioBaseUrl = getLmStudioBaseUrl();
 
-        debugLog("Azure connection string length:", azureConnectionString.length);
+        debugLog("Azure Storage connection string length:", azureConnectionString.length);
+        debugLog("Azure Cosmos connection string length:", azureCosmosConnectionString.length);
         debugLog("Debug mode:", debugMode);
         debugLog("Profiler enabled:", profilerEnabled);
 
@@ -108,6 +149,9 @@ const syncApiKeysToBackend = async () => {
                 gemini_api_key: geminiKey,
                 civitai_api_key: civitaiKey,
                 azure_storage_connection_string: azureConnectionString,
+                azure_cosmos_connection_string: azureCosmosConnectionString,
+                azure_cosmos_database_name: azureCosmosDatabaseName,
+                azure_cosmos_jobs_container: azureCosmosJobsContainer,
                 azure_job_events_queue: azureJobEventsQueue,
                 lmstudio_base_url: lmstudioBaseUrl,
                 debug_mode: debugMode,
@@ -2045,6 +2089,39 @@ app.registerExtension({
             tooltip: "Azure Storage queue name for job events (Flow 3)",
             onChange: (newVal, oldVal) => {
                 debugLog(`[Settings] Azure job events queue changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "SwissArmyKnife.azure_cosmos.connection_string",
+            name: "Azure Cosmos DB Connection String",
+            type: "text",
+            defaultValue: "",
+            tooltip: "Your Azure Cosmos DB connection string for job metadata storage",
+            onChange: (newVal, oldVal) => {
+                debugLog(`[Settings] Azure Cosmos connection string changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "SwissArmyKnife.azure_cosmos.database_name",
+            name: "Azure Cosmos Database Name",
+            type: "text",
+            defaultValue: "data",
+            tooltip: "Azure Cosmos DB database name (default: data)",
+            onChange: (newVal, oldVal) => {
+                debugLog(`[Settings] Azure Cosmos database name changed, syncing to backend`);
+                syncApiKeysToBackend();
+            },
+        },
+        {
+            id: "SwissArmyKnife.azure_cosmos.jobs_container",
+            name: "Azure Cosmos Jobs Container",
+            type: "text",
+            defaultValue: "jobs",
+            tooltip: "Azure Cosmos DB container name for jobs (default: jobs)",
+            onChange: (newVal, oldVal) => {
+                debugLog(`[Settings] Azure Cosmos jobs container changed, syncing to backend`);
                 syncApiKeysToBackend();
             },
         },
