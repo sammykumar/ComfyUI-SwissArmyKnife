@@ -628,10 +628,10 @@ class LLMStudioStructuredDescribe:
                 
                 cosmos_meta = {
                     "prompts": {
-                        "positive": positive_prompt or json_output,
-                        "subjectJson": result
+                        "positive": positive_prompt or json_output
                     },
-                    "subjectImageUrl": subject_url
+                    "subject_prompt": result,
+                    "subject_image_url": subject_url
                 }
                 update_job_metadata(current_job_id, cosmos_meta)
 
@@ -1059,9 +1059,9 @@ class LLMStudioStructuredVideoDescribe:
                 
                 cosmos_meta = {
                     "prompts": {
-                        "positive": positive_prompt or json_output,
-                        "videoJson": result
-                    }
+                        "positive": positive_prompt or json_output
+                    },
+                    "video_prompt": result
                 }
                 update_job_metadata(current_job_id, cosmos_meta)
 
@@ -1493,11 +1493,11 @@ class LMStudioCombinedStructuredDescribe:
             
             cosmos_meta = {
                 "prompts": {
-                    "positive": combined_text,
-                    "subjectJson": subject_result,
-                    "videoJson": video_result
+                    "positive": combined_text
                 },
-                "subjectImageUrl": subject_url
+                "subject_prompt": subject_result,
+                "video_prompt": video_result,
+                "subject_image_url": subject_url
             }
             update_job_metadata(current_job_id, cosmos_meta)
 

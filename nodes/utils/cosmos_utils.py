@@ -27,30 +27,34 @@ logger = logging.getLogger("SwissArmyKnife.CosmosUtils")
 
 def get_cosmos_client():
     if not COSMOS_AVAILABLE:
+        print("[CosmosUtils] ⚠️ azure-cosmos SDK not installed")
         return None
     try:
         from ..config_api import get_api_keys
         api_keys = get_api_keys()
         conn_str = api_keys.get("azure_cosmos_connection_string")
         if not conn_str:
+            print("[CosmosUtils] ⚠️ azure_cosmos_connection_string not found in config")
             return None
         return CosmosClient.from_connection_string(conn_str)
     except Exception as e:
-        logger.debug(f"Failed to create Cosmos client: {e}")
+        print(f"[CosmosUtils] ⚠️ Failed to create Cosmos client: {e}")
         return None
 
 def get_blob_service_client():
     if not BLOB_AVAILABLE:
+        print("[CosmosUtils] ⚠️ azure-storage-blob SDK not installed")
         return None
     try:
         from ..config_api import get_api_keys
         api_keys = get_api_keys()
         conn_str = api_keys.get("azure_storage_connection_string")
         if not conn_str:
+            print("[CosmosUtils] ⚠️ azure_storage_connection_string not found in config")
             return None
         return BlobServiceClient.from_connection_string(conn_str)
     except Exception as e:
-        logger.debug(f"Failed to create Blob client: {e}")
+        print(f"[CosmosUtils] ⚠️ Failed to create Blob client: {e}")
         return None
 
 def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
@@ -59,6 +63,7 @@ def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
     """
     client = get_cosmos_client()
     if not client:
+        print(f"[CosmosUtils] ⚠️ Cosmos client not available or not configured")
         return
 
     try:
@@ -67,14 +72,19 @@ def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
         db_name = api_keys.get("azure_cosmos_database_name", "data")
         container_name = api_keys.get("azure_cosmos_jobs_container", "jobs")
 
+        print(f"[CosmosUtils] Connecting to {db_name}/{container_name} for job {job_id}...")
         database = client.get_database_client(db_name)
         container = database.get_container_client(container_name)
 
         # Read existing document
         try:
             item = container.read_item(item=job_id, partition_key=job_id)
+            print(f"[CosmosUtils] ✅ Found job document {job_id}")
         except cosmos_exceptions.CosmosResourceNotFoundError:
-            logger.debug(f"Job document {job_id} not found for update")
+            print(f"[CosmosUtils] ❌ Job document {job_id} not found in container {container_name}")
+            return
+        except Exception as e:
+            print(f"[CosmosUtils] ❌ Error reading job document {job_id}: {e}")
             return
 
         # Prepare generationMetadata
@@ -83,11 +93,12 @@ def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
         
         gen_meta = item["generationMetadata"]
         
+        # Ensure prompts exists
+        if "prompts" not in gen_meta:
+            gen_meta["prompts"] = {}
+        
         # Handle prompts specifically if they exist in patch (for merging)
         if "prompts" in metadata_patch:
-            if "prompts" not in gen_meta:
-                gen_meta["prompts"] = {}
-            
             # Merge prompts
             new_prompts = metadata_patch.pop("prompts")
             gen_meta["prompts"].update(new_prompts)
@@ -97,10 +108,12 @@ def update_job_metadata(job_id: str, metadata_patch: Dict[str, Any]):
         
         # Save back
         container.replace_item(item=job_id, body=item)
-        logger.info(f"✅ Successfully updated metadata for job {job_id}")
+        print(f"[CosmosUtils] ✅ Successfully updated metadata for job {job_id}")
 
     except Exception as e:
-        logger.error(f"❌ Failed to update CosmosDB metadata: {e}")
+        print(f"[CosmosUtils] ❌ Failed to update CosmosDB metadata: {e}")
+        import traceback
+        traceback.print_exc()
 
 def upload_subject_image(job_id: str, source: Union[str, Path, Any]) -> Optional[str]:
     """
