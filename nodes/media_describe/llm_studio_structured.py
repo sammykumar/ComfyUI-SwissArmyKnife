@@ -254,8 +254,10 @@ SUBJECT_APPEARANCE_SYSTEM_PROMPT = (
 )
 
 SUBJECT_APPEARANCE_USER_PROMPT = (
-    "Analyze this subject reference image and return a single JSON object containing only the "
-    "'appearance' field with a dense paragraph about the subject's physical characteristics."
+    "Provide a comprehensive, detailed description of this person's physical appearance. "
+    "Write at least 3-4 sentences covering facial features, skin characteristics, body build, "
+    "hair details, and overall grooming. Be specific and thorough - do not provide single-word "
+    "responses. Focus on observable physical traits only."
 )
 
 VIDEO_FRAME_ARCHITECT_SYSTEM_PROMPT = (
