@@ -1,0 +1,1034 @@
+/* Swiss Army Knife - Resource Monitor Floating Bar */
+@property --swissarmyknife-gradient-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes swissarmyknife-resource-monitor-rotation {
+    0% {
+        --swissarmyknife-gradient-angle: 0deg;
+    }
+    100% {
+        --swissarmyknife-gradient-angle: 360deg;
+    }
+}
+
+#swissarmyknife-resource-monitor {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0.2rem;
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    z-index: 9999;
+    font-size: 0.919rem;
+    line-height: 1.313rem;
+    font-weight: 500;
+    isolation: isolate;
+    --swissarmyknife-gradient-angle: 0deg;
+}
+
+#swissarmyknife-resource-monitor-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-radius: inherit;
+    overflow: hidden;
+    padding: 0 0.35rem;
+    width: 100%;
+    height: 100%;
+}
+
+#swissarmyknife-resource-monitor::before,
+#swissarmyknife-resource-monitor::after {
+    content: "";
+    position: absolute;
+    border-radius: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+/* Ambient bloom */
+#swissarmyknife-resource-monitor::before {
+    inset: 8px;
+    z-index: -2;
+    filter: blur(28px);
+    background: linear-gradient(var(--swissarmyknife-gradient-angle), #60a5fa, #a855f7, #ec4899, #f97316, #facc15, #34d399);
+    animation: swissarmyknife-resource-monitor-rotation 10s linear infinite;
+}
+
+/* Thin chromatic rim */
+#swissarmyknife-resource-monitor::after {
+    inset: 0;
+    z-index: -1;
+    padding: 2px;
+    background: linear-gradient(var(--swissarmyknife-gradient-angle), #60a5fa, #a855f7, #ec4899, #f97316, #facc15, #34d399);
+    background-clip: padding-box;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+}
+
+#swissarmyknife-resource-monitor.swissarmyknife-is-executing {
+    overflow: visible;
+    border-color: transparent;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+}
+
+#swissarmyknife-resource-monitor.swissarmyknife-is-executing::before {
+    opacity: 0.25;
+}
+
+#swissarmyknife-resource-monitor.swissarmyknife-is-executing::after {
+    opacity: 0.6;
+}
+
+/* Restart Button */
+#swissarmyknife-restart-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+    height: 100%;
+    background-color: #dc3545;
+    color: white;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#swissarmyknife-restart-button::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 2rem;
+    width: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#swissarmyknife-restart-button:hover {
+    background-color: #c82333;
+}
+
+#swissarmyknife-restart-button:active {
+    background-color: #bd2130;
+}
+
+#swissarmyknife-restart-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Monitor Display - Individual Metrics Container */
+.swissarmyknife-monitor {
+    position: relative;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    overflow: hidden;
+}
+
+/* Background Progress Bar - Percentage Reactive */
+.swissarmyknife-monitor-bg {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 0%;
+    transition: all 500ms;
+    background-color: transparent;
+}
+
+/* Divider - Separator between monitors */
+.swissarmyknife-monitor:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 2rem;
+    width: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.swissarmyknife-monitor-content {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    white-space: nowrap;
+    z-index: 1;
+}
+
+.swissarmyknife-monitor-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+}
+
+.swissarmyknife-monitor-value {
+    color: rgba(255, 255, 255, 0.6);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+
+/* Profiler Button */
+#swissarmyknife-profiler-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1rem;
+    height: 100%;
+    background-color: rgba(99, 102, 241, 0.8);
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#swissarmyknife-profiler-button::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 2rem;
+    width: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#swissarmyknife-profiler-button:hover {
+    background-color: rgba(79, 70, 229, 0.9);
+}
+
+#swissarmyknife-profiler-button:active {
+    background-color: rgba(67, 56, 202, 1);
+}
+
+/* Profiler Popup */
+#swissarmyknife-profiler-popup {
+    position: fixed;
+    display: none;
+    width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    background-color: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    padding: 1.5rem;
+}
+
+/* Arrow pointer for popup - pointing to the right */
+#swissarmyknife-profiler-popup::after {
+    content: '';
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-left: 8px solid rgba(0, 0, 0, 0.85);
+}
+
+/* Popup Header */
+.profiler-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.profiler-popup-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+}
+
+.profiler-popup-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.profiler-popup-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Progress Gauge */
+.profiler-gauge-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+.profiler-gauge-svg {
+    width: 120px;
+    height: 120px;
+    transform: rotate(-90deg);
+}
+
+.profiler-gauge-circle-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 8;
+}
+
+.profiler-gauge-circle-progress {
+    fill: none;
+    stroke: #fbbf24;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+.profiler-gauge-text {
+    position: absolute;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+}
+
+.profiler-gauge-label {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.1);
+    font-weight: bolder;
+}
+
+/* Stats Grid */
+.profiler-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.profiler-stat-card {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.profiler-stat-card:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.profiler-stat-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 0.25rem;
+}
+
+.profiler-stat-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: white;
+}
+
+.profiler-stat-icon {
+    margin-right: 0.25rem;
+}
+
+/* Node Table */
+.profiler-node-table-container {
+    margin-bottom: 1rem;
+}
+
+.profiler-node-table-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 0.75rem;
+}
+
+.profiler-node-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+}
+
+.profiler-node-table th {
+    text-align: left;
+    padding: 0.5rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+}
+
+.profiler-node-table th:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.profiler-node-table td {
+    padding: 0.5rem;
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profiler-node-table tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.profiler-cache-icon {
+    font-size: 0.875rem;
+}
+
+/* Footer Actions */
+.profiler-popup-footer {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.profiler-btn {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.profiler-btn-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+}
+
+.profiler-btn-primary:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+}
+
+.profiler-btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.profiler-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.profiler-btn-danger {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+
+.profiler-btn-danger:hover {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+/* Profiler Modal */
+#swissarmyknife-profiler-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    z-index: 11000;
+    padding: 2rem;
+}
+
+.profiler-modal-content {
+    background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(31, 41, 55, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.profiler-modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.profiler-modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+}
+
+.profiler-modal-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.profiler-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Tabs */
+.profiler-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.profiler-tab {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.profiler-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.profiler-tab.active {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+}
+
+.profiler-tab-content {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.profiler-tab-panel {
+    display: none;
+}
+
+.profiler-tab-panel.active {
+    display: block;
+}
+
+/* Action Button Group - Vertical floating container for Profiler and Restart */
+#swissarmyknife-action-buttons {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    z-index: 9999;
+    width: 3rem;
+}
+
+/* Action buttons - shared styles */
+#swissarmyknife-action-buttons .comfyui-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 0;
+    width: 100%;
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.8);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#swissarmyknife-action-buttons .comfyui-button svg {
+    display: block;
+}
+
+#swissarmyknife-action-buttons .comfyui-button:hover {
+    color: rgba(255, 255, 255, 1);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#swissarmyknife-action-buttons .comfyui-button:active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+#swissarmyknife-action-buttons .comfyui-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Separator between action buttons */
+#swissarmyknife-action-buttons .comfyui-button:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2rem;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Override profiler button styles when in action group */
+#swissarmyknife-action-buttons #swissarmyknife-profiler-button {
+    background-color: transparent;
+    font-size: 1rem;
+}
+
+#swissarmyknife-action-buttons #swissarmyknife-profiler-button::before {
+    display: none;
+}
+
+#swissarmyknife-action-buttons #swissarmyknife-profiler-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#swissarmyknife-action-buttons #swissarmyknife-profiler-button:active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Override restart button styles when in action group */
+#swissarmyknife-action-buttons #swissarmyknife-restart-button {
+    background-color: transparent;
+}
+
+#swissarmyknife-action-buttons #swissarmyknife-restart-button::before {
+    display: none;
+}
+
+#swissarmyknife-action-buttons #swissarmyknife-restart-button:hover {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: rgba(255, 255, 255, 1);
+}
+
+#swissarmyknife-action-buttons #swissarmyknife-restart-button:active {
+    background-color: rgba(220, 53, 69, 0.3);
+}
+
+/* GPU Tooltip - Shows loaded models on hover */
+.swissarmyknife-gpu-tooltip {
+    position: fixed;
+    min-width: 300px;
+    max-width: 400px;
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    background-color: rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+    z-index: 10001;
+    padding: 1rem;
+    animation: tooltipFadeIn 0.2s ease;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.gpu-tooltip-header {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gpu-tooltip-content {
+    font-size: 0.813rem;
+}
+
+.gpu-tooltip-loading,
+.gpu-tooltip-empty,
+.gpu-tooltip-error {
+    text-align: center;
+    padding: 1rem 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
+.gpu-tooltip-error {
+    color: rgba(239, 68, 68, 0.8);
+}
+
+.gpu-tooltip-section {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.gpu-tooltip-models {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.gpu-tooltip-model {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.gpu-tooltip-model:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.gpu-tooltip-model-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.gpu-tooltip-model-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.gpu-tooltip-model-name {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gpu-tooltip-model-vram {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+}
+
+.gpu-tooltip-summary {
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.gpu-tooltip-summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.gpu-tooltip-summary-value {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Hover effect for monitors with tooltips */
+.swissarmyknife-monitor:has(.gpu-tooltip-enabled) {
+    cursor: help;
+}
+
+.swissarmyknife-monitor:hover .swissarmyknife-monitor-label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ========== OOM (Out of Memory) Styling ========== */
+
+/* OOM Warning Borders for Stats Cards */
+.profiler-stat-card-warning {
+    border: 2px solid #f59e0b !important;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.profiler-stat-card-critical {
+    border: 2px solid #ef4444 !important;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+/* OOM Icon Column */
+.profiler-oom-icon {
+    text-align: center;
+    font-size: 1rem;
+}
+
+/* OOM Analysis Tab Styles */
+.oom-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.oom-summary-card {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+}
+
+.oom-summary-label {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 0.5rem;
+}
+
+.oom-summary-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+}
+
+.oom-summary-error {
+    color: #ef4444;
+}
+
+.oom-summary-warning {
+    color: #f59e0b;
+}
+
+/* OOM Sections */
+.oom-section {
+    margin-bottom: 2rem;
+}
+
+.oom-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Recent OOM Events */
+.oom-recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.oom-recent-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.oom-recent-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.oom-recent-node {
+    font-weight: 600;
+    color: #ef4444;
+    font-size: 1rem;
+}
+
+.oom-recent-time {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.oom-recent-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.oom-recent-models {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.5rem;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 4px;
+    margin-top: 0.5rem;
+}
+
+.oom-recent-error {
+    font-size: 0.75rem;
+    color: #f59e0b;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+/* OOM Tables */
+.oom-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.oom-table thead {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+.oom-table th {
+    text-align: left;
+    padding: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.oom-table td {
+    padding: 0.75rem;
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.oom-table tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.oom-count {
+    font-weight: 600;
+    color: #ef4444;
+}
+
+.oom-rate-warning {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.oom-rate-critical {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* Recommendations */
+.oom-recommendations {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.oom-recommendation {
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.oom-rec-critical {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+}
+
+.oom-rec-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+}
+
+.oom-rec-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+}
+
+.oom-rec-header {
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.oom-rec-message {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.5;
+}
+
+/* Success Message */
+.oom-success {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 8px;
+    color: #22c55e;
+    font-weight: 600;
+    font-size: 1.125rem;
+}

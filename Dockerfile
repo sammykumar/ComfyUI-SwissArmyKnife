@@ -37,7 +37,9 @@ RUN pip install --no-cache-dir \
     opencv-python \
     requests \
     httpx \
-    openai
+    openai \
+    azure-cosmos \
+    azure-storage-blob
 
 # Create directories for models and custom nodes if they don't exist
 RUN mkdir -p models custom_nodes input output

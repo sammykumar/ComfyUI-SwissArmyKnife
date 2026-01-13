@@ -71,8 +71,8 @@ npm run test:headless
 ## Test Requirements
 
 -   **ComfyUI Instance**: Tests connect to `https://comfyui.devlabhq.com/`
--   **Workflow File**: Requires `video-describe.json` workflow to be available
--   **Node Type**: Tests the `GeminiUtilMediaDescribe` node specifically
+-   **Workflow File**: Requires `video-describe.json` workflow to be available (legacy workflow — pending update)
+-   **Node Type**: Legacy tests targeted the now-removed `GeminiUtilMediaDescribe` node
 -   **Browser**: Chromium (installed automatically via Playwright)
 
 ## Test Structure
@@ -110,8 +110,8 @@ Each test follows this pattern:
 
 2. **"No tests ran"**
 
-    - Verify the workflow file exists in ComfyUI
-    - Check that the GeminiUtilMediaDescribe node is available
+    - Verify the legacy workflow file exists in ComfyUI
+    - Update tests or workflows to target the LM Studio structured describe nodes (the GeminiUtilMediaDescribe node is no longer available)
 
 3. **Widget state tests failing**
     - Clear browser cache and restart ComfyUI

@@ -313,7 +313,7 @@ cd web/tests && npm test
 
 - Check existing issues on GitHub
 - Review ComfyUI custom node documentation: https://docs.comfy.org/custom-nodes/overview
-- Check the project's implementation status in `IMPLEMENTATION_STATUS.md`
+- Review `docs/README.md` for the latest project status notes
 
 ## License
 

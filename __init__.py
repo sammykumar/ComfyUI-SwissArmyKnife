@@ -1,4 +1,5 @@
 import os
+
 from .nodes.nodes import NODE_CLASS_MAPPINGS as MAIN_NODE_CLASS_MAPPINGS
 from .nodes.nodes import NODE_DISPLAY_NAME_MAPPINGS as MAIN_NODE_DISPLAY_NAME_MAPPINGS
 from .nodes.helper_nodes import HELPER_NODE_CLASS_MAPPINGS
@@ -22,15 +23,32 @@ except ImportError as e:
     CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS = {}
     CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS = {}
 
-# Import Azure Storage Upload node
+# Import Upload Job to Azure node
 try:
-    from .nodes.utils.azure_storage_upload import NODE_CLASS_MAPPINGS as AZURE_STORAGE_NODE_CLASS_MAPPINGS
-    from .nodes.utils.azure_storage_upload import NODE_DISPLAY_NAME_MAPPINGS as AZURE_STORAGE_NODE_DISPLAY_NAME_MAPPINGS
+    from .nodes.utils.upload_job_to_azure import NODE_CLASS_MAPPINGS as UPLOAD_JOB_NODE_CLASS_MAPPINGS
+    from .nodes.utils.upload_job_to_azure import NODE_DISPLAY_NAME_MAPPINGS as UPLOAD_JOB_NODE_DISPLAY_NAME_MAPPINGS
 except ImportError as e:
-    print(f"Warning: Could not import Azure Storage Upload node: {e}")
-    AZURE_STORAGE_NODE_CLASS_MAPPINGS = {}
-    AZURE_STORAGE_NODE_DISPLAY_NAME_MAPPINGS = {}
+    print(f"Warning: Could not import Upload Job to Azure node: {e}")
+    UPLOAD_JOB_NODE_CLASS_MAPPINGS = {}
+    UPLOAD_JOB_NODE_DISPLAY_NAME_MAPPINGS = {}
 
+# Import Prompt Builder node
+try:
+    from .nodes.utils.prompt_builder import NODE_CLASS_MAPPINGS as PROMPT_BUILDER_NODE_CLASS_MAPPINGS
+    from .nodes.utils.prompt_builder import NODE_DISPLAY_NAME_MAPPINGS as PROMPT_BUILDER_NODE_DISPLAY_NAME_MAPPINGS
+except ImportError as e:
+    print(f"Warning: Could not import Prompt Builder node: {e}")
+    PROMPT_BUILDER_NODE_CLASS_MAPPINGS = {}
+    PROMPT_BUILDER_NODE_DISPLAY_NAME_MAPPINGS = {}
+
+# Import LoRA Info Extractor node
+try:
+    from .nodes.utils.lora_info_extractor import NODE_CLASS_MAPPINGS as LORA_INFO_NODE_CLASS_MAPPINGS
+    from .nodes.utils.lora_info_extractor import NODE_DISPLAY_NAME_MAPPINGS as LORA_INFO_NODE_DISPLAY_NAME_MAPPINGS
+except ImportError as e:
+    print(f"Warning: Could not import LoRA Info Extractor node: {e}")
+    LORA_INFO_NODE_CLASS_MAPPINGS = {}
+    LORA_INFO_NODE_DISPLAY_NAME_MAPPINGS = {}
 
 
 # Import media_selection nodes
@@ -70,6 +88,18 @@ try:
 except Exception as e:
     print(f"Swiss Army Knife: Could not register config API routes: {e}")
 
+# Import events module to auto-register event routes (uses PromptServer.instance.routes)
+try:
+    from .routes import events  # This triggers initialize_routes() via module import
+except Exception as e:
+    print(f"Swiss Army Knife: Could not import event routes: {e}")
+
+# Import execution hooks to auto-emit events during workflow execution
+try:
+    from .nodes import execution_hooks  # This registers hooks into ComfyUI execution
+except Exception as e:
+    print(f"Swiss Army Knife: Could not register execution hooks: {e}")
+
 
 # Get version from pyproject.toml for cache busting
 def get_version():
@@ -84,13 +114,15 @@ def get_version():
         import time
         return str(int(time.time()))
 
-# Combine main nodes, helper nodes, control panel, civit metadata helper, azure storage, lora_manager, media_selection, and vace_annotators nodes
+# Combine main nodes, helper nodes, control panel, civit metadata helper, upload job to azure, lora_manager, media_selection, and vace_annotators nodes
 NODE_CLASS_MAPPINGS = {
     **MAIN_NODE_CLASS_MAPPINGS,
     **HELPER_NODE_CLASS_MAPPINGS,
     **CONTROL_PANEL_NODE_CLASS_MAPPINGS,
     **CIVIT_METADATA_HELPER_NODE_CLASS_MAPPINGS,
-    **AZURE_STORAGE_NODE_CLASS_MAPPINGS,
+    **UPLOAD_JOB_NODE_CLASS_MAPPINGS,
+    **PROMPT_BUILDER_NODE_CLASS_MAPPINGS,
+    **LORA_INFO_NODE_CLASS_MAPPINGS,
 
     **MEDIA_SELECTION_NODE_CLASS_MAPPINGS,
     **VACE_ANNOTATORS_NODE_CLASS_MAPPINGS
@@ -100,7 +132,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     **HELPER_NODE_DISPLAY_NAME_MAPPINGS,
     **CONTROL_PANEL_NODE_DISPLAY_NAME_MAPPINGS,
     **CIVIT_METADATA_HELPER_NODE_DISPLAY_NAME_MAPPINGS,
-    **AZURE_STORAGE_NODE_DISPLAY_NAME_MAPPINGS,
+    **UPLOAD_JOB_NODE_DISPLAY_NAME_MAPPINGS,
+    **PROMPT_BUILDER_NODE_DISPLAY_NAME_MAPPINGS,
+    **LORA_INFO_NODE_DISPLAY_NAME_MAPPINGS,
 
     **MEDIA_SELECTION_NODE_DISPLAY_NAME_MAPPINGS,
     **VACE_ANNOTATORS_NODE_DISPLAY_NAME_MAPPINGS
@@ -111,5 +145,56 @@ VERSION = get_version()
 
 # Load DEBUG setting from environment
 DEBUG = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
+
+# Initialize profiler (must happen before execution starts)
+try:
+    from .nodes.utils.resource_monitor.prestartup import inject_profiling
+    from .nodes.utils.resource_monitor.profiler_core import ProfilerManager
+    from .nodes.utils.resource_monitor.profiler_api import register_profiler_routes, set_profiler_manager
+    
+    # Inject profiling hooks into ComfyUI execution
+    if inject_profiling():
+        # Get profiler instance
+        profiler_manager = ProfilerManager.get_instance()
+        set_profiler_manager(profiler_manager)
+        
+        # Register profiler API routes
+        try:
+            from server import PromptServer
+            server = PromptServer.instance
+            register_profiler_routes(server)
+            print("[SwissArmyKnife] Profiler initialized successfully")
+        except Exception as e:
+            print(f"[SwissArmyKnife] Warning: Could not register profiler API routes: {e}")
+    else:
+        print("[SwissArmyKnife] Warning: Profiler initialization failed")
+except Exception as e:
+    print(f"[SwissArmyKnife] Warning: Could not initialize profiler: {e}")
+
+# Initialize resource monitor service
+try:
+    from .nodes.monitor_api import register_monitor_routes, set_monitor_service
+    from .nodes.utils.resource_monitor import MonitorService
+    from .nodes.restart_api import register_restart_routes
+    
+    # Import PromptServer
+    try:
+        from server import PromptServer
+        
+        # Register API routes
+        server = PromptServer.instance
+        register_monitor_routes(server)
+        register_restart_routes(server)
+        
+        # Create and start monitor service
+        monitor_service = MonitorService(server, interval=2.0)
+        set_monitor_service(monitor_service)
+        monitor_service.start()
+        
+        print("[SwissArmyKnife] Resource monitor initialized successfully")
+    except Exception as e:
+        print(f"[SwissArmyKnife] Warning: Could not initialize resource monitor: {e}")
+except ImportError as e:
+    print(f"[SwissArmyKnife] Warning: Resource monitor dependencies not available: {e}")
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY", "VERSION", "DEBUG"]

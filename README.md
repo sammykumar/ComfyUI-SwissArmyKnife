@@ -26,19 +26,19 @@ The following nodes have been removed as they are now redundant or better served
 - **FilenameGenerator** - Use ComfyUI's built-in string nodes
 - **VideoMetadataNode** - Functionality merged into enhanced video preview
 - **ShowText** - Use ComfyUI's built-in display nodes
+- **ControlPanelOverview** - Use Control Panel Prompt Breakdown or built-in viewers
 - **FrameExtractor** - Use ComfyUI's built-in video frame extraction
 - **MultiCaptionCombiner** - Use ComfyUI's built-in string concatenation
 - **GeminiUtilOptions** - Consolidated into main Gemini nodes
 - **LLMStudioOptions** - Consolidated into LM Studio structured nodes
 - **VideoPreview** - Use enhanced native video preview functionality
+- **MediaDescribe** - Replaced by LM Studio structured describe nodes
+- **LLMStudioVideoDescribe** - Use LM Studio Structured Video Describe
+- **LLMStudioPictureDescribe** - Use LM Studio Structured Describe
 
 #### Renamed Nodes
 
-The following nodes have been renamed for clarity (functionality unchanged):
-
-- **LLMStudioVideoDescribe** → **LM Studio Structured Video Describe**
-- **LLMStudioPictureDescribe** → **LM Studio Structured Picture Describe**
-- **LLMStudioOptions** → Removed (consolidated into main nodes)
+None in this release. The LM Studio structured describe nodes replace the legacy implementations entirely.
 
 #### Enhancements
 
@@ -148,7 +148,6 @@ pre-commit install
 
 - **GeminiUtilVideoDescribe**: Analyze videos using Gemini AI
 - **GeminiUtilImageDescribe**: Analyze images using Gemini AI
-- **GeminiUtilMediaDescribe**: Multi-media analysis functionality
 - **Super LoRA Loader 🔪**: Advanced multi-LoRA loading with UI enhancements (from nd-super-nodes)
     - Load multiple LoRAs in a single node
     - Individual enable/disable controls per LoRA

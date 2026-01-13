@@ -13,7 +13,7 @@ Collect sampling settings, LoRA names, and prompts into formatted text/JSON that
 
 ## Usage Tips
 1. Connect scheduler/LoRA/prompt values before uploading or archiving models.
-2. Feed the formatted or JSON outputs into logging nodes, ShowText, or Azure uploads.
+2. Feed the formatted or JSON outputs into logging nodes, ComfyUI's built-in text display nodes, or Azure uploads.
 
 ## Additional Resources
 - [Full documentation](docs/integrations/civitai/README.md)
