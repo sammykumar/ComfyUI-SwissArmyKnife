@@ -1213,6 +1213,14 @@ class LMStudioCombinedStructuredDescribe:
         else:
             pil_image = image
 
+        # Convert RGBA to RGB if needed (JPEG doesn't support alpha channel)
+        if pil_image.mode == 'RGBA':
+            rgb_image = Image.new('RGB', pil_image.size, (255, 255, 255))
+            rgb_image.paste(pil_image, mask=pil_image.split()[3])  # Use alpha channel as mask
+            pil_image = rgb_image
+        elif pil_image.mode != 'RGB':
+            pil_image = pil_image.convert('RGB')
+
         # Encode to base64
         buffered = io.BytesIO()
         pil_image.save(buffered, format="JPEG")
@@ -1517,6 +1525,15 @@ class LMStudioCombinedStructuredDescribe:
                 if isinstance(subject_image, torch.Tensor):
                     img_np = (subject_image[0].cpu().numpy() * 255).astype('uint8')
                     pil_image = Image.fromarray(img_np)
+                    
+                    # Convert RGBA to RGB if needed
+                    if pil_image.mode == 'RGBA':
+                        rgb_image = Image.new('RGB', pil_image.size, (255, 255, 255))
+                        rgb_image.paste(pil_image, mask=pil_image.split()[3])
+                        pil_image = rgb_image
+                    elif pil_image.mode != 'RGB':
+                        pil_image = pil_image.convert('RGB')
+                    
                     pil_image.save(temp_subject_path, format="JPEG")
                 
                 subject_url = upload_subject_image(current_job_id, str(temp_subject_path))
