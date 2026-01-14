@@ -1468,7 +1468,7 @@ class LMStudioCombinedStructuredDescribe:
 
         video_json = json.dumps(video_result, indent=2)
 
-        # Use appearance and clothing from subject reference image if available, 
+        # Use subject reference
         # otherwise fallback to video's extracted fields
         subject_appearance = subject_result.get("appearance", "")
         clothing = video_result.get("clothing", "")
