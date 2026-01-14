@@ -201,6 +201,10 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                     "type": "string",
                     "description": "Cinematic and technical aesthetic treatment"
                 },
+                "watermark": {
+                    "type": "string",
+                    "description": "Description of any visible watermarks, logos, or overlay text (e.g., RedGifs, OnlyFans, site URLs). If none are present, provide an empty string."
+                },
                 "nsfw": {
                     "type": "object",
                     "description": "Frame-by-frame NSFW analysis metadata",
@@ -241,7 +245,7 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                     "additionalProperties": False
                 }
             },
-            "required": ["subject", "clothing", "action", "scene", "visual_style", "nsfw"],
+            "required": ["subject", "clothing", "action", "scene", "visual_style", "watermark", "nsfw"],
             "additionalProperties": False
         }
     }
