@@ -1470,8 +1470,8 @@ class LMStudioCombinedStructuredDescribe:
 
         # Use appearance and clothing from subject reference image if available, 
         # otherwise fallback to video's extracted fields
-        appearance_text = subject_result.get("appearance", "")
-        clothing = subject_result.get("clothing", "") or video_result.get("clothing", "")
+        subject_appearance = subject_result.get("appearance", "")
+        clothing = video_result.get("clothing", "")
         tattoos = subject_result.get("tattoos", "")
         action = video_result.get("action", "")
         scene = video_result.get("scene", "")
@@ -1509,12 +1509,12 @@ class LMStudioCombinedStructuredDescribe:
         nsfw_body = "\n\n".join([part for part in nsfw_plain_parts if part])
         formatted_nsfw_section = "\n\n".join([part for part in nsfw_formatted_parts if part])
 
-        text_sections = [appearance_text, clothing, action, scene, visual_style, nsfw_body]
+        text_sections = [subject_appearance, clothing, action, scene, visual_style, nsfw_body]
         combined_text = "\n\n".join([section for section in text_sections if section.strip()])
 
         formatted_sections = []
-        if appearance_text.strip():
-            formatted_sections.append(f"Subject Appearance:\n{appearance_text}")
+        if subject_appearance.strip():
+            formatted_sections.append(f"Subject Appearance:\n{subject_appearance}")
         if clothing.strip():
             formatted_sections.append(f"Clothing & Style:\n{clothing}")
         if tattoos.strip():
