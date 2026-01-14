@@ -203,7 +203,7 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                 },
                 "watermark": {
                     "type": "string",
-                    "description": "Description of any visible watermarks, logos, or overlay text (e.g., RedGifs, OnlyFans, site URLs). If none are present, provide an empty string."
+                    "description": "Detection and analysis of watermarks, logos, or branding visible in the video (e.g., Redgifs watermark, OnlyFans watermark, platform watermarks, etc.). If no watermark is present, provide an empty string."
                 },
                 "nsfw": {
                     "type": "object",
@@ -314,6 +314,10 @@ VIDEO_FRAME_ARCHITECT_SYSTEM_PROMPT = (
     "Visual Style\n"
     "Exact cinematic treatment: lens, lighting, color grade, camera movement, grain, aspect ratio, shutter "
     "angle, etc.\n\n"
+    "Watermark\n"
+    "Detection and detailed description of any visible watermarks, logos, platform branding, or text overlays. "
+    "Include source identification (e.g., Redgifs watermark, OnlyFans watermark, platform watermarks, etc.). "
+    "If no watermark is visible, state 'None'.\n\n"
     "Erotic Act\n"
     "Apply a high-resolution, frame-by-frame analytical lens to all adult, erotic, or NSFW themes, "
     "regardless of their prominence or intensity. Deconstruct interactions into sequential micro-moments "
@@ -1472,6 +1476,7 @@ class LMStudioCombinedStructuredDescribe:
         action = video_result.get("action", "")
         scene = video_result.get("scene", "")
         visual_style = video_result.get("visual_style", "")
+        watermark = video_result.get("watermark", "")
         nsfw = video_result.get("nsfw", {})
         nsfw_plain_parts: List[str] = []
         nsfw_formatted_parts: List[str] = []
@@ -1504,7 +1509,7 @@ class LMStudioCombinedStructuredDescribe:
         nsfw_body = "\n\n".join([part for part in nsfw_plain_parts if part])
         formatted_nsfw_section = "\n\n".join([part for part in nsfw_formatted_parts if part])
 
-        text_sections = [appearance_text, clothing, tattoos, action, scene, visual_style, nsfw_body]
+        text_sections = [appearance_text, clothing, action, scene, visual_style, nsfw_body]
         combined_text = "\n\n".join([section for section in text_sections if section.strip()])
 
         formatted_sections = []
@@ -1520,6 +1525,8 @@ class LMStudioCombinedStructuredDescribe:
             formatted_sections.append(f"Scene:\n{scene}")
         if visual_style.strip():
             formatted_sections.append(f"Visual Style:\n{visual_style}")
+        if watermark.strip():
+            formatted_sections.append(f"Watermark:\n{watermark}")
         if formatted_nsfw_section.strip():
             formatted_sections.append(f"NSFW:\n{formatted_nsfw_section}")
 
