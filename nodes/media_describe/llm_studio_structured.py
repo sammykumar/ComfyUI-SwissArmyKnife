@@ -157,9 +157,13 @@ SUBJECT_APPEARANCE_SCHEMA = {
                 "appearance": {
                     "type": "string",
                     "description": "Detailed description of the subject's physical appearance, including face, body, skin, and notable traits"
+                },
+                "clothing": {
+                    "type": "string",
+                    "description": "Detailed description of the clothing and accessories worn by the subject"
                 }
             },
-            "required": ["appearance"],
+            "required": ["appearance", "clothing"],
             "additionalProperties": False
         }
     }
@@ -249,15 +253,15 @@ SCHEMA_PRESETS = {
 
 SUBJECT_APPEARANCE_SYSTEM_PROMPT = (
     "You are an elite portrait analyst. Your only job is to study the provided reference image and "
-    "describe the subject's physical appearance with high fidelity, including face, skin, body, "
-    "posture, notable traits, and grooming details. You do not describe the actions, scene, or clothing."
+    "describe the subject's physical appearance and clothing with high fidelity. This includes face, skin, body, "
+    "posture, notable traits, and grooming details, as well as every garment and accessory worn."
 )
 
 SUBJECT_APPEARANCE_USER_PROMPT = (
-    "Provide a comprehensive, detailed description of this person's physical appearance. "
+    "Provide a comprehensive, detailed description of this person's physical appearance and clothing. "
     "Write at least 3-4 sentences covering facial features, skin characteristics, body build, "
-    "hair details, and overall grooming. Be specific and thorough - do not provide single-word "
-    "responses. Focus on observable physical traits only."
+    "hair details, and overall grooming. Also provide a detailed breakdown of their clothing and accessories. "
+    "Be specific and thorough - do not provide single-word responses. Focus on observable traits only."
 )
 
 VIDEO_FRAME_ARCHITECT_SYSTEM_PROMPT = (
@@ -1452,9 +1456,10 @@ class LMStudioCombinedStructuredDescribe:
 
         video_json = json.dumps(video_result, indent=2)
 
-        # Use appearance from subject reference image, override video's subject field
+        # Use appearance and clothing from subject reference image if available, 
+        # otherwise fallback to video's extracted fields
         appearance_text = subject_result.get("appearance", "")
-        clothing = video_result.get("clothing", "")
+        clothing = subject_result.get("clothing", "") or video_result.get("clothing", "")
         action = video_result.get("action", "")
         scene = video_result.get("scene", "")
         visual_style = video_result.get("visual_style", "")
