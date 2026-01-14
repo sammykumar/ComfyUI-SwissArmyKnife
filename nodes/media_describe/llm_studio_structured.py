@@ -199,11 +199,11 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                 },
                 "visual_style": {
                     "type": "string",
-                    "description": "Cinematic and technical aesthetic treatment"
+                    "description": "Cinematography + technical rendering ONLY (lighting, color palette, contrast, grain/noise, sharpness, lens/focal length cues, depth of field, camera movement, framing, composition, resolution/compression artifacts). EXCLUDE any watermarks, logos, platform branding, or overlaid text; those must go ONLY in watermark"
                 },
                 "watermark": {
                     "type": "string",
-                    "description": "Detection and analysis of watermarks, logos, or branding visible in the video (e.g., Redgifs watermark, OnlyFans watermark, platform watermarks, etc.). If no watermark is present, provide an empty string."
+                    "description": "ONLY watermark/logo/platform-branding detection. If present, state the exact text/brand and placement (e.g., 'REDGIFS watermark, top-left'). If none, return empty string. Do NOT describe visual style or scene content here."
                 },
                 "nsfw": {
                     "type": "object",
@@ -211,7 +211,7 @@ VIDEO_FRAME_ARCHITECT_SCHEMA = {
                     "properties": {
                         "summary": {
                             "type": "string",
-                            "description": "High-level summary of the NSFW content"
+                            "description": "NSFW content summary ONLY (sexual content level and non-graphic context). EXCLUDE any watermarks/logos/platform names/overlaid text; branding must go ONLY in watermark"
                         },
                         "frames": {
                             "type": "array",
