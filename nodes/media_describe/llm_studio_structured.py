@@ -1126,9 +1126,8 @@ class LMStudioCombinedStructuredDescribe:
                 "model_name": (cls.get_available_models(), {
                     "tooltip": "Model name exposed by LM Studio"
                 }),
-                "subject_image_path": ("STRING", {
-                    "default": "",
-                    "tooltip": "Path to subject reference image"
+                "subject_image": ("IMAGE", {
+                    "tooltip": "Subject reference image tensor"
                 }),
                 "video_path": ("STRING", {
                     "default": "",
@@ -1199,6 +1198,27 @@ class LMStudioCombinedStructuredDescribe:
     def encode_file_to_base64(self, file_path: Path) -> str:
         with open(file_path, "rb") as f:
             return base64.b64encode(f.read()).decode("utf-8")
+
+    def encode_image(self, image) -> str:
+        """Encode ComfyUI image tensor to base64 string."""
+        import torch
+        from PIL import Image
+        import io
+
+        # ComfyUI images are in format [B, H, W, C] with values 0-1
+        if isinstance(image, torch.Tensor):
+            # Convert to PIL Image
+            img_np = (image[0].cpu().numpy() * 255).astype('uint8')
+            pil_image = Image.fromarray(img_np)
+        else:
+            pil_image = image
+
+        # Encode to base64
+        buffered = io.BytesIO()
+        pil_image.save(buffered, format="JPEG")
+        img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+        return img_base64
 
     def extract_frames(
         self,
@@ -1302,7 +1322,7 @@ class LMStudioCombinedStructuredDescribe:
     def describe_combined(
         self,
         model_name: str,
-        subject_image_path: str,
+        subject_image,
         video_path: str,
         sample_rate: float,
         max_duration: float,
@@ -1318,21 +1338,20 @@ class LMStudioCombinedStructuredDescribe:
         resolved_base_url = resolve_lmstudio_base_url()
         self.base_url = resolved_base_url
 
-        if not subject_image_path or not os.path.exists(subject_image_path):
-            error_msg = f"Subject image not found: {subject_image_path}"
-            logger.error(error_msg)
-            return (error_msg, "", "", "")
-        if not video_path or not os.path.exists(video_path):
-            error_msg = f"Video file not found: {video_path}"
-            logger.error(error_msg)
-            return ("", error_msg, "", "")
-
+        # Encode subject image from tensor
         try:
-            subject_b64 = self.encode_file_to_base64(Path(subject_image_path))
+            logger.log("🖼️ Encoding subject image...")
+            subject_b64 = self.encode_image(subject_image)
         except Exception as exc:
             error_msg = f"Failed to encode subject image: {exc}"
             logger.error(error_msg)
             return (error_msg, "", "", "")
+
+        # Validate video path
+        if not video_path or not os.path.exists(video_path):
+            error_msg = f"Video file not found: {video_path}"
+            logger.error(error_msg)
+            return ("", error_msg, "", "")
 
         subject_content = [
             {"type": "text", "text": subject_user_prompt},
@@ -1490,8 +1509,20 @@ class LMStudioCombinedStructuredDescribe:
         if current_job_id:
             logger.log(f"📡 Pushing combined structured analysis to CosmosDB for job {current_job_id}...")
             
-            # Upload subject image
-            subject_url = upload_subject_image(current_job_id, subject_image_path)
+            # Save subject image to temporary file for upload
+            import torch
+            from PIL import Image
+            temp_subject_path = Path(tempfile.mktemp(suffix=".jpg"))
+            try:
+                if isinstance(subject_image, torch.Tensor):
+                    img_np = (subject_image[0].cpu().numpy() * 255).astype('uint8')
+                    pil_image = Image.fromarray(img_np)
+                    pil_image.save(temp_subject_path, format="JPEG")
+                
+                subject_url = upload_subject_image(current_job_id, str(temp_subject_path))
+            finally:
+                if temp_subject_path.exists():
+                    temp_subject_path.unlink()
             
             cosmos_meta = {
                 "prompts": {
