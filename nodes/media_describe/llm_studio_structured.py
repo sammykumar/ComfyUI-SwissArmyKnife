@@ -161,9 +161,13 @@ SUBJECT_APPEARANCE_SCHEMA = {
                 "clothing": {
                     "type": "string",
                     "description": "Detailed description of the clothing and accessories worn by the subject"
+                },
+                "tattoos": {
+                    "type": "string",
+                    "description": "Detailed description of any tattoos, markings, or body art on the subject. If none are present, provide an empty string."
                 }
             },
-            "required": ["appearance", "clothing"],
+            "required": ["appearance", "clothing", "tattoos"],
             "additionalProperties": False
         }
     }
@@ -253,14 +257,14 @@ SCHEMA_PRESETS = {
 
 SUBJECT_APPEARANCE_SYSTEM_PROMPT = (
     "You are an elite portrait analyst. Your only job is to study the provided reference image and "
-    "describe the subject's physical appearance and clothing with high fidelity. This includes face, skin, body, "
-    "posture, notable traits, and grooming details, as well as every garment and accessory worn."
+    "describe the subject's physical appearance, clothing, and tattoos with high fidelity. This includes face, skin, body, "
+    "posture, notable traits, and grooming details, as well as every garment, accessory, and piece of body art (tattoos) observed."
 )
 
 SUBJECT_APPEARANCE_USER_PROMPT = (
-    "Provide a comprehensive, detailed description of this person's physical appearance and clothing. "
+    "Provide a comprehensive, detailed description of this person's physical appearance, clothing, and any visible tattoos. "
     "Write at least 3-4 sentences covering facial features, skin characteristics, body build, "
-    "hair details, and overall grooming. Also provide a detailed breakdown of their clothing and accessories. "
+    "hair details, and overall grooming. Also provide a detailed breakdown of their clothing, accessories, and any body art or tattoos. "
     "Be specific and thorough - do not provide single-word responses. Focus on observable traits only."
 )
 
@@ -1460,6 +1464,7 @@ class LMStudioCombinedStructuredDescribe:
         # otherwise fallback to video's extracted fields
         appearance_text = subject_result.get("appearance", "")
         clothing = subject_result.get("clothing", "") or video_result.get("clothing", "")
+        tattoos = subject_result.get("tattoos", "")
         action = video_result.get("action", "")
         scene = video_result.get("scene", "")
         visual_style = video_result.get("visual_style", "")
@@ -1495,7 +1500,7 @@ class LMStudioCombinedStructuredDescribe:
         nsfw_body = "\n\n".join([part for part in nsfw_plain_parts if part])
         formatted_nsfw_section = "\n\n".join([part for part in nsfw_formatted_parts if part])
 
-        text_sections = [appearance_text, clothing, action, scene, visual_style, nsfw_body]
+        text_sections = [appearance_text, clothing, tattoos, action, scene, visual_style, nsfw_body]
         combined_text = "\n\n".join([section for section in text_sections if section.strip()])
 
         formatted_sections = []
@@ -1503,6 +1508,8 @@ class LMStudioCombinedStructuredDescribe:
             formatted_sections.append(f"Subject Appearance:\n{appearance_text}")
         if clothing.strip():
             formatted_sections.append(f"Clothing & Style:\n{clothing}")
+        if tattoos.strip():
+            formatted_sections.append(f"Tattoos & Body Art:\n{tattoos}")
         if action.strip():
             formatted_sections.append(f"Action & Motion:\n{action}")
         if scene.strip():
