@@ -156,15 +156,15 @@ SUBJECT_APPEARANCE_SCHEMA = {
             "properties": {
                 "appearance": {
                     "type": "string",
-      "description": "Stable physical traits ONLY (face morphology, skin tone/texture/marks, hair, body build/proportions). EXCLUDE clothing/accessories, nudity/attire state, and tattoos."
+                    "description": "Detailed description of the subject's physical appearance, including face, body, skin, and notable traits"
                 },
                 "clothing": {
                     "type": "string",
-      "description": "Garments and accessories ONLY. If none, return empty string."
+                    "description": "Garments and accessories ONLY. If none, return empty string"
                 },
                 "tattoos": {
                     "type": "string",
-      "description": "Tattoos/body art ONLY. If none, return empty string."
+                    "description": "Tattoos/body art ONLY. If none, return empty string."
                 }
             },
             "required": ["appearance", "clothing", "tattoos"],
